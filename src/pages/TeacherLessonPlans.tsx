@@ -42,10 +42,12 @@ import { toast } from "@/hooks/use-toast";
 interface LinkedSlot {
   subject?: string;
   classId?: string;
+  groupId?: string;
   className?: string;
   date?: string;
   time?: string;
 }
+
 
 interface PlanRow {
   id: string;
@@ -68,6 +70,8 @@ export default function TeacherLessonPlans() {
   const [items, setItems] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
+  const [targetFilter, setTargetFilter] = useState<string>("__all");
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -234,9 +238,25 @@ export default function TeacherLessonPlans() {
     return [];
   }
 
+  /** Názvy tříd / skupin, ke kterým plán patří. */
+  function planTargetNames(plan: PlanRow): string[] {
+    const set = new Set<string>();
+    const inp: any = plan.input_data || {};
+    if (inp.targetName) set.add(String(inp.targetName));
+    const slots: LinkedSlot[] = inp.linkedSlots ?? [];
+    for (const sl of slots) if (sl.className) set.add(sl.className);
+    return Array.from(set);
+  }
+
   const allSubjects = useMemo(() => {
     const set = new Set<string>();
     for (const p of items) for (const s of planSubjects(p)) set.add(s);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
+  }, [items]);
+
+  const allTargets = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of items) for (const t of planTargetNames(p)) set.add(t);
     return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
   }, [items]);
 
@@ -248,14 +268,21 @@ export default function TeacherLessonPlans() {
         (it) =>
           (it.title || "").toLowerCase().includes(q) ||
           (it.subject || "").toLowerCase().includes(q) ||
-          planSubjects(it).some((s) => s.toLowerCase().includes(q)),
+          planSubjects(it).some((s) => s.toLowerCase().includes(q)) ||
+          planTargetNames(it).some((t) => t.toLowerCase().includes(q)),
       );
     }
     if (subjectFilter !== "__all") {
       list = list.filter((it) => planSubjects(it).includes(subjectFilter));
     }
+    if (targetFilter === "__none") {
+      list = list.filter((it) => planTargetNames(it).length === 0);
+    } else if (targetFilter !== "__all") {
+      list = list.filter((it) => planTargetNames(it).includes(targetFilter));
+    }
     return list;
-  }, [items, search, subjectFilter]);
+  }, [items, search, subjectFilter, targetFilter]);
+
 
   /** Group filtered plans by subject (a plan with multiple subjects shows in each group). */
   const grouped = useMemo(() => {
@@ -313,6 +340,12 @@ export default function TeacherLessonPlans() {
               {planSubjects(plan).join(" · ")}
             </p>
           )}
+          {planTargetNames(plan).length > 0 && (
+            <p className="text-xs font-medium text-foreground/80">
+              {planTargetNames(plan).join(" · ")}
+            </p>
+          )}
+
           {slots.length > 0 && (
             <div className="flex flex-col gap-1">
               {slots.slice(0, 3).map((sl, i) => (
@@ -406,7 +439,8 @@ export default function TeacherLessonPlans() {
           </TabsList>
 
           <TabsContent value="plans" className="mt-0">
-            <div className="grid sm:grid-cols-[1fr_220px] gap-3 mb-6">
+            <div className="grid sm:grid-cols-[1fr_200px_200px] gap-3 mb-6">
+
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
@@ -429,6 +463,21 @@ export default function TeacherLessonPlans() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={targetFilter} onValueChange={setTargetFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrovat podle třídy / skupiny" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Všechny třídy a skupiny</SelectItem>
+                  {allTargets.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__none">Bez třídy / skupiny</SelectItem>
+                </SelectContent>
+              </Select>
+
             </div>
 
             {loading ? (
@@ -439,11 +488,12 @@ export default function TeacherLessonPlans() {
               <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground/40" />
                 <p className="text-muted-foreground text-sm">
-                  {search.trim() || subjectFilter !== "__all"
+                  {search.trim() || subjectFilter !== "__all" || targetFilter !== "__all"
                     ? "Žádný plán neodpovídá filtru."
                     : "Zatím nemáš žádné plány hodin. Vytvoř první!"}
                 </p>
-                {!search.trim() && subjectFilter === "__all" && (
+                {!search.trim() && subjectFilter === "__all" && targetFilter === "__all" && (
+
                   <Button onClick={handleCreate}>
                     <Plus className="w-4 h-4 mr-2" />
                     Nový plán
