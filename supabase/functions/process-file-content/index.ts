@@ -1500,10 +1500,23 @@ serve(async (req) => {
   } catch (err) {
     console.error("process-file-content error:", err);
     const raw = err instanceof Error ? err.message : "";
-    const friendly = !raw || /strukturovaný výstup|max_tokens|length|Unknown|Neznámá/i.test(raw)
-      ? TOO_LONG_MESSAGE
-      : raw;
-    return jsonResponse({ error: friendly }, 500);
+    const status = err instanceof AiError ? err.status : 0;
+    const aborted = (err as any)?.name === "AbortError";
+    let friendly: string;
+    if (status === 429) {
+      friendly = "Služba AI je právě přetížená. Zkuste dokument nahrát znovu za chvíli.";
+    } else if (status === 402) {
+      friendly = "Vyčerpaný kredit pro AI. Doplňte kredit a zkuste to znovu.";
+    } else if (aborted || status >= 500 || status === 408) {
+      friendly =
+        "Zpracování dokumentu trvalo příliš dlouho. Zkuste ho rozdělit na menší části (např. po kapitolách) a nahrát znovu.";
+    } else if (!raw || /strukturovaný výstup|max_tokens|AI Gateway|length|Unknown|Neznámá/i.test(raw)) {
+      friendly = TOO_LONG_MESSAGE;
+    } else {
+      friendly = raw;
+    }
+    return jsonResponse({ error: friendly }, status === 429 ? 429 : 500);
   }
+
 
 });
