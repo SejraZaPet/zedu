@@ -148,19 +148,32 @@ export default function StudentSubjectClass() {
     setResolvedLabel(null);
 
     (async () => {
-      // Verify membership
-      const { data: membership } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("class_id", classId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!membership) {
-        if (!cancelled) {
-          setLoading(false);
+      // Verify membership – u skupiny předmětu čteme subject_group_members
+      if (isGroup) {
+        const { data: gm } = await supabase
+          .from("subject_group_members")
+          .select("group_id")
+          .eq("group_id", groupId)
+          .eq("student_id", user.id)
+          .maybeSingle();
+        if (!gm) {
+          if (!cancelled) setLoading(false);
+          return;
         }
-        return;
+      } else {
+        const { data: membership } = await supabase
+          .from("class_members")
+          .select("class_id")
+          .eq("class_id", classId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!membership) {
+          if (!cancelled) {
+            setLoading(false);
+          }
+          return;
+        }
       }
 
       // Spočítej subject_id před dotazem na assignments, ať lze filtrovat úkoly podle předmětu.
@@ -179,8 +192,10 @@ export default function StudentSubjectClass() {
       let assignQuery = supabase
         .from("assignments")
         .select("id, title, description, status, deadline, created_at, class_id")
-        .eq("class_id", classId)
         .eq("status", "published");
+      assignQuery = isGroup
+        ? assignQuery.eq("group_id", groupId)
+        : assignQuery.eq("class_id", classId);
       // Starší úkoly bez subject_id ponecháme viditelné, jen nejsou roztříděné.
       if (subjectIdKey)
         assignQuery = assignQuery.or(
@@ -189,15 +204,26 @@ export default function StudentSubjectClass() {
       assignQuery = assignQuery.order("created_at", { ascending: false });
 
       const [classRes, slotsRes, assignRes] = await Promise.all([
-        supabase
-          .from("classes")
-          .select("id, name, school, field_of_study, year")
-          .eq("id", classId)
-          .maybeSingle(),
-        supabase
-          .from("class_schedule_slots" as any)
-          .select("*, subjects(name, color, abbreviation)")
-          .eq("class_id", classId),
+        isGroup
+          ? supabase
+              .from("subject_groups")
+              .select("id, name, school_year, textbook_id, textbook_type")
+              .eq("id", groupId)
+              .maybeSingle()
+          : supabase
+              .from("classes")
+              .select("id, name, school, field_of_study, year")
+              .eq("id", classId)
+              .maybeSingle(),
+        isGroup
+          ? supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("group_id", groupId)
+          : supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("class_id", classId),
         assignQuery,
       ]);
 
