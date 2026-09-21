@@ -82,9 +82,15 @@ function blockToBodyText(block: any): { text: string; assetRef?: string; assetRe
       return { text: stripHtml(props.text || props.html || ""), assetRef: props.imageUrl || props.url || "" };
     case "gallery": {
       const images = props.images || [];
-      const firstUrl = images[0]?.url || "";
-      return { text: images.length > 0 ? `Galerie (${images.length} obrázků)` : "", assetRef: firstUrl };
+      const urls = images.map((i: any) => i?.url || i?.src || "").filter(Boolean);
+      const captions = images.map((i: any) => stripHtml(i?.caption || "")).filter(Boolean);
+      return {
+        text: captions.join("\n"),
+        assetRef: urls[0] || "",
+        assetRefs: urls,
+      };
     }
+
     case "youtube": {
       const url = props.url || props.videoUrl || "";
       const title = props.title || "";
