@@ -329,7 +329,9 @@ export const PresentationEditorDialog = ({
   };
   const blocks: Block[] = ((currentSlide?.blocks || []) as Block[]);
   const setBlocks = (next: Block[]) => updateSlide({ blocks: next });
-  const addBlock = (type: Block["type"]) => setBlocks([...blocks, createDefaultBlock(type)]);
+  const addBlock = (type: Block["type"]) =>
+    setBlocks([...blocks, { ...createDefaultBlock(type), editedByTeacher: true } as Block]);
+
   const moveBlock = (id: string, dir: "up" | "down") => {
     const i = blocks.findIndex((b) => b.id === id);
     if (i < 0) return;
