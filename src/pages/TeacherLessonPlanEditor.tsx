@@ -1482,7 +1482,7 @@ export default function TeacherLessonPlanEditor() {
                       {availableDates.length === 0 ? (
                         <span>
                           {classId
-                            ? "Pro tuto třídu nejsou v rozvrhu hodiny (8 týdnů zpět ani dopředu) — zadejte datum a čas ručně."
+                            ? "Pro tuto třídu/skupinu nejsou v rozvrhu hodiny (8 týdnů zpět ani dopředu) — zadejte datum a čas ručně."
                             : "V rozvrhu nejsou hodiny tohoto předmětu (8 týdnů zpět ani dopředu) — zadejte datum a čas ručně."}
                         </span>
                       ) : (
