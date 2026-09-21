@@ -528,34 +528,83 @@ async function extractPptxText(bytes: Uint8Array) {
   return slides.join("\n\n");
 }
 
+/** Chyba volání AI gateway se zachovaným HTTP stavem. */
+class AiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** Časový limit jednoho volání AI (ms). */
+const AI_CALL_TIMEOUT_MS = 75_000;
+/** Celkový rozpočet běhu funkce, ať nekončíme tichým timeoutem platformy. */
+const TOTAL_BUDGET_MS = 200_000;
+const startedAt = () => Date.now();
+let runStart = Date.now();
+const budgetLeft = () => TOTAL_BUDGET_MS - (Date.now() - runStart);
+
+const TRANSIENT = new Set([408, 425, 429, 500, 502, 503, 504, 522, 524]);
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Jedno volání gateway s timeoutem a opakováním při přechodné chybě. */
+async function callGateway(apiKey: string, body: unknown, label: string) {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (budgetLeft() < 15_000) break;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), Math.min(AI_CALL_TIMEOUT_MS, Math.max(10_000, budgetLeft() - 5_000)));
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      if (response.ok) return await response.json();
+      const errText = await response.text();
+      const err = new AiError(
+        `AI Gateway ${label} failed: ${response.status} - ${errText.slice(0, 400)}`,
+        response.status,
+      );
+      if (!TRANSIENT.has(response.status)) throw err;
+      lastErr = err;
+      console.warn(`[ai] ${label} přechodná chyba ${response.status}, pokus ${attempt + 1}/3`);
+    } catch (e) {
+      if (e instanceof AiError && !TRANSIENT.has(e.status)) throw e;
+      lastErr = e;
+      const aborted = (e as any)?.name === "AbortError";
+      console.warn(`[ai] ${label} ${aborted ? "timeout" : "chyba sítě"}, pokus ${attempt + 1}/3`);
+      if (aborted && budgetLeft() < 40_000) break;
+    } finally {
+      clearTimeout(timer);
+    }
+    await sleep(1200 * (attempt + 1));
+  }
+  throw lastErr instanceof Error ? lastErr : new AiError(`AI Gateway ${label} failed`, 503);
+}
+
 async function callGatewayWithFile(
   apiKey: string,
   body: { fileBase64: string; fileName: string; mimeType: string; mode: "single" | "split" },
 ) {
   const userPrompt = `Zpracuj soubor "${body.fileName}" a převeď jeho kompletní obsah do editovatelných bloků Bezli. Režim: ${body.mode}.`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  return await callGateway(
+    apiKey,
+    {
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
           content: [
-            {
-              type: "text",
-              text: userPrompt,
-            },
+            { type: "text", text: userPrompt },
             {
               type: "image_url",
-              image_url: {
-                url: `data:${body.mimeType || "application/pdf"};base64,${body.fileBase64}`,
-              },
+              image_url: { url: `data:${body.mimeType || "application/pdf"};base64,${body.fileBase64}` },
             },
           ],
         },
@@ -564,15 +613,9 @@ async function callGatewayWithFile(
       tool_choice: { type: "function", function: { name: "create_blocks" } },
       temperature: 0.1,
       max_tokens: 16000,
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`AI Gateway file mode failed: ${response.status} - ${errText.slice(0, 400)}`);
-  }
-
-  return response.json();
+    },
+    "file mode",
+  );
 }
 
 async function callGatewayWithText(
@@ -581,13 +624,9 @@ async function callGatewayWithText(
 ) {
   const userPrompt = `Zpracuj tento extrahovaný text z dokumentu "${payload.fileName}" a převeď ho do JSON bloků. ZACHOVEJ PŘESNĚ text z dokumentu, NEVYMÝŠLEJ vlastní obsah. Režim: ${payload.mode} (split = rozděl podle slidů/sekcí, single = jedna lekce).\n\nEXTRAHOVANÝ TEXT:\n${payload.extractedText}`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  return await callGateway(
+    apiKey,
+    {
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -597,16 +636,11 @@ async function callGatewayWithText(
       tool_choice: { type: "function", function: { name: "create_blocks" } },
       temperature: 0.1,
       max_tokens: 16000,
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`AI Gateway text mode failed: ${response.status} - ${errText.slice(0, 400)}`);
-  }
-
-  return response.json();
+    },
+    "text mode",
+  );
 }
+
 
 function ensureToolArguments(aiResult: any) {
   const toolArgs = aiResult?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
