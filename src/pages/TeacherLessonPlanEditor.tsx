@@ -1530,10 +1530,13 @@ export default function TeacherLessonPlanEditor() {
                           o.date === linkedDate &&
                           `${o.start}-${o.end}` === linkedTime,
                       );
+                      const targetId = classId || slot?.classId;
+                      const isGroupTarget = selectedTarget?.kind === "group";
                       const newSlot = {
                         subject,
-                        classId: classId || slot?.classId,
-                        className: slot?.className,
+                        classId: isGroupTarget ? undefined : targetId,
+                        groupId: isGroupTarget ? targetId : undefined,
+                        className: slot?.className ?? selectedTargetName,
                         date: linkedDate,
                         time: linkedTime,
                       };
@@ -1543,8 +1546,10 @@ export default function TeacherLessonPlanEditor() {
                             s.subject === newSlot.subject &&
                             s.date === newSlot.date &&
                             s.time === newSlot.time &&
-                            s.classId === newSlot.classId,
+                            s.classId === newSlot.classId &&
+                            s.groupId === newSlot.groupId,
                         );
+
                         if (exists) {
                           toast({ title: "Termín už je přiřazen" });
                           return prev;
