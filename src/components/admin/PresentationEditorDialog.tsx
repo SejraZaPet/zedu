@@ -66,7 +66,9 @@ import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
+  Lock, LockOpen,
 } from "lucide-react";
+
 
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
 import { useNavigate } from "react-router-dom";
@@ -329,7 +331,9 @@ export const PresentationEditorDialog = ({
   };
   const blocks: Block[] = ((currentSlide?.blocks || []) as Block[]);
   const setBlocks = (next: Block[]) => updateSlide({ blocks: next });
-  const addBlock = (type: Block["type"]) => setBlocks([...blocks, createDefaultBlock(type)]);
+  const addBlock = (type: Block["type"]) =>
+    setBlocks([...blocks, { ...createDefaultBlock(type), editedByTeacher: true } as Block]);
+
   const moveBlock = (id: string, dir: "up" | "down") => {
     const i = blocks.findIndex((b) => b.id === id);
     if (i < 0) return;
@@ -351,13 +355,16 @@ export const PresentationEditorDialog = ({
       if (!slide) return prev;
       const nextBlocks = ((slide.blocks || []) as Block[]).map((b) => {
         if (b.id !== id) return b;
-        return typeof patch === "function" ? patch(b) : { ...b, ...patch };
+        const next = typeof patch === "function" ? patch(b) : { ...b, ...patch };
+        // Ručně upravený blok se při přegenerování z lekce nepřepíše.
+        return { ...next, editedByTeacher: true } as Block;
       });
       const updated = [...prev];
       updated[editingSlideIndex] = { ...slide, blocks: nextBlocks };
       return updated;
     });
   };
+
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || null;
 
   /* ── ČÁST 1 – kopírování bloku (Ctrl+C / Ctrl+V styl) ─────────────── */
@@ -378,7 +385,9 @@ export const PresentationEditorDialog = ({
       0,
     );
     clone.zIndex = (typeof copiedBlock.zIndex === "number" ? copiedBlock.zIndex : maxZ) + 1;
+    clone.editedByTeacher = true;
     setBlocks([...blocks, clone]);
+
     setSelectedBlockId(clone.id);
   };
 
@@ -779,7 +788,22 @@ export const PresentationEditorDialog = ({
                   {darkPreview ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                   {darkPreview ? "Světlý" : "Tmavý"}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSlide({ lockedFromLesson: !currentSlide?.lockedFromLesson })}
+                  className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  title={
+                    currentSlide?.lockedFromLesson
+                      ? "Snímek je uzamčený – obsah se z lekce neaktualizuje. Klikni pro odemčení."
+                      : "Uzamknout snímek, aby ho změny v lekci nepřepsaly"
+                  }
+                >
+                  {currentSlide?.lockedFromLesson ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
+                  {currentSlide?.lockedFromLesson ? "Uzamčeno" : "Zamknout"}
+                </button>
               </div>
+
 
               <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="hidden text-xs lg:inline-flex">
                 {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}

@@ -26,7 +26,7 @@ function getText(props: any): string {
   return stripHtml(props.text || props.html || props.content || props.value || "");
 }
 
-function blockToBodyText(block: any): { text: string; assetRef?: string; activitySpec?: any; tableData?: any; cardData?: any } {
+function blockToBodyText(block: any): { text: string; assetRef?: string; assetRefs?: string[]; activitySpec?: any; tableData?: any; cardData?: any } {
   const type = block.type;
   const props = block.props || {};
   switch (type) {
@@ -82,9 +82,15 @@ function blockToBodyText(block: any): { text: string; assetRef?: string; activit
       return { text: stripHtml(props.text || props.html || ""), assetRef: props.imageUrl || props.url || "" };
     case "gallery": {
       const images = props.images || [];
-      const firstUrl = images[0]?.url || "";
-      return { text: images.length > 0 ? `Galerie (${images.length} obrázků)` : "", assetRef: firstUrl };
+      const urls = images.map((i: any) => i?.url || i?.src || "").filter(Boolean);
+      const captions = images.map((i: any) => stripHtml(i?.caption || "")).filter(Boolean);
+      return {
+        text: captions.join("\n"),
+        assetRef: urls[0] || "",
+        assetRefs: urls,
+      };
     }
+
     case "youtube": {
       const url = props.url || props.videoUrl || "";
       const title = props.title || "";
@@ -141,13 +147,14 @@ function isPlainTextSlide(slide: any): boolean {
   return true;
 }
 
-function headingBlock(text: string, id?: string | null): any {
+function headingBlock(text: string, id?: string | null, extraProps?: Record<string, any>): any {
   return {
     ...(id ? { id: `${id}-h` } : {}),
     type: "heading",
-    props: { text, level: 3 },
+    props: { text, level: extraProps?.level ?? 3, ...(extraProps || {}) },
   };
 }
+
 
 /**
  * FÁZE 1 – slučování krátkých sekcí.
@@ -187,10 +194,16 @@ function mergeShortSections(slides: any[]): any[] {
         if (takeHeadline) {
           base.projector.headline = nextHeadline;
           base.sourceBlockId = next.sourceBlockId ?? base.sourceBlockId;
+          if (next.headlineLevel) base.headlineLevel = next.headlineLevel;
         } else {
-          base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId));
+          // Mezititulek si nese svou úroveň i podbarvení z lekce.
+          base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId, {
+            level: next.headlineLevel ?? 3,
+            ...(next.backgroundOverride?.color ? { backgroundColor: next.backgroundOverride.color } : {}),
+          }));
         }
       }
+
       base.blocks.push(...(next.blocks || []));
       const nextBody = [
         nextHeadline && !takeHeadline ? nextHeadline : "",
@@ -199,7 +212,12 @@ function mergeShortSections(slides: any[]): any[] {
       if (nextBody) {
         base.projector.body = base.projector.body ? `${base.projector.body}\n\n${nextBody}` : nextBody;
       }
-      if (!base.backgroundOverride && next.backgroundOverride) base.backgroundOverride = next.backgroundOverride;
+      // Podbarvení přebírá celý snímek jen tehdy, když sekci i „adoptoval“
+      // (jinak barva zůstane u konkrétního mezititulku jako v lekci).
+      if (takeHeadline && !base.backgroundOverride && next.backgroundOverride) {
+        base.backgroundOverride = next.backgroundOverride;
+      }
+
       chars = bodyLen(base);
       j += 1;
     }
@@ -263,7 +281,11 @@ function splitTextBlock(block: any, limit: number): any[] {
   return chunks.map((chunk, idx) => ({
     ...block,
     ...(block?.id ? { id: idx === 0 ? block.id : `${block.id}#p${idx}` } : {}),
-    type: block?.type === "bullet_list" || block?.type === "bulletList" ? block.type : "paragraph",
+    // Callout (rámeček) i odrážky si drží svůj typ, aby zůstal vzhled z lekce.
+    type: block?.type === "bullet_list" || block?.type === "bulletList" || block?.type === "callout"
+      ? block.type
+      : "paragraph",
+
     props: { ...(block?.props || {}), text: chunk, html: undefined, items: undefined },
   }));
 }
@@ -505,27 +527,38 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
 
       const cols = props.layout === 1 ? 1 : props.layout === 3 ? 3 : 2;
       let headline = "";
+      let headlineLevel: number | undefined;
       let bodyChildren = visibleChildren;
-      if (visibleChildren[0]?.type === "heading") {
-        headline = getText(visibleChildren[0].props || {});
+      const firstChild = visibleChildren[0];
+      // Podbarvený nadpis zůstává barevným blokem na snímku (jako v lekci),
+      // nepovyšuje se na titulek snímku – jinak by se barva rozlila přes celý
+      // snímek a ostatní barvy v kartě by se ztratily.
+      const firstChildHasOwnBg = !!blockBackgroundSlideColor(firstChild?.props);
+      if (firstChild?.type === "heading" && !firstChildHasOwnBg) {
+        headline = getText(firstChild.props || {});
+        headlineLevel = Number(firstChild.props?.level) || undefined;
         bodyChildren = visibleChildren.slice(1);
       }
       if (bodyChildren.length === 0) {
         bodyChildren = visibleChildren;
         headline = "";
+        headlineLevel = undefined;
       }
 
       if (props.mode === "free") {
         // Ve volném režimu zůstávají všechny bloky na plátně včetně nadpisu.
         headline = "";
+        headlineLevel = undefined;
         bodyChildren = visibleChildren;
       }
 
       const groupSlide = newSlide(headline, block.id);
-      const groupBg = blockBackgroundSlideColor(props)
-        || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
-        || null;
+      if (headlineLevel) groupSlide.headlineLevel = headlineLevel;
+      // Barvu celého snímku určuje jen podbarvení celé karty. Podbarvení
+      // jednotlivých dětí si nesou samotné bloky (více barev na snímku).
+      const groupBg = blockBackgroundSlideColor(props) || null;
       if (groupBg) groupSlide.backgroundOverride = { color: groupBg };
+
       const freeMode = props.mode === "free";
       groupSlide.layout = freeMode
         ? "free"
@@ -545,7 +578,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       for (const child of bodyChildren) {
         const c = blockToBodyText(child);
         if (c.text) texts.push(c.text);
-        if (c.assetRef) groupSlide.projector.assetRefs.push(c.assetRef);
+        const refs = c.assetRefs && c.assetRefs.length ? c.assetRefs : (c.assetRef ? [c.assetRef] : []);
+        groupSlide.projector.assetRefs.push(...refs);
+
       }
       groupSlide.projector.body = texts.join("\n\n");
       current = groupSlide;
@@ -561,10 +596,13 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       sectionSourceId = block.id ?? null;
       sectionPart = 0;
       current = newSlide(headline, block.id);
+      const level = Number(props.level) || 0;
+      if (level) current.headlineLevel = level;
       const headingBg = blockBackgroundSlideColor(props);
       if (headingBg) current.backgroundOverride = { color: headingBg };
       continue;
     }
+
 
 
     const converted = blockToBodyText(block);
@@ -600,11 +638,15 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continueSection();
     }
     current.blocks.push(block);
-    const blockBg = blockBackgroundSlideColor(props);
-    if (blockBg && !current.backgroundOverride) current.backgroundOverride = { color: blockBg };
+    // Podbarvení bloku si vykreslí samotný blok (stejně jako v lekci),
+    // na pozadí celého snímku se nerozlévá – jinak zmizí ostatní barvy.
 
     appendBody(converted.text);
-    if (converted.assetRef) current.projector.assetRefs.push(converted.assetRef);
+    const blockRefs = converted.assetRefs && converted.assetRefs.length
+      ? converted.assetRefs
+      : (converted.assetRef ? [converted.assetRef] : []);
+    current.projector.assetRefs.push(...blockRefs);
+
     if (converted.tableData) current.tableData = converted.tableData;
     if (converted.cardData) current.cardData = converted.cardData;
   }
