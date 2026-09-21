@@ -115,7 +115,8 @@ const stateMeta: Record<AttemptState, { label: string; variant: "default" | "sec
 };
 
 export default function StudentSubjectClass() {
-  const { subjectId = "", classId = "" } = useParams();
+  const { subjectId = "", classId = "", groupId = "" } = useParams();
+  const isGroup = !!groupId;
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
