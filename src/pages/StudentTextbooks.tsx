@@ -28,6 +28,14 @@ interface DisplayTextbook {
   href: string;
 }
 
+/** Přidá zdroj učebnice bez duplicitních štítků. */
+const addSource = (item: DisplayTextbook, className: string) => {
+  const exists = item.sources.some(
+    (s) => s.kind === "class" && s.className === className,
+  );
+  if (!exists) item.sources.push({ kind: "class", className });
+};
+
 const StudentTextbooks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -105,7 +113,7 @@ const StudentTextbooks = () => {
     // Class-linked
     for (const cb of classBooks) {
       const className =
-        (cb.class_id ? classNameById.get(cb.class_id) : undefined) ?? "Třída";
+        (cb.class_id ? classNameById.get(cb.class_id) : undefined) ?? "";
 
       if (cb.textbook_type === "teacher") {
         const tb = teacherById.get(cb.textbook_id);
@@ -113,7 +121,7 @@ const StudentTextbooks = () => {
         const key = `teacher-${tb.id}`;
         const existing = merged.get(key);
         if (existing) {
-          existing.sources.push({ kind: "class", className });
+          addSource(existing, className);
         } else {
           merged.set(key, {
             key,
@@ -132,7 +140,7 @@ const StudentTextbooks = () => {
         const key = `global-${sub.id}`;
         const existing = merged.get(key);
         if (existing) {
-          existing.sources.push({ kind: "class", className });
+          addSource(existing, className);
         } else {
           merged.set(key, {
             key,
@@ -245,7 +253,11 @@ const StudentTextbooks = () => {
                   </Badge>
                   {it.sources.map((s, i) => (
                     <Badge key={i} variant="secondary" className="text-xs">
-                      {s.kind === "enrollment" ? "Vlastní zápis" : `Z třídy ${s.className}`}
+                      {s.kind === "enrollment"
+                        ? "Vlastní zápis"
+                        : s.className
+                          ? `Z třídy ${s.className}`
+                          : "Z výuky"}
                     </Badge>
                   ))}
                 </div>
