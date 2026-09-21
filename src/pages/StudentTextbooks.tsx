@@ -113,7 +113,7 @@ const StudentTextbooks = () => {
         const key = `teacher-${tb.id}`;
         const existing = merged.get(key);
         if (existing) {
-          existing.sources.push({ kind: "class", className });
+          addSource(existing, className);
         } else {
           merged.set(key, {
             key,
