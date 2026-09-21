@@ -578,7 +578,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       for (const child of bodyChildren) {
         const c = blockToBodyText(child);
         if (c.text) texts.push(c.text);
-        if (c.assetRef) groupSlide.projector.assetRefs.push(c.assetRef);
+        const refs = c.assetRefs && c.assetRefs.length ? c.assetRefs : (c.assetRef ? [c.assetRef] : []);
+        groupSlide.projector.assetRefs.push(...refs);
+
       }
       groupSlide.projector.body = texts.join("\n\n");
       current = groupSlide;
