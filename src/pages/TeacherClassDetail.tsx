@@ -65,6 +65,9 @@ interface ScheduleSlot {
   abbreviation: string | null;
   color: string | null;
   room: string | null;
+  class_id?: string | null;
+  group_id?: string | null;
+  subject_groups?: { name?: string | null } | null;
 }
 
 interface TextbookItem {
