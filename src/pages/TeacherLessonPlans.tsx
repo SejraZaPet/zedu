@@ -431,6 +431,21 @@ export default function TeacherLessonPlans() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={targetFilter} onValueChange={setTargetFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrovat podle třídy / skupiny" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Všechny třídy a skupiny</SelectItem>
+                  {allTargets.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__none">Bez třídy / skupiny</SelectItem>
+                </SelectContent>
+              </Select>
+
             </div>
 
             {loading ? (
