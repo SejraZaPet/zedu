@@ -6496,6 +6496,8 @@ export type Database = {
           id: string
           lesson_id: string | null
           slides: Json
+          source_lesson_id: string | null
+          source_lesson_type: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -6505,6 +6507,8 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           slides?: Json
+          source_lesson_id?: string | null
+          source_lesson_type?: string | null
           teacher_id: string
           title: string
           updated_at?: string
@@ -6514,6 +6518,8 @@ export type Database = {
           id?: string
           lesson_id?: string | null
           slides?: Json
+          source_lesson_id?: string | null
+          source_lesson_type?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
