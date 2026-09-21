@@ -80,6 +80,7 @@ const TeacherPresentations = () => {
   const [textbooksLoading, setTextbooksLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [lessonQuery, setLessonQuery] = useState("");
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
 
   const fetchItems = async () => {
