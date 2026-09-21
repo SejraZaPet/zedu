@@ -28,6 +28,14 @@ interface DisplayTextbook {
   href: string;
 }
 
+/** Přidá zdroj učebnice bez duplicitních štítků. */
+const addSource = (item: DisplayTextbook, className: string) => {
+  const exists = item.sources.some(
+    (s) => s.kind === "class" && s.className === className,
+  );
+  if (!exists) item.sources.push({ kind: "class", className });
+};
+
 const StudentTextbooks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
