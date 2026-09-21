@@ -1321,10 +1321,26 @@ serve(async (req) => {
         });
       } catch (fileError) {
         console.error("File mode failed:", fileError);
+        const status = fileError instanceof AiError ? fileError.status : 0;
+        const aborted = (fileError as any)?.name === "AbortError";
+        if (status === 429) {
+          throw new Error(
+            "Služba AI je právě přetížená. Zkuste dokument nahrát znovu za chvíli.",
+          );
+        }
+        if (status === 402) {
+          throw new Error("Vyčerpaný kredit pro AI. Doplňte kredit a zkuste to znovu.");
+        }
+        if (aborted || status >= 500 || status === 408) {
+          throw new Error(
+            "Zpracování dokumentu trvalo příliš dlouho. Zkuste ho rozdělit na menší části (např. po kapitolách) a nahrát znovu.",
+          );
+        }
         throw new Error(
           "AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole, nebo dokument rozdělte na menší části.",
         );
       }
+
       const parsedFile = ensureToolArguments(aiResult);
       rawLessons = Array.isArray(parsedFile?.lessons) ? parsedFile.lessons : [];
     }
