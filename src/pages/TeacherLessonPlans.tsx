@@ -488,11 +488,12 @@ export default function TeacherLessonPlans() {
               <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground/40" />
                 <p className="text-muted-foreground text-sm">
-                  {search.trim() || subjectFilter !== "__all"
+                  {search.trim() || subjectFilter !== "__all" || targetFilter !== "__all"
                     ? "Žádný plán neodpovídá filtru."
                     : "Zatím nemáš žádné plány hodin. Vytvoř první!"}
                 </p>
-                {!search.trim() && subjectFilter === "__all" && (
+                {!search.trim() && subjectFilter === "__all" && targetFilter === "__all" && (
+
                   <Button onClick={handleCreate}>
                     <Plus className="w-4 h-4 mr-2" />
                     Nový plán
