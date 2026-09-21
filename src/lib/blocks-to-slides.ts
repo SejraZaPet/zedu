@@ -638,11 +638,15 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continueSection();
     }
     current.blocks.push(block);
-    const blockBg = blockBackgroundSlideColor(props);
-    if (blockBg && !current.backgroundOverride) current.backgroundOverride = { color: blockBg };
+    // Podbarvení bloku si vykreslí samotný blok (stejně jako v lekci),
+    // na pozadí celého snímku se nerozlévá – jinak zmizí ostatní barvy.
 
     appendBody(converted.text);
-    if (converted.assetRef) current.projector.assetRefs.push(converted.assetRef);
+    const blockRefs = converted.assetRefs && converted.assetRefs.length
+      ? converted.assetRefs
+      : (converted.assetRef ? [converted.assetRef] : []);
+    current.projector.assetRefs.push(...blockRefs);
+
     if (converted.tableData) current.tableData = converted.tableData;
     if (converted.cardData) current.cardData = converted.cardData;
   }
