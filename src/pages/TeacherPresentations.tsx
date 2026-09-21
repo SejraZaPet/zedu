@@ -212,6 +212,46 @@ const TeacherPresentations = () => {
     }
   };
 
+  /**
+   * Přegenerování prezentace z propojené lekce.
+   * mode "merge" = aktualizovat obsah a zachovat ruční úpravy i zámky,
+   * mode "fresh" = vygenerovat znovu od nuly (ruční úpravy i zámky se zahodí).
+   */
+  const regenerateFromLesson = async (p: StandalonePresentation, mode: "merge" | "fresh") => {
+    const lessonId = p.lesson_id ?? p.source_lesson_id ?? null;
+    if (!lessonId) return;
+    if (mode === "fresh" && !window.confirm(
+      `Vygenerovat prezentaci „${p.title}“ znovu od nuly? Ruční úpravy snímků i uzamčení se zahodí.`,
+    )) return;
+
+    setRegeneratingId(p.id);
+    try {
+      const table = p.lesson_id || p.source_lesson_type !== "global"
+        ? "teacher_textbook_lessons"
+        : "textbook_lessons";
+      const { data, error } = await supabase
+        .from(table)
+        .select("id, title, blocks")
+        .eq("id", lessonId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Propojená lekce už neexistuje.");
+
+      const fresh = blocksToSlides(((data as any).blocks ?? []) as any[], (data as any).title ?? p.title);
+      const slides = mode === "fresh" ? fresh : mergePresentationSlides(fresh, p.slides ?? []);
+      await saveSlides(p.id, slides);
+      setItems((prev) => prev.map((i) => (i.id === p.id ? { ...i, slides } : i)));
+      toast({
+        title: mode === "fresh" ? "Prezentace vygenerována znovu" : "Prezentace aktualizována z lekce",
+        description: `${slides.length} snímků podle aktuálního obsahu lekce.`,
+      });
+    } catch (e: any) {
+      toast({ title: "Přegenerování se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
+
   /** Krok 1 – učebnice učitele. */
   const openLinkPicker = async (p: StandalonePresentation) => {
     setLinkTarget(p);
