@@ -318,8 +318,8 @@ function ReadOnlyClassCard({
   const subject = getSubjectName(slot, canonical, "Hodina");
   const color = getSubjectColor(slot, canonical, subject);
   const abbr = getSubjectAbbreviation(slot, canonical, subject);
-  const className = slot.classes?.name ?? "";
-  const canNavigate = !!slot.subject_label;
+  const className = slot.classes?.name ?? slot.subject_groups?.name ?? "";
+  const canNavigate = !!slot.subject_label && !!(slot.group_id || slot.class_id);
   return (
     <button
       type="button"
@@ -327,7 +327,9 @@ function ReadOnlyClassCard({
       onClick={() =>
         canNavigate &&
         navigate(
-          `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
+          slot.group_id
+            ? `/student/predmet/${encodeURIComponent(slot.subject_label!)}/skupina/${slot.group_id}`
+            : `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
         )
       }
       className={`w-full text-left rounded-md p-2 border-l-4 transition-all ${
