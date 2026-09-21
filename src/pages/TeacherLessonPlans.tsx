@@ -315,6 +315,12 @@ export default function TeacherLessonPlans() {
               {planSubjects(plan).join(" · ")}
             </p>
           )}
+          {planTargetNames(plan).length > 0 && (
+            <p className="text-xs font-medium text-foreground/80">
+              {planTargetNames(plan).join(" · ")}
+            </p>
+          )}
+
           {slots.length > 0 && (
             <div className="flex flex-col gap-1">
               {slots.slice(0, 3).map((sl, i) => (
