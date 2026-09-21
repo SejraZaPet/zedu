@@ -281,9 +281,28 @@ const ImportTextbookFileDialog = ({
         invokeBody.fileBase64 = base64;
       }
       setUsedVisionFallback(visionFallback);
-      const { data, error } = await supabase.functions.invoke("process-file-content", {
-        body: invokeBody,
-      });
+      // Delší dokumenty se zpracovávají po částech – ukaž, že se stále pracuje.
+      const aiStart = Date.now();
+      const aiTicker = window.setInterval(() => {
+        const s = Math.round((Date.now() - aiStart) / 1000);
+        setProgress(
+          s < 20
+            ? `AI analyzuje dokument... (${s} s)`
+            : `AI analyzuje dokument... (${s} s) – u delších dokumentů to může trvat i dvě minuty.`,
+        );
+      }, 1000);
+      let data: unknown;
+      let error: unknown;
+      try {
+        const res = await supabase.functions.invoke("process-file-content", {
+          body: invokeBody,
+        });
+        data = res.data;
+        error = res.error;
+      } finally {
+        window.clearInterval(aiTicker);
+      }
+
 
       if (error) {
         // Edge funkce vrací srozumitelnou hlášku v těle odpovědi – vytáhni ji,
