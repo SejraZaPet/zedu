@@ -21,7 +21,8 @@ type ParityTab = "both" | "odd" | "even";
 
 interface ClassSlot {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  group_id?: string | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -32,6 +33,7 @@ interface ClassSlot {
   room: string | null;
   textbook_id: string | null;
   classes?: { name: string } | null;
+  subject_groups?: { name?: string | null } | null;
   subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
 }
 
