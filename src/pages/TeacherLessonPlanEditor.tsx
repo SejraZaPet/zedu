@@ -983,9 +983,16 @@ export default function TeacherLessonPlanEditor() {
           linkedSlots,
           textbookId,
           lessonId,
-          classId,
+          // Cíl plánu: třída i skupina. `classId` zůstává pro zpětnou
+          // kompatibilitu jen u tříd, skupina se ukládá do `groupId`.
+          classId: selectedTarget?.kind === "group" ? undefined : classId,
+          groupId: selectedTarget?.kind === "group" ? classId : undefined,
+          targetId: classId,
+          targetKind: selectedTarget?.kind ?? (classId ? "class" : undefined),
+          targetName: selectedTargetName,
           phases,
         } as any,
+
       };
 
       let resultId = planDbId;
