@@ -532,7 +532,6 @@ const TextbookGradeGroups = ({
                         onDeleteTopic={onDeleteTopic}
                         onOpenPresentation={onOpenPresentation}
                         onEditPresentation={onEditPresentation}
-              onEditPresentation={onEditPresentation}
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
                         onRequestMove={handleRequestMove}
