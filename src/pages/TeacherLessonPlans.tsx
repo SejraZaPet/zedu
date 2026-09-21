@@ -42,10 +42,12 @@ import { toast } from "@/hooks/use-toast";
 interface LinkedSlot {
   subject?: string;
   classId?: string;
+  groupId?: string;
   className?: string;
   date?: string;
   time?: string;
 }
+
 
 interface PlanRow {
   id: string;
