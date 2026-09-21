@@ -517,27 +517,38 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
 
       const cols = props.layout === 1 ? 1 : props.layout === 3 ? 3 : 2;
       let headline = "";
+      let headlineLevel: number | undefined;
       let bodyChildren = visibleChildren;
-      if (visibleChildren[0]?.type === "heading") {
-        headline = getText(visibleChildren[0].props || {});
+      const firstChild = visibleChildren[0];
+      // Podbarvený nadpis zůstává barevným blokem na snímku (jako v lekci),
+      // nepovyšuje se na titulek snímku – jinak by se barva rozlila přes celý
+      // snímek a ostatní barvy v kartě by se ztratily.
+      const firstChildHasOwnBg = !!blockBackgroundSlideColor(firstChild?.props);
+      if (firstChild?.type === "heading" && !firstChildHasOwnBg) {
+        headline = getText(firstChild.props || {});
+        headlineLevel = Number(firstChild.props?.level) || undefined;
         bodyChildren = visibleChildren.slice(1);
       }
       if (bodyChildren.length === 0) {
         bodyChildren = visibleChildren;
         headline = "";
+        headlineLevel = undefined;
       }
 
       if (props.mode === "free") {
         // Ve volném režimu zůstávají všechny bloky na plátně včetně nadpisu.
         headline = "";
+        headlineLevel = undefined;
         bodyChildren = visibleChildren;
       }
 
       const groupSlide = newSlide(headline, block.id);
-      const groupBg = blockBackgroundSlideColor(props)
-        || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
-        || null;
+      if (headlineLevel) groupSlide.headlineLevel = headlineLevel;
+      // Barvu celého snímku určuje jen podbarvení celé karty. Podbarvení
+      // jednotlivých dětí si nesou samotné bloky (více barev na snímku).
+      const groupBg = blockBackgroundSlideColor(props) || null;
       if (groupBg) groupSlide.backgroundOverride = { color: groupBg };
+
       const freeMode = props.mode === "free";
       groupSlide.layout = freeMode
         ? "free"
