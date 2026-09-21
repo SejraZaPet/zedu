@@ -532,11 +532,17 @@ const TeacherClassDetail = () => {
                           key={s.id}
                           className="rounded p-1.5 text-[11px] border border-border"
                           style={{ background: s.color ? `${s.color}20` : undefined, borderLeft: s.color ? `3px solid ${s.color}` : undefined }}
+                          title={`${(s as any).subjects?.name || s.subject_label || ""}${
+                            s.subject_groups?.name ? ` · skupina ${s.subject_groups.name}` : ""
+                          }`}
                         >
                           <div className="font-semibold truncate">
                             {s.abbreviation || (s as any).subjects?.name || s.subject_label}
                           </div>
                           <div className="text-muted-foreground">{s.start_time.slice(0, 5)}</div>
+                          {s.subject_groups?.name && (
+                            <div className="text-muted-foreground truncate">{s.subject_groups.name}</div>
+                          )}
                           {s.room && <div className="text-muted-foreground truncate">{s.room}</div>}
                         </div>
                       ))}
