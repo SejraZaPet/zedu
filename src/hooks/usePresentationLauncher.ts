@@ -42,11 +42,57 @@ export function usePresentationLauncher() {
   };
 
   /**
-   * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
-   * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
+   * Uložená prezentace lekce v `teacher_presentations` (jediný seznam
+   * „Prezentace“ učitele). Vzniká i při spuštění z lekce, aby ji učitel
+   * v seznamu viděl a mohl ji otevřít v editoru.
    */
-  const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
-    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+  const savePresentationRow = async (lesson: LessonItem, slides: any[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const isTeacherLesson = lesson.source === "teacher_textbook_lessons";
+    const { data: existing } = await supabase
+      .from("teacher_presentations" as any)
+      .select("id")
+      .eq("teacher_id", user.id)
+      .eq("source_lesson_id", lesson.id)
+      .maybeSingle();
+
+    if ((existing as any)?.id) {
+      await supabase
+        .from("teacher_presentations" as any)
+        .update({ title: lesson.title, slides: slides as any, updated_at: new Date().toISOString() })
+        .eq("id", (existing as any).id);
+      return (existing as any).id as string;
+    }
+
+    const { data: created } = await supabase
+      .from("teacher_presentations" as any)
+      .insert({
+        teacher_id: user.id,
+        title: lesson.title,
+        slides: slides as any,
+        source_lesson_id: lesson.id,
+        source_lesson_type: isTeacherLesson ? "teacher" : "global",
+        ...(isTeacherLesson ? { lesson_id: lesson.id } : {}),
+      } as any)
+      .select("id")
+      .maybeSingle();
+    return ((created as any)?.id as string) ?? null;
+  };
+
+  /** Dřív uložené snímky lekce – nejdřív z prezentace, pak ze staré vazby u lekce. */
+  const loadSavedSlides = async (lesson: LessonItem): Promise<any[] | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("teacher_presentations" as any)
+        .select("slides")
+        .eq("teacher_id", user.id)
+        .eq("source_lesson_id", lesson.id)
+        .maybeSingle();
+      const slides = (data as any)?.slides;
+      if (Array.isArray(slides) && slides.length > 0) return slides;
+    }
     const table = lesson.source === "teacher_textbook_lessons"
       ? "teacher_textbook_lessons"
       : "textbook_lessons";
@@ -55,90 +101,57 @@ export function usePresentationLauncher() {
       .select("presentation_slides" as any)
       .eq("id", lesson.id)
       .maybeSingle();
-    const savedSlides = (data as any)?.presentation_slides;
-    if (!Array.isArray(savedSlides) || savedSlides.length === 0) return freshSlides;
+    const slides = (data as any)?.presentation_slides;
+    return Array.isArray(slides) && slides.length > 0 ? slides : null;
+  };
+
+  /** Sloučí nově vygenerovaný snímek s dřív uloženými ručními úpravami. */
+  const mergeSlide = (freshSlide: any, savedSlide: any) => ({
+    ...savedSlide,
+    ...freshSlide,
+    projector: {
+      ...savedSlide.projector,
+      ...freshSlide.projector,
+      fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
+    },
+    device: savedSlide.device ?? freshSlide.device,
+    teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
+    layout: savedSlide.layout ?? freshSlide.layout,
+    themeId: savedSlide.themeId ?? freshSlide.themeId,
+    backgroundOverride: savedSlide.backgroundOverride ?? freshSlide.backgroundOverride,
+    heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
+    activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
+    blocks: freshSlide.blocks,
+    tableData: freshSlide.tableData,
+    cardData: freshSlide.cardData,
+    type: freshSlide.type,
+  });
+
+  /**
+   * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
+   * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
+   */
+  const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
+    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+    const savedSlides = await loadSavedSlides(lesson);
+    if (!savedSlides) return freshSlides;
 
     const savedByKey = new Map<string, any>();
     savedSlides.forEach((slide: any, index: number) => savedByKey.set(slideKey(slide, index), slide));
-    return freshSlides.map((freshSlide, index) => {
+    const merged = freshSlides.map((freshSlide, index) => {
       const savedSlide = savedByKey.get(slideKey(freshSlide, index));
-      if (!savedSlide) return freshSlide;
-      return {
-        ...savedSlide,
-        ...freshSlide,
-        projector: {
-          ...savedSlide.projector,
-          ...freshSlide.projector,
-          fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
-        },
-        device: savedSlide.device ?? freshSlide.device,
-        teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
-        layout: savedSlide.layout ?? freshSlide.layout,
-        heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
-        activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
-        blocks: freshSlide.blocks,
-        tableData: freshSlide.tableData,
-        cardData: freshSlide.cardData,
-        type: freshSlide.type,
-      };
+      return savedSlide ? mergeSlide(freshSlide, savedSlide) : freshSlide;
     });
+    // Ručně přidané snímky, které v lekci nemají předlohu, se nesmí zahodit.
+    const freshKeys = new Set(merged.map((slide, index) => slideKey(slide, index)));
+    const customSlides = savedSlides.filter((slide: any, index: number) => !freshKeys.has(slideKey(slide, index)));
+    return [...merged, ...customSlides];
   };
 
   const openEditor = async (lesson: LessonItem) => {
-
-    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
-    let slides: any[] = freshSlides;
-    let saved = false;
-
-    const table = lesson.source === "teacher_textbook_lessons"
-      ? "teacher_textbook_lessons"
-      : "textbook_lessons";
-
-    const { data } = await supabase
-      .from(table)
-      .select("presentation_slides" as any)
-      .eq("id", lesson.id)
-      .single();
-
-    const savedSlides = (data as any)?.presentation_slides;
-    if (savedSlides && Array.isArray(savedSlides) && savedSlides.length > 0) {
-      const savedByKey = new Map<string, any>();
-      savedSlides.forEach((slide: any, index: number) => {
-        savedByKey.set(slideKey(slide, index), slide);
-      });
-
-      const mergedFresh = freshSlides.map((freshSlide, index) => {
-        const savedSlide = savedByKey.get(slideKey(freshSlide, index));
-        if (!savedSlide) return freshSlide;
-
-        return {
-          ...savedSlide,
-          ...freshSlide,
-          projector: {
-            ...savedSlide.projector,
-            ...freshSlide.projector,
-            fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
-          },
-          device: savedSlide.device ?? freshSlide.device,
-          teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
-          layout: savedSlide.layout ?? freshSlide.layout,
-          heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
-          activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
-          blocks: freshSlide.blocks,
-          tableData: freshSlide.tableData,
-          cardData: freshSlide.cardData,
-          type: freshSlide.type,
-        };
-      });
-
-      const freshKeys = new Set(mergedFresh.map((slide, index) => slideKey(slide, index)));
-      const customSlides = savedSlides.filter((slide: any, index: number) => !freshKeys.has(slideKey(slide, index)));
-
-      slides = [...mergedFresh, ...customSlides];
-      saved = true;
-    }
-
-    setHasSavedPresentation(saved);
+    const savedSlides = await loadSavedSlides(lesson);
+    const slides = await buildSlidesForLesson(lesson);
+    setHasSavedPresentation(!!savedSlides);
     setPendingSlides(slides);
     setPresentationLesson(lesson);
     setEditingSlideIndex(0);
@@ -204,6 +217,8 @@ export function usePresentationLauncher() {
         .from(lessonTable)
         .update({ presentation_slides: slides } as any)
         .eq("id", lesson.id);
+      // Prezentace musí být i v seznamu „Prezentace“, aby ji šlo upravovat.
+      await savePresentationRow(lesson, slides);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
       showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
@@ -265,6 +280,8 @@ export function usePresentationLauncher() {
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
     openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+    savePresentationRow, buildSlidesForLesson,
+
 
   };
 }

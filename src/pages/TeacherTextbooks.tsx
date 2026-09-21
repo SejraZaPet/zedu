@@ -158,6 +158,7 @@ const TeacherTextbooks = () => {
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
     openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+    savePresentationRow,
   } = usePresentationLauncher();
 
   /**
@@ -850,6 +851,7 @@ const TeacherTextbooks = () => {
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
                 onOpenPresentation={handleOpenPresentation}
+                onEditPresentation={openEditor}
                 onOpenWorksheet={async (lesson, generate) => {
                   const lessonType: "global" | "teacher" =
                     lesson.source === "textbook_lessons" ? "global" : "teacher";
@@ -1184,6 +1186,7 @@ const TeacherTextbooks = () => {
               .from(table)
               .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
               .eq("id", presentationLesson.id);
+            await savePresentationRow(presentationLesson, slides);
           }}
           existingSession={existingSession}
           onContinueExisting={() => {
@@ -1312,6 +1315,7 @@ const TeacherTextbooks = () => {
             .from(table)
             .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
             .eq("id", presentationLesson.id);
+          await savePresentationRow(presentationLesson, slides);
         }}
         existingSession={existingSession}
         onContinueExisting={() => {

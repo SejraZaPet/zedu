@@ -35,6 +35,7 @@ import {
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
+import { headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
@@ -1617,7 +1618,10 @@ export function SlideBody({
 
 
   const explicitTheme = themeId ?? slide?.themeId;
-  const isDark = explicitTheme ? theme.isDark : darkMode;
+  // Vlastní pozadí snímku (např. pastelová barva bloku z lekce) rozhoduje
+  // o barvě textu – jinak vznikal světlý text na světlém pozadí.
+  const isDark = resolveSlideIsDark(slide, explicitTheme ? theme.isDark : darkMode);
+  const headlineColors = headlineColorsForBackground(theme.primaryColor, theme.secondaryColor, isDark);
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
   const fontScale = slide?.projector?.fontScale || 1;
@@ -1792,7 +1796,7 @@ export function SlideBody({
       placeholder="Nadpis slidu"
       className={`text-6xl font-bold leading-tight ${layout === "title-only" ? "text-center text-7xl" : ""}`}
       style={{
-        background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
+        background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
         WebkitBackgroundClip: "text",
         backgroundClip: "text",
         color: "transparent",

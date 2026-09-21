@@ -23,6 +23,8 @@ interface StandalonePresentation {
   title: string;
   slides: any[];
   lesson_id: string | null;
+  source_lesson_id?: string | null;
+  source_lesson_type?: string | null;
   created_at: string;
   updated_at: string;
   lessonTitle?: string | null;
@@ -84,7 +86,7 @@ const TeacherPresentations = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from("teacher_presentations" as any)
-        .select("id, title, slides, lesson_id, created_at, updated_at")
+        .select("id, title, slides, lesson_id, source_lesson_id, source_lesson_type, created_at, updated_at")
         .eq("teacher_id", user.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -94,18 +96,28 @@ const TeacherPresentations = () => {
         title: r.title,
         slides: Array.isArray(r.slides) ? r.slides : [],
         lesson_id: r.lesson_id ?? null,
+        source_lesson_id: r.source_lesson_id ?? null,
+        source_lesson_type: r.source_lesson_type ?? null,
         created_at: r.created_at,
         updated_at: r.updated_at,
       })) as StandalonePresentation[];
 
-      const lessonIds = rows.map((r) => r.lesson_id).filter(Boolean) as string[];
+      // Prezentace z lekce může být z učitelské i globální učebnice.
+      const lessonIds = Array.from(new Set(
+        rows.flatMap((r) => [r.lesson_id, r.source_lesson_id]).filter(Boolean) as string[],
+      ));
       if (lessonIds.length) {
-        const { data: lessons } = await supabase
-          .from("teacher_textbook_lessons")
-          .select("id, title")
-          .in("id", lessonIds);
-        const byId = new Map(((lessons ?? []) as any[]).map((l) => [l.id, l.title]));
-        rows.forEach((r) => { r.lessonTitle = r.lesson_id ? byId.get(r.lesson_id) ?? null : null; });
+        const [teacherLessons, globalLessons] = await Promise.all([
+          supabase.from("teacher_textbook_lessons").select("id, title").in("id", lessonIds),
+          supabase.from("textbook_lessons").select("id, title").in("id", lessonIds),
+        ]);
+        const byId = new Map<string, string>();
+        [...((teacherLessons.data ?? []) as any[]), ...((globalLessons.data ?? []) as any[])]
+          .forEach((l) => byId.set(l.id, l.title));
+        rows.forEach((r) => {
+          const id = r.lesson_id ?? r.source_lesson_id ?? null;
+          r.lessonTitle = id ? byId.get(id) ?? null : null;
+        });
       }
       setItems(rows);
     } catch (e: any) {
@@ -187,10 +199,14 @@ const TeacherPresentations = () => {
     if (error) throw error;
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, slides } : i)));
     // Propojená lekce – držíme zpětnou kompatibilitu se starým systémem.
-    const linked = items.find((i) => i.id === id)?.lesson_id;
+    const row = items.find((i) => i.id === id);
+    const linked = row?.lesson_id ?? row?.source_lesson_id ?? null;
     if (linked) {
+      const table = row?.lesson_id || row?.source_lesson_type !== "global"
+        ? "teacher_textbook_lessons"
+        : "textbook_lessons";
       await supabase
-        .from("teacher_textbook_lessons")
+        .from(table)
         .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
         .eq("id", linked);
     }
@@ -372,7 +388,7 @@ const TeacherPresentations = () => {
                     </span>
                   </div>
 
-                  {p.lesson_id && (
+                  {(p.lesson_id || p.source_lesson_id) && (
                     <Badge variant="secondary" className="w-fit gap-1 text-xs">
                       <BookOpen className="h-3 w-3" />
                       Propojeno s lekcí: {p.lessonTitle ?? "lekce"}
