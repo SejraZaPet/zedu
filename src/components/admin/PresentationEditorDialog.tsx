@@ -788,7 +788,22 @@ export const PresentationEditorDialog = ({
                   {darkPreview ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                   {darkPreview ? "Světlý" : "Tmavý"}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSlide({ lockedFromLesson: !currentSlide?.lockedFromLesson })}
+                  className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  title={
+                    currentSlide?.lockedFromLesson
+                      ? "Snímek je uzamčený – obsah se z lekce neaktualizuje. Klikni pro odemčení."
+                      : "Uzamknout snímek, aby ho změny v lekci nepřepsaly"
+                  }
+                >
+                  {currentSlide?.lockedFromLesson ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
+                  {currentSlide?.lockedFromLesson ? "Uzamčeno" : "Zamknout"}
+                </button>
               </div>
+
 
               <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="hidden text-xs lg:inline-flex">
                 {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
