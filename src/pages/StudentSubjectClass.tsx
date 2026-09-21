@@ -229,7 +229,20 @@ export default function StudentSubjectClass() {
 
       if (cancelled) return;
 
-      setKlass((classRes.data as ClassRow) ?? null);
+      const headerRow = classRes.data as any;
+      setKlass(
+        headerRow
+          ? isGroup
+            ? {
+                id: headerRow.id,
+                name: headerRow.name,
+                school: "",
+                field_of_study: "",
+                year: null,
+              }
+            : (headerRow as ClassRow)
+          : null,
+      );
       const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
 
       // Pokud je parametr UUID, dohledáme název předmětu (ze slotu nebo katalogu).
