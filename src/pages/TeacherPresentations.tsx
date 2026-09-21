@@ -433,10 +433,18 @@ const TeacherPresentations = () => {
                   </div>
 
                   {(p.lesson_id || p.source_lesson_id) && (
-                    <Badge variant="secondary" className="w-fit gap-1 text-xs">
-                      <BookOpen className="h-3 w-3" />
-                      Propojeno s lekcí: {p.lessonTitle ?? "lekce"}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="secondary" className="w-fit gap-1 text-xs">
+                        <BookOpen className="h-3 w-3" />
+                        Propojeno s lekcí: {p.lessonTitle ?? "lekce"}
+                      </Badge>
+                      {p.slides.some((s: any) => s?.lockedFromLesson) && (
+                        <Badge variant="outline" className="w-fit gap-1 text-xs">
+                          <Lock className="h-3 w-3" />
+                          {p.slides.filter((s: any) => s?.lockedFromLesson).length} uzamčeno
+                        </Badge>
+                      )}
+                    </div>
                   )}
 
                   <div className="mt-auto flex flex-wrap gap-2">
@@ -446,6 +454,32 @@ const TeacherPresentations = () => {
                     <Button size="sm" variant="outline" className="gap-1" onClick={() => openLinkPicker(p)}>
                       <Link2 className="h-3.5 w-3.5" /> {p.lesson_id ? "Změnit lekci" : "Propojit s lekcí"}
                     </Button>
+                    {(p.lesson_id || p.source_lesson_id) && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={regeneratingId === p.id}
+                          onClick={() => regenerateFromLesson(p, "merge")}
+                          title="Doplnit změny z lekce a zachovat ruční úpravy i zámky"
+                        >
+                          {regeneratingId === p.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <RefreshCw className="h-3.5 w-3.5" />} Aktualizovat z lekce
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          disabled={regeneratingId === p.id}
+                          onClick={() => regenerateFromLesson(p, "fresh")}
+                          title="Vygenerovat znovu od nuly – ruční úpravy i zámky se zahodí"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" /> Od nuly
+                        </Button>
+                      </>
+                    )}
                     <Button size="sm" variant="ghost" onClick={() => handleDelete(p)} title="Smazat prezentaci">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
