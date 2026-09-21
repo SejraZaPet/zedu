@@ -606,23 +606,37 @@ export default function TeacherSubjectClass() {
   const room = slots[0]?.room || "";
 
   // Plans relevant to this subject + class/group.
-  // Match either by primary subject (legacy) or by linkedSlots.subject + classId/groupId.
+  // Předmět musí odpovídat A cíl plánu (třída/skupina) musí odpovídat tomuto kontextu.
+  // Plán bez zadané třídy/skupiny se zobrazí všude (obecný plán).
   const subjectKey = subjectLabel.trim().toLowerCase();
   const relevantPlans = useMemo(() => {
+    const contextId = isGroup ? groupId : classId;
+    const planTargetIds = (p: LessonPlanRow): string[] => {
+      const inp: any = p.input_data || {};
+      const set = new Set<string>();
+      if (inp.classId) set.add(inp.classId);
+      if (inp.groupId) set.add(inp.groupId);
+      if (inp.targetId) set.add(inp.targetId);
+      const linked: LinkedSlot[] = inp.linkedSlots ?? [];
+      for (const s of linked) {
+        if (s.classId) set.add(s.classId);
+        if ((s as any).groupId) set.add((s as any).groupId);
+      }
+      return Array.from(set);
+    };
     return plans.filter((p) => {
       const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
-      const matchesLinked = linked.some((s) => {
-        const matchesClass = !isGroup && (s.classId === classId || (!s.classId && !s.groupId));
-        const matchesGroup = isGroup && (s.groupId === groupId || (!s.classId && !s.groupId));
-        const matchesContext = matchesClass || matchesGroup;
-        return matchesContext && (s.subject || "").trim().toLowerCase() === subjectKey;
-      });
-      const matchesPrimary = (p.subject || "").trim().toLowerCase() === subjectKey;
-      // Nové plány mají předmět uložený jako subject_id, ne jen text.
-      const matchesSubjectId = !!resolvedSubjectId && p.subject_id === resolvedSubjectId;
-      return matchesLinked || matchesPrimary || matchesSubjectId;
+      const matchesSubject =
+        (p.subject || "").trim().toLowerCase() === subjectKey ||
+        (!!resolvedSubjectId && p.subject_id === resolvedSubjectId) ||
+        linked.some((s) => (s.subject || "").trim().toLowerCase() === subjectKey);
+      if (!matchesSubject) return false;
+      const targets = planTargetIds(p);
+      if (targets.length === 0) return true;
+      return !!contextId && targets.includes(contextId);
     });
   }, [plans, classId, groupId, isGroup, subjectKey, resolvedSubjectId]);
+
 
   /** Termíny (yyyy-MM-dd), na které je plán navázaný v této Výuce. */
   const planLinkedDates = (p: LessonPlanRow): string[] => {
