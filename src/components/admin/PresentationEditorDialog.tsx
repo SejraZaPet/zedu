@@ -385,7 +385,9 @@ export const PresentationEditorDialog = ({
       0,
     );
     clone.zIndex = (typeof copiedBlock.zIndex === "number" ? copiedBlock.zIndex : maxZ) + 1;
+    clone.editedByTeacher = true;
     setBlocks([...blocks, clone]);
+
     setSelectedBlockId(clone.id);
   };
 
