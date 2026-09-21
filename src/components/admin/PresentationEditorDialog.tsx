@@ -802,6 +802,19 @@ export const PresentationEditorDialog = ({
                   {currentSlide?.lockedFromLesson ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
                   {currentSlide?.lockedFromLesson ? "Uzamčeno" : "Zamknout"}
                 </button>
+
+                {pendingSlides.some((s: any) => s?.lockedFromLesson) && (
+                  <button
+                    type="button"
+                    onClick={() => setPendingSlides((prev) => prev.map((s: any) => (
+                      s?.lockedFromLesson ? { ...s, lockedFromLesson: false } : s
+                    )))}
+                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    title="Odemknout všechny snímky, aby se znovu aktualizovaly z lekce"
+                  >
+                    <LockOpen className="h-3.5 w-3.5" /> Odemknout vše
+                  </button>
+                )}
               </div>
 
 
@@ -903,6 +916,14 @@ export const PresentationEditorDialog = ({
                       <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
                         {i + 1}
                       </span>
+                      {slide?.lockedFromLesson ? (
+                        <span
+                          className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground"
+                          title="Uzamčený snímek – neaktualizuje se z lekce"
+                        >
+                          <Lock className="h-3 w-3" />
+                        </span>
+                      ) : null}
                     </button>
                     {/* Šipky pro přesun (záloha k drag & drop) */}
                     {pendingSlides.length > 1 && (

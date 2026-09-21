@@ -14,9 +14,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft,
+  RefreshCw, RotateCcw, Lock,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { themeIdFromSlides } from "@/lib/presentation-themes";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { mergePresentationSlides } from "@/lib/presentation-merge";
 
 interface StandalonePresentation {
   id: string;
@@ -77,6 +80,7 @@ const TeacherPresentations = () => {
   const [textbooksLoading, setTextbooksLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [lessonQuery, setLessonQuery] = useState("");
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
 
   const fetchItems = async () => {
@@ -209,6 +213,46 @@ const TeacherPresentations = () => {
         .from(table)
         .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
         .eq("id", linked);
+    }
+  };
+
+  /**
+   * Přegenerování prezentace z propojené lekce.
+   * mode "merge" = aktualizovat obsah a zachovat ruční úpravy i zámky,
+   * mode "fresh" = vygenerovat znovu od nuly (ruční úpravy i zámky se zahodí).
+   */
+  const regenerateFromLesson = async (p: StandalonePresentation, mode: "merge" | "fresh") => {
+    const lessonId = p.lesson_id ?? p.source_lesson_id ?? null;
+    if (!lessonId) return;
+    if (mode === "fresh" && !window.confirm(
+      `Vygenerovat prezentaci „${p.title}“ znovu od nuly? Ruční úpravy snímků i uzamčení se zahodí.`,
+    )) return;
+
+    setRegeneratingId(p.id);
+    try {
+      const table = p.lesson_id || p.source_lesson_type !== "global"
+        ? "teacher_textbook_lessons"
+        : "textbook_lessons";
+      const { data, error } = await supabase
+        .from(table)
+        .select("id, title, blocks")
+        .eq("id", lessonId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Propojená lekce už neexistuje.");
+
+      const fresh = blocksToSlides(((data as any).blocks ?? []) as any[], (data as any).title ?? p.title);
+      const slides = mode === "fresh" ? fresh : mergePresentationSlides(fresh, p.slides ?? []);
+      await saveSlides(p.id, slides);
+      setItems((prev) => prev.map((i) => (i.id === p.id ? { ...i, slides } : i)));
+      toast({
+        title: mode === "fresh" ? "Prezentace vygenerována znovu" : "Prezentace aktualizována z lekce",
+        description: `${slides.length} snímků podle aktuálního obsahu lekce.`,
+      });
+    } catch (e: any) {
+      toast({ title: "Přegenerování se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setRegeneratingId(null);
     }
   };
 
@@ -389,10 +433,18 @@ const TeacherPresentations = () => {
                   </div>
 
                   {(p.lesson_id || p.source_lesson_id) && (
-                    <Badge variant="secondary" className="w-fit gap-1 text-xs">
-                      <BookOpen className="h-3 w-3" />
-                      Propojeno s lekcí: {p.lessonTitle ?? "lekce"}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="secondary" className="w-fit gap-1 text-xs">
+                        <BookOpen className="h-3 w-3" />
+                        Propojeno s lekcí: {p.lessonTitle ?? "lekce"}
+                      </Badge>
+                      {p.slides.some((s: any) => s?.lockedFromLesson) && (
+                        <Badge variant="outline" className="w-fit gap-1 text-xs">
+                          <Lock className="h-3 w-3" />
+                          {p.slides.filter((s: any) => s?.lockedFromLesson).length} uzamčeno
+                        </Badge>
+                      )}
+                    </div>
                   )}
 
                   <div className="mt-auto flex flex-wrap gap-2">
@@ -402,6 +454,32 @@ const TeacherPresentations = () => {
                     <Button size="sm" variant="outline" className="gap-1" onClick={() => openLinkPicker(p)}>
                       <Link2 className="h-3.5 w-3.5" /> {p.lesson_id ? "Změnit lekci" : "Propojit s lekcí"}
                     </Button>
+                    {(p.lesson_id || p.source_lesson_id) && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={regeneratingId === p.id}
+                          onClick={() => regenerateFromLesson(p, "merge")}
+                          title="Doplnit změny z lekce a zachovat ruční úpravy i zámky"
+                        >
+                          {regeneratingId === p.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <RefreshCw className="h-3.5 w-3.5" />} Aktualizovat z lekce
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          disabled={regeneratingId === p.id}
+                          onClick={() => regenerateFromLesson(p, "fresh")}
+                          title="Vygenerovat znovu od nuly – ruční úpravy i zámky se zahodí"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" /> Od nuly
+                        </Button>
+                      </>
+                    )}
                     <Button size="sm" variant="ghost" onClick={() => handleDelete(p)} title="Smazat prezentaci">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
