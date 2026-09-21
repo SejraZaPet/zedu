@@ -35,7 +35,9 @@ import {
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
-import { headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
+import { headlineColorsForBackground, resolveSlideIsDark, cssColorLightness } from "@/lib/slide-contrast";
+import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
+
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
