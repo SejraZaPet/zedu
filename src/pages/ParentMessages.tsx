@@ -108,10 +108,18 @@ const ParentMessages = () => {
         .select("class_id, user_id")
         .in("class_id", classIds);
 
-      const { data: slots } = await supabase
-        .from("class_schedule_slots")
-        .select("class_id, subject_label, subjects(name)")
-        .in("class_id", classIds);
+      const [{ data: slots }, groupSlotsRes] = await Promise.all([
+        supabase
+          .from("class_schedule_slots")
+          .select("class_id, subject_label, subjects(name)")
+          .in("class_id", classIds),
+        groupIds.length
+          ? supabase
+              .from("class_schedule_slots")
+              .select("group_id, subject_label, subjects(name)")
+              .in("group_id", groupIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
       const subjectsByClass: Record<string, Set<string>> = {};
       (slots ?? []).forEach((s: any) => {
@@ -120,6 +128,20 @@ const ParentMessages = () => {
         subjectsByClass[s.class_id] ??= new Set();
         subjectsByClass[s.class_id].add(canonicalName || (s.subject_label as string));
       });
+
+      // Předměty z hodin zadaných na skupinu dítěte patří ke všem jeho třídám
+      const groupSubjects = new Set<string>();
+      (((groupSlotsRes as any).data as any[]) ?? []).forEach((s: any) => {
+        const canonicalName = ((s as any).subjects?.name ?? "").trim();
+        const name = canonicalName || (s.subject_label as string | null);
+        if (name) groupSubjects.add(name);
+      });
+      if (groupSubjects.size > 0) {
+        classIds.forEach((cid: string) => {
+          subjectsByClass[cid] ??= new Set();
+          groupSubjects.forEach((n) => subjectsByClass[cid].add(n));
+        });
+      }
 
       const teacherIds = Array.from(new Set((ct ?? []).map((c: any) => c.user_id)));
       const { data: teacherProfs } = await supabase
