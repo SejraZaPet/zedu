@@ -235,8 +235,9 @@ export default function TeacherLessonPlanEditor() {
     if (!user) return;
     supabase
       .from("class_schedule_slots" as any)
-      .select("*, classes(name), subjects(name, color, abbreviation)")
+      .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)")
       .then(({ data }) => setDbSlots((data as any[]) ?? []));
+
   }, [user]);
 
   /** All teacher textbooks (for explicit picker, independent of subject) */
