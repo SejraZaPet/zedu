@@ -123,7 +123,11 @@ const StudentCalendar = () => {
 
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === "lesson") {
-      if (event.subject && event.classId) {
+      if (event.groupId && event.subject) {
+        navigate(
+          `/student/predmet/${encodeURIComponent(event.subject)}/skupina/${event.groupId}`,
+        );
+      } else if (event.subject && event.classId) {
         navigate(
           `/student/predmet/${encodeURIComponent(event.subject)}/trida/${event.classId}`,
         );
