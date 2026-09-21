@@ -114,7 +114,7 @@ const TodayWidget = ({ role }: Props) => {
 
       const slotsRes = await supabase
         .from("class_schedule_slots" as any)
-        .select("*, classes(name), subjects(name, color, abbreviation)");
+        .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)");
 
       const slots = (slotsRes.data ?? []) as any[];
       const targets: Record<string, string> = {};
@@ -126,7 +126,8 @@ const TodayWidget = ({ role }: Props) => {
           : slot.subject_id || null;
         if (!subject) continue;
         if (role === "student") {
-          if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
+          if (slot.group_id) targets[slot.id] = `/student/predmet/${subject}/skupina/${slot.group_id}`;
+          else if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
           continue;
         }
         if (slot.group_id) targets[slot.id] = `/ucitel/vyuka/${subject}/skupina/${slot.group_id}`;
