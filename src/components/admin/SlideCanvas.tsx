@@ -1949,6 +1949,17 @@ export function SlideBody({
 
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
+    // Blok si nese vlastní podbarvení z lekce – kontrast textu se proto počítá
+    // pro každý barevný blok zvlášť, ne jen jednou pro celý snímek.
+    const ownBg = blockBackgroundSlideColor((b.props as any) || null);
+    const ownLightness = ownBg ? cssColorLightness(ownBg) : null;
+    const forceDarkText = isDark && ownLightness !== null && ownLightness > 0.6;
+    const forceLightText = !isDark && ownLightness !== null && ownLightness <= 0.35;
+    const contrastClass = forceDarkText
+      ? "text-foreground [&_*]:text-inherit"
+      : forceLightText
+        ? "text-white [&_*]:text-inherit"
+        : "";
     const shell = (
       <BlockShell
         editable={editable}
@@ -1976,14 +1987,20 @@ export function SlideBody({
       </BlockShell>
     );
 
-    if (!editable) return <div key={b.id}>{shell}</div>;
+    if (!editable) return <div key={b.id} className={contrastClass}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none cursor-move" data-no-pan="true" onPointerDown={startPromoteDrag(b)}>
+      <div
+        key={b.id}
+        className={`touch-none cursor-move ${contrastClass}`}
+        data-no-pan="true"
+        onPointerDown={startPromoteDrag(b)}
+      >
         {shell}
       </div>
     );
   };
+
 
 
   let body: React.ReactNode = null;
