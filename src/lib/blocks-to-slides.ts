@@ -188,10 +188,16 @@ function mergeShortSections(slides: any[]): any[] {
         if (takeHeadline) {
           base.projector.headline = nextHeadline;
           base.sourceBlockId = next.sourceBlockId ?? base.sourceBlockId;
+          if (next.headlineLevel) base.headlineLevel = next.headlineLevel;
         } else {
-          base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId));
+          // Mezititulek si nese svou úroveň i podbarvení z lekce.
+          base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId, {
+            level: next.headlineLevel ?? 3,
+            ...(next.backgroundOverride?.color ? { backgroundColor: next.backgroundOverride.color } : {}),
+          }));
         }
       }
+
       base.blocks.push(...(next.blocks || []));
       const nextBody = [
         nextHeadline && !takeHeadline ? nextHeadline : "",
