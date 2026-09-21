@@ -245,7 +245,11 @@ const StudentTextbooks = () => {
                   </Badge>
                   {it.sources.map((s, i) => (
                     <Badge key={i} variant="secondary" className="text-xs">
-                      {s.kind === "enrollment" ? "Vlastní zápis" : `Z třídy ${s.className}`}
+                      {s.kind === "enrollment"
+                        ? "Vlastní zápis"
+                        : s.className
+                          ? `Z třídy ${s.className}`
+                          : "Z výuky"}
                     </Badge>
                   ))}
                 </div>
