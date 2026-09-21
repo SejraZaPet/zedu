@@ -27,36 +27,9 @@ export function usePresentationLauncher() {
 
   const [hasSavedPresentation, setHasSavedPresentation] = useState(false);
 
-  /**
-   * Párování uložených a nově vygenerovaných snímků.
-   *
-   * Základem je id zdrojového bloku lekce BEZ přípon z dělení/slučování
-   * (`#2`, `#part1`, `#txt1`) – jiné rozdělení dlouhé karty ani přejmenování
-   * nadpisu tak nezahodí ruční úpravy. Víc snímků z jednoho bloku se rozliší
-   * pořadím výskytu. Starší prezentace bez `sourceBlockId` padají na nadpis.
-   */
-  const baseSourceId = (slide: any): string =>
-    String(slide?.sourceBlockId || "").trim().split("#")[0];
+  // Párování uložených a nově vygenerovaných snímků a ochrana ručních úprav
+  // řeší sdílený modul `presentation-merge` (má vlastní testy).
 
-  const buildSlideKeys = (slides: any[]): string[] => {
-    const seen = new Map<string, number>();
-    return slides.map((slide: any, index: number) => {
-      const base = baseSourceId(slide);
-      if (base) {
-        const n = (seen.get(base) ?? 0) + 1;
-        seen.set(base, n);
-        return `src:${base}#${n}`;
-      }
-      const headline = String(slide?.projector?.headline || "").trim().toLowerCase();
-      if (headline) {
-        const key = `head:${headline}`;
-        const n = (seen.get(key) ?? 0) + 1;
-        seen.set(key, n);
-        return `${key}#${n}`;
-      }
-      return String(slide?.slideId || `index-${index}`);
-    });
-  };
 
 
   /**
