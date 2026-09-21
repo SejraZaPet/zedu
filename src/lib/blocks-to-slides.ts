@@ -141,13 +141,14 @@ function isPlainTextSlide(slide: any): boolean {
   return true;
 }
 
-function headingBlock(text: string, id?: string | null): any {
+function headingBlock(text: string, id?: string | null, extraProps?: Record<string, any>): any {
   return {
     ...(id ? { id: `${id}-h` } : {}),
     type: "heading",
-    props: { text, level: 3 },
+    props: { text, level: extraProps?.level ?? 3, ...(extraProps || {}) },
   };
 }
+
 
 /**
  * FÁZE 1 – slučování krátkých sekcí.
