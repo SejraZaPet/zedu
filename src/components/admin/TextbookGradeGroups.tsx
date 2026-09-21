@@ -66,6 +66,7 @@ interface Props {
   onEditTopic: (topic: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (lesson: LessonItem) => void;
+  onEditPresentation?: (lesson: LessonItem) => void;
   onOpenWorksheet: (lesson: LessonItem, generate?: boolean) => void;
   onPreviewLesson: (lesson: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
@@ -80,6 +81,7 @@ const SortableLessonRow = ({
   onEditLesson,
   onDeleteLesson,
   onOpenPresentation,
+  onEditPresentation,
   onOpenWorksheet,
   onRequestMove,
   onRequestMerge,
@@ -88,6 +90,7 @@ const SortableLessonRow = ({
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
+  onEditPresentation?: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onRequestMove?: (l: LessonItem) => void;
   onRequestMerge?: (l: LessonItem) => void;
@@ -138,9 +141,14 @@ const SortableLessonRow = ({
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson, true)} title="Vygenerovat pracovní list z této lekce">
           <Sparkles className="w-4 h-4 text-primary" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
-          <Monitor className="w-4 h-4" />
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Spustit prezentaci">
+          <Play className="w-4 h-4" />
         </Button>
+        {onEditPresentation && (
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEditPresentation(lesson)} title="Upravit prezentaci">
+            <Monitor className="w-4 h-4" />
+          </Button>
+        )}
         {onRequestMove && (
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
             <FolderInput className="w-4 h-4" />
@@ -170,8 +178,12 @@ const SortableLessonRow = ({
         </Button>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenPresentation(lesson)} title="Spustit prezentaci a otevřít projektor">
           <Play className="w-3.5 h-3.5" />
-
         </Button>
+        {onEditPresentation && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditPresentation(lesson)} title="Upravit prezentaci v editoru">
+            <Monitor className="w-3.5 h-3.5" />
+          </Button>
+        )}
         {onRequestMove && (
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
             <FolderInput className="w-3.5 h-3.5" />
@@ -196,6 +208,7 @@ const TopicLessonsList = ({
   onEditLesson,
   onDeleteLesson,
   onOpenPresentation,
+  onEditPresentation,
   onOpenWorksheet,
   onReorderLessons,
   onRequestMove,
@@ -205,6 +218,7 @@ const TopicLessonsList = ({
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
+  onEditPresentation?: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
@@ -236,6 +250,7 @@ const TopicLessonsList = ({
               onEditLesson={onEditLesson}
               onDeleteLesson={onDeleteLesson}
               onOpenPresentation={onOpenPresentation}
+              onEditPresentation={onEditPresentation}
               onOpenWorksheet={onOpenWorksheet}
               onRequestMove={onRequestMove}
               onRequestMerge={onRequestMergeLesson}
@@ -256,6 +271,7 @@ const SortableTopic = ({
   onEditTopic,
   onDeleteTopic,
   onOpenPresentation,
+  onEditPresentation,
   onOpenWorksheet,
   onReorderLessons,
   onRequestMove,
@@ -269,6 +285,7 @@ const SortableTopic = ({
   onEditTopic: (t: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (l: LessonItem) => void;
+  onEditPresentation?: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
@@ -335,6 +352,7 @@ const SortableTopic = ({
               onEditLesson={onEditLesson}
               onDeleteLesson={onDeleteLesson}
               onOpenPresentation={onOpenPresentation}
+              onEditPresentation={onEditPresentation}
               onOpenWorksheet={onOpenWorksheet}
               onReorderLessons={onReorderLessons}
               onRequestMove={onRequestMove}
@@ -367,6 +385,7 @@ const TextbookGradeGroups = ({
   onEditTopic,
   onDeleteTopic,
   onOpenPresentation,
+  onEditPresentation,
   onOpenWorksheet,
   onReorderLessons,
   onReorderTopics,
@@ -512,6 +531,8 @@ const TextbookGradeGroups = ({
                         onEditTopic={onEditTopic}
                         onDeleteTopic={onDeleteTopic}
                         onOpenPresentation={onOpenPresentation}
+                        onEditPresentation={onEditPresentation}
+              onEditPresentation={onEditPresentation}
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
                         onRequestMove={handleRequestMove}
