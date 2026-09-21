@@ -149,60 +149,9 @@ export function usePresentationLauncher() {
   };
 
   const openEditor = async (lesson: LessonItem) => {
-
-    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
-    let slides: any[] = freshSlides;
-    let saved = false;
-
-    const table = lesson.source === "teacher_textbook_lessons"
-      ? "teacher_textbook_lessons"
-      : "textbook_lessons";
-
-    const { data } = await supabase
-      .from(table)
-      .select("presentation_slides" as any)
-      .eq("id", lesson.id)
-      .single();
-
-    const savedSlides = (data as any)?.presentation_slides;
-    if (savedSlides && Array.isArray(savedSlides) && savedSlides.length > 0) {
-      const savedByKey = new Map<string, any>();
-      savedSlides.forEach((slide: any, index: number) => {
-        savedByKey.set(slideKey(slide, index), slide);
-      });
-
-      const mergedFresh = freshSlides.map((freshSlide, index) => {
-        const savedSlide = savedByKey.get(slideKey(freshSlide, index));
-        if (!savedSlide) return freshSlide;
-
-        return {
-          ...savedSlide,
-          ...freshSlide,
-          projector: {
-            ...savedSlide.projector,
-            ...freshSlide.projector,
-            fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
-          },
-          device: savedSlide.device ?? freshSlide.device,
-          teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
-          layout: savedSlide.layout ?? freshSlide.layout,
-          heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
-          activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
-          blocks: freshSlide.blocks,
-          tableData: freshSlide.tableData,
-          cardData: freshSlide.cardData,
-          type: freshSlide.type,
-        };
-      });
-
-      const freshKeys = new Set(mergedFresh.map((slide, index) => slideKey(slide, index)));
-      const customSlides = savedSlides.filter((slide: any, index: number) => !freshKeys.has(slideKey(slide, index)));
-
-      slides = [...mergedFresh, ...customSlides];
-      saved = true;
-    }
-
-    setHasSavedPresentation(saved);
+    const savedSlides = await loadSavedSlides(lesson);
+    const slides = await buildSlidesForLesson(lesson);
+    setHasSavedPresentation(!!savedSlides);
     setPendingSlides(slides);
     setPresentationLesson(lesson);
     setEditingSlideIndex(0);
