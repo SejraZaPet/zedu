@@ -736,9 +736,10 @@ function splitInHalf(text: string): string[] {
 }
 
 /**
- * Zpracuje jednu dávku textu. Pokud AI odpověď skončí utnutá (finish_reason
- * "length") nebo nevrátí použitelný tool call, dávku rozpůlí a zkusí znovu
- * (max MAX_SPLIT_DEPTH úrovní).
+ * Zpracuje jednu dávku textu. Dělí se POUZE tehdy, když odpověď AI přeteče
+ * limit (finish_reason "length") nebo je vstup pro model příliš velký —
+ * u přechodných chyb (429/5xx) se opakuje stejný dotaz (viz callGateway),
+ * protože dělení by počet dotazů jen znásobilo.
  */
 async function generateLessonsForBatch(
   apiKey: string,
@@ -746,19 +747,28 @@ async function generateLessonsForBatch(
   payload: { fileName: string; mimeType: string; mode: "single" | "split" },
   depth = 0,
 ): Promise<any[]> {
+  const canSplit = depth < MAX_SPLIT_DEPTH && budgetLeft() > 45_000;
+
+  const splitAndRun = async (reason: string) => {
+    const halves = splitInHalf(batchText);
+    if (halves.length !== 2) return null;
+    console.warn(`[batch] ${reason} → dělím na poloviny (depth ${depth + 1})`);
+    const out: any[] = [];
+    for (const half of halves) {
+      out.push(...(await generateLessonsForBatch(apiKey, half, payload, depth + 1)));
+    }
+    return out;
+  };
+
   let aiResult: any;
   try {
     aiResult = await callGatewayWithText(apiKey, { ...payload, extractedText: batchText });
   } catch (err) {
-    if (depth < MAX_SPLIT_DEPTH) {
-      const halves = splitInHalf(batchText);
-      if (halves.length === 2) {
-        const out: any[] = [];
-        for (const half of halves) {
-          out.push(...(await generateLessonsForBatch(apiKey, half, payload, depth + 1)));
-        }
-        return out;
-      }
+    const status = err instanceof AiError ? err.status : 0;
+    // Vstup příliš velký pro model → má smysl dělit. Jinak chybu propaguj.
+    if (canSplit && (status === 400 || status === 413 || status === 422)) {
+      const out = await splitAndRun(`vstup odmítnut (${status})`);
+      if (out) return out;
     }
     throw err;
   }
@@ -775,18 +785,9 @@ async function generateLessonsForBatch(
   }
 
   if (!parsed || !Array.isArray(parsed.lessons) || parsed.lessons.length === 0) {
-    if (depth < MAX_SPLIT_DEPTH) {
-      const halves = splitInHalf(batchText);
-      if (halves.length === 2) {
-        console.warn(
-          `[batch] odpověď utnutá/neúplná (finish_reason=${choice?.finish_reason}), dělím na poloviny (depth ${depth + 1})`,
-        );
-        const out: any[] = [];
-        for (const half of halves) {
-          out.push(...(await generateLessonsForBatch(apiKey, half, payload, depth + 1)));
-        }
-        return out;
-      }
+    if (canSplit) {
+      const out = await splitAndRun(`odpověď utnutá/neúplná (finish_reason=${choice?.finish_reason})`);
+      if (out) return out;
     }
     throw new Error(TOO_LONG_MESSAGE);
   }
@@ -799,7 +800,7 @@ async function generateLessonsForBatch(
  * vejdeme do časového limitu edge funkce); výsledné lekce spojí v původním
  * pořadí dávek.
  */
-const BATCH_CONCURRENCY = 4;
+const BATCH_CONCURRENCY = 3;
 
 async function generateLessonsFromText(
   apiKey: string,
@@ -810,14 +811,20 @@ async function generateLessonsFromText(
   console.log(`[batch] text ${countWords(text)} slov → ${batches.length} dávek`);
 
   const results: any[][] = new Array(batches.length).fill(null).map(() => []);
+  const errors: unknown[] = [];
   let next = 0;
   const worker = async () => {
     while (true) {
       const index = next++;
       if (index >= batches.length) return;
-      const part = await generateLessonsForBatch(apiKey, batches[index], payload);
-      console.log(`[batch] dávka ${index + 1}/${batches.length} → ${part.length} lekcí`);
-      results[index] = part;
+      try {
+        const part = await generateLessonsForBatch(apiKey, batches[index], payload);
+        console.log(`[batch] dávka ${index + 1}/${batches.length} → ${part.length} lekcí`);
+        results[index] = part;
+      } catch (err) {
+        console.error(`[batch] dávka ${index + 1}/${batches.length} selhala:`, err);
+        errors.push(err);
+      }
     }
   };
   await Promise.all(
@@ -826,9 +833,18 @@ async function generateLessonsFromText(
 
   const lessons = results.flat();
 
-  if (lessons.length === 0) throw new Error(TOO_LONG_MESSAGE);
+  // Částečný výsledek je pro uživatele lepší než nic — selhání jen zalogujeme.
+  if (lessons.length === 0) {
+    const first = errors[0];
+    if (first instanceof Error) throw first;
+    throw new Error(TOO_LONG_MESSAGE);
+  }
+  if (errors.length > 0) {
+    console.warn(`[batch] ${errors.length} z ${batches.length} dávek selhalo, vracím částečný výsledek`);
+  }
   return lessons;
 }
+
 
 
 function normalizeBlock(block: any) {
