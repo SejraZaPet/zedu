@@ -70,6 +70,8 @@ export default function TeacherLessonPlans() {
   const [items, setItems] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
+  const [targetFilter, setTargetFilter] = useState<string>("__all");
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
