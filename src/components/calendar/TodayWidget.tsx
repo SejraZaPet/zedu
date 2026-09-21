@@ -114,7 +114,7 @@ const TodayWidget = ({ role }: Props) => {
 
       const slotsRes = await supabase
         .from("class_schedule_slots" as any)
-        .select("*, classes(name), subjects(name, color, abbreviation)");
+        .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)");
 
       const slots = (slotsRes.data ?? []) as any[];
       const targets: Record<string, string> = {};
@@ -126,7 +126,8 @@ const TodayWidget = ({ role }: Props) => {
           : slot.subject_id || null;
         if (!subject) continue;
         if (role === "student") {
-          if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
+          if (slot.group_id) targets[slot.id] = `/student/predmet/${subject}/skupina/${slot.group_id}`;
+          else if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
           continue;
         }
         if (slot.group_id) targets[slot.id] = `/ucitel/vyuka/${subject}/skupina/${slot.group_id}`;
@@ -296,7 +297,12 @@ const TodayWidget = ({ role }: Props) => {
                   <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
-                  <span className="flex-1 truncate">{ev.title}</span>
+                  <span className="flex-1 truncate">
+                    {ev.title}
+                    {ev.groupId && ev.className && (
+                      <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                    )}
+                  </span>
                   {ev.room && (
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
