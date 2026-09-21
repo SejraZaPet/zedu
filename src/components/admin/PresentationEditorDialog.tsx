@@ -903,6 +903,14 @@ export const PresentationEditorDialog = ({
                       <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
                         {i + 1}
                       </span>
+                      {slide?.lockedFromLesson ? (
+                        <span
+                          className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground"
+                          title="Uzamčený snímek – neaktualizuje se z lekce"
+                        >
+                          <Lock className="h-3 w-3" />
+                        </span>
+                      ) : null}
                     </button>
                     {/* Šipky pro přesun (záloha k drag & drop) */}
                     {pendingSlides.length > 1 && (
