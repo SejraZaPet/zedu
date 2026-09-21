@@ -281,7 +281,11 @@ function splitTextBlock(block: any, limit: number): any[] {
   return chunks.map((chunk, idx) => ({
     ...block,
     ...(block?.id ? { id: idx === 0 ? block.id : `${block.id}#p${idx}` } : {}),
-    type: block?.type === "bullet_list" || block?.type === "bulletList" ? block.type : "paragraph",
+    // Callout (rámeček) i odrážky si drží svůj typ, aby zůstal vzhled z lekce.
+    type: block?.type === "bullet_list" || block?.type === "bulletList" || block?.type === "callout"
+      ? block.type
+      : "paragraph",
+
     props: { ...(block?.props || {}), text: chunk, html: undefined, items: undefined },
   }));
 }
