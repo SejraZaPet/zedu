@@ -57,7 +57,7 @@ const StudentCalendar = () => {
       const [slotsRes, assignmentsRes, todosRes] = await Promise.all([
         supabase
           .from("class_schedule_slots" as any)
-          .select("*, classes(name), subjects(name, color, abbreviation)"),
+          .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)"),
         supabase
           .from("assignments")
           .select("id, title, deadline, class_id, exam_type")
@@ -123,7 +123,11 @@ const StudentCalendar = () => {
 
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === "lesson") {
-      if (event.subject && event.classId) {
+      if (event.groupId && event.subject) {
+        navigate(
+          `/student/predmet/${encodeURIComponent(event.subject)}/skupina/${event.groupId}`,
+        );
+      } else if (event.subject && event.classId) {
         navigate(
           `/student/predmet/${encodeURIComponent(event.subject)}/trida/${event.classId}`,
         );

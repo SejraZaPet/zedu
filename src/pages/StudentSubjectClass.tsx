@@ -115,7 +115,8 @@ const stateMeta: Record<AttemptState, { label: string; variant: "default" | "sec
 };
 
 export default function StudentSubjectClass() {
-  const { subjectId = "", classId = "" } = useParams();
+  const { subjectId = "", classId = "", groupId = "" } = useParams();
+  const isGroup = !!groupId;
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
@@ -147,19 +148,32 @@ export default function StudentSubjectClass() {
     setResolvedLabel(null);
 
     (async () => {
-      // Verify membership
-      const { data: membership } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("class_id", classId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!membership) {
-        if (!cancelled) {
-          setLoading(false);
+      // Verify membership – u skupiny předmětu čteme subject_group_members
+      if (isGroup) {
+        const { data: gm } = await supabase
+          .from("subject_group_members")
+          .select("group_id")
+          .eq("group_id", groupId)
+          .eq("student_id", user.id)
+          .maybeSingle();
+        if (!gm) {
+          if (!cancelled) setLoading(false);
+          return;
         }
-        return;
+      } else {
+        const { data: membership } = await supabase
+          .from("class_members")
+          .select("class_id")
+          .eq("class_id", classId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!membership) {
+          if (!cancelled) {
+            setLoading(false);
+          }
+          return;
+        }
       }
 
       // Spočítej subject_id před dotazem na assignments, ať lze filtrovat úkoly podle předmětu.
@@ -178,8 +192,10 @@ export default function StudentSubjectClass() {
       let assignQuery = supabase
         .from("assignments")
         .select("id, title, description, status, deadline, created_at, class_id")
-        .eq("class_id", classId)
         .eq("status", "published");
+      assignQuery = isGroup
+        ? assignQuery.eq("group_id", groupId)
+        : assignQuery.eq("class_id", classId);
       // Starší úkoly bez subject_id ponecháme viditelné, jen nejsou roztříděné.
       if (subjectIdKey)
         assignQuery = assignQuery.or(
@@ -188,21 +204,45 @@ export default function StudentSubjectClass() {
       assignQuery = assignQuery.order("created_at", { ascending: false });
 
       const [classRes, slotsRes, assignRes] = await Promise.all([
-        supabase
-          .from("classes")
-          .select("id, name, school, field_of_study, year")
-          .eq("id", classId)
-          .maybeSingle(),
-        supabase
-          .from("class_schedule_slots" as any)
-          .select("*, subjects(name, color, abbreviation)")
-          .eq("class_id", classId),
+        isGroup
+          ? supabase
+              .from("subject_groups")
+              .select("id, name, school_year, textbook_id, textbook_type")
+              .eq("id", groupId)
+              .maybeSingle()
+          : supabase
+              .from("classes")
+              .select("id, name, school, field_of_study, year")
+              .eq("id", classId)
+              .maybeSingle(),
+        isGroup
+          ? supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("group_id", groupId)
+          : supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("class_id", classId),
         assignQuery,
       ]);
 
       if (cancelled) return;
 
-      setKlass((classRes.data as ClassRow) ?? null);
+      const headerRow = classRes.data as any;
+      setKlass(
+        headerRow
+          ? isGroup
+            ? {
+                id: headerRow.id,
+                name: headerRow.name,
+                school: "",
+                field_of_study: "",
+                year: null,
+              }
+            : (headerRow as ClassRow)
+          : null,
+      );
       const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
 
       // Pokud je parametr UUID, dohledáme název předmětu (ze slotu nebo katalogu).
@@ -246,16 +286,33 @@ export default function StudentSubjectClass() {
           .maybeSingle();
         subjectIdKey = ((subjRow as any)?.id as string) ?? null;
       }
-      const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
-      const match =
-        links.find(
-          (l) =>
-            l.textbook_type === "teacher" &&
-            subjectIdKey &&
-            l.subject_id === subjectIdKey,
-        ) ??
-        links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
-      if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+      if (isGroup) {
+        // U skupiny bereme učebnici z rozvrhu, z propojení skupiny nebo ze samotné skupiny.
+        const { data: gLinks } = await supabase
+          .from("subject_group_textbooks" as any)
+          .select("textbook_id, textbook_type")
+          .eq("subject_group_id", groupId);
+        const gMatch =
+          ((gLinks as any[]) ?? []).find((l) => l.textbook_type === "teacher") ??
+          ((gLinks as any[]) ?? [])[0];
+        const fallback =
+          (headerRow as any)?.textbook_id && (headerRow as any)?.textbook_type === "teacher"
+            ? (headerRow as any).textbook_id
+            : null;
+        if (!cancelled)
+          setExtraTextbookId((gMatch?.textbook_id as string) ?? fallback ?? null);
+      } else {
+        const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
+        const match =
+          links.find(
+            (l) =>
+              l.textbook_type === "teacher" &&
+              subjectIdKey &&
+              l.subject_id === subjectIdKey,
+          ) ??
+          links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
+        if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+      }
 
 
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
@@ -280,7 +337,7 @@ export default function StudentSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, rawSubjectParam]);
+  }, [authLoading, user, navigate, classId, groupId, isGroup, rawSubjectParam]);
 
   const canonicalSubject = (slots[0] as any)?.subjects ?? null;
   const subjectColor = getSubjectColor(slots[0] as any, canonicalSubject, subjectLabel);
@@ -309,14 +366,16 @@ export default function StudentSubjectClass() {
 
   // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
   useEffect(() => {
-    if (!user || !classId || !subjectLabel) return;
+    if (!user || !subjectLabel) return;
+    if (isGroup ? !groupId : !classId) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("lesson_topics")
         .select("lesson_date, topic, materials")
-        .eq("class_id", classId)
         .eq("subject", subjectLabel);
+      q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
+      const { data } = await q;
       if (cancelled) return;
       const map: Record<string, StudentLessonTopic> = {};
       for (const r of data ?? []) {
@@ -331,7 +390,7 @@ export default function StudentSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [user, classId, subjectLabel]);
+  }, [user, classId, groupId, isGroup, subjectLabel]);
 
 
   // Compute student's own results

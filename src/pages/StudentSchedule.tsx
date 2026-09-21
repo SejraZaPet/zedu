@@ -21,7 +21,8 @@ type ParityTab = "both" | "odd" | "even";
 
 interface ClassSlot {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  group_id?: string | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -32,6 +33,7 @@ interface ClassSlot {
   room: string | null;
   textbook_id: string | null;
   classes?: { name: string } | null;
+  subject_groups?: { name?: string | null } | null;
   subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
 }
 
@@ -71,12 +73,16 @@ export default function StudentSchedule() {
         setStudentName(n || prof?.email || user.email || "");
       }
 
-      const { data: members } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", user.id);
+      const [{ data: members }, { data: gm }] = await Promise.all([
+        supabase.from("class_members").select("class_id").eq("user_id", user.id),
+        supabase
+          .from("subject_group_members")
+          .select("group_id")
+          .eq("student_id", user.id),
+      ]);
       const classIds = (members ?? []).map((r: any) => r.class_id);
-      if (classIds.length === 0) {
+      const groupIds = (gm ?? []).map((r: any) => r.group_id);
+      if (classIds.length === 0 && groupIds.length === 0) {
         if (!cancelled) {
           setSlots([]);
           setClassNames([]);
@@ -85,18 +91,43 @@ export default function StudentSchedule() {
         return;
       }
 
-      const { data: rows } = await supabase
-        .from("class_schedule_slots" as any)
-        .select("*, classes(name), subjects(name, color, abbreviation)")
-        .in("class_id", classIds)
-        .order("day_of_week", { ascending: true })
-        .order("start_time", { ascending: true });
+      const select =
+        "*, classes(name), subjects(name, color, abbreviation), subject_groups(name)";
+      const [classSlotsRes, groupSlotsRes] = await Promise.all([
+        classIds.length
+          ? supabase
+              .from("class_schedule_slots" as any)
+              .select(select)
+              .in("class_id", classIds)
+          : Promise.resolve({ data: [] as any[] }),
+        groupIds.length
+          ? supabase
+              .from("class_schedule_slots" as any)
+              .select(select)
+              .in("group_id", groupIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
       if (cancelled) return;
-      const list = ((rows as any) || []) as ClassSlot[];
+      const merged = [
+        ...(((classSlotsRes as any).data as any[]) ?? []),
+        ...(((groupSlotsRes as any).data as any[]) ?? []),
+      ];
+      const byId = new Map<string, any>();
+      for (const r of merged) byId.set(r.id, r);
+      const list = Array.from(byId.values()).sort(
+        (a, b) =>
+          a.day_of_week - b.day_of_week ||
+          toMin((a.start_time || "").slice(0, 5)) -
+            toMin((b.start_time || "").slice(0, 5)),
+      ) as ClassSlot[];
       setSlots(list);
       const names = Array.from(
-        new Set(list.map((s) => s.classes?.name).filter(Boolean) as string[]),
+        new Set(
+          list
+            .map((s) => s.classes?.name ?? (s as any).subject_groups?.name)
+            .filter(Boolean) as string[],
+        ),
       );
       setClassNames(names);
       setLoading(false);
@@ -287,8 +318,8 @@ function ReadOnlyClassCard({
   const subject = getSubjectName(slot, canonical, "Hodina");
   const color = getSubjectColor(slot, canonical, subject);
   const abbr = getSubjectAbbreviation(slot, canonical, subject);
-  const className = slot.classes?.name ?? "";
-  const canNavigate = !!slot.subject_label;
+  const className = slot.classes?.name ?? slot.subject_groups?.name ?? "";
+  const canNavigate = !!slot.subject_label && !!(slot.group_id || slot.class_id);
   return (
     <button
       type="button"
@@ -296,7 +327,9 @@ function ReadOnlyClassCard({
       onClick={() =>
         canNavigate &&
         navigate(
-          `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
+          slot.group_id
+            ? `/student/predmet/${encodeURIComponent(slot.subject_label!)}/skupina/${slot.group_id}`
+            : `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
         )
       }
       className={`w-full text-left rounded-md p-2 border-l-4 transition-all ${
