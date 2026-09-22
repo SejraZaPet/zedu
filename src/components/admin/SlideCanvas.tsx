@@ -558,7 +558,7 @@ function EditableBlockInner({
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="text-xl text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
+          className="text-[2rem] text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_strong]:font-semibold"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
@@ -568,14 +568,16 @@ function EditableBlockInner({
 
   if (block.type === "heading") {
     const level = block.props?.level || 2;
+    // Projekční měřítko ~1,6× proti učebnici: scéna 1600×900 se v editoru
+    // i na projektoru zmenšuje, takže velikosti z učebnice by byly nečitelné.
     const cls =
       level === 1
-        ? "text-4xl font-semibold"
+        ? "text-[3.75rem] font-semibold"
         : level === 2
-          ? "text-3xl font-semibold"
+          ? "text-[3.25rem] font-semibold"
           : level === 3
-            ? "text-2xl font-semibold"
-            : "text-xl font-semibold";
+            ? "text-[2.75rem] font-semibold"
+            : "text-[2.25rem] font-semibold";
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
     return (
@@ -625,7 +627,7 @@ function EditableBlockInner({
             html
             value={block.props.html}
             placeholder={BLOCK_PLACEHOLDER}
-            className="text-xl text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
+            className="text-[2rem] text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-3"
             style={slideTextStyle(block.props)}
             onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
           />
@@ -655,7 +657,7 @@ function EditableBlockInner({
         {revealToggle}
         <ul className="space-y-2" style={slideTextStyle(block.props)}>
           {items.length === 0 && editable && (
-            <li className="flex items-start gap-3 text-xl text-foreground">
+            <li className="flex items-start gap-3 text-[2rem] text-foreground">
               <span className="mt-1 flex-shrink-0 text-current">•</span>
               <EditableText
                 editable={editable}
@@ -669,7 +671,7 @@ function EditableBlockInner({
             </li>
           )}
           {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-3 text-xl text-foreground">
+            <li key={i} className="flex items-start gap-3 text-[2rem] text-foreground">
               <span className="mt-1 flex-shrink-0 text-current">•</span>
               <div className="flex-1 flex items-center gap-2">
                 <div className="flex-1" onKeyDown={(e) => {
@@ -745,7 +747,7 @@ function EditableBlockInner({
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="text-2xl leading-relaxed"
+          className="text-[2.25rem] leading-relaxed"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
@@ -769,14 +771,14 @@ function EditableBlockInner({
     const ct = CALLOUT_STYLES[kind] || CALLOUT_STYLES.note;
     return (
       <div data-callout-type={kind} className={`rounded-lg border-l-4 ${ct.border} ${ct.bg} p-4 flex gap-3 !text-foreground [&_*]:!text-foreground`}>
-        <span className="text-xl flex-shrink-0 leading-none">{ct.icon}</span>
+        <span className="text-[2rem] flex-shrink-0 leading-none">{ct.icon}</span>
         <EditableText
           editable={editable}
           multiline
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="flex-1 text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          className="flex-1 text-[2rem] leading-relaxed [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-2 [&_mark]:bg-primary/30"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
@@ -1795,14 +1797,14 @@ export function SlideBody({
   const headlineLevel = Number((slide as any)?.headlineLevel) || 0;
   const headlineSizeClass =
     layout === "title-only"
-      ? "text-5xl text-center"
+      ? "text-[5rem] text-center"
       : headlineLevel >= 4
-        ? "text-2xl"
+        ? "text-[2.75rem]"
         : headlineLevel === 3
-          ? "text-3xl"
+          ? "text-[3.25rem]"
           : headlineLevel === 2
-            ? "text-4xl"
-            : "text-5xl";
+            ? "text-[3.75rem]"
+            : "text-[4.5rem]";
 
   // Mimo editor prázdný nadpis vůbec nerenderujeme – jinak zabírá výšku
   // a obsah slidu se pak překrývá.
