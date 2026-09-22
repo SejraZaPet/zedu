@@ -76,6 +76,8 @@ import AiContentBadge from "@/components/ai/AiContentBadge";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
+import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 
 interface Phase {
   key: string;
