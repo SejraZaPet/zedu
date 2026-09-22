@@ -213,6 +213,10 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "two_boxes",
   "qr_link",
   "flow_steps",
+  "image",
+  "image_text",
+  "gallery",
+  "callout",
 ];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [

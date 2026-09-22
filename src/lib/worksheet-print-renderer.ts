@@ -31,7 +31,7 @@ const BRAND_PRIMARY = "#0E8F9A";      // teal — headings, dividers, hotspot ma
 const BRAND_SECONDARY = "#AD87C9";    // lavender — callout accents
 const BRAND_TERTIARY = "#9B6CFF";     // vivid purple — secondary hotspot markers
 const BRAND_INFO_ACCENT = "#6EC6D9";  // light teal — info callout border
-const BRAND_INFO_SURFACE = "${BRAND_INFO_SURFACE}"; // pale teal — info callout background
+const BRAND_INFO_SURFACE = "#ECFEFF"; // pale teal — info callout background
 
 
 // ────────────────── Pagination Rules ──────────────────
@@ -101,6 +101,29 @@ html, body {
 }
 
 .ws-items { display: block; width: 100%; }
+
+.ws-lesson-visual {
+  display: block;
+  margin: 8pt 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.ws-lesson-image { display: block; max-width: 100%; height: auto; border-radius: 6pt; }
+.ws-image-caption { margin-top: 4pt; color: #64748B !important; font-size: 8.5pt; line-height: 1.35; }
+.ws-image-text { display: table; width: 100%; table-layout: fixed; }
+.ws-image-text-media, .ws-image-text-copy { display: table-cell; width: 50%; vertical-align: top; }
+.ws-image-text-media { padding-right: 9pt; }
+.ws-image-text-copy { padding-left: 9pt; white-space: pre-wrap; font-size: 10pt; line-height: 1.5; }
+.ws-image-text-right .ws-image-text-media { float: right; padding-right: 0; padding-left: 9pt; }
+.ws-image-text-right .ws-image-text-copy { padding-left: 0; padding-right: 9pt; }
+.ws-gallery { display: grid; gap: 7pt; align-items: start; }
+.ws-gallery figure { margin: 0; text-align: center; break-inside: avoid; }
+.ws-gallery img { display: block; width: 100%; height: auto; max-height: 180pt; object-fit: contain; border-radius: 6pt; }
+.ws-callout { display: table; width: 100%; border-left: 3pt solid #94A3B8; border-radius: 6pt; padding: 9pt 11pt; background: #F8FAFC !important; }
+.ws-callout-icon, .ws-callout-content { display: table-cell; vertical-align: top; }
+.ws-callout-icon { width: 24pt; padding-right: 7pt; font-size: 14pt; }
+.ws-callout-title { margin: 0 0 3pt; font-size: 10.5pt; font-weight: 700; }
+.ws-callout-text { margin: 0; font-size: 9.5pt; line-height: 1.5; white-space: pre-wrap; }
 
 /* ─── D.1 Header ─── */
 .ws-header {
@@ -640,6 +663,18 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function stripHtml(value: string): string {
+  return value.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/\n\s+/g, "\n").trim();
+}
+
+function safeCssColor(value?: string): string | null {
+  if (!value) return null;
+  const color = value.trim();
+  return /^(#[0-9a-f]{3,8}|hsl\([\d.]+(?:deg)?\s*,?\s*[\d.]+%\s*,?\s*[\d.]+%(?:\s*\/\s*[\d.]+%?)?\)|rgb\([\d.]+\s*,?\s*[\d.]+\s*,?\s*[\d.]+(?:\s*\/\s*[\d.]+%?)?\))$/i.test(color)
+    ? color
+    : null;
+}
+
 function pointsLabel(n: number): string {
   if (n === 1) return "bod";
   if (n >= 2 && n <= 4) return "body";
@@ -916,6 +951,52 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         ${item.prompt ? `<p style="font-size:10pt;margin:0 0 5px;">${esc(item.prompt)}</p>` : ""}
         <table style="width:100%;border-collapse:collapse;">${thead}${tbody}</table>
         ${item.tableCaption ? `<p style="font-size:9pt;color:#555;margin:4px 0 0;">${esc(item.tableCaption)}</p>` : ""}
+      </div>`;
+    }
+
+    case "image": {
+      if (!item.imageUrl) return "";
+      const widths = { full: "100%", medium: "50%", small: "33.333%" } as const;
+      const alignment = item.imageAlignment === "left" ? "margin-right:auto" : item.imageAlignment === "right" ? "margin-left:auto" : "margin-left:auto;margin-right:auto";
+      return `<figure class="ws-lesson-visual" style="width:${widths[item.imageWidth ?? "full"]};${alignment};text-align:${item.imageAlignment ?? "center"};">
+        <img class="ws-lesson-image" src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? item.imageCaption ?? "")}" />
+        ${item.imageCaption ? `<figcaption class="ws-image-caption">${esc(item.imageCaption)}</figcaption>` : ""}
+      </figure>`;
+    }
+
+    case "image_text": {
+      const media = item.imageUrl ? `<div class="ws-image-text-media"><img class="ws-lesson-image" src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" /></div>` : "";
+      const copy = `<div class="ws-image-text-copy">${esc(stripHtml(item.imageText ?? ""))}</div>`;
+      return `<div class="ws-lesson-visual ws-image-text ${item.imagePosition === "right" ? "ws-image-text-right" : ""}">${item.imagePosition === "right" ? `${copy}${media}` : `${media}${copy}`}</div>`;
+    }
+
+    case "gallery": {
+      const columns = item.galleryColumns === 2 || item.galleryColumns === 4 ? item.galleryColumns : 3;
+      const images = (item.galleryImages ?? []).filter((image) => image.url).map((image) => `<figure>
+        <img src="${esc(image.url)}" alt="${esc(image.alt ?? image.caption ?? "")}" />
+        ${image.caption ? `<figcaption class="ws-image-caption">${esc(image.caption)}</figcaption>` : ""}
+      </figure>`).join("");
+      return images ? `<div class="ws-lesson-visual ws-gallery" style="grid-template-columns:repeat(${columns},minmax(0,1fr));">${images}</div>` : "";
+    }
+
+    case "callout": {
+      const palettes: Record<string, { bg: string; accent: string; icon: string }> = {
+        note: { bg: "#F1F5F9", accent: "#94A3B8", icon: "📝" },
+        info: { bg: "#F1F5F9", accent: "#94A3B8", icon: "ℹ️" },
+        warning: { bg: "#FEF2F2", accent: "#EF4444", icon: "⚠️" },
+        tip: { bg: "#F0FDFA", accent: BRAND_PRIMARY, icon: "💡" },
+        remember: { bg: "#F0FDFA", accent: BRAND_PRIMARY, icon: "🧠" },
+        custom: { bg: "#F8FAFC", accent: "#94A3B8", icon: "📌" },
+      };
+      const palette = palettes[item.calloutVariant ?? "note"] ?? palettes.note;
+      const bg = safeCssColor(item.calloutBackgroundColor) ?? palette.bg;
+      const accent = safeCssColor(item.calloutAccentColor) ?? palette.accent;
+      return `<div class="ws-lesson-visual ws-callout" style="background:${bg} !important;border-left-color:${accent};">
+        <div class="ws-callout-icon">${palette.icon}</div>
+        <div class="ws-callout-content">
+          ${item.calloutTitle ? `<h4 class="ws-callout-title">${esc(item.calloutTitle)}</h4>` : ""}
+          <p class="ws-callout-text">${esc(stripHtml(item.calloutText ?? item.prompt ?? ""))}</p>
+        </div>
       </div>`;
     }
 
