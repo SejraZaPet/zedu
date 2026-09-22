@@ -36,7 +36,8 @@ import {
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
 import { headlineColorsForBackground, resolveSlideIsDark, cssColorLightness } from "@/lib/slide-contrast";
-import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
+import { blockBackgroundSlideColor, blockBackgroundStyle } from "@/lib/block-backgrounds";
+import { getGroupChildHeight } from "@/lib/slide-groups";
 
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
@@ -477,14 +478,17 @@ function EditableBlock(props: {
   const p = (props.block.props || {}) as Record<string, any>;
   const grad = gradientCss(p.boxGradient);
   const solid = p.boxBackground && p.boxBackground !== "none" ? p.boxBackground : null;
+  const lessonBackground = blockBackgroundStyle(p);
   const inner = <EditableBlockInner {...props} />;
-  if (!grad && !solid) return inner;
+  if (!grad && !solid && !lessonBackground) return inner;
   return (
     <div
-      className="h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4"
-      data-box-background={grad ? "gradient" : "solid"}
+      className={grad || solid ? "h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4" : "w-full"}
+      data-box-background={grad ? "gradient" : solid ? "solid" : undefined}
       data-box-gradient={grad || undefined}
+      data-lesson-background={lessonBackground ? "true" : undefined}
       style={{
+        ...lessonBackground,
         backgroundImage: grad || undefined,
         backgroundColor: grad ? "transparent" : solid || undefined,
         border: p.boxBorderColor ? `2px solid ${p.boxBorderColor}` : undefined,
@@ -547,14 +551,14 @@ function EditableBlockInner({
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
     return (
-      <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
+      <div className={asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}>
         <EditableText
           editable={editable}
           multiline
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
+          className="text-xl text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
@@ -565,7 +569,13 @@ function EditableBlockInner({
   if (block.type === "heading") {
     const level = block.props?.level || 2;
     const cls =
-      level === 1 ? "text-5xl font-bold" : level === 3 ? "text-3xl font-semibold" : "text-4xl font-bold";
+      level === 1
+        ? "text-4xl font-semibold"
+        : level === 2
+          ? "text-3xl font-semibold"
+          : level === 3
+            ? "text-2xl font-semibold"
+            : "text-xl font-semibold";
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
     return (
@@ -574,7 +584,7 @@ function EditableBlockInner({
         html={isHtml}
         value={value}
         placeholder={BLOCK_PLACEHOLDER}
-        className={`${cls} [&_strong]:font-semibold`}
+        className={`font-heading text-foreground ${cls} [&_*]:font-heading [&_strong]:font-semibold`}
         style={slideTextStyle(block.props)}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
       />
@@ -607,7 +617,7 @@ function EditableBlockInner({
           return { ...b, props: { ...b.props, html: next } };
         });
       return (
-        <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
+        <div className={asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}>
           {revealToggle}
           <EditableText
             editable={editable}
@@ -615,7 +625,7 @@ function EditableBlockInner({
             html
             value={block.props.html}
             placeholder={BLOCK_PLACEHOLDER}
-            className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
+            className="text-xl text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
             style={slideTextStyle(block.props)}
             onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
           />
@@ -641,12 +651,12 @@ function EditableBlockInner({
       });
 
     return (
-      <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
+      <div className={asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}>
         {revealToggle}
         <ul className="space-y-2" style={slideTextStyle(block.props)}>
           {items.length === 0 && editable && (
-            <li className="flex items-start gap-3 text-2xl">
-              <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
+            <li className="flex items-start gap-3 text-xl text-foreground">
+              <span className="mt-1 flex-shrink-0 text-current">•</span>
               <EditableText
                 editable={editable}
                 value=""
@@ -659,8 +669,8 @@ function EditableBlockInner({
             </li>
           )}
           {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-3 text-2xl">
-              <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
+            <li key={i} className="flex items-start gap-3 text-xl text-foreground">
+              <span className="mt-1 flex-shrink-0 text-current">•</span>
               <div className="flex-1 flex items-center gap-2">
                 <div className="flex-1" onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -757,24 +767,16 @@ function EditableBlockInner({
     const isHtml = /<[^>]+>/.test(value);
     const kind = block.props?.calloutType || "note";
     const ct = CALLOUT_STYLES[kind] || CALLOUT_STYLES.note;
-    const tone =
-      kind === "tip"
-        ? "bg-green-500/20 border-green-400/50"
-        : kind === "warning"
-          ? "bg-amber-500/20 border-amber-400/50"
-          : kind === "remember"
-            ? "bg-purple-500/20 border-purple-400/50"
-            : "bg-blue-500/20 border-blue-400/50";
     return (
-      <div className={`rounded-lg border-l-4 ${tone} p-4 flex gap-3 text-white`}>
-        <span className="text-4xl flex-shrink-0 leading-none">{ct.icon}</span>
+      <div data-callout-type={kind} className={`rounded-lg border-l-4 ${ct.border} ${ct.bg} p-4 flex gap-3 !text-foreground [&_*]:!text-foreground`}>
+        <span className="text-xl flex-shrink-0 leading-none">{ct.icon}</span>
         <EditableText
           editable={editable}
           multiline
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="flex-1 text-white text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          className="flex-1 text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
@@ -878,18 +880,18 @@ function EditableBlockInner({
 
     return (
       <div
-        className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+        className={asCard && !blockBackgroundStyle(block.props) ? "bg-card p-4 border border-border" : ""}
         style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
       >
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-2xl">
+          <table data-lesson-table="true" className="w-full border-collapse text-sm !text-foreground">
             {headers.length > 0 && (
               <thead>
                 <tr>
                   {headers.map((h, ci) => (
                     <th
                       key={ci}
-                      className="border border-white/20 bg-white/20 px-3 py-2 text-left font-semibold text-white"
+                      className="border !border-border !bg-muted px-4 py-2 text-left text-sm font-semibold !text-foreground"
                     >
                       <EditableText
                         editable={editable}
@@ -912,7 +914,7 @@ function EditableBlockInner({
                   {Array.from({ length: colCount }).map((_, ci) => (
                     <td
                       key={ci}
-                      className="border border-white/20 bg-transparent px-3 py-2 align-top text-white/90"
+                      className="border !border-border bg-card px-4 py-2 align-top text-sm !text-foreground"
                     >
                       <EditableText
                         editable={editable}
@@ -1793,32 +1795,40 @@ export function SlideBody({
   const headlineLevel = Number((slide as any)?.headlineLevel) || 0;
   const headlineSizeClass =
     layout === "title-only"
-      ? "text-7xl text-center"
+      ? "text-5xl text-center"
       : headlineLevel >= 4
-        ? "text-4xl"
+        ? "text-2xl"
         : headlineLevel === 3
-          ? "text-5xl"
-          : "text-6xl";
+          ? "text-3xl"
+          : headlineLevel === 2
+            ? "text-4xl"
+            : "text-5xl";
 
   // Mimo editor prázdný nadpis vůbec nerenderujeme – jinak zabírá výšku
   // a obsah slidu se pak překrývá.
-  const headlineEl = !editable && !headline ? null : (
-
+  const headlineBackground = blockBackgroundStyle((slide as any)?.headlineBlockProps);
+  const headlineText = (
     <EditableText
       editable={!!editable}
       value={headline}
       placeholder="Nadpis slidu"
-      className={`font-bold leading-tight ${headlineSizeClass}`}
-
-      style={{
-        background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
-        WebkitBackgroundClip: "text",
-        backgroundClip: "text",
-        color: "transparent",
-      }}
+      className={`font-heading font-semibold leading-tight ${headlineSizeClass}`}
+      style={headlineBackground
+        ? { color: "hsl(var(--foreground))" }
+        : {
+            background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
       onCommit={(v) => onChangeHeadline?.(v)}
     />
   );
+  const headlineEl = !editable && !headline
+    ? null
+    : headlineBackground
+      ? <div data-headline-background="true" className="w-full" style={headlineBackground}>{headlineText}</div>
+      : headlineText;
 
   const startDrag = (blockId: string) => (e: React.PointerEvent) => {
     if (!onReorderBlock) return;
@@ -1960,6 +1970,7 @@ export function SlideBody({
       : forceLightText
         ? "text-white [&_*]:text-inherit"
         : "";
+    const manualHeight = getGroupChildHeight(b);
     const shell = (
       <BlockShell
         editable={editable}
@@ -1987,13 +1998,14 @@ export function SlideBody({
       </BlockShell>
     );
 
-    if (!editable) return <div key={b.id} className={contrastClass}>{shell}</div>;
+    if (!editable) return <div key={b.id} className={contrastClass} style={manualHeight ? { minHeight: manualHeight } : undefined}>{shell}</div>;
 
     return (
       <div
         key={b.id}
         className={`touch-none cursor-move ${contrastClass}`}
         data-no-pan="true"
+        style={manualHeight ? { minHeight: manualHeight } : undefined}
         onPointerDown={startPromoteDrag(b)}
       >
         {shell}
@@ -2004,6 +2016,10 @@ export function SlideBody({
 
 
   let body: React.ReactNode = null;
+  const groupMinHeight = Number((slide as any)?.groupMinHeight);
+  const groupHeightStyle = Number.isFinite(groupMinHeight) && groupMinHeight > 0
+    ? { minHeight: groupMinHeight }
+    : undefined;
 
   if (layout === "title-only") {
     body = <div className="flex-1 flex items-center justify-center">{headlineEl}</div>;
@@ -2012,7 +2028,7 @@ export function SlideBody({
     body = (
       <>
         {headlineEl}
-        <div className={`grid grid-cols-2 gap-8 w-full ${blockTextScope}`} style={{ zoom: fontScale } as any}>
+        <div data-slide-group="two-cols" className={`grid grid-cols-2 gap-8 w-full ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
           {cols.map((col, ci) => (
             <div key={ci} className="space-y-6">
               {col.map((b, i) => renderBlock(b, i))}
@@ -2026,7 +2042,7 @@ export function SlideBody({
     body = (
       <>
         {headlineEl}
-        <div className={`grid grid-cols-3 gap-6 w-full ${blockTextScope}`} style={{ zoom: fontScale } as any}>
+        <div data-slide-group="three-cols" className={`grid grid-cols-3 gap-6 w-full ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
           {cols.map((col, ci) => (
             <div key={ci} className="space-y-4">
               {col.map((b, i) => renderBlock(b, i, true))}
@@ -2060,7 +2076,7 @@ export function SlideBody({
     body = (
       <>
         {headlineEl}
-        <div className={`w-full text-2xl space-y-6 ${blockTextScope}`} style={{ zoom: fontScale } as any}>
+        <div data-slide-group="full" className={`w-full space-y-6 ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
           {blocks.length === 0 && framedBlocks.length === 0 && editable ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.

@@ -235,13 +235,17 @@ const TeacherPresentations = () => {
         : "textbook_lessons";
       const { data, error } = await supabase
         .from(table)
-        .select("id, title, blocks")
+        .select("id, title, blocks, hero_image_url")
         .eq("id", lessonId)
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("Propojená lekce už neexistuje.");
 
-      const fresh = blocksToSlides(((data as any).blocks ?? []) as any[], (data as any).title ?? p.title);
+      const fresh = blocksToSlides(
+        ((data as any).blocks ?? []) as any[],
+        (data as any).title ?? p.title,
+        { heroImageUrl: (data as any).hero_image_url },
+      );
       const slides = mode === "fresh" ? fresh : mergePresentationSlides(fresh, p.slides ?? []);
       await saveSlides(p.id, slides);
       setItems((prev) => prev.map((i) => (i.id === p.id ? { ...i, slides } : i)));

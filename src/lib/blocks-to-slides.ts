@@ -195,11 +195,12 @@ function mergeShortSections(slides: any[]): any[] {
           base.projector.headline = nextHeadline;
           base.sourceBlockId = next.sourceBlockId ?? base.sourceBlockId;
           if (next.headlineLevel) base.headlineLevel = next.headlineLevel;
+          if (next.headlineBlockProps) base.headlineBlockProps = { ...next.headlineBlockProps };
         } else {
           // Mezititulek si nese svou úroveň i podbarvení z lekce.
           base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId, {
             level: next.headlineLevel ?? 3,
-            ...(next.backgroundOverride?.color ? { backgroundColor: next.backgroundOverride.color } : {}),
+            ...(next.headlineBlockProps || {}),
           }));
         }
       }
@@ -212,12 +213,6 @@ function mergeShortSections(slides: any[]): any[] {
       if (nextBody) {
         base.projector.body = base.projector.body ? `${base.projector.body}\n\n${nextBody}` : nextBody;
       }
-      // Podbarvení přebírá celý snímek jen tehdy, když sekci i „adoptoval“
-      // (jinak barva zůstane u konkrétního mezititulku jako v lekci).
-      if (takeHeadline && !base.backgroundOverride && next.backgroundOverride) {
-        base.backgroundOverride = next.backgroundOverride;
-      }
-
       chars = bodyLen(base);
       j += 1;
     }
@@ -418,6 +413,8 @@ function absorbEmptyHeadingSlides(slides: any[]): any[] {
         ...next,
         projector: { ...next.projector, headline: slide.projector.headline },
         sourceBlockId: next.sourceBlockId ?? slide.sourceBlockId,
+        headlineLevel: next.headlineLevel ?? slide.headlineLevel,
+        headlineBlockProps: next.headlineBlockProps ?? slide.headlineBlockProps,
       };
       continue;
     }
@@ -438,7 +435,11 @@ function renumberSlides(slides: any[]): any[] {
 }
 
 
-export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
+export interface BlocksToSlidesOptions {
+  heroImageUrl?: string | null;
+}
+
+export function blocksToSlides(blocks: any[], lessonTitle: string, options: BlocksToSlidesOptions = {}): any[] {
   const slides: any[] = [];
 
   slides.push({
@@ -449,6 +450,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     teacherNotes: "",
     themeId: DEFAULT_THEME_ID,
     layout: defaultLayoutForType("intro"),
+    ...(options.heroImageUrl ? { heroImage: options.heroImageUrl, layout: "img-left" } : {}),
   });
 
   let slideIndex = 1;
@@ -514,6 +516,14 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     const props = block.props || {};
 
     if (type === "divider") {
+      if (current) {
+        current.blocks.push(block);
+      } else {
+        const previous = slides[slides.length - 1];
+        if (previous && previous.type !== "intro") {
+          previous.blocks = [...(previous.blocks || []), block];
+        }
+      }
       flush();
       continue;
     }
@@ -599,7 +609,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       const level = Number(props.level) || 0;
       if (level) current.headlineLevel = level;
       const headingBg = blockBackgroundSlideColor(props);
-      if (headingBg) current.backgroundOverride = { color: headingBg };
+      if (headingBg) current.headlineBlockProps = { ...props };
       continue;
     }
 
