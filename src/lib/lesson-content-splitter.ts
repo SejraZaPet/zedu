@@ -145,6 +145,132 @@ export interface LessonTable {
   caption?: string;
 }
 
+/** Needitovatelný vizuální blok lekce připravený pro pracovní list. */
+export type LessonVisualBlock =
+  | {
+      kind: "image";
+      blockIndex: number;
+      url: string;
+      alt?: string;
+      caption?: string;
+      width?: "full" | "medium" | "small";
+      alignment?: "left" | "center" | "right";
+    }
+  | {
+      kind: "image_text";
+      blockIndex: number;
+      imageUrl: string;
+      text: string;
+      imagePosition: "left" | "right";
+    }
+  | {
+      kind: "gallery";
+      blockIndex: number;
+      images: Array<{ url: string; alt?: string; caption?: string }>;
+      columns: 2 | 3 | 4;
+    }
+  | {
+      kind: "callout";
+      blockIndex: number;
+      variant: "note" | "info" | "tip" | "warning" | "remember" | "custom";
+      title?: string;
+      text: string;
+      backgroundColor?: string;
+      accentColor?: string;
+    };
+
+export type LessonSectionContent =
+  | { kind: "table"; table: LessonTable }
+  | { kind: "visual"; visual: LessonVisualBlock }
+  | { kind: "activity"; activity: LessonActivity };
+
+const cleanText = (value: unknown) =>
+  String(value ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+function normalizeImageWidth(value: unknown): "full" | "medium" | "small" {
+  if (value === "small" || value === "third") return "small";
+  if (value === "medium" || value === "half") return "medium";
+  return "full";
+}
+
+function visualFromBlock(block: any, blockIndex: number): LessonVisualBlock | null {
+  const p = (block?.props ?? {}) as Record<string, any>;
+  if (block?.type === "image") {
+    const url = String(p.url ?? "").trim();
+    if (!url) return null;
+    return {
+      kind: "image",
+      blockIndex,
+      url,
+      ...(cleanText(p.alt) ? { alt: cleanText(p.alt) } : {}),
+      ...(cleanText(p.caption) ? { caption: cleanText(p.caption) } : {}),
+      width: normalizeImageWidth(p.width),
+      alignment: p.alignment === "left" || p.alignment === "right" ? p.alignment : "center",
+    };
+  }
+  if (block?.type === "image_text") {
+    const imageUrl = String(p.imageUrl ?? "").trim();
+    const text = String(p.text ?? "").trim();
+    if (!imageUrl && !text) return null;
+    return {
+      kind: "image_text",
+      blockIndex,
+      imageUrl,
+      text,
+      imagePosition: p.imagePosition === "right" ? "right" : "left",
+    };
+  }
+  if (block?.type === "gallery") {
+    const images = (Array.isArray(p.images) ? p.images : [])
+      .map((image: any) => ({
+        url: String(image?.url ?? "").trim(),
+        ...(cleanText(image?.alt) ? { alt: cleanText(image.alt) } : {}),
+        ...(cleanText(image?.caption) ? { caption: cleanText(image.caption) } : {}),
+      }))
+      .filter((image: { url: string }) => image.url);
+    if (images.length === 0) return null;
+    const columns = p.columns === 2 || p.columns === 4 ? p.columns : 3;
+    return { kind: "gallery", blockIndex, images, columns };
+  }
+  if (block?.type === "callout") {
+    const text = String(p.text ?? "").trim();
+    const title = cleanText(p.title);
+    if (!text && !title) return null;
+    const backgroundPresets: Record<string, { backgroundColor: string; accentColor: string }> = {
+      note: { backgroundColor: "hsl(205, 100%, 96%)", accentColor: "hsl(205, 85%, 52%)" },
+      important: { backgroundColor: "hsl(34, 100%, 95%)", accentColor: "hsl(28, 92%, 53%)" },
+      example: { backgroundColor: "hsl(146, 55%, 95%)", accentColor: "hsl(150, 58%, 40%)" },
+      tip: { backgroundColor: "hsl(266, 100%, 96%)", accentColor: "hsl(266, 80%, 62%)" },
+      neutral: { backgroundColor: "hsl(220, 16%, 96%)", accentColor: "hsl(220, 10%, 66%)" },
+    };
+    const preset = backgroundPresets[String(p.backgroundStyle ?? "")];
+    const customBackground = typeof p.backgroundColor === "string" && p.backgroundColor.trim() ? p.backgroundColor.trim() : undefined;
+    const rawVariant = String(p.calloutType ?? "note");
+    const variant = customBackground
+      ? "custom"
+      : rawVariant === "warning" || rawVariant === "tip" || rawVariant === "remember" || rawVariant === "info"
+        ? rawVariant
+        : "note";
+    return {
+      kind: "callout",
+      blockIndex,
+      variant,
+      ...(title ? { title } : {}),
+      text,
+      ...(customBackground || preset?.backgroundColor ? { backgroundColor: customBackground ?? preset?.backgroundColor } : {}),
+      ...(preset?.accentColor ? { accentColor: preset.accentColor } : {}),
+    };
+  }
+  return null;
+}
+
+/** Vrátí obrazové a zvýrazněné bloky v přesném pořadí lekce. */
+export function extractVisualBlocksFromBlocks(blocks: unknown): LessonVisualBlock[] {
+  return flattenLessonBlocks(blocks)
+    .map(({ block, topIndex }) => visualFromBlock(block, topIndex))
+    .filter((visual): visual is LessonVisualBlock => visual !== null);
+}
+
 /**
  * Vrátí tabulky nalezené v blocích lekce (jsonb `blocks`) — hlavička + řádky,
  * včetně tabulek vnořených v kartách (slide_group).
@@ -331,6 +457,8 @@ export interface LessonSection {
   activity?: LessonActivity;
   /** Tabulka nalezená v sekci (pokud nějakou obsahuje). */
   table?: LessonTable;
+  /** Tabulky, vizuální bloky a aktivita v původním pořadí uvnitř sekce. */
+  content: LessonSectionContent[];
 }
 
 /**
@@ -352,13 +480,14 @@ export function splitLessonIntoSections(blocks: unknown): LessonSection[] {
     lines: string[];
     activity?: LessonActivity;
     table?: LessonTable;
+    content: LessonSectionContent[];
   };
   const drafts: Draft[] = [];
   let current: Draft | null = null;
   let currentCardTop: number | null = null;
 
   const startNew = () => {
-    current = { title: "", lines: [] };
+    current = { title: "", lines: [], content: [] };
     drafts.push(current);
   };
 
@@ -385,26 +514,36 @@ export function splitLessonIntoSections(blocks: unknown): LessonSection[] {
       continue;
     }
     if (b.type === "activity") {
-      draft.activity = draft.activity ?? activities[activityCursor];
+      const activity = activities[activityCursor];
+      draft.activity = draft.activity ?? activity;
+      if (activity) draft.content.push({ kind: "activity", activity });
       activityCursor += 1;
       continue;
     }
     if (b.type === "table") {
-      draft.table = draft.table ?? tables[tableCursor];
+      const table = tables[tableCursor];
+      draft.table = draft.table ?? table;
+      if (table) draft.content.push({ kind: "table", table });
       tableCursor += 1;
+      continue;
+    }
+    const visual = visualFromBlock(b, entry.topIndex);
+    if (visual) {
+      draft.content.push({ kind: "visual", visual });
       continue;
     }
     draft.lines.push(...blockToText(b));
   }
 
   return drafts
-    .filter((d) => d.title || d.lines.length > 0 || d.activity || d.table)
+    .filter((d) => d.title || d.lines.length > 0 || d.activity || d.table || d.content.length > 0)
     .map((d, i) => ({
       index: i + 1,
       title: d.title || (d.lines[0] ?? `Část ${i + 1}`).slice(0, 80),
       text: d.lines.join("\n"),
       ...(d.activity ? { activity: d.activity } : {}),
       ...(d.table ? { table: d.table } : {}),
+      content: d.content,
     }));
 }
 
