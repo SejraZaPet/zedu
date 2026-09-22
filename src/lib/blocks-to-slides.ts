@@ -540,11 +540,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
       let headlineLevel: number | undefined;
       let bodyChildren = visibleChildren;
       const firstChild = visibleChildren[0];
-      // Podbarvený nadpis zůstává barevným blokem na snímku (jako v lekci),
-      // nepovyšuje se na titulek snímku – jinak by se barva rozlila přes celý
-      // snímek a ostatní barvy v kartě by se ztratily.
-      const firstChildHasOwnBg = !!blockBackgroundSlideColor(firstChild?.props);
-      if (firstChild?.type === "heading" && !firstChildHasOwnBg) {
+      // První nadpis skupiny je titulkem snímku. Jeho lokální styl se přenese
+      // přes headlineBlockProps; SlideCanvas jej vykreslí jako samostatný box,
+      // takže se barva nerozlije na pozadí celého snímku.
+      if (firstChild?.type === "heading") {
         headline = getText(firstChild.props || {});
         headlineLevel = Number(firstChild.props?.level) || undefined;
         bodyChildren = visibleChildren.slice(1);
@@ -564,6 +563,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
 
       const groupSlide = newSlide(headline, block.id);
       if (headlineLevel) groupSlide.headlineLevel = headlineLevel;
+      if (headline && blockBackgroundSlideColor(firstChild?.props)) {
+        groupSlide.headlineBlockProps = { ...(firstChild.props || {}) };
+      }
       // Barvu celého snímku určuje jen podbarvení celé karty. Podbarvení
       // jednotlivých dětí si nesou samotné bloky (více barev na snímku).
       const groupBg = blockBackgroundSlideColor(props) || null;
