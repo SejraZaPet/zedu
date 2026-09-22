@@ -619,6 +619,7 @@ export default function StudentSubjectClass() {
                 {pastLessons.map((e) => {
                   const dateKey = format(e.start, "yyyy-MM-dd");
                   const topicRow = lessonTopics[dateKey];
+                  const slotPlans = plansBySlot[`${dateKey}|${format(e.start, "HH:mm")}`] ?? [];
                   return (
                   <Card key={e.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
@@ -670,7 +671,11 @@ export default function StudentSubjectClass() {
               </p>
             ) : (
               <div className="space-y-2">
-                {upcomingLessons.map((e) => (
+                {upcomingLessons.map((e) => {
+                  const slotPlans =
+                    plansBySlot[`${format(e.start, "yyyy-MM-dd")}|${format(e.start, "HH:mm")}`] ??
+                    [];
+                  return (
                   <Card key={e.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
