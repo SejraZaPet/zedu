@@ -73,7 +73,7 @@ function renderActivityBody(p: Record<string, any>, withSolution: boolean): stri
             }</td></tr>`,
         )
         .join("")}</tbody></table>
-        ${withSolution ? "" : `<p class="note">Nabídka B: ${right.map((r) => esc(r)).join(" · ")}</p>`}`;
+        ${withSolution ? "" : `<p class="note">Nabídka B: ${shuffleNonIdentity(right).map((r) => esc(r)).join(" · ")}</p>`}`;
     }
     case "ordering": {
       const items: any[] = Array.isArray(p.ordering?.items) ? p.ordering.items : [];
