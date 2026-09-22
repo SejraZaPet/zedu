@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -5,11 +6,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { shuffleNonIdentity } from "@/lib/shuffle";
 import type { WorksheetItemProps } from "./types";
 
 export default function MatchingItem({ item, value, onChange, disabled }: WorksheetItemProps) {
   const pairs = item.matchPairs ?? [];
-  const rights = pairs.map((p) => p.right);
+  // Nabídka odpovědí se zamíchá při každém zobrazení – nikdy nesmí být
+  // ve stejném pořadí jako levý sloupec (to by prozradilo správné páry).
+  const rights = useMemo(
+    () => shuffleNonIdentity(pairs.map((p) => p.right)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pairs.map((p) => p.right).join("|")],
+  );
   const currentAnswers: string[] = Array.isArray(value) ? value : Array(pairs.length).fill("");
 
   return (

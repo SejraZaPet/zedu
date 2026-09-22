@@ -861,13 +861,10 @@ export function generateVariants(input: VariantGeneratorInput): VariantGenerator
         r => r.appliedTo === "*" || r.appliedTo === item.id,
       );
       if (shouldShuffle && vi > 0) {
-        const rights = seededShuffle(item.matchPairs.map(p => p.right), rng);
-        // Pairs are now "scrambled" — student must reconnect
-        // Store original pairs for answer key, display with shuffled rights
-        item.matchPairs = item.matchPairs.map((p, i) => ({
-          left: p.left,
-          right: rights[i],
-        }));
+        // Páry (left→right) zůstávají zdrojem pravdy pro vyhodnocení;
+        // zamíchá se pouze pořadí ŘÁDKŮ, aby varianty nebyly identické.
+        // Nabídka odpovědí se míchá až při zobrazení/tisku.
+        item.matchPairs = seededShuffle(item.matchPairs, rng);
       }
     }
 
@@ -961,8 +958,7 @@ export function reproduceVariant(
   for (const item of result) {
     if (item.type !== "matching" || !item.matchPairs) continue;
     if (matchRules.some(r => r.appliedTo === "*" || r.appliedTo === item.id)) {
-      const rights = seededShuffle(item.matchPairs.map(p => p.right), rng);
-      item.matchPairs = item.matchPairs.map((p, i) => ({ left: p.left, right: rights[i] }));
+      item.matchPairs = seededShuffle(item.matchPairs, rng);
     }
   }
 

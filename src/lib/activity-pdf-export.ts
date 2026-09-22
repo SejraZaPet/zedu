@@ -7,6 +7,7 @@
 import type { Block } from "@/lib/textbook-config";
 import { getQuizQuestions } from "@/lib/quiz-questions";
 import { activityMeta, activityMinutes, activitySummary, WORK_MODE_LABELS } from "@/lib/activity-meta";
+import { shuffleNonIdentity } from "@/lib/shuffle";
 
 export type ActivityExportVariant = "student" | "teacher";
 
@@ -73,7 +74,7 @@ function renderActivityBody(p: Record<string, any>, withSolution: boolean): stri
             }</td></tr>`,
         )
         .join("")}</tbody></table>
-        ${withSolution ? "" : `<p class="note">Nabídka B: ${right.map((r) => esc(r)).join(" · ")}</p>`}`;
+        ${withSolution ? "" : `<p class="note">Nabídka B: ${shuffleNonIdentity(right).map((r) => esc(r)).join(" · ")}</p>`}`;
     }
     case "ordering": {
       const items: any[] = Array.isArray(p.ordering?.items) ? p.ordering.items : [];
