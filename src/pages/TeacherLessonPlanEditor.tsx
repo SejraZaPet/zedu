@@ -76,6 +76,8 @@ import AiContentBadge from "@/components/ai/AiContentBadge";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
+import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 
 interface Phase {
   key: string;
@@ -229,6 +231,17 @@ export default function TeacherLessonPlanEditor() {
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
       if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
       if (typeof (data as any).anonymous === "boolean") setAnonymous((data as any).anonymous);
+      setMaterials(parseMaterials((data as any).materials));
+      setVisibleToStudents(Boolean((data as any).visible_to_students));
+      setVisibleFrom(
+        (data as any).visible_from ? String((data as any).visible_from).slice(0, 10) : "",
+      );
+      // Preferuj skutečné sloupce cíle; fallback na input_data.
+      if (!savedTarget && ((data as any).class_id || (data as any).group_id)) {
+        setClassId((data as any).class_id || (data as any).group_id);
+      }
+      if ((data as any).lesson_ref_id && !input.lessonId) setLessonId((data as any).lesson_ref_id);
+      if ((data as any).lesson_source) setDbLessonSource((data as any).lesson_source);
     })();
   }, [user, id]);
 
@@ -356,6 +369,12 @@ export default function TeacherLessonPlanEditor() {
    * typ se dopočítá z nabídky `targetOptions`.
    */
   const [classId, setClassId] = useState<string>("");
+  // Přílohy plánu a ruční zveřejnění žákům (výchozí vypnuto).
+  const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  const [visibleToStudents, setVisibleToStudents] = useState(false);
+  // Zdroj propojené lekce uložený v DB (fallback, když ještě nejsou načtené lekce).
+  const [dbLessonSource, setDbLessonSource] = useState<string | null>(null);
+  const [visibleFrom, setVisibleFrom] = useState<string>("");
 
   /**
    * (subject, target) pairs derived from both the personal schedule
@@ -976,6 +995,19 @@ export default function TeacherLessonPlanEditor() {
         subject_id: subjectId,
         grade_band: "",
         slides: [],
+        materials: materials as any,
+        visible_to_students: visibleToStudents,
+        visible_from: visibleFrom || null,
+        class_id: selectedTarget?.kind === "group" ? null : classId || null,
+        group_id: selectedTarget?.kind === "group" ? classId || null : null,
+        lesson_ref_id: lessonId || null,
+        lesson_source: lessonId
+          ? selectedLesson
+            ? selectedLesson.source === "lessons"
+              ? "textbook_lessons"
+              : selectedLesson.source
+            : dbLessonSource
+          : null,
         input_data: {
           description,
           subject,
@@ -1614,6 +1646,47 @@ export default function TeacherLessonPlanEditor() {
               placeholder="Téma, cíl hodiny, poznámky…"
               rows={2}
             />
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+            <AssignmentMaterialsEditor
+              materials={materials}
+              onChange={setMaterials}
+              teacherId={user?.id ?? ""}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+              <div>
+                <Label htmlFor="visible-to-students" className="text-sm font-medium">
+                  Zobrazit žákům
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {classId
+                    ? "Žáci vybrané třídy/skupiny uvidí téma, popis, přílohy a prokliky na lekci či pracovní list."
+                    : "Nejprve vyberte cíl (třídu nebo skupinu) – jinak se plán žákům nezobrazí."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="visible-from" className="text-xs text-muted-foreground">
+                    Zobrazit od
+                  </Label>
+                  <Input
+                    id="visible-from"
+                    type="date"
+                    value={visibleFrom}
+                    onChange={(e) => setVisibleFrom(e.target.value)}
+                    className="h-8 w-auto"
+                    disabled={!visibleToStudents}
+                  />
+                </div>
+                <Switch
+                  id="visible-to-students"
+                  checked={visibleToStudents}
+                  onCheckedChange={setVisibleToStudents}
+                  disabled={!classId}
+                />
+              </div>
+            </div>
           </div>
           {id && id !== "novy" ? (
             <div className="rounded-lg border border-border bg-muted/20 p-3">

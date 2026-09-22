@@ -41,6 +41,12 @@ import {
   getSubjectColor,
 } from "@/lib/subject-appearance";
 import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+import {
+  fetchStudentLessonPlans,
+  planSlotKey,
+  type StudentLessonPlan,
+} from "@/lib/lesson-plan-student";
+import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 
 
 interface StudentLessonTopic {
@@ -134,6 +140,21 @@ export default function StudentSubjectClass() {
   const [loading, setLoading] = useState(true);
   const [lessonTopics, setLessonTopics] = useState<Record<string, StudentLessonTopic>>({});
   const [materialsDate, setMaterialsDate] = useState<string | null>(null);
+  const [lessonPlans, setLessonPlans] = useState<StudentLessonPlan[]>([]);
+  /** Plány spárované na hodinu v rozvrhu: klíč „yyyy-MM-dd|HH:mm“. */
+  const plansBySlot = useMemo(() => {
+    const map: Record<string, StudentLessonPlan[]> = {};
+    for (const p of lessonPlans) {
+      const key = planSlotKey(p.date, p.time);
+      if (key) (map[key] ??= []).push(p);
+    }
+    return map;
+  }, [lessonPlans]);
+  /** Plány bez termínu – zobrazí se samostatně. */
+  const unpairedPlans = useMemo(
+    () => lessonPlans.filter((p) => !planSlotKey(p.date, p.time)),
+    [lessonPlans],
+  );
 
 
 
@@ -375,6 +396,14 @@ export default function StudentSubjectClass() {
         .select("lesson_date, topic, materials")
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
+      // Zveřejněné plány hodin pro tuhle třídu/skupinu a předmět (učitel zapne „Zobrazit žákům“).
+      fetchStudentLessonPlans({
+        classId: isGroup ? undefined : classId,
+        groupId: isGroup ? groupId : undefined,
+        subjectLabel,
+      }).then((plans) => {
+        if (!cancelled) setLessonPlans(plans);
+      });
       const { data } = await q;
       if (cancelled) return;
       const map: Record<string, StudentLessonTopic> = {};
@@ -590,6 +619,7 @@ export default function StudentSubjectClass() {
                 {pastLessons.map((e) => {
                   const dateKey = format(e.start, "yyyy-MM-dd");
                   const topicRow = lessonTopics[dateKey];
+                  const slotPlans = plansBySlot[`${dateKey}|${format(e.start, "HH:mm")}`] ?? [];
                   return (
                   <Card key={e.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
@@ -621,6 +651,14 @@ export default function StudentSubjectClass() {
                         </Button>
                       )}
                     </div>
+                    {user && slotPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
                   </Card>
                   );
                 })}
@@ -641,7 +679,11 @@ export default function StudentSubjectClass() {
               </p>
             ) : (
               <div className="space-y-2">
-                {upcomingLessons.map((e) => (
+                {upcomingLessons.map((e) => {
+                  const slotPlans =
+                    plansBySlot[`${format(e.start, "yyyy-MM-dd")}|${format(e.start, "HH:mm")}`] ??
+                    [];
+                  return (
                   <Card key={e.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -662,7 +704,42 @@ export default function StudentSubjectClass() {
                         </Button>
                       )}
                     </div>
+                    {user && slotPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
                   </Card>
+                  );
+                })}
+                {user && unpairedPlans.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-semibold mb-2">Plány bez termínu v rozvrhu</h3>
+                    {unpairedPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {user && unpairedPlans.length > 0 && upcomingLessons.length === 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-2">Plány bez termínu v rozvrhu</h3>
+                {unpairedPlans.map((p) => (
+                  <StudentLessonPlanCard
+                    key={p.id}
+                    plan={p}
+                    studentId={user.id}
+                    subjectLabel={subjectLabel}
+                  />
                 ))}
               </div>
             )}

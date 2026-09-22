@@ -157,6 +157,40 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
   );
 }
 
+/**
+ * Uloží pracovní list do portfolia žáka. Pokud už položka pro stejný list existuje,
+ * nic neduplikuje a vrátí `already: true`.
+ */
+export async function saveWorksheetToPortfolio(input: {
+  studentId: string;
+  worksheetId: string;
+  title: string;
+  subject?: string | null;
+}): Promise<{ already: boolean }> {
+  const { data: existing } = await supabase
+    .from("student_portfolio_items")
+    .select("id")
+    .eq("student_id", input.studentId)
+    .eq("source_type", "worksheet")
+    .filter("content_json->>worksheet_id", "eq", input.worksheetId)
+    .limit(1);
+  if (existing && existing.length > 0) return { already: true };
+
+  const { error } = await supabase.from("student_portfolio_items").insert({
+    student_id: input.studentId,
+    type: "worksheet_result",
+    title: input.title || "Pracovní list",
+    subject: input.subject?.trim() || null,
+    source_type: "worksheet",
+    content_json: {
+      worksheet_id: input.worksheetId,
+      href: `/student/pracovni-list/${input.worksheetId}`,
+    },
+  } as any);
+  if (error) throw error;
+  return { already: false };
+}
+
 export async function uploadPortfolioAttachment(studentId: string, file: File): Promise<string> {
   const ext = file.name.split(".").pop() || "bin";
   const path = `${studentId}/${crypto.randomUUID()}.${ext}`;
