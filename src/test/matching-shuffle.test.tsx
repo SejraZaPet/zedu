@@ -44,7 +44,7 @@ describe("MatchingItem (pracovní list)", () => {
         { left: "Jehněčí", right: "ovce" },
       ],
     };
-    render(<MatchingItem item={item} value={undefined} onChange={() => {}} />);
+    render(<MatchingItem item={item} value={undefined} onChange={() => {}} disabled={false} showResults={false} />);
     // Levý sloupec zůstává v zadaném pořadí
     expect(screen.getByText("Hovězí")).toBeTruthy();
     // Nabídka je uvnitř selectu (hidden native select ve shadcn) – ověřujeme přes util
