@@ -41,6 +41,12 @@ import {
   getSubjectColor,
 } from "@/lib/subject-appearance";
 import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+import {
+  fetchStudentLessonPlans,
+  planSlotKey,
+  type StudentLessonPlan,
+} from "@/lib/lesson-plan-student";
+import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 
 
 interface StudentLessonTopic {
@@ -134,6 +140,21 @@ export default function StudentSubjectClass() {
   const [loading, setLoading] = useState(true);
   const [lessonTopics, setLessonTopics] = useState<Record<string, StudentLessonTopic>>({});
   const [materialsDate, setMaterialsDate] = useState<string | null>(null);
+  const [lessonPlans, setLessonPlans] = useState<StudentLessonPlan[]>([]);
+  /** Plány spárované na hodinu v rozvrhu: klíč „yyyy-MM-dd|HH:mm“. */
+  const plansBySlot = useMemo(() => {
+    const map: Record<string, StudentLessonPlan[]> = {};
+    for (const p of lessonPlans) {
+      const key = planSlotKey(p.date, p.time);
+      if (key) (map[key] ??= []).push(p);
+    }
+    return map;
+  }, [lessonPlans]);
+  /** Plány bez termínu – zobrazí se samostatně. */
+  const unpairedPlans = useMemo(
+    () => lessonPlans.filter((p) => !planSlotKey(p.date, p.time)),
+    [lessonPlans],
+  );
 
 
 
