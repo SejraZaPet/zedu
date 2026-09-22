@@ -15,6 +15,7 @@ export interface LessonItem {
   source: "textbook_lessons" | "teacher_textbook_lessons";
   topic_id?: string;
   textbookId?: string;
+  hero_image_url?: string | null;
 }
 
 export function usePresentationLauncher() {
@@ -103,7 +104,7 @@ export function usePresentationLauncher() {
    * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
    */
   const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
-    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
     const savedSlides = await loadSavedSlides(lesson);
     if (!savedSlides) return freshSlides;
     return mergePresentationSlides(freshSlides, savedSlides);
@@ -147,7 +148,7 @@ export function usePresentationLauncher() {
           .in("status", ["lobby", "playing"])
           .maybeSingle();
         if (existing) {
-          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
+          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
           // Jediné rozhodnutí, které necháváme na učiteli.
           const win = projectorWindowRef.current;
           if (win && !win.closed) win.close();
@@ -159,7 +160,7 @@ export function usePresentationLauncher() {
 
       }
       const rawBlocks = lesson.blocks || [];
-      const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title);
+      const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title, { heroImageUrl: lesson.hero_image_url });
       if (!session?.user) throw new Error("Není přihlášen");
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase.from("game_sessions").insert({

@@ -40,6 +40,7 @@ interface LessonItem {
   blocks: Block[];
   source: "textbook_lessons" | "teacher_textbook_lessons";
   topic_id?: string;
+  hero_image_url?: string | null;
 }
 
 interface TopicItem {
@@ -169,7 +170,7 @@ const SortableLessonRow = ({
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditLesson(lesson)} title="Upravit lekci">
           <Pencil className="w-3.5 h-3.5" />
         </Button>
-        <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
+        <LessonPreviewDialog title={lesson.title} heroImageUrl={lesson.hero_image_url ?? null} blocks={lesson.blocks} />
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenWorksheet(lesson)} title="Pracovní list">
           <FileText className="w-3.5 h-3.5" />
         </Button>

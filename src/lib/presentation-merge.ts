@@ -89,6 +89,8 @@ export function mergeSlideWithSaved(freshSlide: any, savedSlide: any): any {
     heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
     activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
     headlineLevel: freshSlide.headlineLevel ?? savedSlide.headlineLevel,
+    headlineBlockProps: freshSlide.headlineBlockProps ?? savedSlide.headlineBlockProps,
+    groupMinHeight: freshSlide.groupMinHeight ?? savedSlide.groupMinHeight,
     blocks: mergeSlideBlocks(freshSlide.blocks, savedSlide.blocks),
     tableData: freshSlide.tableData,
     cardData: freshSlide.cardData,

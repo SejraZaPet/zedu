@@ -438,7 +438,11 @@ function renumberSlides(slides: any[]): any[] {
 }
 
 
-export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
+export interface BlocksToSlidesOptions {
+  heroImageUrl?: string | null;
+}
+
+export function blocksToSlides(blocks: any[], lessonTitle: string, options: BlocksToSlidesOptions = {}): any[] {
   const slides: any[] = [];
 
   slides.push({
@@ -449,6 +453,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     teacherNotes: "",
     themeId: DEFAULT_THEME_ID,
     layout: defaultLayoutForType("intro"),
+    ...(options.heroImageUrl ? { heroImage: options.heroImageUrl, layout: "img-left" } : {}),
   });
 
   let slideIndex = 1;
@@ -514,6 +519,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     const props = block.props || {};
 
     if (type === "divider") {
+      if (current) current.blocks.push(block);
       flush();
       continue;
     }
@@ -554,6 +560,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
 
       const groupSlide = newSlide(headline, block.id);
       if (headlineLevel) groupSlide.headlineLevel = headlineLevel;
+      if (headline && firstChild?.props && blockBackgroundSlideColor(firstChild.props)) {
+        groupSlide.headlineBlockProps = { ...firstChild.props };
+      }
       // Barvu celého snímku určuje jen podbarvení celé karty. Podbarvení
       // jednotlivých dětí si nesou samotné bloky (více barev na snímku).
       const groupBg = blockBackgroundSlideColor(props) || null;
@@ -599,7 +608,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       const level = Number(props.level) || 0;
       if (level) current.headlineLevel = level;
       const headingBg = blockBackgroundSlideColor(props);
-      if (headingBg) current.backgroundOverride = { color: headingBg };
+      if (headingBg) current.headlineBlockProps = { ...props };
       continue;
     }
 
