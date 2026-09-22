@@ -1461,6 +1461,7 @@ export default function TeacherLessonPlanEditor() {
                   {lessons.map((l) => (
                     <SelectItem key={`${l.source}-${l.id}`} value={l.id}>
                       {l.title}
+                      {l.source === "lessons" ? " · společná učebnice" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
