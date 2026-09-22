@@ -91,6 +91,24 @@ describe("shoda bloků prezentace s lekcí", () => {
     expect(headline.style.borderRadius).toBe("10px");
   });
 
+  it.each([
+    ["Význam masa", { level: 3, backgroundStyle: "important" }, true],
+    ["Obsahuje", { level: 4, backgroundColor: "#fdf4e8" }, false],
+    ["Druhy masa", { level: 3, backgroundStyle: "example" }, true],
+  ])("vykreslí skutečný nadpis %s se stylem z lekce", (headline, headlineBlockProps, hasAccent) => {
+    const { container } = render(
+      <SlideBody
+        slide={{ ...slide, projector: { headline }, headlineBlockProps }}
+        themeId="minimal"
+      />,
+    );
+    const wrapper = container.querySelector('[data-headline-background="true"]') as HTMLElement;
+    expect(wrapper).toBeTruthy();
+    expect(wrapper.style.background).toBeTruthy();
+    expect(wrapper.style.padding).toBe("12px 16px");
+    expect(Boolean(wrapper.style.borderLeft)).toBe(hasAccent);
+  });
+
   it("vykreslí callout stejnou paletou a typografií jako lekce", () => {
     const { container } = render(<SlideBody slide={slide} themeId="minimal" />);
     const callout = container.querySelector('[data-callout-type="remember"]') as HTMLElement;
