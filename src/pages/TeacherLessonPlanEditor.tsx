@@ -1637,6 +1637,47 @@ export default function TeacherLessonPlanEditor() {
               rows={2}
             />
           </div>
+
+          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+            <AssignmentMaterialsEditor
+              materials={materials}
+              onChange={setMaterials}
+              teacherId={user?.id ?? ""}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+              <div>
+                <Label htmlFor="visible-to-students" className="text-sm font-medium">
+                  Zobrazit žákům
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {classId
+                    ? "Žáci vybrané třídy/skupiny uvidí téma, popis, přílohy a prokliky na lekci či pracovní list."
+                    : "Nejprve vyberte cíl (třídu nebo skupinu) – jinak se plán žákům nezobrazí."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="visible-from" className="text-xs text-muted-foreground">
+                    Zobrazit od
+                  </Label>
+                  <Input
+                    id="visible-from"
+                    type="date"
+                    value={visibleFrom}
+                    onChange={(e) => setVisibleFrom(e.target.value)}
+                    className="h-8 w-auto"
+                    disabled={!visibleToStudents}
+                  />
+                </div>
+                <Switch
+                  id="visible-to-students"
+                  checked={visibleToStudents}
+                  onCheckedChange={setVisibleToStudents}
+                  disabled={!classId}
+                />
+              </div>
+            </div>
+          </div>
           {id && id !== "novy" ? (
             <div className="rounded-lg border border-border bg-muted/20 p-3">
               <LessonCurriculumTopicsPicker lessonPlanId={id} subject={subject} />
