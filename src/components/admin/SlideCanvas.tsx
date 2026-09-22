@@ -886,14 +886,14 @@ function EditableBlockInner({
         style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
       >
         <div className="overflow-x-auto">
-          <table data-lesson-table="true" className="w-full border-collapse text-sm !text-foreground">
+          <table data-lesson-table="true" className="w-full border-collapse text-[1.625rem] !text-foreground">
             {headers.length > 0 && (
               <thead>
                 <tr>
                   {headers.map((h, ci) => (
                     <th
                       key={ci}
-                      className="border !border-border !bg-muted px-4 py-2 text-left text-sm font-semibold !text-foreground"
+                      className="border !border-border !bg-muted px-4 py-3 text-left text-[1.625rem] font-semibold !text-foreground"
                     >
                       <EditableText
                         editable={editable}
@@ -916,7 +916,7 @@ function EditableBlockInner({
                   {Array.from({ length: colCount }).map((_, ci) => (
                     <td
                       key={ci}
-                      className="border !border-border bg-card px-4 py-2 align-top text-sm !text-foreground"
+                      className="border !border-border bg-card px-4 py-3 align-top text-[1.625rem] !text-foreground"
                     >
                       <EditableText
                         editable={editable}
@@ -1001,7 +1001,7 @@ function EditableBlockInner({
                 editable
                 value={card.title || ""}
                 placeholder="Název karty…"
-                className="font-heading mb-2 pr-5 text-lg font-semibold text-card-foreground"
+                className="font-heading mb-2 pr-5 text-[2.25rem] font-semibold text-card-foreground"
                 onCommit={(v) =>
                   patchCards((list) => {
                     list[i] = { ...list[i], title: v };
@@ -1010,7 +1010,7 @@ function EditableBlockInner({
                 }
               />
               {card.mode === "bullets" ? (
-                <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                <ul className="list-inside list-disc space-y-2 text-[1.75rem] text-muted-foreground">
                   {(card.items?.length ? card.items : [""]).map((item, ii) => (
                     <li key={ii} className="flex items-start gap-2">
                       <span>•</span>
