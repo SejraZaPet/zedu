@@ -73,7 +73,7 @@ describe("tiskový pracovní list", () => {
         {
           variantId: "A",
           seed: 1,
-          items: [{ id: "m1", type: "matching", itemNumber: 1, prompt: "Spoj", matchPairs: pairs }],
+          items: [{ id: "m1", type: "matching", itemNumber: 1, prompt: "Spoj", matchPairs: pairs, answerSpace: { type: "none", heightMm: 0 } }],
         },
       ],
       answerKeys: { A: [] },
