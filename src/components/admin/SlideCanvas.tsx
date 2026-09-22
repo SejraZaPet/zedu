@@ -483,8 +483,8 @@ function EditableBlock(props: {
   if (!grad && !solid && !lessonBackground) return inner;
   return (
     <div
-      className={grad || solid ? "h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4" : "h-full w-full"}
-      data-box-background={grad ? "gradient" : "solid"}
+      className={grad || solid ? "h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4" : "w-full"}
+      data-box-background={grad ? "gradient" : solid ? "solid" : undefined}
       data-box-gradient={grad || undefined}
       data-lesson-background={lessonBackground ? "true" : undefined}
       style={{
