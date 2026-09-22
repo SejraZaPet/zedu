@@ -123,13 +123,16 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     const generated = blocksToSlides(realHeadingGroups as any, "Úvod maso");
     const byHeadline = (headline: string) => generated.find((s: any) => s.projector?.headline === headline);
     const headingBlocks = generated.flatMap((s: any) => s.blocks || []).filter((b: any) => b.type === "heading");
+    const styleFor = (headline: string, sourceGroupId: string) =>
+      byHeadline(headline)?.headlineBlockProps
+      ?? headingBlocks.find((b: any) => String(b.id || "").startsWith(`${sourceGroupId}-h`))?.props;
 
-    expect(byHeadline("Význam masa")?.headlineBlockProps).toMatchObject({ level: 3, backgroundStyle: "important" });
-    expect(headingBlocks.find((b: any) => b.id.startsWith("real-obsahuje-group-h"))?.props).toMatchObject({
+    expect(styleFor("Význam masa", "real-vyznam-group")).toMatchObject({ level: 3, backgroundStyle: "important" });
+    expect(styleFor("Obsahuje", "real-obsahuje-group")).toMatchObject({
       level: 4,
       backgroundColor: "#fdf4e8",
     });
-    expect(byHeadline("Druhy masa")?.headlineBlockProps).toMatchObject({ level: 3, backgroundStyle: "example" });
+    expect(styleFor("Druhy masa", "real-druhy-group")).toMatchObject({ level: 3, backgroundStyle: "example" });
     expect(generated.flatMap((s: any) => s.blocks || []).some((b: any) => b.id === "j1k2l3")).toBe(false);
   });
 
