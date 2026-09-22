@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { shuffleNonIdentity, seededShuffleNonIdentity } from "@/lib/shuffle";
 import MatchingItem from "@/components/worksheet-items/MatchingItem";
-import { renderWorksheetHtml } from "@/lib/worksheet-print-renderer";
+import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
 
 describe("shuffleNonIdentity", () => {
   it("nikdy nevrátí stejné pořadí jako vstup", () => {
@@ -78,8 +78,10 @@ describe("tiskový pracovní list", () => {
       ],
       answerKeys: { A: [] },
       randomizationRules: [],
+      header: { title: "Test", studentNameField: true },
+      renderConfig: { showPoints: false, includeAnswerKey: false },
     };
-    const html = renderWorksheetHtml(spec, "A", { includeAnswerKey: false } as any);
+    const html = renderWorksheetVariantHtml(spec, "A");
     const rowOrder = [...html.matchAll(/<td>(?:\d+\. )?([^<]+)<\/td>/g)].map((m) => m[1]);
     // najdi pozice pravých hodnot v tabulce
     const rightsInPrint = rowOrder.filter((v) => pairs.some((p) => p.right === v));
