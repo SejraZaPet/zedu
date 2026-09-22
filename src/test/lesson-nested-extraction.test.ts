@@ -1,12 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { extractTextFromBlocks, extractTablesFromBlocks, extractActivitiesFromBlocks } from "@/lib/lesson-content-splitter";
+import {
+  extractTextFromBlocks,
+  extractTablesFromBlocks,
+  extractActivitiesFromBlocks,
+  extractVisualBlocksFromBlocks,
+  splitLessonIntoSections,
+} from "@/lib/lesson-content-splitter";
 
 const blocks = [
   { type: "heading", props: { text: "ÚVOD", level: 1 } },
   { type: "slide_group", props: { layout: "columns", children: [
     { type: "heading", props: { text: "Význam masa", level: 2 } },
     { type: "paragraph", props: { text: "Maso patří mezi důležité potraviny." } },
+    { type: "image", props: { url: "maso.jpg", alt: "Druhy masa", caption: "Ukázka", width: "medium", alignment: "right" } },
     { type: "table", props: { headers: ["Druh", "Popis"], rows: [["Hovězí", "…"]] } },
+    { type: "callout", props: { calloutType: "warning", text: "<p>Pozor na hygienu.</p>" } },
   ] } },
   { type: "slide_group", props: { children: [
     { type: "heading", props: { text: "Druhy masa", level: 2 } },
@@ -32,5 +40,20 @@ describe("extrakce z karet (slide_group)", () => {
     expect(a).toHaveLength(2);
     expect(a[0].deepLinkIndex).toBeUndefined();
     expect(a[1].deepLinkIndex).toBe(3);
+  });
+  it("obrázky a callouty z karet se vytáhnou se vzhledem", () => {
+    const visuals = extractVisualBlocksFromBlocks(blocks);
+    expect(visuals).toEqual([
+      expect.objectContaining({ kind: "image", url: "maso.jpg", width: "medium", alignment: "right" }),
+      expect.objectContaining({ kind: "callout", variant: "warning", text: "<p>Pozor na hygienu.</p>" }),
+    ]);
+  });
+  it("sekce drží chronologické pořadí obrázek → tabulka → callout", () => {
+    const section = splitLessonIntoSections(blocks).find((s) => s.title === "Význam masa");
+    expect(section?.content.map((entry) => entry.kind === "visual" ? entry.visual.kind : entry.kind)).toEqual([
+      "image",
+      "table",
+      "callout",
+    ]);
   });
 });

@@ -163,6 +163,7 @@ import {
 import type { AiGeneratedItem } from "@/components/worksheet/LessonContentTools";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
+import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
 import {
   Tooltip,
   TooltipContent,
@@ -213,7 +214,13 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "two_boxes",
   "qr_link",
   "flow_steps",
+  "image",
+  "image_text",
+  "gallery",
+  "callout",
 ];
+
+const LESSON_VISUAL_TYPES: ItemType[] = ["image", "image_text", "gallery", "callout"];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [
   "mcq",
@@ -3241,6 +3248,18 @@ function TypeSpecificEditor({
 }) {
   return (
     <div className="space-y-4 text-sm">
+      {LESSON_VISUAL_TYPES.includes(item.type) && (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+          <p className="text-xs font-medium text-muted-foreground">Náhled bloku převzatého z lekce</p>
+          <LessonVisualBlockItem
+            item={item}
+            value={undefined}
+            onChange={() => undefined}
+            disabled
+            showResults={false}
+          />
+        </div>
+      )}
       {item.type === "mcq" && (
         <div>
           <Label className="text-xs mb-1 block">Volby (zaškrtni správnou)</Label>
@@ -3680,7 +3699,7 @@ function TypeSpecificEditor({
         onPickFromLesson={onPickFromLesson}
       />
 
-      <div className="pt-3 border-t border-border">
+      {!LESSON_VISUAL_TYPES.includes(item.type) && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <div className="flex gap-2 items-start">
           <Input
@@ -3707,7 +3726,7 @@ function TypeSpecificEditor({
             placeholder="Popisek obrázku"
           />
         )}
-      </div>
+      </div>}
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Odkaz (URL, volitelné)</Label>
@@ -4201,6 +4220,18 @@ function PropertiesPanel({
 }) {
   return (
     <div className="space-y-4 text-sm">
+      {LESSON_VISUAL_TYPES.includes(item.type) && (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+          <p className="text-xs font-medium text-muted-foreground">Náhled bloku převzatého z lekce</p>
+          <LessonVisualBlockItem
+            item={item}
+            value={undefined}
+            onChange={() => undefined}
+            disabled
+            showResults={false}
+          />
+        </div>
+      )}
       <div>
         <Label className="text-xs">Otázka</Label>
         <Textarea
@@ -4706,7 +4737,7 @@ function PropertiesPanel({
 
       <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
-      <div className="pt-3 border-t border-border">
+      {!LESSON_VISUAL_TYPES.includes(item.type) && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <div className="flex gap-2 items-start">
           <Input
@@ -4733,7 +4764,7 @@ function PropertiesPanel({
             placeholder="Popisek obrázku"
           />
         )}
-      </div>
+      </div>}
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Odkaz (URL, volitelné)</Label>

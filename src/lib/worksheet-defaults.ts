@@ -208,6 +208,22 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
         tableCaption: "",
         tableRows: [["Sloupec 1", "Sloupec 2"], ["", ""]],
         answerSpace: { type: "none", heightMm: 0 } };
+    case "image":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        imageUrl: "", imageAlt: "", imageCaption: "", imageWidth: "full", imageAlignment: "center",
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["lesson_visual"] };
+    case "image_text":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        imageUrl: "", imageAlt: "", imageText: "", imagePosition: "left",
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["lesson_visual"] };
+    case "gallery":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        galleryImages: [], galleryColumns: 3,
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["lesson_visual"] };
+    case "callout":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        calloutVariant: "note", calloutTitle: "", calloutText: "",
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["lesson_visual"] };
   }
 }
 
@@ -290,6 +306,10 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
   image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
   table: { label: "Tabulka", description: "Tabulka převzatá z lekce (jen ke čtení)" },
+  image: { label: "Obrázek z lekce", description: "Needitovatelný obrázek převzatý z lekce" },
+  image_text: { label: "Obrázek + text z lekce", description: "Needitovatelný obrazový blok převzatý z lekce" },
+  gallery: { label: "Galerie z lekce", description: "Needitovatelná galerie převzatá z lekce" },
+  callout: { label: "Zvýrazněný rámeček", description: "Needitovatelný rámeček převzatý z lekce" },
   lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 
