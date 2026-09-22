@@ -78,6 +78,8 @@ import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
+import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
+
 
 interface Phase {
   key: string;
@@ -222,7 +224,10 @@ export default function TeacherLessonPlanEditor() {
       if (input.linkedDate) setLinkedDate(input.linkedDate);
       if (input.linkedTime) setLinkedTime(input.linkedTime);
       if (input.textbookId) setTextbookId(input.textbookId);
+      if (input.textbookType === "global" || input.textbookType === "teacher")
+        setTextbookType(input.textbookType);
       if (input.lessonId) setLessonId(input.lessonId);
+
       // Cíl plánu může být třída nebo skupina (stejné rozlišení jako v rozvrhu).
       const savedTarget = input.classId || input.groupId || input.targetId;
       if (savedTarget) setClassId(savedTarget);
@@ -255,8 +260,14 @@ export default function TeacherLessonPlanEditor() {
 
   }, [user]);
 
-  /** All teacher textbooks (for explicit picker, independent of subject) */
-  const [textbooks, setTextbooks] = useState<{ id: string; title: string; subject: string }[]>([]);
+  /**
+   * Nabídka učebnic pro výběr lekce: vlastní učebnice učitele I společné
+   * (globální) učebnice. Učitel bez vlastní učebnice tak má z čeho vybírat.
+   */
+  const [textbooks, setTextbooks] = useState<
+    { id: string; title: string; subject: string; type: "teacher" | "global" }[]
+  >([]);
+  const [textbookType, setTextbookType] = useState<"teacher" | "global">("teacher");
   const [loadingTextbooks, setLoadingTextbooks] = useState(false);
   useEffect(() => {
     if (authLoading) return;
@@ -269,22 +280,41 @@ export default function TeacherLessonPlanEditor() {
     setLoadingTextbooks(true);
 
     (async () => {
-      const { data, error } = await supabase
-        .from("teacher_textbooks")
-        .select("id, title, subject")
-        .eq("teacher_id", user!.id)
-        .is("deleted_at", null)
-        .order("title", { ascending: true });
+      const [ownRes, globalRes] = await Promise.all([
+        supabase
+          .from("teacher_textbooks")
+          .select("id, title, subject")
+          .eq("teacher_id", user!.id)
+          .is("deleted_at", null)
+          .order("title", { ascending: true }),
+        supabase
+          .from("textbook_subjects" as any)
+          .select("id, label, slug, active")
+          .order("sort_order", { ascending: true }),
+      ]);
 
       if (cancelled) return;
 
-      if (error) {
-        console.warn("[TeacherLessonPlanEditor] textbooks load failed:", error.message);
-        setTextbooks([]);
-      } else {
-        setTextbooks((data as any[]) ?? []);
+      if (ownRes.error) {
+        console.warn("[TeacherLessonPlanEditor] textbooks load failed:", ownRes.error.message);
       }
 
+      const own = ((ownRes.data as any[]) ?? []).map((t) => ({
+        id: t.id as string,
+        title: t.title as string,
+        subject: (t.subject as string) ?? "",
+        type: "teacher" as const,
+      }));
+      const global = ((globalRes.data as any[]) ?? [])
+        .filter((s) => s.active !== false && s.slug)
+        .map((s) => ({
+          id: s.id as string,
+          title: (s.label as string) || (s.slug as string),
+          subject: s.slug as string,
+          type: "global" as const,
+        }));
+
+      setTextbooks([...own, ...global]);
       setLoadingTextbooks(false);
     })();
 
@@ -305,60 +335,79 @@ export default function TeacherLessonPlanEditor() {
     if (matchedTextbookId && !textbookId) setTextbookId(matchedTextbookId);
   }, [matchedTextbookId, textbookId]);
 
+  const selectedTextbook = useMemo(
+    () => textbooks.find((t) => t.id === textbookId),
+    [textbooks, textbookId],
+  );
+  /** Typ vybrané učebnice (z nabídky, fallback na uložený typ). */
+  const activeTextbookType = selectedTextbook?.type ?? textbookType;
+  const textbookSubjectSlug = selectedTextbook?.subject ?? "";
+
   const [lessons, setLessons] = useState<LessonOption[]>([]);
   useEffect(() => {
-    setLessons([]);
-    setLessonId("");
-    if (!textbookId) return;
+    if (!textbookId) {
+      setLessons([]);
+      return;
+    }
+    let cancelled = false;
     (async () => {
-      // 1) Teacher's own textbook lessons
-      const { data: ownLessons } = await supabase
-        .from("teacher_textbook_lessons")
-        .select("id, title, blocks")
-        .eq("textbook_id", textbookId)
-        .order("sort_order", { ascending: true });
+      const out: LessonOption[] = [];
 
-      const own: LessonOption[] = (ownLessons ?? []).map((l: any) => ({
-        id: l.id,
-        title: l.title,
-        source: "teacher_textbook_lessons" as const,
-        textbookId,
-        blocks: l.blocks,
-      }));
+      if (activeTextbookType === "teacher") {
+        const { data: ownLessons } = await supabase
+          .from("teacher_textbook_lessons")
+          .select("id, title, blocks")
+          .eq("textbook_id", textbookId)
+          .order("sort_order", { ascending: true });
+        for (const l of (ownLessons as any[]) ?? []) {
+          out.push({
+            id: l.id,
+            title: l.title,
+            source: "teacher_textbook_lessons",
+            textbookId,
+            blocks: l.blocks,
+          });
+        }
+      }
 
-      // 2) Global textbook lessons linked via subject slug of the textbook
-      const tb = textbooks.find((t) => t.id === textbookId);
-      let global: LessonOption[] = [];
-      if (tb?.subject) {
+      // Lekce globální učebnice (témata předmětu podle slugu). U vlastní
+      // učebnice doplníme lekce globální učebnice stejného předmětu.
+      if (textbookSubjectSlug) {
         const { data: topics } = await supabase
           .from("textbook_topics" as any)
           .select("id")
-          .eq("subject", tb.subject);
-        const topicIds = (topics ?? []).map((t: any) => t.id);
+          .eq("subject", textbookSubjectSlug);
+        const topicIds = ((topics as any[]) ?? []).map((t) => t.id);
         if (topicIds.length) {
           const { data: gl } = await supabase
             .from("textbook_lessons" as any)
             .select("id, title, blocks, sort_order")
             .in("topic_id", topicIds)
             .order("sort_order", { ascending: true });
-          global = (gl ?? []).map((l: any) => ({
-            id: l.id,
-            title: l.title,
-            source: "lessons" as const,
-            textbookId,
-            blocks: l.blocks,
-          }));
+          for (const l of (gl as any[]) ?? []) {
+            out.push({
+              id: l.id,
+              title: l.title,
+              source: "lessons",
+              textbookId,
+              blocks: l.blocks,
+            });
+          }
         }
       }
 
-      setLessons([...own, ...global]);
+      if (!cancelled) setLessons(out);
     })();
-  }, [textbookId, textbooks]);
+    return () => {
+      cancelled = true;
+    };
+  }, [textbookId, activeTextbookType, textbookSubjectSlug]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
     [lessons, lessonId],
   );
+
 
   /** Classes the teacher belongs to (for filtering schedule occurrences) */
   const { classes: teacherClasses } = useTeacherClasses();
@@ -571,27 +620,39 @@ export default function TeacherLessonPlanEditor() {
     setPhases((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   }
 
-  /** Extract plain text from teacher_textbook_lessons.blocks (best-effort) */
+  /**
+   * Text lekce pro AI. Čte i vnořené bloky karet (slide_group → children),
+   * jinak by kontext u vizuálních lekcí zůstal skoro prázdný.
+   */
   function extractText(blocks: any): string {
     if (!blocks) return "";
     if (typeof blocks === "string") return blocks;
     try {
-      const arr = Array.isArray(blocks) ? blocks : [];
-      return arr
+      const flat = flattenLessonBlocks(blocks);
+      const source = flat.length ? flat.map((f) => f.block) : Array.isArray(blocks) ? blocks : [];
+      return source
         .map((b: any) => {
           if (!b) return "";
           if (typeof b === "string") return b;
-          return (
-            b.text ||
-            b.content ||
-            b.title ||
-            (Array.isArray(b.children)
-              ? b.children.map((c: any) => c.text || "").join(" ")
-              : "")
-          );
+          const p = b.props ?? {};
+          const parts = [
+            b.title || p.title,
+            b.text || p.text || b.content || p.content,
+            Array.isArray(p.items)
+              ? p.items.map((i: any) => (typeof i === "string" ? i : i?.text || "")).join(" · ")
+              : "",
+            Array.isArray(b.children)
+              ? b.children.map((c: any) => c?.text || "").join(" ")
+              : "",
+          ];
+          return parts
+            .filter((x) => typeof x === "string" && x.trim())
+            .join("\n")
+            .replace(/<[^>]+>/g, " ");
         })
         .filter(Boolean)
-        .join("\n");
+        .join("\n")
+        .slice(0, 12000);
     } catch {
       return "";
     }
@@ -599,21 +660,25 @@ export default function TeacherLessonPlanEditor() {
 
   /** Compact summary of available blocks for the AI (type + short title). */
   function extractBlockSummaries(blocks: any): { type: string; title: string }[] {
-    if (!Array.isArray(blocks)) return [];
-    return blocks
+    const flat = flattenLessonBlocks(blocks);
+    const list = flat.length ? flat.map((f) => f.block) : Array.isArray(blocks) ? blocks : [];
+    return list
       .map((b: any) => {
         if (!b || typeof b !== "object") return null;
         const type = b.type || b.kind || "block";
-        const title =
+        const raw =
           b.title ||
           b.props?.title ||
-          (typeof b.text === "string" ? b.text.slice(0, 80) : "") ||
-          (typeof b.content === "string" ? b.content.slice(0, 80) : "") ||
+          (typeof b.text === "string" ? b.text : "") ||
+          (typeof b.props?.text === "string" ? b.props.text : "") ||
+          (typeof b.content === "string" ? b.content : "") ||
           "";
-        return { type: String(type), title: String(title).trim() };
+        const title = String(raw).replace(/<[^>]+>/g, " ").trim().slice(0, 80);
+        return { type: String(type), title };
       })
       .filter(Boolean) as { type: string; title: string }[];
   }
+
 
   async function generateWithAI(opts?: { fromLessonOnly?: boolean }) {
     const fromLessonOnly = !!opts?.fromLessonOnly;
@@ -1016,7 +1081,9 @@ export default function TeacherLessonPlanEditor() {
           linkedTime,
           linkedSlots,
           textbookId,
+          textbookType: activeTextbookType,
           lessonId,
+
           // Cíl plánu: třída i skupina. `classId` zůstává pro zpětnou
           // kompatibilitu jen u tříd, skupina se ukládá do `groupId`.
           classId: selectedTarget?.kind === "group" ? undefined : classId,
@@ -1334,6 +1401,7 @@ export default function TeacherLessonPlanEditor() {
                 value={textbookId || undefined}
                 onValueChange={(v) => {
                   setTextbookId(v);
+                  setTextbookType(textbooks.find((t) => t.id === v)?.type ?? "teacher");
                   setLessonId("");
                 }}
               >
@@ -1343,11 +1411,30 @@ export default function TeacherLessonPlanEditor() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {textbooks.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
+                  {textbooks.some((t) => t.type === "teacher") && (
+                    <SelectGroup>
+                      <SelectLabel>Moje učebnice</SelectLabel>
+                      {textbooks
+                        .filter((t) => t.type === "teacher")
+                        .map((t) => (
+                          <SelectItem key={`teacher-${t.id}`} value={t.id}>
+                            {t.title}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  )}
+                  {textbooks.some((t) => t.type === "global") && (
+                    <SelectGroup>
+                      <SelectLabel>Společné učebnice</SelectLabel>
+                      {textbooks
+                        .filter((t) => t.type === "global")
+                        .map((t) => (
+                          <SelectItem key={`global-${t.id}`} value={t.id}>
+                            {t.title}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -1372,7 +1459,7 @@ export default function TeacherLessonPlanEditor() {
                 </SelectTrigger>
                 <SelectContent>
                   {lessons.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
+                    <SelectItem key={`${l.source}-${l.id}`} value={l.id}>
                       {l.title}
                     </SelectItem>
                   ))}
@@ -1380,11 +1467,18 @@ export default function TeacherLessonPlanEditor() {
               </Select>
             </div>
           </div>
-          {selectedLesson && (
-            <p className="text-xs text-muted-foreground -mt-2">
-              AI bude vycházet z obsahu lekce <strong>{selectedLesson.title}</strong>.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground -mt-2">
+            {selectedLesson ? (
+              <>
+                AI bude vycházet z obsahu lekce <strong>{selectedLesson.title}</strong>. Žák uvidí
+                u plánu tlačítko pro otevření lekce.
+              </>
+            ) : (
+              <>Vyber učebnici a lekci – tím se odemkne tlačítko „Navrhnout z lekce“ a žák dostane
+              u plánu proklik na lekci.</>
+            )}
+          </p>
+
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
@@ -1727,11 +1821,16 @@ export default function TeacherLessonPlanEditor() {
             <div className="flex sm:flex-col gap-2">
               <Button
                 onClick={() => generateWithAI({ fromLessonOnly: true })}
-                disabled={aiLoading || !selectedLesson}
+                disabled={aiLoading}
                 size="sm"
                 variant="outline"
-                title={!selectedLesson ? "Nejprve vyber lekci" : "Rychlý návrh přímo z obsahu vybrané lekce"}
+                title={
+                  !selectedLesson
+                    ? "Nejprve vyber učebnici a lekci výše"
+                    : "Rychlý návrh přímo z obsahu vybrané lekce"
+                }
               >
+
                 <Sparkles className="w-4 h-4 mr-2" />
                 Navrhnout z lekce
               </Button>
@@ -1932,10 +2031,13 @@ export default function TeacherLessonPlanEditor() {
                         const isLessonBlock =
                           act.kind === "lesson_block" || act.kind === "offline_activity";
                         const href = isLessonBlock
-                          ? selectedLesson?.textbookId
-                            ? `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
+                          ? selectedLesson
+                            ? selectedLesson.source === "lessons"
+                              ? `/ucebnice/obsah/0/lekce/${selectedLesson.id}`
+                              : `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
                             : null
                           : meta?.href ?? null;
+
                         return (
                           <li
                             key={i}
