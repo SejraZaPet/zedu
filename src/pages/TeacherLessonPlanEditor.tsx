@@ -241,7 +241,7 @@ export default function TeacherLessonPlanEditor() {
         setClassId((data as any).class_id || (data as any).group_id);
       }
       if ((data as any).lesson_ref_id && !input.lessonId) setLessonId((data as any).lesson_ref_id);
-      if ((data as any).lesson_source) setLessonSource((data as any).lesson_source);
+      if ((data as any).lesson_source) setDbLessonSource((data as any).lesson_source);
     })();
   }, [user, id]);
 
@@ -372,6 +372,8 @@ export default function TeacherLessonPlanEditor() {
   // Přílohy plánu a ruční zveřejnění žákům (výchozí vypnuto).
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   const [visibleToStudents, setVisibleToStudents] = useState(false);
+  // Zdroj propojené lekce uložený v DB (fallback, když ještě nejsou načtené lekce).
+  const [dbLessonSource, setDbLessonSource] = useState<string | null>(null);
   const [visibleFrom, setVisibleFrom] = useState<string>("");
 
   /**
@@ -999,7 +1001,13 @@ export default function TeacherLessonPlanEditor() {
         class_id: selectedTarget?.kind === "group" ? null : classId || null,
         group_id: selectedTarget?.kind === "group" ? classId || null : null,
         lesson_ref_id: lessonId || null,
-        lesson_source: lessonId ? lessonSource : null,
+        lesson_source: lessonId
+          ? selectedLesson
+            ? selectedLesson.source === "lessons"
+              ? "textbook_lessons"
+              : selectedLesson.source
+            : dbLessonSource
+          : null,
         input_data: {
           description,
           subject,
