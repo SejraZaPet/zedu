@@ -1105,7 +1105,7 @@ function EditableBlockInner({
     <div
       className={`${asCard ? "bg-white/10 p-4 border border-white/15" : ""} ${needsPanelHint ? "group/panel relative" : ""}`}
       style={{
-        fontSize: "1.5rem",
+        fontSize: "2rem",
         lineHeight: 1.5,
         ...(asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : {}),
       }}
