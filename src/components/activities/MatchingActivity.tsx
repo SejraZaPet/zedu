@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { t } from "@/lib/t";
+import { shuffleNonIdentity } from "@/lib/shuffle";
 
 interface MatchingData { left: string[]; right: string[]; }
 
@@ -7,16 +8,12 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
   const [selections, setSelections] = useState<Record<number, number | null>>({});
   const [checked, setChecked] = useState(false);
 
-  // Shuffle right side once
-  const shuffledRight = useMemo(() => {
-    const indices = matching.right.map((_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-    return indices;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matching.right.join(",")]);
+  // Zamíchat pravou stranu při každém zobrazení aktivity (nikdy ne v pořadí zadání)
+  const shuffledRight = useMemo(
+    () => shuffleNonIdentity(matching.right.map((_, i) => i)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [matching.right.join(",")],
+  );
 
   if (!matching?.left?.length) return null;
 
