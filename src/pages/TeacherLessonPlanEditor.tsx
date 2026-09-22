@@ -991,6 +991,13 @@ export default function TeacherLessonPlanEditor() {
         subject_id: subjectId,
         grade_band: "",
         slides: [],
+        materials,
+        visible_to_students: visibleToStudents,
+        visible_from: visibleFrom || null,
+        class_id: selectedTarget?.kind === "group" ? null : classId || null,
+        group_id: selectedTarget?.kind === "group" ? classId || null : null,
+        lesson_ref_id: lessonId || null,
+        lesson_source: lessonId ? lessonSource : null,
         input_data: {
           description,
           subject,
