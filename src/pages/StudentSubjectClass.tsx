@@ -396,6 +396,14 @@ export default function StudentSubjectClass() {
         .select("lesson_date, topic, materials")
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
+      // Zveřejněné plány hodin pro tuhle třídu/skupinu a předmět (učitel zapne „Zobrazit žákům“).
+      fetchStudentLessonPlans({
+        classId: isGroup ? undefined : classId,
+        groupId: isGroup ? groupId : undefined,
+        subjectLabel,
+      }).then((plans) => {
+        if (!cancelled) setLessonPlans(plans);
+      });
       const { data } = await q;
       if (cancelled) return;
       const map: Record<string, StudentLessonTopic> = {};
