@@ -7,3 +7,5 @@
 - [x] Sjednotit cílené umístění také pro globální lekce včetně „Úvod maso“
 - [x] Rozšířit pracovní list o věrné bloky obrázek, obrázek + text, galerie a callout
 - [x] Přenést nové bloky chronologicky přes panel „Sekce lekce“ a ověřit tisk i žákovský náhled
+
+- [ ] Plán hodiny pro žáky: přílohy, ruční přepínač zveřejnění, žákovská karta bez časů fází, prokliky lekce/list, portfolio bez duplicit
