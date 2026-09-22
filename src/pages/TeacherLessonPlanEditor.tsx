@@ -229,6 +229,17 @@ export default function TeacherLessonPlanEditor() {
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
       if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
       if (typeof (data as any).anonymous === "boolean") setAnonymous((data as any).anonymous);
+      setMaterials(parseMaterials((data as any).materials));
+      setVisibleToStudents(Boolean((data as any).visible_to_students));
+      setVisibleFrom(
+        (data as any).visible_from ? String((data as any).visible_from).slice(0, 10) : "",
+      );
+      // Preferuj skutečné sloupce cíle; fallback na input_data.
+      if (!savedTarget && ((data as any).class_id || (data as any).group_id)) {
+        setClassId((data as any).class_id || (data as any).group_id);
+      }
+      if ((data as any).lesson_ref_id && !input.lessonId) setLessonId((data as any).lesson_ref_id);
+      if ((data as any).lesson_source) setLessonSource((data as any).lesson_source);
     })();
   }, [user, id]);
 
@@ -356,6 +367,10 @@ export default function TeacherLessonPlanEditor() {
    * typ se dopočítá z nabídky `targetOptions`.
    */
   const [classId, setClassId] = useState<string>("");
+  // Přílohy plánu a ruční zveřejnění žákům (výchozí vypnuto).
+  const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  const [visibleToStudents, setVisibleToStudents] = useState(false);
+  const [visibleFrom, setVisibleFrom] = useState<string>("");
 
   /**
    * (subject, target) pairs derived from both the personal schedule
