@@ -958,8 +958,7 @@ export function reproduceVariant(
   for (const item of result) {
     if (item.type !== "matching" || !item.matchPairs) continue;
     if (matchRules.some(r => r.appliedTo === "*" || r.appliedTo === item.id)) {
-      const rights = seededShuffle(item.matchPairs.map(p => p.right), rng);
-      item.matchPairs = item.matchPairs.map((p, i) => ({ left: p.left, right: rights[i] }));
+      item.matchPairs = seededShuffle(item.matchPairs, rng);
     }
   }
 
