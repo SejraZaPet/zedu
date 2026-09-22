@@ -83,6 +83,52 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     expect(styles).toContain("tip");
   });
 
+  it("přenese skutečné styly prvních nadpisů skupin Úvod maso do titulku snímku", () => {
+    const realHeadingGroups = [
+      {
+        id: "real-vyznam-group",
+        type: "slide_group",
+        props: {
+          layout: 1,
+          children: [
+            { id: "j1k2l3", type: "heading", props: { text: "<p><strong>Význam masa</strong></p>", level: 3, backgroundStyle: "important", backgroundColor: null } },
+            { id: "vyznam-body", type: "paragraph", props: { text: "Maso patří mezi důležité potraviny." } },
+          ],
+        },
+      },
+      {
+        id: "real-obsahuje-group",
+        type: "slide_group",
+        props: {
+          layout: 1,
+          children: [
+            { id: "4c2301e8-695a-493d-b786-e808b018d5ac", type: "heading", props: { text: "<p><strong>Obsahuje</strong></p>", level: 4, backgroundStyle: null, backgroundColor: "#fdf4e8" } },
+            { id: "obsahuje-body", type: "bullet_list", props: { items: ["bílkoviny"] } },
+          ],
+        },
+      },
+      {
+        id: "real-druhy-group",
+        type: "slide_group",
+        props: {
+          layout: 1,
+          children: [
+            { id: "s1t2u3", type: "heading", props: { text: "<p><strong>Druhy masa</strong></p>", level: 3, backgroundStyle: "example", backgroundColor: null } },
+            { id: "druhy-body", type: "table", props: { headers: ["Druh"], rows: [["Hovězí"]] } },
+          ],
+        },
+      },
+    ];
+
+    const generated = blocksToSlides(realHeadingGroups as any, "Úvod maso");
+    const byHeadline = (headline: string) => generated.find((s: any) => s.projector?.headline === headline);
+
+    expect(byHeadline("Význam masa")?.headlineBlockProps).toMatchObject({ level: 3, backgroundStyle: "important" });
+    expect(byHeadline("Obsahuje")?.headlineBlockProps).toMatchObject({ level: 4, backgroundColor: "#fdf4e8" });
+    expect(byHeadline("Druhy masa")?.headlineBlockProps).toMatchObject({ level: 3, backgroundStyle: "example" });
+    expect(generated.flatMap((s: any) => s.blocks || []).some((b: any) => b.id === "j1k2l3")).toBe(false);
+  });
+
   it("callout zůstane calloutem, nedegraduje na odstavec", () => {
     const all = content.flatMap((s: any) => s.blocks || []);
     expect(all.find((b: any) => b.id === "c1")?.type).toBe("callout");
