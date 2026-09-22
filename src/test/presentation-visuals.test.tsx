@@ -117,13 +117,13 @@ describe("shoda bloků prezentace s lekcí", () => {
     expect(callout.className).toContain("bg-primary/10");
     expect(callout.className).toContain("text-foreground");
     expect(callout.textContent).toContain("🧠");
-    expect(callout.innerHTML).toContain("text-sm");
+    expect(callout.innerHTML).toContain("text-[2rem]");
   });
 
   it("vykreslí tabulku světlými styly lekce a zachová výšky skupiny", () => {
     const { container } = render(<SlideBody slide={slide} themeId="minimal" />);
     const table = container.querySelector('[data-lesson-table="true"]') as HTMLElement;
-    expect(table.className).toContain("text-sm");
+    expect(table.className).toContain("text-[1.625rem]");
     expect(table.querySelector("th")?.className).toContain("bg-muted");
     expect(table.querySelector("th")?.className).toContain("border-border");
     expect(table.querySelector("td")?.className).toContain("text-foreground");
@@ -141,9 +141,10 @@ describe("shoda bloků prezentace s lekcí", () => {
     }));
     const { container } = render(<SlideBody slide={{ ...slide, projector: { headline: "" }, layout: "full", blocks }} themeId="minimal" />);
     const html = container.innerHTML;
-    expect(html).toContain("text-4xl");
-    expect(html).toContain("text-3xl");
-    expect(html).toContain("text-2xl");
-    expect(html).toContain("text-xl");
+    // Projekční měřítko ~1,6× proti učebnici, hierarchie úrovní zůstává.
+    expect(html).toContain("text-[3.75rem]");
+    expect(html).toContain("text-[3.25rem]");
+    expect(html).toContain("text-[2.75rem]");
+    expect(html).toContain("text-[2.25rem]");
   });
 });
