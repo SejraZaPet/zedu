@@ -11,6 +11,7 @@
  */
 
 import { qrSvgDataUrl } from "@/lib/qr-inline";
+import { seededShuffleNonIdentity } from "@/lib/shuffle";
 import type {
   WorksheetSpec,
   WorksheetVariant,
