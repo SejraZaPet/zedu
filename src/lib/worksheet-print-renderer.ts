@@ -830,8 +830,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
 
     case "matching":
       if (item.matchPairs?.length) {
+        // Pravý sloupec musí být zamíchaný, jinak jsou správné páry přímo proti sobě.
+        const shuffled = seededShuffleNonIdentity(
+          item.matchPairs.map((p) => p.right),
+          item.id,
+        );
         const rows = item.matchPairs
-          .map((p, i) => `<tr><td>${i + 1}. ${esc(p.left)}</td><td class="ws-match-answer">&nbsp;</td><td>${esc(p.right)}</td></tr>`)
+          .map((p, i) => `<tr><td>${i + 1}. ${esc(p.left)}</td><td class="ws-match-answer">&nbsp;</td><td>${esc(shuffled[i])}</td></tr>`)
           .join("");
         body = `<table class="ws-matching-table">
           <thead><tr><th>Pojem</th><th>Odpověď</th><th>Definice</th></tr></thead>
