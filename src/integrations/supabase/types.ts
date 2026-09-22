@@ -3236,14 +3236,19 @@ export type Database = {
           ai_generated: boolean
           ai_modified_at: string | null
           anonymous: boolean
+          class_id: string | null
           commission_rate_locked: number | null
           copied_from_lesson_plan_id: string | null
           created_at: string
           grade_band: string
+          group_id: string | null
           id: string
           input_data: Json
           is_for_sale: boolean
           lesson_id: string | null
+          lesson_ref_id: string | null
+          lesson_source: string | null
+          materials: Json
           price: number | null
           shared_visibility: string
           slides: Json
@@ -3253,19 +3258,27 @@ export type Database = {
           theme_id: string | null
           title: string
           updated_at: string
+          visible_from: string | null
+          visible_to_students: boolean
+          worksheet_ids: string[]
         }
         Insert: {
           ai_generated?: boolean
           ai_modified_at?: string | null
           anonymous?: boolean
+          class_id?: string | null
           commission_rate_locked?: number | null
           copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
+          group_id?: string | null
           id?: string
           input_data?: Json
           is_for_sale?: boolean
           lesson_id?: string | null
+          lesson_ref_id?: string | null
+          lesson_source?: string | null
+          materials?: Json
           price?: number | null
           shared_visibility?: string
           slides?: Json
@@ -3275,19 +3288,27 @@ export type Database = {
           theme_id?: string | null
           title?: string
           updated_at?: string
+          visible_from?: string | null
+          visible_to_students?: boolean
+          worksheet_ids?: string[]
         }
         Update: {
           ai_generated?: boolean
           ai_modified_at?: string | null
           anonymous?: boolean
+          class_id?: string | null
           commission_rate_locked?: number | null
           copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
+          group_id?: string | null
           id?: string
           input_data?: Json
           is_for_sale?: boolean
           lesson_id?: string | null
+          lesson_ref_id?: string | null
+          lesson_source?: string | null
+          materials?: Json
           price?: number | null
           shared_visibility?: string
           slides?: Json
@@ -3297,6 +3318,9 @@ export type Database = {
           theme_id?: string | null
           title?: string
           updated_at?: string
+          visible_from?: string | null
+          visible_to_students?: boolean
+          worksheet_ids?: string[]
         }
         Relationships: [
           {
@@ -7711,6 +7735,10 @@ export type Database = {
         Returns: boolean
       }
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
+      can_student_view_lesson_plan: {
+        Args: { _class_id: string; _group_id: string }
+        Returns: boolean
+      }
       can_view_class_engagement: {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
