@@ -62,6 +62,16 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     });
   });
 
+  it("sloučený mezititulek si zachová celý preset pozadí, nejen odvozenou barvu", () => {
+    const merged = blocksToSlides([
+      { id: "short-a", type: "paragraph", props: { text: "Krátce" } },
+      { id: "short-h", type: "heading", props: { text: "Barevný mezititulek", level: 3, backgroundStyle: "tip" } },
+      { id: "short-b", type: "paragraph", props: { text: "Pokračování" } },
+    ] as any, "Sloučení");
+    const headings = merged.flatMap((s: any) => s.blocks || []).filter((b: any) => b.type === "heading");
+    expect(headings.some((b: any) => b.props?.backgroundStyle === "tip")).toBe(true);
+  });
+
   it("různá podbarvení bloků zůstanou na blocích, snímek se nepřebarví", () => {
     const groupSlide = content.find((s: any) =>
       (s.blocks || []).some((b: any) => b.id === "g1-a"),

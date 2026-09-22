@@ -73,6 +73,11 @@ export function mergeSlideBlocks(freshBlocks: any[], savedBlocks: any[]): any[] 
 export function mergeSlideWithSaved(freshSlide: any, savedSlide: any): any {
   // Zamčený snímek se z lekce neaktualizuje vůbec.
   if (savedSlide?.lockedFromLesson) return savedSlide;
+  const localHeadlineBackground = freshSlide.headlineBlockProps?.backgroundColor
+    || freshSlide.headlineBlockProps?.backgroundStyle;
+  const backgroundOverride = localHeadlineBackground
+    ? freshSlide.backgroundOverride
+    : savedSlide.backgroundOverride ?? freshSlide.backgroundOverride;
   return {
     ...savedSlide,
     ...freshSlide,
@@ -85,7 +90,7 @@ export function mergeSlideWithSaved(freshSlide: any, savedSlide: any): any {
     teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
     layout: savedSlide.layout ?? freshSlide.layout,
     themeId: savedSlide.themeId ?? freshSlide.themeId,
-    backgroundOverride: savedSlide.backgroundOverride ?? freshSlide.backgroundOverride,
+    backgroundOverride,
     heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
     activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
     headlineLevel: freshSlide.headlineLevel ?? savedSlide.headlineLevel,
