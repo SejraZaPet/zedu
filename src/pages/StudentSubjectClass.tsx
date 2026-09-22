@@ -651,6 +651,14 @@ export default function StudentSubjectClass() {
                         </Button>
                       )}
                     </div>
+                    {user && slotPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
                   </Card>
                   );
                 })}
@@ -696,7 +704,42 @@ export default function StudentSubjectClass() {
                         </Button>
                       )}
                     </div>
+                    {user && slotPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
                   </Card>
+                  );
+                })}
+                {user && unpairedPlans.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-semibold mb-2">Plány bez termínu v rozvrhu</h3>
+                    {unpairedPlans.map((p) => (
+                      <StudentLessonPlanCard
+                        key={p.id}
+                        plan={p}
+                        studentId={user.id}
+                        subjectLabel={subjectLabel}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {user && unpairedPlans.length > 0 && upcomingLessons.length === 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-2">Plány bez termínu v rozvrhu</h3>
+                {unpairedPlans.map((p) => (
+                  <StudentLessonPlanCard
+                    key={p.id}
+                    plan={p}
+                    studentId={user.id}
+                    subjectLabel={subjectLabel}
+                  />
                 ))}
               </div>
             )}
