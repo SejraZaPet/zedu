@@ -198,7 +198,10 @@ export default function WorksheetPlayer({
   // Bloky s tagy "section_heading" a "instruction" jsou pouze vizuální / informační.
   // Vyřazujeme je z navigace i ze score; renderují se jako kontext nad nejbližší další otázkou.
   const isNonInteractive = (it: WorksheetItem) =>
-    !!it.tags?.includes("section_heading") || !!it.tags?.includes("instruction");
+    !!it.tags?.includes("section_heading") ||
+    !!it.tags?.includes("instruction") ||
+    !!it.tags?.includes("lesson_visual") ||
+    ["section_header", "instruction_box", "table", "image", "image_text", "gallery", "callout"].includes(it.type);
 
   const items = allItems.filter((it) => !isNonInteractive(it));
   const item = items[currentIndex];
@@ -328,15 +331,17 @@ export default function WorksheetPlayer({
             </div>
           );
         }
-        // instruction
-        return (
-          <Card key={h.id} className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
-            <CardContent className="p-3 flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
-              <Info className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{h.prompt}</span>
-            </CardContent>
-          </Card>
-        );
+        if (h.tags?.includes("instruction")) {
+          return (
+            <Card key={h.id} className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
+              <CardContent className="p-3 flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
+                <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{h.prompt}</span>
+              </CardContent>
+            </Card>
+          );
+        }
+        return <div key={h.id}>{renderItemBody(h)}</div>;
       })}
 
       {/* Current Item */}

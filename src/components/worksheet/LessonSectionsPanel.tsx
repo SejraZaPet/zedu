@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, QrCode, FileText, Check, Table as TableIcon } from "lucide-react";
+import { Loader2, Sparkles, QrCode, FileText, Check, Table as TableIcon, Images, MessageSquareText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ import type { LessonSection } from "@/lib/lesson-content-splitter";
 import type { ItemType, WorksheetItem } from "@/lib/worksheet-spec";
 import { buildItemsFromLessonActivity } from "@/lib/lesson-activity-to-worksheet";
 import TableFieldsEditor from "./TableFieldsEditor";
+import type { LessonVisualBlock } from "@/lib/lesson-content-splitter";
 
 /** Jedna hotová položka připravená k vložení do pracovního listu. */
 export type BuiltWorksheetItem = {
@@ -39,6 +40,50 @@ export type BuiltWorksheetItem = {
   patch: Partial<WorksheetItem>;
   correct?: string | string[];
 };
+
+function visualToBuilt(visual: LessonVisualBlock): BuiltWorksheetItem {
+  if (visual.kind === "image") {
+    return {
+      type: "image",
+      patch: {
+        prompt: "",
+        imageUrl: visual.url,
+        imageAlt: visual.alt,
+        imageCaption: visual.caption,
+        imageWidth: visual.width,
+        imageAlignment: visual.alignment,
+      },
+    };
+  }
+  if (visual.kind === "image_text") {
+    return {
+      type: "image_text",
+      patch: {
+        prompt: "",
+        imageUrl: visual.imageUrl,
+        imageText: visual.text,
+        imagePosition: visual.imagePosition,
+      },
+    };
+  }
+  if (visual.kind === "gallery") {
+    return {
+      type: "gallery",
+      patch: { prompt: "", galleryImages: visual.images, galleryColumns: visual.columns },
+    };
+  }
+  return {
+    type: "callout",
+    patch: {
+      prompt: "",
+      calloutVariant: visual.variant,
+      calloutTitle: visual.title,
+      calloutText: visual.text,
+      calloutBackgroundColor: visual.backgroundColor,
+      calloutAccentColor: visual.accentColor,
+    },
+  };
+}
 
 type SectionMode = "notes" | "lesson_activity" | "ai";
 
@@ -104,17 +149,24 @@ export default function LessonSectionsPanel({
   const [aiResults, setAiResults] = useState<Record<number, AiItem[]>>({});
   const [aiCounts, setAiCounts] = useState<Record<number, number>>({});
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
-  const [tables, setTables] = useState<Record<number, { rows: string[][]; caption?: string }>>({});
+  const [tables, setTables] = useState<Record<string, { rows: string[][]; caption?: string }>>({});
 
   useEffect(() => {
     if (!open) return;
     const m: Record<number, SectionMode> = {};
     const am: Record<number, "qr" | "convert"> = {};
-    const tb: Record<number, { rows: string[][]; caption?: string }> = {};
+    const tb: Record<string, { rows: string[][]; caption?: string }> = {};
     for (const s of sections) {
       m[s.index] = "notes";
       if (s.activity) am[s.index] = s.activity.deepLinkIndex !== undefined ? "qr" : "convert";
-      if (s.table) tb[s.index] = { rows: s.table.rows.map((r) => [...r]), caption: s.table.caption };
+      s.content.forEach((entry, contentIndex) => {
+        if (entry.kind === "table") {
+          tb[`${s.index}-${contentIndex}`] = {
+            rows: entry.table.rows.map((r) => [...r]),
+            caption: entry.table.caption,
+          };
+        }
+      });
     }
     setModes(m);
     setActivityModes(am);
@@ -165,17 +217,9 @@ export default function LessonSectionsPanel({
       // 1) Nadpis sekce
       out.push({ type: "section_header", patch: { prompt: s.title } });
 
-      // 2) Tabulka ze sekce — vždy na svém místě (po vložení editovatelná)
-      const t = tables[s.index];
-      if (t && t.rows.length > 0) {
-        out.push({
-          type: "table",
-          patch: { prompt: "", tableRows: t.rows, tableCaption: t.caption ?? "" },
-        });
-      }
-
-      // 3) Zvolená akce
-      if (mode === "lesson_activity" && s.activity) {
+      let insertedActivity = false;
+      const insertSelectedActivity = () => {
+        if (insertedActivity || mode !== "lesson_activity" || !s.activity) return;
         const qrUrl =
           s.activity.deepLinkIndex !== undefined
             ? activityUrlFor(s.activity.deepLinkIndex)
@@ -194,6 +238,29 @@ export default function LessonSectionsPanel({
             });
           }
         }
+        insertedActivity = true;
+      };
+
+      // 2) Automatické bloky z lekce — přesně v původním pořadí.
+      s.content.forEach((entry, contentIndex) => {
+        if (entry.kind === "table") {
+          const table = tables[`${s.index}-${contentIndex}`];
+          if (table?.rows.length) {
+            out.push({
+              type: "table",
+              patch: { prompt: "", tableRows: table.rows, tableCaption: table.caption ?? "" },
+            });
+          }
+        } else if (entry.kind === "visual") {
+          out.push(visualToBuilt(entry.visual));
+        } else if (entry.kind === "activity") {
+          insertSelectedActivity();
+        }
+      });
+
+      // 3) Zvolená akce, pokud v sekci nebyla vložena na místě aktivity.
+      if (mode === "lesson_activity" && s.activity) {
+        insertSelectedActivity();
       } else if (mode === "ai" && aiResults[s.index]?.length) {
         for (const ai of aiResults[s.index]) out.push(aiItemToBuilt(ai));
       } else {
@@ -233,7 +300,10 @@ export default function LessonSectionsPanel({
         <div className="space-y-3">
           {sections.map((s) => {
             const mode = modes[s.index] ?? "notes";
-            const t = tables[s.index];
+            const visualCount = s.content.filter((entry) => entry.kind === "visual").length;
+            const sectionTables = s.content
+              .map((entry, contentIndex) => ({ entry, contentIndex }))
+              .filter(({ entry }) => entry.kind === "table");
             return (
               <div key={s.index} className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-start justify-between gap-3">
@@ -249,6 +319,16 @@ export default function LessonSectionsPanel({
                       {s.table && (
                         <Badge variant="outline" className="text-xs">
                           <TableIcon className="w-3 h-3 mr-1" /> Tabulka
+                        </Badge>
+                      )}
+                      {visualCount > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          <Images className="w-3 h-3 mr-1" /> {visualCount === 1 ? "Vizuální blok" : `${visualCount} vizuální bloky`}
+                        </Badge>
+                      )}
+                      {s.content.some((entry) => entry.kind === "visual" && entry.visual.kind === "callout") && (
+                        <Badge variant="outline" className="text-xs">
+                          <MessageSquareText className="w-3 h-3 mr-1" /> Rámeček
                         </Badge>
                       )}
                     </div>
@@ -368,29 +448,26 @@ export default function LessonSectionsPanel({
                   </div>
                 )}
 
-                {t && (
-                  <TableFieldsEditor
-                    item={
-                      {
-                        type: "table",
-                        tableRows: t.rows,
-                        tableCaption: t.caption ?? "",
-                      } as WorksheetItem
-                    }
-                    onUpdate={(patch) =>
-                      setTables((p) => ({
-                        ...p,
-                        [s.index]: {
-                          rows: (patch.tableRows as string[][]) ?? p[s.index].rows,
-                          caption:
-                            patch.tableCaption !== undefined
-                              ? patch.tableCaption
-                              : p[s.index].caption,
-                        },
-                      }))
-                    }
-                  />
-                )}
+                {sectionTables.map(({ contentIndex }) => {
+                  const key = `${s.index}-${contentIndex}`;
+                  const table = tables[key];
+                  if (!table) return null;
+                  return (
+                    <TableFieldsEditor
+                      key={key}
+                      item={{ type: "table", tableRows: table.rows, tableCaption: table.caption ?? "" } as WorksheetItem}
+                      onUpdate={(patch) =>
+                        setTables((p) => ({
+                          ...p,
+                          [key]: {
+                            rows: (patch.tableRows as string[][]) ?? p[key].rows,
+                            caption: patch.tableCaption !== undefined ? patch.tableCaption : p[key].caption,
+                          },
+                        }))
+                      }
+                    />
+                  );
+                })}
               </div>
             );
           })}
