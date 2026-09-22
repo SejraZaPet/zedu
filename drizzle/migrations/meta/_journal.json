@@ -162,6 +162,20 @@
       "when": 1789975991209,
       "tag": "0022_presentations_source_lesson",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790093156852,
+      "tag": "0023_lesson_plans_student_visibility_and_materials",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790093202117,
+      "tag": "0024_students_read_worksheets_via_lesson_plan",
+      "breakpoints": true
     }
   ]
 }
