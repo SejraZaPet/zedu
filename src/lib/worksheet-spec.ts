@@ -37,7 +37,12 @@ export type ItemType =
   | "image_label"
   | "image_hotspot"
   | "lesson_reference"
-  | "table";
+  | "table"
+  // v1.4 — read-only vizuální bloky převzaté z lekce
+  | "image"
+  | "image_text"
+  | "gallery"
+  | "callout";
 
 /** Křížovka — položka */
 export interface CrosswordEntry {
@@ -72,6 +77,16 @@ export type InstructionVariant = "blue" | "yellow" | "green" | "purple";
 export type InstructionIcon = "info" | "video" | "write" | "discuss" | "group";
 export type LineStyle = "dotted" | "solid" | "dashed";
 export type FlowDirection = "vertical" | "horizontal";
+export type WorksheetImageWidth = "full" | "medium" | "small";
+export type WorksheetImageAlignment = "left" | "center" | "right";
+export type WorksheetImagePosition = "left" | "right";
+export type WorksheetCalloutVariant = "note" | "info" | "tip" | "warning" | "remember" | "custom";
+
+export interface WorksheetGalleryImage {
+  url: string;
+  alt?: string;
+  caption?: string;
+}
 
 /** Režim offline (didaktické) aktivity v pracovním listu. */
 export type OfflineMode =
@@ -221,6 +236,32 @@ export interface WorksheetItem {
   tableRows?: string[][];
   /** Popisek tabulky pod / nad tabulkou. */
   tableCaption?: string;
+
+  // ─── v1.4 — Vizuální bloky reprodukované z lekce (read-only) ───
+  /** Šířka samostatného obrázku. */
+  imageWidth?: WorksheetImageWidth;
+  /** Zarovnání samostatného obrázku. */
+  imageAlignment?: WorksheetImageAlignment;
+  /** Popisek samostatného obrázku. */
+  imageCaption?: string;
+  /** Text vedle obrázku (image_text). */
+  imageText?: string;
+  /** Strana obrázku v kombinovaném bloku. */
+  imagePosition?: WorksheetImagePosition;
+  /** Obrázky galerie v původním pořadí. */
+  galleryImages?: WorksheetGalleryImage[];
+  /** Počet sloupců galerie. */
+  galleryColumns?: 2 | 3 | 4;
+  /** Varianta zvýrazněného rámečku. */
+  calloutVariant?: WorksheetCalloutVariant;
+  /** Volitelný nadpis zvýrazněného rámečku. */
+  calloutTitle?: string;
+  /** HTML/textový obsah zvýrazněného rámečku. */
+  calloutText?: string;
+  /** Vlastní barva pozadí převzatá z lekce. */
+  calloutBackgroundColor?: string;
+  /** Vlastní barva akcentu převzatá z lekce. */
+  calloutAccentColor?: string;
 }
 
 export interface AnswerKeyEntry {
@@ -340,7 +381,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
@@ -379,6 +420,18 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
                 instructionIcon: { type: "string", enum: ["info", "video", "write", "discuss", "group"] },
                 tableRows: { type: "array", items: { type: "array", items: { type: "string" } } },
                 tableCaption: { type: "string" },
+                imageWidth: { type: "string", enum: ["full", "medium", "small"] },
+                imageAlignment: { type: "string", enum: ["left", "center", "right"] },
+                imageCaption: { type: "string" },
+                imageText: { type: "string" },
+                imagePosition: { type: "string", enum: ["left", "right"] },
+                galleryImages: { type: "array", items: { type: "object", required: ["url"], properties: { url: { type: "string" }, alt: { type: "string" }, caption: { type: "string" } } } },
+                galleryColumns: { type: "integer", enum: [2, 3, 4] },
+                calloutVariant: { type: "string", enum: ["note", "info", "tip", "warning", "remember", "custom"] },
+                calloutTitle: { type: "string" },
+                calloutText: { type: "string" },
+                calloutBackgroundColor: { type: "string" },
+                calloutAccentColor: { type: "string" },
               },
             },
           },
