@@ -522,9 +522,11 @@ const StudentGamePlay = () => {
                     sessionId={sessionId}
                     questionIndex={qi}
                     playerId={playerId}
+                    joinToken={joinToken}
                     onComplete={() => {}}
                   />
                 )
+
               ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
                 (() => {
                   const spec = (currentSlideData as any).activitySpec || {};
