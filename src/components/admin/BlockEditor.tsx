@@ -924,6 +924,8 @@ const SortableSlideGroup = React.memo(({
   onModeChange: (groupId: string, mode: SlideGroupMode) => void;
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
+  onChildToggleFlag?: (groupId: string, childId: string, key: PresentationFlagKey) => void;
+
   onMinHeightChange: (groupId: string, height: number | null) => void;
   onChildCreateActivity?: (groupId: string, childId: string) => void;
 
