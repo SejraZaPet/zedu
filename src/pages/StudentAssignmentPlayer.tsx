@@ -94,12 +94,25 @@ const StudentAssignmentPlayer = () => {
   /** Lekce z učebnice propojená s úlohou (nepovinná). */
   const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
 
+  /** Všechny pokusy žáka (nejnovější první) – pro přepínač pokusů po termínu. */
+  const [allAttempts, setAllAttempts] = useState<AttemptData[]>([]);
+
   useEffect(() => {
     if (assignmentId) loadAssignment();
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
   }, [assignmentId]);
+
+  /** Přepne zobrazení na konkrétní pokus (prohlížení bez úprav). */
+  const selectAttempt = (a: AttemptData) => {
+    setAttempt(a);
+    setAnswers((a.answers as any) || {});
+    setNote(a.submission_note || "");
+    setCurrentIndex(0);
+    lastSavedAnswers.current = JSON.stringify(a.answers || {});
+  };
+
 
   const loadAssignment = async () => {
     setLoading(true);
@@ -192,7 +205,11 @@ const StudentAssignmentPlayer = () => {
       const { data: attempts } = await attemptQuery.order("attempt_number", { ascending: false });
 
       const existingAttempts = (attempts as any[] || []);
+      setAllAttempts(existingAttempts as any as AttemptData[]);
       const inProgress = existingAttempts.find((a: any) => a.status === "in_progress");
+      const deadlinePassed = assignmentData.deadline
+        ? new Date(assignmentData.deadline) < new Date()
+        : false;
 
       // Kdo naposledy upravoval sdílený pokus
       const editedSource = inProgress || existingAttempts[0];
@@ -208,7 +225,18 @@ const StudentAssignmentPlayer = () => {
         });
       }
 
-      if (inProgress) {
+      if (deadlinePassed) {
+        // Po termínu se NIKDY nezakládá nový pokus – žák si jen prohlíží,
+        // co odevzdal (nebo rozpracoval) před termínem.
+        const lastAttempt = (inProgress ?? existingAttempts[0]) as any as AttemptData | undefined;
+        if (lastAttempt) {
+          selectAttempt(lastAttempt);
+        } else {
+          setAttempt(null);
+          setAnswers({});
+          setNote("");
+        }
+      } else if (inProgress) {
         // Resume existing attempt
         const attemptData = inProgress as any as AttemptData;
         setAttempt(attemptData);
@@ -236,17 +264,17 @@ const StudentAssignmentPlayer = () => {
           .single();
         if (nErr) throw nErr;
         setAttempt(newAttempt as any as AttemptData);
+        setAllAttempts([newAttempt as any as AttemptData, ...(existingAttempts as any as AttemptData[])]);
         setAnswers({});
         setCurrentIndex(0);
         lastSavedAnswers.current = "{}";
       } else {
         // No more attempts
         const lastAttempt = existingAttempts[0] as any as AttemptData;
-        setAttempt(lastAttempt);
-        setAnswers(lastAttempt.answers || {});
-        setNote(lastAttempt.submission_note || "");
+        selectAttempt(lastAttempt);
         toast({ title: "Vyčerpány pokusy", description: `Použito ${existingAttempts.length}/${assignmentData.max_attempts} pokusů.` });
       }
+
 
       // Prepare items with randomization
       let activityItems = assignmentData.activity_data || [];
@@ -342,9 +370,47 @@ const StudentAssignmentPlayer = () => {
 
   const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline) < new Date() : false;
   const isReadOnly = attempt?.status !== "in_progress" || isDeadlinePassed;
+  /** Prohlížení už uzavřeného odevzdání (po termínu nebo po vyčerpání pokusů). */
+  const isReviewMode = isReadOnly && !!attempt;
+  /**
+   * Zobrazit žákovi i správné řešení? Učitel to může povolit v nastavení úlohy.
+   * Pokud volba chybí, správné odpovědi se neukazují.
+   */
+  const revealCorrectAnswers = !!(
+    (assignment?.settings as any)?.show_correct_answers ??
+    (assignment?.settings as any)?.showCorrectAnswers
+  );
   const answeredCount = Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== null).length;
   const progressPercent = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
   const currentItem = items[currentIndex];
+
+  /** Čitelný text odpovědi žáka pro prohlížení. */
+  const formatStudentAnswer = (item: any, value: any): string => {
+    if (value === undefined || value === null || value === "") return "Bez odpovědi";
+    if (typeof value === "boolean") return value ? "Pravda" : "Nepravda";
+    if (typeof value === "number" && Array.isArray(item?.choices)) {
+      return item.choices[value] ?? String(value);
+    }
+    if (Array.isArray(value)) return value.map((v) => String(v)).join(", ");
+    return String(value);
+  };
+
+  /** Správné řešení položky, pokud ho lze z dat zjistit. */
+  const formatCorrectAnswer = (item: any): string | null => {
+    if (item?.type === "mcq" && typeof item.correctIndex === "number") {
+      return item.choices?.[item.correctIndex] ?? null;
+    }
+    if (item?.type === "true_false" && typeof item.isTrue === "boolean") {
+      return item.isTrue ? "Pravda" : "Nepravda";
+    }
+    if (item?.correctAnswer !== undefined && item.correctAnswer !== null) {
+      return Array.isArray(item.correctAnswer)
+        ? item.correctAnswer.join(", ")
+        : String(item.correctAnswer);
+    }
+    return null;
+  };
+
 
   // Lockdown mode (bezpečný test)
   const lockdownEnabled = !!assignment?.lockdown_mode;
@@ -529,6 +595,52 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {/* Prohlížení uzavřeného úkolu – informace + přepínač pokusů */}
+        {isReviewMode && (
+          <Card className="mb-4 border-muted-foreground/30 bg-muted/30">
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-medium">
+                {isDeadlinePassed
+                  ? "Termín už uplynul – tohle je tvoje odevzdané řešení, jen pro prohlížení."
+                  : "Tohle je tvoje odevzdané řešení, jen pro prohlížení."}
+              </p>
+              {allAttempts.length > 1 && (
+                <div className="flex flex-wrap gap-2" role="tablist" aria-label="Moje pokusy">
+                  {[...allAttempts]
+                    .sort((a, b) => a.attempt_number - b.attempt_number)
+                    .map((a) => (
+                      <Button
+                        key={a.id}
+                        size="sm"
+                        role="tab"
+                        aria-selected={a.id === attempt?.id}
+                        variant={a.id === attempt?.id ? "default" : "outline"}
+                        onClick={() => selectAttempt(a)}
+                      >
+                        Pokus {a.attempt_number}
+                        {a.score != null && a.max_score != null && (
+                          <span className="ml-1.5 text-xs opacity-80">
+                            {a.score}/{a.max_score}
+                          </span>
+                        )}
+                      </Button>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Po termínu bez jakéhokoli pokusu */}
+        {isDeadlinePassed && !attempt && (
+          <Card className="mb-4 border-destructive/40">
+            <CardContent className="p-4 text-sm">
+              Termín už uplynul a nemáš u tohoto úkolu žádné odevzdané řešení.
+            </CardContent>
+          </Card>
+        )}
+
+
         {/* Celé zadání je společné pro všechny typy úkolů (pracovní list, aktivita i portfolio). */}
         {assignment.description && (
           <Card className="mb-4">
@@ -630,8 +742,13 @@ const StudentAssignmentPlayer = () => {
                     <CheckCircle2 className="h-4 w-4" />
                     Úkol je odevzdaný a uložený v portfoliu
                   </div>
+                ) : isReadOnly ? (
+                  <p className="text-sm text-muted-foreground">
+                    Úkol už nelze odevzdat – vidíš ho jen pro prohlížení.
+                  </p>
                 ) : (
                   <Button
+
                     disabled={submitting || isReadOnly || !attempt}
                     onClick={async () => {
                       if (!attempt) return;
@@ -683,12 +800,14 @@ const StudentAssignmentPlayer = () => {
           </Card>
         ) : worksheetSpec ? (
           <WorksheetPlayer
-
+            key={attempt?.id ?? "no-attempt"}
             spec={worksheetSpec}
             variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
             attemptId={attempt?.id ?? null}
             locked={isReadOnly}
+            showResults={isReviewMode && revealCorrectAnswers}
             initialAnswers={(attempt?.answers as any) || {}}
+
             onSubmit={async (wAnswers, score, maxScore) => {
               if (!attempt) return;
               try {
@@ -755,6 +874,24 @@ const StudentAssignmentPlayer = () => {
                 </div>
 
                 <p className="text-base font-medium" id={`question-${currentIndex}`}>{currentItem.question || currentItem.prompt || "Otázka"}</p>
+
+                {/* Prohlížení: co žák odpověděl (a případně správné řešení) */}
+                {isReviewMode && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1 text-sm">
+                    <p>
+                      <span className="text-muted-foreground">Tvoje odpověď: </span>
+                      <strong>{formatStudentAnswer(currentItem, answers[currentIndex])}</strong>
+                    </p>
+                    {revealCorrectAnswers && formatCorrectAnswer(currentItem) && (
+                      <p>
+                        <span className="text-muted-foreground">Správné řešení: </span>
+                        <strong>{formatCorrectAnswer(currentItem)}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+
 
                 {/* MCQ */}
                 {(currentItem.type === "mcq" || currentItem.choices) && (
