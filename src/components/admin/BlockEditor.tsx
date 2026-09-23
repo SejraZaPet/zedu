@@ -92,6 +92,8 @@ import {
   setGroupMode,
   ungroupSlideGroup,
   updateGroupChild,
+  toggleGroupChildFlag,
+
   type SlideGroupLayout,
   type SlideGroupMode,
 } from "@/lib/slide-groups";
@@ -267,11 +269,13 @@ const GroupChildBlock = ({
   onChange,
   onRemove,
   onCreateActivity,
+  onToggleFlag,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onCreateActivity?: () => void;
+  onToggleFlag?: (key: PresentationFlagKey) => void;
 }) => {
   const [propsOpen, setPropsOpen] = useState(false);
   const ChildIcon = BLOCK_ICON[child.type];
@@ -299,7 +303,7 @@ const GroupChildBlock = ({
         >
           <Palette className="h-3.5 w-3.5" />
         </button>
-        {canCreateActivity && (
+        {(canCreateActivity || onToggleFlag) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -312,10 +316,16 @@ const GroupChildBlock = ({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => onCreateActivity?.()}>
-                <IconSparkles className="mr-2 h-4 w-4" />
-                Vytvořit aktivitu z tohoto obsahu
-              </DropdownMenuItem>
+              {canCreateActivity && (
+                <DropdownMenuItem onClick={() => onCreateActivity?.()}>
+                  <IconSparkles className="mr-2 h-4 w-4" />
+                  Vytvořit aktivitu z tohoto obsahu
+                </DropdownMenuItem>
+              )}
+              {canCreateActivity && onToggleFlag && <DropdownMenuSeparator />}
+              {onToggleFlag && (
+                <PresentationFlagMenuItems block={child} onToggleFlag={onToggleFlag} />
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -329,6 +339,9 @@ const GroupChildBlock = ({
           <IconX className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+
+      <PresentationFlagBadges block={child} className="mb-1.5 flex flex-wrap" />
+
 
 
       {propsOpen && (
@@ -376,12 +389,15 @@ const ColumnGroupCard = ({
   onRemove,
   onHeightChange,
   onCreateActivity,
+  onToggleFlag,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onHeightChange: (height: number | null) => void;
   onCreateActivity?: () => void;
+  onToggleFlag?: (key: PresentationFlagKey) => void;
+
 }) => {
   const saved = getGroupChildHeight(child);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -421,6 +437,8 @@ const ColumnGroupCard = ({
         onChange={onChange}
         onRemove={onRemove}
         onCreateActivity={onCreateActivity}
+        onToggleFlag={onToggleFlag}
+
       />
       <div
         role="separator"
@@ -600,6 +618,67 @@ const ReplaceMenu = ({
 /** Textové bloky, které se edituji přímo v náhledu. */
 const INLINE_TEXT_TYPES = new Set(["heading", "paragraph", "bullet_list"]);
 
+/** Klíče čistě prezentačních příznaků bloku. */
+export type PresentationFlagKey = "slideBreakBefore" | "hiddenInPresentation" | "presentationOnly";
+
+/** Položky nabídky pro tři prezentační volby (stejné v hlavním seznamu i uvnitř snímku). */
+const PresentationFlagMenuItems = ({
+  block,
+  onToggleFlag,
+}: {
+  block: Block;
+  onToggleFlag: (key: PresentationFlagKey) => void;
+}) => (
+  <>
+    <DropdownMenuItem onClick={() => onToggleFlag("slideBreakBefore")}>
+      <MonitorPlay className="mr-2 h-4 w-4" />
+      {block.slideBreakBefore ? "Zrušit zalomení snímku" : "Začít tady nový snímek"}
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={() => onToggleFlag("hiddenInPresentation")}>
+      {block.hiddenInPresentation ? <Projector className="mr-2 h-4 w-4" /> : <MonitorOff className="mr-2 h-4 w-4" />}
+      {block.hiddenInPresentation ? "Zobrazit v prezentaci" : "Nezobrazovat v prezentaci"}
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={() => onToggleFlag("presentationOnly")}>
+      <Projector className="mr-2 h-4 w-4" />
+      {block.presentationOnly ? "Zobrazit i v lekci" : "Jen pro prezentaci"}
+    </DropdownMenuItem>
+  </>
+);
+
+/** Štítky prezentačních příznaků u bloku. */
+const PresentationFlagBadges = ({ block, className = "" }: { block: Block; className?: string }) => {
+  if (!block.slideBreakBefore && !block.hiddenInPresentation && !block.presentationOnly) return null;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${className}`}>
+      {block.slideBreakBefore && (
+        <span
+          title="Při promítání od tohoto bloku začíná nový snímek."
+          className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark"
+        >
+          <MonitorPlay className="h-3 w-3" /> Nový snímek
+        </span>
+      )}
+      {block.hiddenInPresentation && (
+        <span
+          title="Blok zůstane v lekci, ale při promítání se přeskočí."
+          className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <MonitorOff className="h-3 w-3" /> Skryto v prezentaci
+        </span>
+      )}
+      {block.presentationOnly && (
+        <span
+          title="Blok se promítne, ale při čtení lekce ho žák ani učitel neuvidí."
+          className="inline-flex items-center gap-1 rounded-full bg-secondary-pastel px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--secondary-dark))]"
+        >
+          <Projector className="h-3 w-3" /> Jen pro prezentaci
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 const SortableBlock = React.memo(({
   block,
   onUpdate,
@@ -620,7 +699,7 @@ const SortableBlock = React.memo(({
   onUpdate: (id: string, props: Record<string, any>) => void;
   onDuplicate: (id: string) => void;
   onToggle: (id: string) => void;
-  onToggleFlag: (id: string, key: "slideBreakBefore" | "hiddenInPresentation") => void;
+  onToggleFlag: (id: string, key: PresentationFlagKey) => void;
   onDelete: (id: string) => void;
   onReplace: (id: string, target: Block["type"]) => void;
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
@@ -745,14 +824,8 @@ const SortableBlock = React.memo(({
                 {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onToggleFlag(block.id, "slideBreakBefore")}>
-                <MonitorPlay className="mr-2 h-4 w-4" />
-                {block.slideBreakBefore ? "Zrušit zalomení snímku" : "Začít tady nový snímek"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onToggleFlag(block.id, "hiddenInPresentation")}>
-                {block.hiddenInPresentation ? <Projector className="mr-2 h-4 w-4" /> : <MonitorOff className="mr-2 h-4 w-4" />}
-                {block.hiddenInPresentation ? "Zobrazit v prezentaci" : "Nezobrazovat v prezentaci"}
-              </DropdownMenuItem>
+              <PresentationFlagMenuItems block={block} onToggleFlag={(key) => onToggleFlag(block.id, key)} />
+
               {onCreateActivity && block.type !== "activity" && blockHasAiText(block) && (
                 <DropdownMenuItem onClick={() => onCreateActivity(block.id)}>
                   <IconSparkles className="mr-2 h-4 w-4" /> Vytvořit aktivitu z tohoto obsahu
@@ -777,26 +850,8 @@ const SortableBlock = React.memo(({
         </span>
       )}
 
-      {(block.slideBreakBefore || block.hiddenInPresentation) && (
-        <span className="absolute -top-3 left-2 z-20 inline-flex items-center gap-1.5 whitespace-nowrap">
-          {block.slideBreakBefore && (
-            <span
-              title="Při promítání od tohoto bloku začíná nový snímek."
-              className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark"
-            >
-              <MonitorPlay className="h-3 w-3" /> Nový snímek
-            </span>
-          )}
-          {block.hiddenInPresentation && (
-            <span
-              title="Blok zůstane v lekci, ale při promítání se přeskočí."
-              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
-            >
-              <MonitorOff className="h-3 w-3" /> Skryto v prezentaci
-            </span>
-          )}
-        </span>
-      )}
+      <PresentationFlagBadges block={block} className="absolute -top-3 left-2 z-20" />
+
 
       {/* Lišta vlastností – plovoucí nad blokem, na mobilu přilepená dole. */}
       {showProps && (
@@ -855,6 +910,8 @@ const SortableSlideGroup = React.memo(({
   onChildHeightChange,
   onMinHeightChange,
   onChildCreateActivity,
+  onChildToggleFlag,
+
 
   onUngroup,
   onToggle,
@@ -869,6 +926,8 @@ const SortableSlideGroup = React.memo(({
   onModeChange: (groupId: string, mode: SlideGroupMode) => void;
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
+  onChildToggleFlag?: (groupId: string, childId: string, key: PresentationFlagKey) => void;
+
   onMinHeightChange: (groupId: string, height: number | null) => void;
   onChildCreateActivity?: (groupId: string, childId: string) => void;
 
@@ -1052,6 +1111,8 @@ const SortableSlideGroup = React.memo(({
                       onChange={(props) => onChildUpdate(block.id, child.id, props)}
                       onRemove={() => onChildRemove(block.id, child.id)}
                       onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
+                      onToggleFlag={(key) => onChildToggleFlag?.(block.id, child.id, key)}
+
                     />
                   </div>
                 ),
@@ -1075,6 +1136,8 @@ const SortableSlideGroup = React.memo(({
                   onRemove={() => onChildRemove(block.id, child.id)}
                   onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
                   onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
+                  onToggleFlag={(key) => onChildToggleFlag?.(block.id, child.id, key)}
+
                 />
               ))}
             </div>
@@ -1395,8 +1458,9 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
   }, [commit]);
 
-  /** Přepnutí čistě prezentační vlastnosti bloku (zalomení snímku / skrytí v prezentaci). */
-  const toggleBlockFlag = useCallback((id: string, key: "slideBreakBefore" | "hiddenInPresentation") => {
+  /** Přepnutí čistě prezentační vlastnosti bloku (zalomení / skrytí v prezentaci / jen pro prezentaci). */
+  const toggleBlockFlag = useCallback((id: string, key: PresentationFlagKey) => {
+
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, [key]: !b[key] } : b)));
   }, [commit]);
 
@@ -1816,6 +1880,12 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupChildHeight(blocksRef.current, groupId, childId, height));
   }, [commit]);
 
+  /** Prezentační příznak dítěte snímku (zalomení / skrytí v prezentaci / jen pro prezentaci). */
+  const toggleChildFlag = useCallback((groupId: string, childId: string, key: PresentationFlagKey) => {
+    commit(toggleGroupChildFlag(blocksRef.current, groupId, childId, key));
+  }, [commit]);
+
+
 
   const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
     onBlockEditedRef.current?.(childId);
@@ -1967,6 +2037,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onChildHeightChange={changeChildHeight}
                   onMinHeightChange={changeGroupMinHeight}
                   onChildCreateActivity={createActivityFromGroupChild}
+                  onChildToggleFlag={toggleChildFlag}
+
 
 
                   onUngroup={ungroup}

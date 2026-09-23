@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Eye, RefreshCw } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { filterReadingBlocks } from "@/lib/reading-blocks";
+
 
 interface Props {
   title: string;
@@ -50,7 +52,7 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
   }, [open, blocks, lessonId, lessonSource, refreshKey]);
 
   const effectiveBlocks = blocks ?? lazyBlocks ?? [];
-  const visibleBlocks = effectiveBlocks.filter((b) => b.visible !== false);
+  const visibleBlocks = filterReadingBlocks(effectiveBlocks);
   const effectiveHero = heroImageUrl ?? lazyHero;
 
   return (

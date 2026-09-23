@@ -20,6 +20,8 @@ import { downloadLessonOfflineHtml } from "@/lib/lesson-offline-export";
 import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
+import { filterReadingBlocks } from "@/lib/reading-blocks";
+
 
 // Extract plain readable text from lesson blocks for TTS.
 const stripHtmlToText = (html: string): string => {
@@ -179,7 +181,7 @@ const LessonPage = () => {
     [trackActivity]
   );
 
-  const visibleBlocks = blocks.filter((b) => b.visible !== false);
+  const visibleBlocks = filterReadingBlocks(blocks);
   const requiredActivityIndices = visibleBlocks
     .map((b, idx) => ({ b, idx }))
     .filter(({ b }) => b.type === "activity" && (b.props as any)?.required === true)

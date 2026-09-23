@@ -85,6 +85,23 @@ export const updateGroupChild = (
     return { ...b, props: { ...b.props, children } };
   });
 
+/** Přepne prezentační příznak jednoho dítěte snímku (zalomení / skrytí / jen pro prezentaci). */
+export const toggleGroupChildFlag = (
+  blocks: Block[],
+  groupId: string,
+  childId: string,
+  key: "slideBreakBefore" | "hiddenInPresentation" | "presentationOnly",
+): Block[] =>
+  blocks.map((b) => {
+    if (b.id !== groupId || !isSlideGroup(b)) return b;
+    const children = getGroupChildren(b).map((c) =>
+      c.id === childId ? ({ ...c, [key]: c[key] === true ? undefined : true } as Block) : c,
+    );
+    return { ...b, props: { ...b.props, children } };
+  });
+
+
+
 /** Vyjme jedno dítě ze skupiny a vloží ho hned za skupinu. */
 export const removeChildFromGroup = (
   blocks: Block[],
