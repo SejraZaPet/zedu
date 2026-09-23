@@ -92,6 +92,8 @@ import {
   setGroupMode,
   ungroupSlideGroup,
   updateGroupChild,
+  toggleGroupChildFlag,
+
   type SlideGroupLayout,
   type SlideGroupMode,
 } from "@/lib/slide-groups";
@@ -1456,8 +1458,9 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
   }, [commit]);
 
-  /** Přepnutí čistě prezentační vlastnosti bloku (zalomení snímku / skrytí v prezentaci). */
-  const toggleBlockFlag = useCallback((id: string, key: "slideBreakBefore" | "hiddenInPresentation") => {
+  /** Přepnutí čistě prezentační vlastnosti bloku (zalomení / skrytí v prezentaci / jen pro prezentaci). */
+  const toggleBlockFlag = useCallback((id: string, key: PresentationFlagKey) => {
+
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, [key]: !b[key] } : b)));
   }, [commit]);
 
@@ -1877,6 +1880,12 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupChildHeight(blocksRef.current, groupId, childId, height));
   }, [commit]);
 
+  /** Prezentační příznak dítěte snímku (zalomení / skrytí v prezentaci / jen pro prezentaci). */
+  const toggleChildFlag = useCallback((groupId: string, childId: string, key: PresentationFlagKey) => {
+    commit(toggleGroupChildFlag(blocksRef.current, groupId, childId, key));
+  }, [commit]);
+
+
 
   const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
     onBlockEditedRef.current?.(childId);
@@ -2028,6 +2037,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onChildHeightChange={changeChildHeight}
                   onMinHeightChange={changeGroupMinHeight}
                   onChildCreateActivity={createActivityFromGroupChild}
+                  onChildToggleFlag={toggleChildFlag}
+
 
 
                   onUngroup={ungroup}
