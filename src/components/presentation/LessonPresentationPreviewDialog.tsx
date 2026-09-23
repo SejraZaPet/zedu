@@ -11,6 +11,9 @@ import { STAGE_H, STAGE_W } from "@/lib/slide-stage";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+/** Světlé téma pro uloženou kopii – odpovídá světlému náhledu z lekce. */
+const LIGHT_COPY_THEME_ID = "minimal";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -125,9 +128,16 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
       let n = 2;
       while (taken.has(title)) title = `${baseTitle} ${n++}`;
 
+      // Bez `presentationSource` by se kopie vrátila k výchozímu TMAVÉMU tématu.
+      // Proto rovnou zapíšeme explicitní světlé téma, aby kopie vypadala stejně
+      // jako náhled (světlé pozadí, barvy bloků z lekce).
       const copiedSlides = slides.map((s: any, i: number) => {
         const { presentationSource: _src, ...rest } = s || {};
-        return { ...rest, slideId: rest.slideId || `slide-${Date.now()}-${i}` };
+        return {
+          ...rest,
+          themeId: LIGHT_COPY_THEME_ID,
+          slideId: rest.slideId || `slide-${Date.now()}-${i}`,
+        };
       });
 
       const { data, error } = await supabase

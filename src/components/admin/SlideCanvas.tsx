@@ -193,11 +193,13 @@ function EditableText({
     <div className="relative">
       <div
         ref={ref}
+        data-editable-text="true"
         contentEditable={typing}
         suppressContentEditableWarning
         tabIndex={typing ? undefined : 0}
         role={typing ? "textbox" : undefined}
         title={typing ? undefined : "Klikni pro psaní (Enter také začne psát)"}
+
         style={{
           ...(html ? {} : { whiteSpace: multiline ? "pre-wrap" : undefined }),
           minHeight: "1.2em",
@@ -2104,7 +2106,7 @@ export function SlideBody({
         editable && onSelectBlock
           ? (e) => {
               const target = e.target as HTMLElement;
-              if (target.closest("[data-slide-block-id]")) return;
+              if (target.closest("[data-slide-block-id], [data-editable-text]")) return;
               if (drawMode || e.button !== 0) {
                 onSelectBlock(null);
                 return;
@@ -2366,7 +2368,7 @@ const SlideCanvas = ({
     const target = e.target as HTMLElement;
     if (
       target.closest(
-        '[data-slide-block-id], [data-no-pan], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
+        '[data-slide-block-id], [data-no-pan], [data-slide-drawing-layer], [data-editable-text], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
       )
     ) {
       return;
