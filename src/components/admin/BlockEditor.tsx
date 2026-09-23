@@ -61,7 +61,9 @@ import {
   X as IconX,
   MoreHorizontal,
   Palette,
-
+  MonitorPlay,
+  MonitorOff,
+  Projector,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
@@ -603,6 +605,7 @@ const SortableBlock = React.memo(({
   onUpdate,
   onDuplicate,
   onToggle,
+  onToggleFlag,
   onDelete,
   onReplace,
   onAiReplace,
@@ -617,6 +620,7 @@ const SortableBlock = React.memo(({
   onUpdate: (id: string, props: Record<string, any>) => void;
   onDuplicate: (id: string) => void;
   onToggle: (id: string) => void;
+  onToggleFlag: (id: string, key: "slideBreakBefore" | "hiddenInPresentation") => void;
   onDelete: (id: string) => void;
   onReplace: (id: string, target: Block["type"]) => void;
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
@@ -740,6 +744,15 @@ const SortableBlock = React.memo(({
                 {block.visible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                 {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onToggleFlag(block.id, "slideBreakBefore")}>
+                <MonitorPlay className="mr-2 h-4 w-4" />
+                {block.slideBreakBefore ? "Zrušit zalomení snímku" : "Začít tady nový snímek"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleFlag(block.id, "hiddenInPresentation")}>
+                {block.hiddenInPresentation ? <Projector className="mr-2 h-4 w-4" /> : <MonitorOff className="mr-2 h-4 w-4" />}
+                {block.hiddenInPresentation ? "Zobrazit v prezentaci" : "Nezobrazovat v prezentaci"}
+              </DropdownMenuItem>
               {onCreateActivity && block.type !== "activity" && blockHasAiText(block) && (
                 <DropdownMenuItem onClick={() => onCreateActivity(block.id)}>
                   <IconSparkles className="mr-2 h-4 w-4" /> Vytvořit aktivitu z tohoto obsahu
@@ -761,6 +774,27 @@ const SortableBlock = React.memo(({
           className="absolute -top-3 left-2 z-20 inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark whitespace-nowrap"
         >
           <span aria-hidden="true">🤖</span> Navrženo AI
+        </span>
+      )}
+
+      {(block.slideBreakBefore || block.hiddenInPresentation) && (
+        <span className="absolute -top-3 left-2 z-20 inline-flex items-center gap-1.5 whitespace-nowrap">
+          {block.slideBreakBefore && (
+            <span
+              title="Při promítání od tohoto bloku začíná nový snímek."
+              className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark"
+            >
+              <MonitorPlay className="h-3 w-3" /> Nový snímek
+            </span>
+          )}
+          {block.hiddenInPresentation && (
+            <span
+              title="Blok zůstane v lekci, ale při promítání se přeskočí."
+              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              <MonitorOff className="h-3 w-3" /> Skryto v prezentaci
+            </span>
+          )}
         </span>
       )}
 
@@ -1361,6 +1395,11 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
   }, [commit]);
 
+  /** Přepnutí čistě prezentační vlastnosti bloku (zalomení snímku / skrytí v prezentaci). */
+  const toggleBlockFlag = useCallback((id: string, key: "slideBreakBefore" | "hiddenInPresentation") => {
+    commit(blocksRef.current.map((b) => (b.id === id ? { ...b, [key]: !b[key] } : b)));
+  }, [commit]);
+
   const deleteBlock = useCallback((id: string) => {
     commit(blocksRef.current.filter((b) => b.id !== id));
   }, [commit]);
@@ -1942,6 +1981,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onUpdate={updateBlock}
                   onDuplicate={duplicateBlock}
                   onToggle={toggleBlock}
+                  onToggleFlag={toggleBlockFlag}
                   onDelete={deleteBlock}
                   onReplace={replaceBlock}
                   onAiReplace={aiReplaceBlock}

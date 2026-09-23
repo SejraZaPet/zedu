@@ -50,6 +50,10 @@ export interface Block {
   frame?: { x: number; y: number; w: number; h: number };
   /** Vrstva volně umístěného bloku (z-index). Bez hodnoty = pořadí v DOM. */
   zIndex?: number;
+  /** Při promítání od tohoto bloku začít nový snímek (nezávisle na automatickém dělení). */
+  slideBreakBefore?: boolean;
+  /** Blok je v lekci vidět, ale do prezentace se nepřenese. */
+  hiddenInPresentation?: boolean;
 }
 
 
@@ -73,6 +77,8 @@ export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => 
       props: block?.props && typeof block.props === "object" ? block.props : {},
       ...(block?.frame ? { frame: block.frame } : {}),
       ...(typeof block?.zIndex === "number" ? { zIndex: block.zIndex } : {}),
+      ...(block?.slideBreakBefore === true ? { slideBreakBefore: true } : {}),
+      ...(block?.hiddenInPresentation === true ? { hiddenInPresentation: true } : {}),
     } as Block;
 
 
