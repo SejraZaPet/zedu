@@ -245,6 +245,34 @@ export default function TeacherSuggestByMethod() {
   const [creatingWorksheet, setCreatingWorksheet] = useState(false);
   /** Plán hodiny vytvořený z aktuálního návrhu (pro propojení s pracovním listem). */
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
+  const [createdWorksheetId, setCreatedWorksheetId] = useState<string | null>(null);
+  const LAST_KEY = "bezli.suggestByMethod.last";
+  // Obnoví poslední návrh po návratu z plánu / pracovního listu (kvůli propojení obou).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(LAST_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved?.suggestion) setSuggestion(saved.suggestion);
+      if (Array.isArray(saved?.methodIds)) setSelectedMethodIds(saved.methodIds);
+      setCreatedPlanId(saved?.planId ?? null);
+      setCreatedWorksheetId(saved?.worksheetId ?? null);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (!suggestion) return;
+      sessionStorage.setItem(
+        LAST_KEY,
+        JSON.stringify({ suggestion, methodIds: selectedMethodIds, planId: createdPlanId, worksheetId: createdWorksheetId }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [suggestion, selectedMethodIds, createdPlanId, createdWorksheetId]);
   const [insertingIntoLesson, setInsertingIntoLesson] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
@@ -458,6 +486,7 @@ export default function TeacherSuggestByMethod() {
     setGenerating(true);
     setSuggestion(null);
     setCreatedPlanId(null);
+    setCreatedWorksheetId(null);
     try {
       const { text, title } = resolveSourceText();
       const { data, error } = await supabase.functions.invoke("suggest-lesson-from-methods", {
@@ -537,6 +566,7 @@ export default function TeacherSuggestByMethod() {
           title: suggestion.title || "Návrh podle metody",
           student_description: studentDescription || null,
           teacher_instructions: teacherInstructions || null,
+          ...(createdWorksheetId ? { worksheet_ids: [createdWorksheetId] } : {}),
           input_data: {
             description: suggestion.summary || "",
             subject: suggestion.subject || subject,
@@ -551,12 +581,20 @@ export default function TeacherSuggestByMethod() {
       if (error) throw error;
       const planId = (data as any).id as string;
       setCreatedPlanId(planId);
+      try {
+        sessionStorage.setItem(
+          LAST_KEY,
+          JSON.stringify({ suggestion, methodIds: selectedMethodIds, planId, worksheetId: createdWorksheetId }),
+        );
+      } catch {
+        /* ignore */
+      }
 
       // Pomůcky ke každé fázi (jen pro učitele).
       const equipment: Record<string, string> = {};
       for (const key of Object.keys(PHASE_LABELS)) {
         const eq = suggestion.phases?.[key]?.equipment?.trim();
-        if (eq) equipment[key] = eq;
+        if (eq && !/^(žádné|nic|-|–)\.?$/i.test(eq)) equipment[key] = eq;
       }
       try {
         await savePlanEquipment(planId, user.id, equipment, Object.keys(PHASE_LABELS));
@@ -625,6 +663,15 @@ export default function TeacherSuggestByMethod() {
         .single();
       if (error || !created) throw error ?? new Error("Nepodařilo se založit pracovní list");
       const wsId = (created as any).id as string;
+      setCreatedWorksheetId(wsId);
+      try {
+        sessionStorage.setItem(
+          LAST_KEY,
+          JSON.stringify({ suggestion, methodIds: selectedMethodIds, planId: createdPlanId, worksheetId: wsId }),
+        );
+      } catch {
+        /* ignore */
+      }
       try {
         sessionStorage.setItem(`bezli.worksheetPrefill:${wsId}`, context);
       } catch {
