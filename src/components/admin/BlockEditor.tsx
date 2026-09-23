@@ -387,12 +387,15 @@ const ColumnGroupCard = ({
   onRemove,
   onHeightChange,
   onCreateActivity,
+  onToggleFlag,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onHeightChange: (height: number | null) => void;
   onCreateActivity?: () => void;
+  onToggleFlag?: (key: PresentationFlagKey) => void;
+
 }) => {
   const saved = getGroupChildHeight(child);
   const cardRef = useRef<HTMLDivElement | null>(null);
