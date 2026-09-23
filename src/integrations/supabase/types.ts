@@ -7390,6 +7390,7 @@ export type Database = {
           subject: string
           subject_id: string | null
           teacher_id: string
+          teacher_notes: string | null
           title: string
           updated_at: string
           worksheet_mode: string
@@ -7412,6 +7413,7 @@ export type Database = {
           subject?: string
           subject_id?: string | null
           teacher_id: string
+          teacher_notes?: string | null
           title?: string
           updated_at?: string
           worksheet_mode?: string
@@ -7434,6 +7436,7 @@ export type Database = {
           subject?: string
           subject_id?: string | null
           teacher_id?: string
+          teacher_notes?: string | null
           title?: string
           updated_at?: string
           worksheet_mode?: string
