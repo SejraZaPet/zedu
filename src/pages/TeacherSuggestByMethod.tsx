@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -46,6 +48,8 @@ interface TeacherSource {
   content: any;
   /** Popisek zdroje (učebnice / téma) pro seznam a náhled. */
   source?: string;
+  /** Předmět pro filtr a seskupení. */
+  subject?: string | null;
   /** U lekcí: čisté id lekce (bez prefixu). */
   lessonId?: string;
   /** Lze do lekce zapisovat obsah (jen vlastní lekce učitele). */
@@ -178,6 +182,36 @@ export default function TeacherSuggestByMethod() {
   const [methods, setMethods] = useState<LearningMethod[]>([]);
   const [selectedMethodIds, setSelectedMethodIds] = useState<string[]>([]);
   const [teacherLessons, setTeacherLessons] = useState<TeacherSource[]>([]);
+  const [lessonSubjectFilter, setLessonSubjectFilter] = useState<string>("__all");
+  const [lessonSearch, setLessonSearch] = useState("");
+  const lessonSubjects = useMemo(
+    () =>
+      Array.from(new Set(teacherLessons.map((l) => l.subject).filter(Boolean) as string[])).sort((a, b) =>
+        a.localeCompare(b, "cs"),
+      ),
+    [teacherLessons],
+  );
+  const groupedLessons = useMemo(() => {
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const q = norm(lessonSearch.trim());
+    const filtered = teacherLessons.filter((l) => {
+      if (lessonSubjectFilter === "__none" && l.subject) return false;
+      if (lessonSubjectFilter !== "__all" && lessonSubjectFilter !== "__none" && l.subject !== lessonSubjectFilter)
+        return false;
+      if (q && !norm(`${l.title} ${l.source ?? ""}`).includes(q)) return false;
+      return true;
+    });
+    const map = new Map<string, TeacherSource[]>();
+    for (const l of filtered) {
+      const key = l.subject || "Bez předmětu";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(l);
+    }
+    const groups = Array.from(map.entries()).sort(([a], [b]) =>
+      a === "Bez předmětu" ? 1 : b === "Bez předmětu" ? -1 : a.localeCompare(b, "cs"),
+    );
+    return { groups, count: filtered.length };
+  }, [teacherLessons, lessonSubjectFilter, lessonSearch]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [sourcesError, setSourcesError] = useState(false);
   const [sourceMode, setSourceMode] = useState<"text" | "lesson" | "file">("text");
@@ -220,13 +254,13 @@ export default function TeacherSuggestByMethod() {
         ),
         supabase
           .from("lesson_plans")
-          .select("id, title, slides")
+          .select("id, title, slides, subject")
           .eq("teacher_id", user.id)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
           .from("worksheets")
-          .select("id, title, spec")
+          .select("id, title, spec, subject")
           .eq("teacher_id", user.id)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -248,7 +282,8 @@ export default function TeacherSuggestByMethod() {
           title: l.title || "Bez názvu",
           kind: (l.origin === "own" ? "lesson" : "catalog") as TeacherSourceKind,
           content: l.blocks,
-          source: l.source,
+          source: [l.textbookTitle, l.topicTitle].filter(Boolean).join(" · ") || l.source,
+          subject: l.subject ?? null,
           lessonId: l.id,
           editable: true,
         })),
@@ -256,12 +291,14 @@ export default function TeacherSuggestByMethod() {
           id: `plan:${p.id}`,
           title: p.title || "Bez názvu",
           kind: "plan" as const,
+          subject: p.subject ?? null,
           content: p.slides,
         })),
         ...((worksheetsRes.data as any[]) ?? []).map((w) => ({
           id: `worksheet:${w.id}`,
           title: w.title || "Bez názvu",
           kind: "worksheet" as const,
+          subject: w.subject ?? null,
           content: w.spec,
         })),
       ];
@@ -672,17 +709,52 @@ export default function TeacherSuggestByMethod() {
             {sourceMode === "lesson" && (
               <div>
                 <Label>Materiál (vlastní lekce, lekce z katalogu, plán hodiny, pracovní list)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
+                  <Select value={lessonSubjectFilter} onValueChange={setLessonSubjectFilter}>
+                    <SelectTrigger aria-label="Filtr předmětu">
+                      <SelectValue placeholder="Všechny předměty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all">Všechny předměty</SelectItem>
+                      {lessonSubjects.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                      <SelectItem value="__none">Bez předmětu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="search"
+                    aria-label="Hledat lekci"
+                    value={lessonSearch}
+                    onChange={(e) => setLessonSearch(e.target.value)}
+                    placeholder="Hledat podle názvu lekce, učebnice nebo tématu…"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Nalezeno {groupedLessons.count} z {teacherLessons.length} materiálů
+                </p>
                 <Select value={sourceLessonId} onValueChange={setSourceLessonId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Vyberte materiál…" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {teacherLessons.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {SOURCE_KIND_LABEL[l.kind]}: {l.title}
-                        {l.source ? ` · ${l.source}` : ""}
-                      </SelectItem>
+                  <SelectContent className="max-h-96">
+                    {sourcePreview && !groupedLessons.groups.some(([, ls]) => ls.some((l) => l.id === sourceLessonId)) && (
+                      <SelectItem value={sourceLessonId} className="hidden">{sourcePreview.title}</SelectItem>
+                    )}
+                    {groupedLessons.groups.map(([subject, ls]) => (
+                      <SelectGroup key={subject}>
+                        <SelectLabel className="text-primary">{subject} ({ls.length})</SelectLabel>
+                        {ls.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {SOURCE_KIND_LABEL[l.kind]}: {l.title}
+                            {l.source ? ` · ${l.source}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
+                    {teacherLessons.length > 0 && groupedLessons.count === 0 && (
+                      <div className="p-3 text-sm text-muted-foreground">Žádný materiál neodpovídá filtru.</div>
+                    )}
                     {teacherLessons.length === 0 && (
                       <div className="p-3 text-sm text-muted-foreground">
                         {sourcesLoading
