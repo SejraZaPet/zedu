@@ -52,7 +52,7 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
   }, [open, blocks, lessonId, lessonSource, refreshKey]);
 
   const effectiveBlocks = blocks ?? lazyBlocks ?? [];
-  const visibleBlocks = effectiveBlocks.filter((b) => b.visible !== false);
+  const visibleBlocks = filterReadingBlocks(effectiveBlocks);
   const effectiveHero = heroImageUrl ?? lazyHero;
 
   return (
