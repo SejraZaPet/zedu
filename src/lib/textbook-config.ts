@@ -82,6 +82,8 @@ export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => 
       ...(typeof block?.zIndex === "number" ? { zIndex: block.zIndex } : {}),
       ...(block?.slideBreakBefore === true ? { slideBreakBefore: true } : {}),
       ...(block?.hiddenInPresentation === true ? { hiddenInPresentation: true } : {}),
+      ...(block?.presentationOnly === true ? { presentationOnly: true } : {}),
+
     } as Block;
 
 
