@@ -1235,6 +1235,63 @@ function renderFooter(spec: WorksheetSpec): string {
 export interface WorksheetPrintOptions {
   paper?: "A4";
   includeNameField?: boolean;
+  /** Verze pro učitele — poznámky + klíč v odlišeném bloku na konci. */
+  teacherVersion?: boolean;
+  /** Poznámky pro učitele; vykreslí se jen při teacherVersion. */
+  teacherNotes?: string;
+}
+
+const TEACHER_BLOCK_CSS = `
+.ws-teacher-block {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 12pt;
+  border: 2pt dashed #B45309;
+  background: #FFF7E6 !important;
+  border-radius: 6pt;
+  padding: 12pt 14pt;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.ws-teacher-banner {
+  display: inline-block;
+  background: #B45309 !important;
+  color: #FFFFFF !important;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3pt 8pt;
+  border-radius: 3pt;
+  margin-bottom: 8pt;
+}
+.ws-teacher-block h2 { font-size: 15pt; font-weight: 700; color: #1A1F2C !important; margin: 6pt 0 6pt; }
+.ws-teacher-notes { font-size: 11pt; line-height: 1.5; white-space: pre-wrap; color: #1A1F2C !important; }
+.ws-teacher-notes h3 { font-size: 12pt; font-weight: 700; margin: 8pt 0 2pt; }
+.ws-teacher-block .ws-answer-key { break-before: auto !important; page-break-before: auto !important; margin-top: 10pt; }
+`;
+
+function renderTeacherNotesHtml(notes: string): string {
+  // "## Nadpis" → h3, zbytek jako předformátovaný text.
+  return notes
+    .split(/\n/)
+    .map((line) => {
+      const m = line.match(/^#{1,3}\s+(.*)$/);
+      return m ? `<h3>${esc(m[1])}</h3>` : esc(line);
+    })
+    .join("\n")
+    .replace(/<\/h3>\n/g, "</h3>");
+}
+
+function renderTeacherBlock(notes: string | undefined, answerKeyHtml: string): string {
+  const hasNotes = !!notes && notes.trim().length > 0;
+  return `
+<div class="ws-teacher-block">
+  <div class="ws-teacher-banner">Verze pro učitele · nedávat žákům</div>
+  <h2>Poznámky pro učitele</h2>
+  <div class="ws-teacher-notes">${hasNotes ? renderTeacherNotesHtml(notes!.trim()) : "<em>Bez poznámek.</em>"}</div>
+  ${answerKeyHtml}
+</div>`;
 }
 
 /**
@@ -1260,9 +1317,12 @@ export function renderWorksheetVariantHtml(
   const items = variant.items
     .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
     .join("\n");
-  const answerKey = specCopy.renderConfig.includeAnswerKey
+  const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
     : "";
+  const answerKey = options?.teacherVersion
+    ? renderTeacherBlock(options.teacherNotes, rawKey)
+    : rawKey;
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -1270,7 +1330,7 @@ export function renderWorksheetVariantHtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(specCopy.header.title)}${specCopy.header.variantLabel ? ` — ${esc(specCopy.header.variantLabel)}` : ""}</title>
-<style>${css}</style>
+<style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}</style>
 </head>
 <body>
 

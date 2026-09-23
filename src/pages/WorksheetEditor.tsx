@@ -2833,7 +2833,9 @@ export default function WorksheetEditor() {
           <DialogHeader>
             <DialogTitle>Náhled PDF</DialogTitle>
             <DialogDescription>
-              Takhle bude vypadat pracovní list pro žáky.
+              {pdfVersion === "teacher"
+                ? "Verze pro učitele – na konci jsou poznámky a klíč odpovědí. Nedávejte žákům."
+                : "Takhle bude vypadat pracovní list pro žáky."}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">

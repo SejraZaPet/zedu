@@ -20,6 +20,10 @@ export interface PdfExportOptions {
   variantId?: string;
   includeAnswerKey?: boolean;
   includeNameField?: boolean;
+  /** Verze pro učitele: připojí poznámky + klíč v odlišeném rámečku. */
+  teacherVersion?: boolean;
+  /** Poznámky pro učitele — použijí se POUZE při teacherVersion. */
+  teacherNotes?: string;
   /** Base URL for student link (default: window.location.origin). */
   baseUrl?: string;
 }
@@ -48,6 +52,8 @@ async function buildPrintHtml(
 
   const baseHtml = renderWorksheetVariantHtml(specWithConfig, variantId, {
     includeNameField: options.includeNameField,
+    teacherVersion: !!options.teacherVersion,
+    teacherNotes: options.teacherVersion ? options.teacherNotes : undefined,
   });
 
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
