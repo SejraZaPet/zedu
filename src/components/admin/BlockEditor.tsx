@@ -435,6 +435,8 @@ const ColumnGroupCard = ({
         onChange={onChange}
         onRemove={onRemove}
         onCreateActivity={onCreateActivity}
+        onToggleFlag={onToggleFlag}
+
       />
       <div
         role="separator"
