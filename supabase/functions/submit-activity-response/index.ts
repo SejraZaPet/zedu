@@ -41,7 +41,7 @@ serve(async (req) => {
     // Resolve player strictly via joinToken (no rawPlayerId fallback).
     const { data: players, error: pErr } = await admin
       .from("game_players")
-      .select("id, session_id, token_expires_at")
+      .select("id, session_id, token_expires_at, user_id")
       .eq("join_token", joinToken)
       .limit(1);
     if (pErr) throw pErr;
@@ -119,6 +119,17 @@ serve(async (req) => {
         _score_delta: safeScore,
       });
       if (incErr) console.error("increment_player_score failed:", incErr);
+
+      // Long-term gamification: successful live answers also grant XP to the
+      // signed-in student (guest players have no user_id and are skipped).
+      if (finalIsCorrect && p.user_id) {
+        const xp = Math.max(2, Math.min(20, Math.round(safeScore / 100)));
+        const { error: xpErr } = await admin.rpc("add_xp", {
+          _student: p.user_id,
+          _amount: xp,
+        });
+        if (xpErr) console.error("add_xp failed:", xpErr);
+      }
     }
 
     return json({ success: true, score: safeScore }, 200);

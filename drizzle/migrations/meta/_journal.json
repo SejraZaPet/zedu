@@ -176,6 +176,13 @@
       "when": 1790093202117,
       "tag": "0024_students_read_worksheets_via_lesson_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790160178884,
+      "tag": "0025_xp_for_assignments_lessons_activities",
+      "breakpoints": true
     }
   ]
 }
