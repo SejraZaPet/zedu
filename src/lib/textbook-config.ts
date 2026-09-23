@@ -54,6 +54,9 @@ export interface Block {
   slideBreakBefore?: boolean;
   /** Blok je v lekci vidět, ale do prezentace se nepřenese. */
   hiddenInPresentation?: boolean;
+  /** Blok se zobrazí jen v prezentaci, při běžném čtení lekce se přeskočí. */
+  presentationOnly?: boolean;
+
 }
 
 
