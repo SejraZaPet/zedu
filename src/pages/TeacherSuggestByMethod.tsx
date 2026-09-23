@@ -189,15 +189,15 @@ export default function TeacherSuggestByMethod() {
     s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim() : "";
   const subjectLabels = useMemo(() => {
     const m = new Map<string, string>();
+    const score = (s: string) => (s.includes("_") ? 0 : 2) + (/[A-ZÁ-Ž]/.test(s[0]) ? 1 : 0);
+    const raw = new Map<string, string>();
     for (const l of teacherLessons) {
       if (!l.subject) continue;
       const k = subjectKey(l.subject);
-      const cur = m.get(k);
-      const nice = !l.subject.includes("_") && /[A-ZÁ-Ž]/.test(l.subject[0]);
-      if (!cur || (nice && (cur.includes("_") || !/[A-ZÁ-Ž]/.test(cur[0])))) {
-        m.set(k, nice ? l.subject : l.subject.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()));
-      }
+      const cur = raw.get(k);
+      if (!cur || score(l.subject) > score(cur)) raw.set(k, l.subject);
     }
+    for (const [k, s] of raw) m.set(k, s.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()));
     return m;
   }, [teacherLessons]);
   const lessonSubjects = useMemo(
