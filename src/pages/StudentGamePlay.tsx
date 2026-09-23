@@ -494,8 +494,10 @@ const StudentGamePlay = () => {
                           sessionId={sessionId}
                           questionIndex={qi}
                           playerId={playerId}
+                          joinToken={joinToken}
                           onComplete={() => {}}
                         />
+
                       </div>
                     ) : (
                       <div
@@ -514,15 +516,22 @@ const StudentGamePlay = () => {
                   </div>
                 ) : (
                   <WallActivity
-                    question={(currentSlideData as any).activitySpec?.question || ""}
+                    question={
+                      (currentSlideData as any).activitySpec?.question ||
+                      (currentSlideData as any).activitySpec?.title ||
+                      (currentSlideData as any).activitySpec?.instructions ||
+                      ""
+                    }
                     anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
                     allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
                     sessionId={sessionId}
                     questionIndex={qi}
                     playerId={playerId}
+                    joinToken={joinToken}
                     onComplete={() => {}}
                   />
                 )
+
               ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
                 (() => {
                   const spec = (currentSlideData as any).activitySpec || {};
