@@ -8,13 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import BlockEditor from "@/components/admin/BlockEditor";
+import LessonPresentationPreviewDialog from "@/components/presentation/LessonPresentationPreviewDialog";
 import type { Block } from "@/lib/textbook-config";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import {
-  Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText
+  Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText, MonitorPlay
 } from "lucide-react";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
@@ -40,6 +41,7 @@ const TeacherLessons = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [editBlocks, setEditBlocks] = useState<Block[]>([]);
   const [textbookTitle, setTextbookTitle] = useState("");
+  const [presentationPreviewOpen, setPresentationPreviewOpen] = useState(false);
 
   const fetchLessons = async () => {
     if (!textbookId) return;
@@ -249,7 +251,18 @@ const TeacherLessons = () => {
             <div className="mt-4 space-y-4 mx-auto w-full max-w-[1400px]">
               <LessonCurriculumTopicsPicker lessonId={editingLesson.id} textbookId={textbookId} />
               <BlockEditor blocks={editBlocks} onChange={setEditBlocks} lessonTitle={editingLesson.title} />
-              <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveBlocks} className="flex-1">Uložit bloky</Button>
+                <Button variant="outline" onClick={() => setPresentationPreviewOpen(true)}>
+                  <MonitorPlay className="w-4 h-4 mr-1" /> Náhled prezentace
+                </Button>
+              </div>
+              <LessonPresentationPreviewDialog
+                open={presentationPreviewOpen}
+                onOpenChange={setPresentationPreviewOpen}
+                blocks={editBlocks}
+                lessonTitle={editingLesson.title}
+              />
             </div>
           </SheetContent>
         </Sheet>

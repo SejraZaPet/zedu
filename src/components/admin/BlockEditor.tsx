@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Block, BLOCK_TYPES, createDefaultBlock, normalizeBlocks } from "@/lib/textbook-config";
-import LessonPresentationPreviewDialog from "@/components/presentation/LessonPresentationPreviewDialog";
 import {
   DndContext,
   closestCenter,
@@ -62,7 +61,6 @@ import {
   X as IconX,
   MoreHorizontal,
   Palette,
-  MonitorPlay,
   MonitorOff,
   Projector,
 } from "lucide-react";
@@ -222,7 +220,7 @@ interface Props {
   aiSuggestedIds?: string[];
   /** Voláno, když uživatel blok ručně upraví (badge pak zmizí). */
   onBlockEdited?: (id: string) => void;
-  /** Název lekce pro náhled prezentace v liště. */
+  /** Název lekce (ponecháno pro kompatibilitu editorů lekcí). */
   lessonTitle?: string;
   /** Hero obrázek lekce pro náhled prezentace. */
   lessonHeroImageUrl?: string | null;
@@ -1306,7 +1304,6 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 
 
 const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange, aiSuggestedIds, onBlockEdited, lessonTitle, lessonHeroImageUrl }: Props) => {
-  const [presentationPreviewOpen, setPresentationPreviewOpen] = useState(false);
 
   const aiSuggestedSet = useMemo(() => new Set(aiSuggestedIds ?? []), [aiSuggestedIds]);
   const onBlockEditedRef = useRef(onBlockEdited);
@@ -1983,32 +1980,12 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
         >
           <Redo2 className="w-4 h-4" />
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 gap-1 px-2"
-          onClick={() => setPresentationPreviewOpen(true)}
-          title="Náhled prezentace (bez spuštění pro žáky)"
-          aria-label="Náhled prezentace"
-        >
-          <MonitorPlay className="w-4 h-4" />
-          <span className="hidden sm:inline text-xs">Náhled prezentace</span>
-        </Button>
         {toolbarActions && (
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{toolbarActions}</div>
         )}
 
       </div>
       )}
-
-      <LessonPresentationPreviewDialog
-        open={presentationPreviewOpen}
-        onOpenChange={setPresentationPreviewOpen}
-        blocks={normalizedBlocks}
-        lessonTitle={lessonTitle}
-        heroImageUrl={lessonHeroImageUrl}
-      />
-
 
       {selectedIds.length > 0 && (
         <div className="sticky top-12 z-40 flex items-center gap-2 flex-wrap rounded-[12px] border border-primary/30 bg-primary-subtle px-3 py-2">
