@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BlockEditor from "@/components/admin/BlockEditor";
+import LessonPresentationPreviewDialog from "@/components/presentation/LessonPresentationPreviewDialog";
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 import LessonPlanGenerator from "@/components/admin/LessonPlanGenerator";
-import { Save, Upload, Loader2, Sparkles } from "lucide-react";
+import { Save, Upload, Loader2, Sparkles, MonitorPlay } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -55,6 +56,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [presentationPreviewOpen, setPresentationPreviewOpen] = useState(false);
 
   const fetchLesson = useCallback(async () => {
     if (!lessonId) return;
@@ -360,8 +362,18 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                   {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                   Uložit změny
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setPresentationPreviewOpen(true)}>
+                  <MonitorPlay className="w-4 h-4 mr-1" /> Náhled prezentace
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Zavřít</Button>
               </div>
+              <LessonPresentationPreviewDialog
+                open={presentationPreviewOpen}
+                onOpenChange={setPresentationPreviewOpen}
+                blocks={lesson.blocks}
+                lessonTitle={lesson.title}
+                heroImageUrl={lesson.hero_image_url}
+              />
             </TabsContent>
 
             <TabsContent value="plan">

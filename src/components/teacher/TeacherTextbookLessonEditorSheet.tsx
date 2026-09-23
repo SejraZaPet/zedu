@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import BlockEditor from "@/components/admin/BlockEditor";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import LessonPresentationPreviewDialog from "@/components/presentation/LessonPresentationPreviewDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 import LessonMethodsPicker from "@/components/teacher/LessonMethodsPicker";
 import LessonActivitiesPanel from "@/components/teacher/LessonActivitiesPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Save, Loader2, X } from "lucide-react";
+import { Upload, Save, Loader2, X, MonitorPlay } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LessonItem {
@@ -60,6 +61,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
   const [lessonAssignments, setLessonAssignments] = useState<Assignment[]>([]);
   const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [presentationPreviewOpen, setPresentationPreviewOpen] = useState(false);
 
   useEffect(() => {
     setDraft(lesson ? { ...lesson, blocks: normalizeBlocks(lesson.blocks) } : null);
@@ -384,10 +386,20 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
                 Uložit změny
               </Button>
               <LessonPreviewDialog title={draft.title} heroImageUrl={draft.hero_image_url ?? null} blocks={draft.blocks} />
+              <Button size="sm" variant="outline" onClick={() => setPresentationPreviewOpen(true)}>
+                <MonitorPlay className="w-4 h-4 mr-1" /> Náhled prezentace
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>
                 <X className="w-4 h-4 mr-1" /> Zavřít
               </Button>
             </div>
+            <LessonPresentationPreviewDialog
+              open={presentationPreviewOpen}
+              onOpenChange={setPresentationPreviewOpen}
+              blocks={draft.blocks}
+              lessonTitle={draft.title}
+              heroImageUrl={draft.hero_image_url ?? null}
+            />
           </div>
         )}
         </div>

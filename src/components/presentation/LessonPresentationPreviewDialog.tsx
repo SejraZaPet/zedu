@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
-import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import type { Block } from "@/lib/textbook-config";
+import { STAGE_H, STAGE_W } from "@/lib/slide-stage";
 
 interface Props {
   open: boolean;
@@ -15,6 +15,49 @@ interface Props {
   lessonTitle?: string;
   heroImageUrl?: string | null;
 }
+
+/**
+ * Stejný model vykreslení jako v projektoru: nativní scéna 1600 × 900 se
+ * jednou proporčně zmenší do dostupného rámu. `SlideCanvas` zde nesmí měřit
+ * současně sebe i rodiče — v dialogu tím vznikla nulová/nesprávná transformace.
+ */
+const PreviewSlideStage = ({ slide }: { slide: any }) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const update = () => {
+      if (!frame.clientWidth || !frame.clientHeight) return;
+      setScale(Math.min(frame.clientWidth / STAGE_W, frame.clientHeight / STAGE_H));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={frameRef} className="relative w-full aspect-video overflow-hidden rounded-lg bg-background">
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: `${STAGE_W}px`,
+          height: `${STAGE_H}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <SlideCanvas
+          fit={false}
+          slide={slide}
+          themeId={slide?.themeId}
+          darkMode
+        />
+      </div>
+    </div>
+  );
+};
 
 /**
  * Rychlý náhled prezentace přímo nad editorem lekce.
@@ -52,8 +95,6 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
 
   const current = slides[index];
   const canvasSlide = useMemo(() => (current ? slideWithFallbackBlocks(current) : null), [current]);
-  const theme = getPresentationTheme((current as any)?.themeId);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl w-[96vw] max-h-[92vh] overflow-hidden p-0">
@@ -70,14 +111,7 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
             </p>
           ) : (
             <>
-              <div
-                className="relative w-full aspect-video rounded-lg overflow-hidden text-white"
-                style={themeStageStyle(theme)}
-              >
-                {canvasSlide && (
-                  <SlideCanvas key={index} slide={canvasSlide} themeId={(current as any)?.themeId} darkMode />
-                )}
-              </div>
+              {canvasSlide && <PreviewSlideStage key={index} slide={canvasSlide} />}
 
               <div className="flex items-center justify-center gap-3">
                 <Button
