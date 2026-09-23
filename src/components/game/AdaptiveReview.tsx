@@ -81,7 +81,8 @@ export function computeWeakSlides(
       pct = Math.round((correct / rel.length) * 100);
     }
 
-    if (pct < WEAK_THRESHOLD) {
+    // Zahrnout otázku, pokud NĚKDO odpověděl špatně (úspěšnost < 100 %)
+    if (pct < FULL_SUCCESS) {
       out.push({
         index: idx,
         slide,
@@ -184,7 +185,7 @@ export function AdaptiveReviewDialog({
             Adaptivní závěr
           </DialogTitle>
           <DialogDescription>
-            Otázky s úspěšností pod {WEAK_THRESHOLD} % – seřazeno od nejhorší.
+            Otázky, ve kterých se objevila aspoň jedna chybná odpověď – seřazeno od nejhorší.
           </DialogDescription>
         </DialogHeader>
 
@@ -192,7 +193,7 @@ export function AdaptiveReviewDialog({
           {weak.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <p className="text-sm">
-                Žádné otázky pod hranicí {WEAK_THRESHOLD} %. Skvělý výsledek!
+                Žádná chybná odpověď – třída zvládla všechno!
               </p>
             </div>
           ) : (
@@ -316,7 +317,7 @@ export function AdaptiveReviewProjector({
           Co nám ještě nejde
         </h1>
         <p className="text-2xl text-gray-300 mt-4">
-          Otázky s úspěšností pod {WEAK_THRESHOLD} %
+          Otázky, kde padla aspoň jedna chybná odpověď
         </p>
       </div>
 
