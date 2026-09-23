@@ -381,7 +381,7 @@ const StudentTextbookDetail = () => {
     const requireActivities = !!selectedLesson.require_activities;
     const activityBlockCount = (selectedLesson.blocks || []).filter((b: any) => b?.type === "activity").length;
     const hasActivities = activityBlockCount > 0;
-    const visibleBlocks = (selectedLesson.blocks || []).filter((b: any) => b?.visible !== false);
+    const visibleBlocks = filterReadingBlocks((selectedLesson.blocks || []) as any[]);
     const requiredActivityIndices = visibleBlocks
       .map((b: any, idx: number) => ({ b, idx }))
       .filter(({ b }) => b?.type === "activity" && b?.props?.required === true)
