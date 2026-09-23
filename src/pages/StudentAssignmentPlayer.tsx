@@ -192,7 +192,11 @@ const StudentAssignmentPlayer = () => {
       const { data: attempts } = await attemptQuery.order("attempt_number", { ascending: false });
 
       const existingAttempts = (attempts as any[] || []);
+      setAllAttempts(existingAttempts as any as AttemptData[]);
       const inProgress = existingAttempts.find((a: any) => a.status === "in_progress");
+      const deadlinePassed = assignmentData.deadline
+        ? new Date(assignmentData.deadline) < new Date()
+        : false;
 
       // Kdo naposledy upravoval sdílený pokus
       const editedSource = inProgress || existingAttempts[0];
@@ -208,7 +212,18 @@ const StudentAssignmentPlayer = () => {
         });
       }
 
-      if (inProgress) {
+      if (deadlinePassed) {
+        // Po termínu se NIKDY nezakládá nový pokus – žák si jen prohlíží,
+        // co odevzdal (nebo rozpracoval) před termínem.
+        const lastAttempt = (inProgress ?? existingAttempts[0]) as any as AttemptData | undefined;
+        if (lastAttempt) {
+          selectAttempt(lastAttempt);
+        } else {
+          setAttempt(null);
+          setAnswers({});
+          setNote("");
+        }
+      } else if (inProgress) {
         // Resume existing attempt
         const attemptData = inProgress as any as AttemptData;
         setAttempt(attemptData);
@@ -236,17 +251,17 @@ const StudentAssignmentPlayer = () => {
           .single();
         if (nErr) throw nErr;
         setAttempt(newAttempt as any as AttemptData);
+        setAllAttempts([newAttempt as any as AttemptData, ...(existingAttempts as any as AttemptData[])]);
         setAnswers({});
         setCurrentIndex(0);
         lastSavedAnswers.current = "{}";
       } else {
         // No more attempts
         const lastAttempt = existingAttempts[0] as any as AttemptData;
-        setAttempt(lastAttempt);
-        setAnswers(lastAttempt.answers || {});
-        setNote(lastAttempt.submission_note || "");
+        selectAttempt(lastAttempt);
         toast({ title: "Vyčerpány pokusy", description: `Použito ${existingAttempts.length}/${assignmentData.max_attempts} pokusů.` });
       }
+
 
       // Prepare items with randomization
       let activityItems = assignmentData.activity_data || [];
