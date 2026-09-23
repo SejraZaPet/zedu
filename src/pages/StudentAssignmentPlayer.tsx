@@ -529,6 +529,25 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {/* Celé zadání je společné pro všechny typy úkolů (pracovní list, aktivita i portfolio). */}
+        {assignment.description && (
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold">Zadání</h2>
+                <ReadAloudButton
+                  text={assignment.description}
+                  label="Přečíst zadání"
+                  size="icon"
+                />
+              </div>
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                {assignment.description}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Materiály od učitele */}
         {parseMaterials(assignment.materials).length > 0 && (
           <Card className="mb-4">
@@ -605,16 +624,6 @@ const StudentAssignmentPlayer = () => {
         {assignment.is_portfolio_task ? (
           <Card>
             <CardContent className="p-4 space-y-4">
-              {assignment.description && (
-                <div className="space-y-2">
-                  <ReadAloudButton
-                    text={assignment.description}
-                    label="Přečíst zadání"
-                    showText
-                    textClassName="text-sm"
-                  />
-                </div>
-              )}
               <div className="flex justify-end">
                 {attempt?.status === "submitted" ? (
                   <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
