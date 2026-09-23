@@ -241,6 +241,7 @@ export default function TeacherSuggestByMethod() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [creating, setCreating] = useState(false);
   const [creatingWorksheet, setCreatingWorksheet] = useState(false);
   /** Plán hodiny vytvořený z aktuálního návrhu (pro propojení s pracovním listem). */
@@ -275,7 +276,6 @@ export default function TeacherSuggestByMethod() {
   }, [suggestion, selectedMethodIds, createdPlanId, createdWorksheetId]);
   const [insertingIntoLesson, setInsertingIntoLesson] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
-  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [thinkingTypes, setThinkingTypes] = useState<ThinkingType[]>([]);
   const [curriculumPlan, setCurriculumPlan] = useState<{ subject: string; content: string | null; file_name: string | null } | null>(null);
 
