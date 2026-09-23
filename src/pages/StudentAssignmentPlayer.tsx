@@ -742,8 +742,13 @@ const StudentAssignmentPlayer = () => {
                     <CheckCircle2 className="h-4 w-4" />
                     Úkol je odevzdaný a uložený v portfoliu
                   </div>
+                ) : isReadOnly ? (
+                  <p className="text-sm text-muted-foreground">
+                    Úkol už nelze odevzdat – vidíš ho jen pro prohlížení.
+                  </p>
                 ) : (
                   <Button
+
                     disabled={submitting || isReadOnly || !attempt}
                     onClick={async () => {
                       if (!attempt) return;
