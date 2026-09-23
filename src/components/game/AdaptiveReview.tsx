@@ -13,7 +13,8 @@ import { Brain, Monitor, RotateCcw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const WEAK_THRESHOLD = 60;
+// Adaptivní závěr zahrnuje všechny otázky, kde padla alespoň jedna chybná odpověď.
+const FULL_SUCCESS = 100;
 
 type AnyResponse = {
   question_index: number;
