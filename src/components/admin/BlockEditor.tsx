@@ -908,6 +908,8 @@ const SortableSlideGroup = React.memo(({
   onChildHeightChange,
   onMinHeightChange,
   onChildCreateActivity,
+  onChildToggleFlag,
+
 
   onUngroup,
   onToggle,
@@ -1105,6 +1107,8 @@ const SortableSlideGroup = React.memo(({
                       onChange={(props) => onChildUpdate(block.id, child.id, props)}
                       onRemove={() => onChildRemove(block.id, child.id)}
                       onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
+                      onToggleFlag={(key) => onChildToggleFlag?.(block.id, child.id, key)}
+
                     />
                   </div>
                 ),
@@ -1128,6 +1132,8 @@ const SortableSlideGroup = React.memo(({
                   onRemove={() => onChildRemove(block.id, child.id)}
                   onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
                   onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
+                  onToggleFlag={(key) => onChildToggleFlag?.(block.id, child.id, key)}
+
                 />
               ))}
             </div>
