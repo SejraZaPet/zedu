@@ -2000,6 +2000,15 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       </div>
       )}
 
+      <LessonPresentationPreviewDialog
+        open={presentationPreviewOpen}
+        onOpenChange={setPresentationPreviewOpen}
+        blocks={normalizedBlocks}
+        lessonTitle={lessonTitle}
+        heroImageUrl={lessonHeroImageUrl}
+      />
+
+
       {selectedIds.length > 0 && (
         <div className="sticky top-12 z-40 flex items-center gap-2 flex-wrap rounded-[12px] border border-primary/30 bg-primary-subtle px-3 py-2">
           <span className="text-sm font-bold text-primary-dark">
