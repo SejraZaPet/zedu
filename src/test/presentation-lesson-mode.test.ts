@@ -11,6 +11,12 @@ const paragraph = (id: string, text: string, extra: Partial<Block> = {}): Block 
 });
 
 describe("promítací režim lekce – slideBreakBefore", () => {
+  it("označí všechny snímky jako světlý promítací režim lekce bez samostatného tématu", () => {
+    const slides = blocksToSlides([paragraph("a", "Text lekce")], "Lekce");
+    expect(slides.every((slide) => slide.presentationSource === "lesson")).toBe(true);
+    expect(slides.every((slide) => slide.themeId === undefined)).toBe(true);
+  });
+
   it("ruční zalomení začne nový snímek i bez nadpisu", () => {
     const slides = blocksToSlides(
       [

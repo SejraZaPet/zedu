@@ -52,7 +52,7 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
           fit={false}
           slide={slide}
           themeId={slide?.themeId}
-          darkMode
+          darkMode={slide?.presentationSource !== "lesson"}
         />
       </div>
     </div>
