@@ -870,6 +870,24 @@ const StudentAssignmentPlayer = () => {
 
                 <p className="text-base font-medium" id={`question-${currentIndex}`}>{currentItem.question || currentItem.prompt || "Otázka"}</p>
 
+                {/* Prohlížení: co žák odpověděl (a případně správné řešení) */}
+                {isReviewMode && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1 text-sm">
+                    <p>
+                      <span className="text-muted-foreground">Tvoje odpověď: </span>
+                      <strong>{formatStudentAnswer(currentItem, answers[currentIndex])}</strong>
+                    </p>
+                    {revealCorrectAnswers && formatCorrectAnswer(currentItem) && (
+                      <p>
+                        <span className="text-muted-foreground">Správné řešení: </span>
+                        <strong>{formatCorrectAnswer(currentItem)}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+
+
                 {/* MCQ */}
                 {(currentItem.type === "mcq" || currentItem.choices) && (
                   <div className="space-y-2" role="radiogroup" aria-labelledby={`question-${currentIndex}`}>
