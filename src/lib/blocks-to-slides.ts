@@ -184,6 +184,8 @@ function mergeShortSections(slides: any[]): any[] {
     while (j < slides.length && chars < TARGET_FILL_CHARS) {
       const next = slides[j];
       if (!isPlainTextSlide(next)) break;
+      // Snímek začínající ručním zalomením se nikdy neslučuje s předchozím.
+      if (next.blocks?.[0]?.slideBreakBefore === true) break;
       const nextLen = bodyLen(next);
       if (chars + nextLen > HARD_MAX_CHARS_PER_SLIDE) break;
       if (chars >= SHORT_SECTION_CHARS && chars + nextLen > MAX_CHARS_PER_SLIDE) break;
@@ -512,8 +514,14 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
 
   for (const block of (blocks || [])) {
     if (!block || block.visible === false) continue;
+    // Blok označený „Nezobrazovat v prezentaci“ se do promítání nepřenese.
+    if (block.hiddenInPresentation === true) continue;
     const type = block.type;
     const props = block.props || {};
+
+    // Ruční zalomení snímku má přednost před automatickým dělením.
+    // U heading/slide_group/divider se snímek uzavře tak jako tak.
+    if (block.slideBreakBefore === true && current) flush();
 
     if (type === "divider") {
       if (current) {
@@ -532,7 +540,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     if (type === "slide_group") {
       flush();
       const children: any[] = Array.isArray(props.children) ? props.children : [];
-      const visibleChildren = children.filter((c) => c && c.visible !== false);
+      const visibleChildren = children.filter(
+        (c) => c && c.visible !== false && c.hiddenInPresentation !== true,
+      );
       if (visibleChildren.length === 0) continue;
 
       const cols = props.layout === 1 ? 1 : props.layout === 3 ? 3 : 2;

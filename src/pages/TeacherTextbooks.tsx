@@ -157,7 +157,7 @@ const TeacherTextbooks = () => {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+    launchLiveSession, launchNew, quickLaunch, showProjector,
     savePresentationRow,
   } = usePresentationLauncher();
 
@@ -851,7 +851,7 @@ const TeacherTextbooks = () => {
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
                 onOpenPresentation={handleOpenPresentation}
-                onEditPresentation={openEditor}
+                onEditPresentation={openLessonEditor}
                 onOpenWorksheet={async (lesson, generate) => {
                   const lessonType: "global" | "teacher" =
                     lesson.source === "textbook_lessons" ? "global" : "teacher";
@@ -1154,10 +1154,10 @@ const TeacherTextbooks = () => {
                 onClick={async () => {
                   const lesson = linkedPresentationChoice!.lesson;
                   setLinkedPresentationChoice(null);
-                  await openEditor(lesson);
+                  await quickLaunch(lesson);
                 }}
               >
-                Vytvořit novou
+                Spustit z lekce
               </Button>
             </div>
           </DialogContent>

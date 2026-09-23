@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
-import { mergePresentationSlides } from "@/lib/presentation-merge";
+
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -74,48 +74,21 @@ export function usePresentationLauncher() {
     return ((created as any)?.id as string) ?? null;
   };
 
-  /** Dřív uložené snímky lekce – nejdřív z prezentace, pak ze staré vazby u lekce. */
-  const loadSavedSlides = async (lesson: LessonItem): Promise<any[] | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from("teacher_presentations" as any)
-        .select("slides")
-        .eq("teacher_id", user.id)
-        .eq("source_lesson_id", lesson.id)
-        .maybeSingle();
-      const slides = (data as any)?.slides;
-      if (Array.isArray(slides) && slides.length > 0) return slides;
-    }
-    const table = lesson.source === "teacher_textbook_lessons"
-      ? "teacher_textbook_lessons"
-      : "textbook_lessons";
-    const { data } = await supabase
-      .from(table)
-      .select("presentation_slides" as any)
-      .eq("id", lesson.id)
-      .maybeSingle();
-    const slides = (data as any)?.presentation_slides;
-    return Array.isArray(slides) && slides.length > 0 ? slides : null;
-  };
 
   /**
-   * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
-   * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
+   * Prezentace propojená s lekcí je čistě promítací režim lekce: snímky se
+   * VŽDY generují čerstvě z aktuálního obsahu lekce. Uložené kopie v
+   * teacher_presentations se nepoužívají (zůstávají jako archiv/historie).
    */
   const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
-    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
-    const savedSlides = await loadSavedSlides(lesson);
-    if (!savedSlides) return freshSlides;
-    return mergePresentationSlides(freshSlides, savedSlides);
+    return blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
   };
 
 
 
   const openEditor = async (lesson: LessonItem) => {
-    const savedSlides = await loadSavedSlides(lesson);
     const slides = await buildSlidesForLesson(lesson);
-    setHasSavedPresentation(!!savedSlides);
+    setHasSavedPresentation(false);
     setPendingSlides(slides);
     setPresentationLesson(lesson);
     setEditingSlideIndex(0);
@@ -181,8 +154,8 @@ export function usePresentationLauncher() {
         .from(lessonTable)
         .update({ presentation_slides: slides } as any)
         .eq("id", lesson.id);
-      // Prezentace musí být i v seznamu „Prezentace“, aby ji šlo upravovat.
-      await savePresentationRow(lesson, slides);
+      // Propojená prezentace je promítací režim lekce – do teacher_presentations
+      // se neukládá; snímky žijí na lekci a v živé relaci.
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
       showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
