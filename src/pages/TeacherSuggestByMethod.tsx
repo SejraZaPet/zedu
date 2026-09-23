@@ -184,26 +184,39 @@ export default function TeacherSuggestByMethod() {
   const [teacherLessons, setTeacherLessons] = useState<TeacherSource[]>([]);
   const [lessonSubjectFilter, setLessonSubjectFilter] = useState<string>("__all");
   const [lessonSearch, setLessonSearch] = useState("");
+  // Předměty bývají uložené jako název („Mediální výchova“) i jako kód („medialni_vychova“) – sjednotíme.
+  const subjectKey = (s?: string | null) =>
+    s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim() : "";
+  const subjectLabels = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of teacherLessons) {
+      if (!l.subject) continue;
+      const k = subjectKey(l.subject);
+      const cur = m.get(k);
+      const nice = !l.subject.includes("_") && /[A-ZÁ-Ž]/.test(l.subject[0]);
+      if (!cur || (nice && (cur.includes("_") || !/[A-ZÁ-Ž]/.test(cur[0])))) {
+        m.set(k, nice ? l.subject : l.subject.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()));
+      }
+    }
+    return m;
+  }, [teacherLessons]);
   const lessonSubjects = useMemo(
-    () =>
-      Array.from(new Set(teacherLessons.map((l) => l.subject).filter(Boolean) as string[])).sort((a, b) =>
-        a.localeCompare(b, "cs"),
-      ),
-    [teacherLessons],
+    () => Array.from(subjectLabels.entries()).sort(([, a], [, b]) => a.localeCompare(b, "cs")),
+    [subjectLabels],
   );
   const groupedLessons = useMemo(() => {
     const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const q = norm(lessonSearch.trim());
     const filtered = teacherLessons.filter((l) => {
       if (lessonSubjectFilter === "__none" && l.subject) return false;
-      if (lessonSubjectFilter !== "__all" && lessonSubjectFilter !== "__none" && l.subject !== lessonSubjectFilter)
+      if (lessonSubjectFilter !== "__all" && lessonSubjectFilter !== "__none" && subjectKey(l.subject) !== lessonSubjectFilter)
         return false;
       if (q && !norm(`${l.title} ${l.source ?? ""}`).includes(q)) return false;
       return true;
     });
     const map = new Map<string, TeacherSource[]>();
     for (const l of filtered) {
-      const key = l.subject || "Bez předmětu";
+      const key = (l.subject && subjectLabels.get(subjectKey(l.subject))) || "Bez předmětu";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(l);
     }
@@ -211,7 +224,7 @@ export default function TeacherSuggestByMethod() {
       a === "Bez předmětu" ? 1 : b === "Bez předmětu" ? -1 : a.localeCompare(b, "cs"),
     );
     return { groups, count: filtered.length };
-  }, [teacherLessons, lessonSubjectFilter, lessonSearch]);
+  }, [teacherLessons, lessonSubjectFilter, lessonSearch, subjectLabels]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [sourcesError, setSourcesError] = useState(false);
   const [sourceMode, setSourceMode] = useState<"text" | "lesson" | "file">("text");
@@ -716,8 +729,8 @@ export default function TeacherSuggestByMethod() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all">Všechny předměty</SelectItem>
-                      {lessonSubjects.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      {lessonSubjects.map(([k, label]) => (
+                        <SelectItem key={k} value={k}>{label}</SelectItem>
                       ))}
                       <SelectItem value="__none">Bez předmětu</SelectItem>
                     </SelectContent>
