@@ -216,7 +216,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   <WallProjectorView
                     sessionId={sessionId}
                     questionIndex={currentIndex}
-                    anonymous={currentSlide.activitySpec?.anonymous || false}
+                    anonymous={(session.settings as any)?.wallAnonymous ?? currentSlide.activitySpec?.anonymous ?? false}
                     anonymousLabelMap={anonymousLabelMap}
                     published={
                       (session.settings as any)?.wallPublished === true &&
