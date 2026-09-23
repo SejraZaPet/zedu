@@ -795,12 +795,14 @@ const StudentAssignmentPlayer = () => {
           </Card>
         ) : worksheetSpec ? (
           <WorksheetPlayer
-
+            key={attempt?.id ?? "no-attempt"}
             spec={worksheetSpec}
             variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
             attemptId={attempt?.id ?? null}
             locked={isReadOnly}
+            showResults={isReviewMode && revealCorrectAnswers}
             initialAnswers={(attempt?.answers as any) || {}}
+
             onSubmit={async (wAnswers, score, maxScore) => {
               if (!attempt) return;
               try {
