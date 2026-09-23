@@ -88,3 +88,58 @@ describe("normalizeBlocks – prezentační příznaky", () => {
     expect(normalized[0].hiddenInPresentation).toBeUndefined();
   });
 });
+
+describe("blok jen pro prezentaci", () => {
+  it("zůstává ve snímcích, ale nečte se v lekci", async () => {
+    const { blocksToSlides } = await import("@/lib/blocks-to-slides");
+    const { filterReadingBlocks } = await import("@/lib/reading-blocks");
+    const blocks: any[] = [
+      { id: "a", type: "paragraph", visible: true, props: { text: "<p>Pro žáky</p>" } },
+      { id: "b", type: "paragraph", visible: true, presentationOnly: true, props: { text: "<p>Jen promítat</p>" } },
+      {
+        id: "g",
+        type: "slide_group",
+        visible: true,
+        props: {
+          layout: 2,
+          children: [
+            { id: "c1", type: "paragraph", visible: true, props: { text: "<p>Karta</p>" } },
+            { id: "c2", type: "paragraph", visible: true, presentationOnly: true, props: { text: "<p>Karta promítat</p>" } },
+          ],
+        },
+      },
+    ];
+    const slides = blocksToSlides(blocks as any, "Lekce");
+    const json = JSON.stringify(slides);
+    expect(json).toContain("Jen promítat");
+    expect(json).toContain("Karta promítat");
+
+    const reading = filterReadingBlocks(blocks as any);
+    expect(reading.map((b: any) => b.id)).toEqual(["a", "g"]);
+    expect((reading[1] as any).props.children.map((c: any) => c.id)).toEqual(["c1"]);
+  });
+
+  it("normalizeBlocks zachová presentationOnly", async () => {
+    const { normalizeBlocks } = await import("@/lib/textbook-config");
+    const out = normalizeBlocks([
+      { id: "x", type: "paragraph", visible: true, presentationOnly: true, props: {} } as any,
+    ]);
+    expect(out[0].presentationOnly).toBe(true);
+  });
+
+  it("příznak dítěte snímku se přepíná na úrovni dítěte", async () => {
+    const { toggleGroupChildFlag, getGroupChildren } = await import("@/lib/slide-groups");
+    const blocks: any[] = [
+      {
+        id: "g",
+        type: "slide_group",
+        visible: true,
+        props: { layout: 2, children: [{ id: "c1", type: "paragraph", visible: true, props: {} }] },
+      },
+    ];
+    const once = toggleGroupChildFlag(blocks as any, "g", "c1", "hiddenInPresentation");
+    expect(getGroupChildren(once[0])[0].hiddenInPresentation).toBe(true);
+    const twice = toggleGroupChildFlag(once, "g", "c1", "hiddenInPresentation");
+    expect(getGroupChildren(twice[0])[0].hiddenInPresentation).toBeUndefined();
+  });
+});
