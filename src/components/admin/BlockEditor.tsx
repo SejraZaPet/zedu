@@ -1982,9 +1982,21 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
         >
           <Redo2 className="w-4 h-4" />
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1 px-2"
+          onClick={() => setPresentationPreviewOpen(true)}
+          title="Náhled prezentace (bez spuštění pro žáky)"
+          aria-label="Náhled prezentace"
+        >
+          <MonitorPlay className="w-4 h-4" />
+          <span className="hidden sm:inline text-xs">Náhled prezentace</span>
+        </Button>
         {toolbarActions && (
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{toolbarActions}</div>
         )}
+
       </div>
       )}
 
