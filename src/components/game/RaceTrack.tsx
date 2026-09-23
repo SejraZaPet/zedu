@@ -54,7 +54,12 @@ export default function RaceTrack({
   className = "",
 }: Props) {
   const totalQuestions = (session.activity_data as any[])?.length ?? 0;
-  const maxScore = Math.max(1, totalQuestions * 1000);
+  // Points per question differ wildly (classic quiz up to 1000, activities 0-100),
+  // so a theoretical maximum pinned everyone to the start line. Scale relative to
+  // the current leader instead — the best player leads, everyone else is placed
+  // proportionally, so any earned points are visible immediately.
+  const bestScore = Math.max(0, ...players.map((p) => p.total_score || 0));
+  const maxScore = Math.max(1, bestScore);
 
   const sorted = useMemo(() => {
     if (mode === "progress") {
