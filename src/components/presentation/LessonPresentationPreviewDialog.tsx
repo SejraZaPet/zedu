@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Loader2 } from "lucide-react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 import type { Block } from "@/lib/textbook-config";
 import { STAGE_H, STAGE_W } from "@/lib/slide-stage";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
@@ -66,6 +69,9 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
  */
 const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTitle, heroImageUrl }: Props) => {
   const [index, setIndex] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const slides = useMemo(() => {
     if (!open) return [];
@@ -95,13 +101,71 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
 
   const current = slides[index];
   const canvasSlide = useMemo(() => (current ? slideWithFallbackBlocks(current) : null), [current]);
+
+  /**
+   * Uloží aktuálně vygenerované snímky jako samostatnou (dál upravitelnou)
+   * prezentaci. Odstraníme příznak `presentationSource: "lesson"`, aby se kopie
+   * chovala jako běžná standalone prezentace a nepřegenerovávala se z lekce.
+   */
+  const saveAsEditableCopy = async () => {
+    if (!slides.length || saving) return;
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Nejste přihlášeni.");
+
+      const baseTitle = `${lessonTitle || "Prezentace"} – kopie`;
+      const { data: existing } = await supabase
+        .from("teacher_presentations" as any)
+        .select("title")
+        .eq("teacher_id", user.id)
+        .like("title", `${baseTitle}%`);
+      const taken = new Set(((existing ?? []) as any[]).map((r) => r.title));
+      let title = baseTitle;
+      let n = 2;
+      while (taken.has(title)) title = `${baseTitle} ${n++}`;
+
+      const copiedSlides = slides.map((s: any, i: number) => {
+        const { presentationSource: _src, ...rest } = s || {};
+        return { ...rest, slideId: rest.slideId || `slide-${Date.now()}-${i}` };
+      });
+
+      const { data, error } = await supabase
+        .from("teacher_presentations" as any)
+        .insert({ teacher_id: user.id, title, slides: copiedSlides })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      toast({ title: "Kopie uložena", description: `Prezentace „${title}“ je připravená k úpravám.` });
+      onOpenChange(false);
+      navigate(`/ucitel/prezentace?open=${(data as any).id}`);
+    } catch (e: any) {
+      toast({
+        title: "Kopii se nepodařilo uložit",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[92vh] max-h-[92vh] w-[96vw] max-w-6xl flex-col overflow-hidden p-0">
         <DialogHeader className="shrink-0 px-6 py-3 border-b border-border">
-          <DialogTitle className="text-sm font-medium">
-            Náhled prezentace{slides.length > 0 ? ` – snímek ${index + 1} / ${slides.length}` : ""}
-          </DialogTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <DialogTitle className="text-sm font-medium">
+              Náhled prezentace{slides.length > 0 ? ` – snímek ${index + 1} / ${slides.length}` : ""}
+            </DialogTitle>
+            {slides.length > 0 && (
+              <Button size="sm" variant="outline" onClick={saveAsEditableCopy} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Copy className="mr-2 h-4 w-4" />}
+                Uložit jako upravitelnou kopii
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
