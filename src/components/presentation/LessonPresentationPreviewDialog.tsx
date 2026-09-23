@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Loader2 } from "lucide-react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 import type { Block } from "@/lib/textbook-config";
 import { STAGE_H, STAGE_W } from "@/lib/slide-stage";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
