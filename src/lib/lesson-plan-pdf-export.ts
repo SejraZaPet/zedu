@@ -10,6 +10,8 @@ export interface LessonPlanPhaseInput {
   title: string;
   timeMin: string | number;
   description: string;
+  /** Pomůcky pro fázi (jen učitelské šablony). */
+  equipment?: string;
   activities?: { kind?: string; title: string }[];
 }
 
@@ -21,6 +23,8 @@ export interface LessonPlanExportData {
   start?: string;
   end?: string;
   description?: string;
+  /** Zadání pro žáky – zobrazí se ve studentské šabloně. */
+  studentDescription?: string;
   phases: LessonPlanPhaseInput[];
 }
 
@@ -128,7 +132,11 @@ function renderDetailed(data: LessonPlanExportData): string {
             </div>
             <div class="cell">
               <div class="cell-label">Pomůcky</div>
-              <div class="cell-content lines"></div>
+              ${
+                p.equipment?.trim()
+                  ? `<div class="cell-content">${escapeHtml(p.equipment.trim())}</div>`
+                  : `<div class="cell-content lines"></div>`
+              }
             </div>
             <div class="cell">
               <div class="cell-label">Forma práce</div>
@@ -170,7 +178,12 @@ function renderStudent(data: LessonPlanExportData): string {
     })
     .join("");
 
-  return `
+  const task = data.studentDescription?.trim()
+    ? `<section class="overview"><h2>Zadání</h2><p style="white-space:pre-wrap">${escapeHtml(
+        data.studentDescription!.trim(),
+      )}</p></section>`
+    : "";
+  return `${task}
     <h2 class="s-heading">Co budeme dnes dělat</h2>
     <ol class="s-list">${items}</ol>`;
 }

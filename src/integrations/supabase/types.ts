@@ -3148,6 +3148,7 @@ export type Database = {
           created_at: string
           duration_min: number
           end_time: string | null
+          equipment: string | null
           id: string
           lesson_date: string | null
           lesson_plan_id: string | null
@@ -3165,6 +3166,7 @@ export type Database = {
           created_at?: string
           duration_min?: number
           end_time?: string | null
+          equipment?: string | null
           id?: string
           lesson_date?: string | null
           lesson_plan_id?: string | null
@@ -3182,6 +3184,7 @@ export type Database = {
           created_at?: string
           duration_min?: number
           end_time?: string | null
+          equipment?: string | null
           id?: string
           lesson_date?: string | null
           lesson_plan_id?: string | null
@@ -3252,9 +3255,11 @@ export type Database = {
           price: number | null
           shared_visibility: string
           slides: Json
+          student_description: string | null
           subject: string
           subject_id: string | null
           teacher_id: string
+          teacher_instructions: string | null
           theme_id: string | null
           title: string
           updated_at: string
@@ -3282,9 +3287,11 @@ export type Database = {
           price?: number | null
           shared_visibility?: string
           slides?: Json
+          student_description?: string | null
           subject?: string
           subject_id?: string | null
           teacher_id: string
+          teacher_instructions?: string | null
           theme_id?: string | null
           title?: string
           updated_at?: string
@@ -3312,9 +3319,11 @@ export type Database = {
           price?: number | null
           shared_visibility?: string
           slides?: Json
+          student_description?: string | null
           subject?: string
           subject_id?: string | null
           teacher_id?: string
+          teacher_instructions?: string | null
           theme_id?: string | null
           title?: string
           updated_at?: string

@@ -105,6 +105,8 @@ Pravidla:
 - U vhodných fází navrhni konkrétní aktivity. Každá aktivita má "kind" a "title".
 - Povolené hodnoty "kind": ${ACTIVITY_KINDS.join(", ")}. Pokud navrhuješ interaktivní aktivitu (quiz), doplň v title typ v závorce – povolené typy: ${INTERACTIVE_TYPES.join(", ")}. Př.: "Rychlý kvíz na klíčové pojmy (mcq)".
 - Uveď stručné pedagogické zdůvodnění (methodNotes) pro každou zvolenou metodu – proč se pro toto téma hodí.
+- U každé fáze uveď "equipment" – pomůcky, které si učitel musí na tuto fázi nachystat (krátký seznam oddělený čárkami, prázdný řetězec, pokud nic není potřeba).
+- Do "teacherInstructions" napiš instrukce pro učitele: stručný postup vedení hodiny a na co si dát pozor. Toto vidí jen učitel.
 - Sečtený čas ve fázích by měl odpovídat cca 45 minutám.
 - Piš česky, formálně (vykání pro učitele).${thinkingInstructions}${curriculumInstructions}`;
 
@@ -127,6 +129,10 @@ Pravidla:
       properties: {
         timeMin: { type: "string", description: "Doporučená doba v minutách (např. '5' nebo '10-15')" },
         description: { type: "string" },
+        equipment: {
+          type: "string",
+          description: "Pomůcky a co si učitel musí na tuto fázi nachystat – krátký seznam oddělený čárkami (např. 'projektor, A3 papíry, fixy'). Prázdný řetězec, pokud nic není potřeba.",
+        },
         activities: {
           type: "array",
           items: {
@@ -140,7 +146,7 @@ Pravidla:
           },
         },
       },
-      required: ["timeMin", "description", "activities"],
+      required: ["timeMin", "description", "equipment", "activities"],
       additionalProperties: false,
     };
 
@@ -184,6 +190,10 @@ Pravidla:
                     required: PHASE_KEYS,
                     additionalProperties: false,
                   },
+                  teacherInstructions: {
+                    type: "string",
+                    description: "Instrukce pro učitele: stručný postup vedení hodiny krok za krokem a na co si dát pozor (typické chyby žáků, organizace, časové riziko). 4–8 odrážek začínajících '• '.",
+                  },
                   methodNotes: {
                     type: "array",
                     items: {
@@ -210,8 +220,8 @@ Pravidla:
                   },
                 },
                 required: wantsModelSituation
-                  ? ["title", "summary", "phases", "methodNotes", "modelSituation"]
-                  : ["title", "summary", "phases", "methodNotes"],
+                  ? ["title", "summary", "phases", "methodNotes", "teacherInstructions", "modelSituation"]
+                  : ["title", "summary", "phases", "methodNotes", "teacherInstructions"],
                 additionalProperties: false,
               },
             },

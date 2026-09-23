@@ -68,6 +68,12 @@ export default function StudentLessonPlanCard({ plan, studentId, subjectLabel }:
               {plan.description}
             </p>
           )}
+          {plan.studentDescription && (
+            <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 p-2">
+              <div className="text-xs font-semibold">Zadání</div>
+              <p className="text-sm mt-0.5 whitespace-pre-wrap">{plan.studentDescription}</p>
+            </div>
+          )}
         </div>
       </div>
 

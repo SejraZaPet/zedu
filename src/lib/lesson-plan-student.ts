@@ -18,6 +18,8 @@ export interface StudentLessonPlan {
   id: string;
   title: string;
   description: string;
+  /** Zadání pro žáky (lesson_plans.student_description). */
+  studentDescription: string;
   subject: string;
   /** Datum navázané hodiny (YYYY-MM-DD), pokud plán termín má. */
   date: string | null;
@@ -99,7 +101,7 @@ export async function fetchStudentLessonPlans({
   let query = supabase
     .from("lesson_plans")
     .select(
-      "id, title, subject, input_data, materials, lesson_ref_id, lesson_source, worksheet_ids",
+      "id, title, subject, input_data, student_description, materials, lesson_ref_id, lesson_source, worksheet_ids",
     )
     .eq("visible_to_students", true);
   query = groupId ? query.eq("group_id", groupId) : query.eq("class_id", classId!);
@@ -118,6 +120,7 @@ export async function fetchStudentLessonPlans({
       id: row.id,
       title: row.title || "Plán hodiny",
       description: (input.description ?? "").trim(),
+      studentDescription: (row.student_description ?? "").trim(),
       subject,
       date: input.linkedDate || null,
       time: input.linkedTime || null,
