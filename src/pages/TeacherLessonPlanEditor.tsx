@@ -78,6 +78,7 @@ import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
+import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 
 
@@ -164,6 +165,10 @@ export default function TeacherLessonPlanEditor() {
 
   const [title, setTitle] = useState("Nový plán hodin");
   const [description, setDescription] = useState("");
+  const [studentDescription, setStudentDescription] = useState("");
+  const [teacherInstructions, setTeacherInstructions] = useState("");
+  /** Pomůcky ke každé fázi – jen pro učitele (lesson_plan_phases.equipment). */
+  const [equipment, setEquipment] = useState<PhaseEquipment>({});
   const [phases, setPhases] = useState<PhasesState>(emptyPhases);
   const [subject, setSubject] = useState<string>(searchParams.get("subject") ?? "");
   const [subjectId, setSubjectId] = useState<string | null>(null);
@@ -219,6 +224,9 @@ export default function TeacherLessonPlanEditor() {
       setTitle(data.title || "Plán hodiny");
       const input = (data.input_data as any) || {};
       if (input.description) setDescription(input.description);
+      setStudentDescription((data as any).student_description ?? "");
+      setTeacherInstructions((data as any).teacher_instructions ?? "");
+      void loadPlanEquipment(data.id).then(setEquipment);
       if (input.subject) setSubject(input.subject);
       setSubjectId((data as any).subject_id ?? null);
       if (input.linkedDate) setLinkedDate(input.linkedDate);
@@ -756,9 +764,11 @@ export default function TeacherLessonPlanEditor() {
         start: start || undefined,
         end: end || undefined,
         description: description || undefined,
+        studentDescription: studentDescription.trim() || undefined,
         phases: PHASES.map((p) => ({
           key: p.key,
           title: p.title,
+          equipment: equipment[p.key]?.trim() || undefined,
           timeMin: phases[p.key]?.timeMin ?? "",
           description: phases[p.key]?.description ?? "",
           activities: phases[p.key]?.activities ?? [],
@@ -1061,6 +1071,8 @@ export default function TeacherLessonPlanEditor() {
         grade_band: "",
         slides: [],
         materials: materials as any,
+        student_description: studentDescription.trim() || null,
+        teacher_instructions: teacherInstructions.trim() || null,
         visible_to_students: visibleToStudents,
         visible_from: visibleFrom || null,
         class_id: selectedTarget?.kind === "group" ? null : classId || null,
@@ -1114,6 +1126,9 @@ export default function TeacherLessonPlanEditor() {
         setPlanDbId(data.id);
         // Update URL without navigating away
         window.history.replaceState(null, "", `/ucitel/plany-hodin/${data.id}`);
+      }
+      if (resultId) {
+        await savePlanEquipment(resultId, user.id, equipment, PHASES.map((p) => p.key));
       }
       // Sync method link
       if (resultId) {
@@ -1197,6 +1212,18 @@ export default function TeacherLessonPlanEditor() {
             {description && (
               <p className="whitespace-pre-wrap text-sm text-muted-foreground">{description}</p>
             )}
+            {studentDescription && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs font-semibold mb-1">Zadání pro žáky</p>
+                <p className="whitespace-pre-wrap text-sm">{studentDescription}</p>
+              </div>
+            )}
+            {teacherInstructions && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-xs font-semibold mb-1">Instrukce pro učitele</p>
+                <p className="whitespace-pre-wrap text-sm">{teacherInstructions}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -1217,6 +1244,9 @@ export default function TeacherLessonPlanEditor() {
                   </div>
                   {v?.description && (
                     <p className="whitespace-pre-wrap text-sm">{v.description}</p>
+                  )}
+                  {equipment[p.key] && (
+                    <p className="text-xs text-muted-foreground"><strong>Pomůcky:</strong> {equipment[p.key]}</p>
                   )}
                   {(v?.activities?.length ?? 0) > 0 && (
                     <ul className="space-y-1 pt-1">
@@ -1743,6 +1773,31 @@ export default function TeacherLessonPlanEditor() {
             />
           </div>
 
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <Label htmlFor="plan-student-desc">Zadání pro žáky</Label>
+              <p className="text-xs text-muted-foreground">Uvidí ho žáci, když plán zveřejníte.</p>
+              <Textarea
+                id="plan-student-desc"
+                value={studentDescription}
+                onChange={(e) => setStudentDescription(e.target.value)}
+                placeholder="Situace a úkol, se kterým budou žáci pracovat…"
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+              <Label htmlFor="plan-teacher-instr">Instrukce pro učitele</Label>
+              <p className="text-xs text-muted-foreground">Jen pro vás – žákům se nikdy nezobrazí.</p>
+              <Textarea
+                id="plan-teacher-instr"
+                value={teacherInstructions}
+                onChange={(e) => setTeacherInstructions(e.target.value)}
+                placeholder="Postup hodiny, na co si dát pozor, zdůvodnění metod…"
+                rows={4}
+              />
+            </div>
+          </div>
+
           <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
             <AssignmentMaterialsEditor
               materials={materials}
@@ -2020,6 +2075,18 @@ export default function TeacherLessonPlanEditor() {
                   placeholder="Popiš aktivity v této fázi…"
                   rows={3}
                 />
+                <div className="mt-2 flex items-center gap-2">
+                  <Label htmlFor={`equip-${phase.key}`} className="text-xs text-muted-foreground shrink-0">
+                    Pomůcky
+                  </Label>
+                  <Input
+                    id={`equip-${phase.key}`}
+                    value={equipment[phase.key] ?? ""}
+                    onChange={(e) => setEquipment((prev) => ({ ...prev, [phase.key]: e.target.value }))}
+                    placeholder="např. projektor, A3 papíry, fixy (jen pro učitele)"
+                    className="h-8 text-sm"
+                  />
+                </div>
 
                 {value.activities && value.activities.length > 0 && (
                   <div className="mt-3 space-y-2">
