@@ -28,3 +28,16 @@ describe("vlastnosti bloku uvnitř spojeného snímku", () => {
     });
   }
 });
+
+describe("prezentační volby u bloku uvnitř snímku", () => {
+  it("nabídka dítěte obsahuje všechny tři volby", async () => {
+    render(<BlockEditor blocks={[group("columns")]} onChange={vi.fn()} />);
+    const menus = screen.getAllByLabelText("Možnosti bloku Text");
+    expect(menus.length).toBe(2);
+    fireEvent.pointerDown(menus[0]);
+    fireEvent.click(menus[0]);
+    expect(await screen.findByText("Začít tady nový snímek")).toBeTruthy();
+    expect(screen.getByText("Nezobrazovat v prezentaci")).toBeTruthy();
+    expect(screen.getByText("Jen pro prezentaci")).toBeTruthy();
+  });
+});
