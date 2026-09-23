@@ -105,6 +105,8 @@ Pravidla:
 - U vhodných fází navrhni konkrétní aktivity. Každá aktivita má "kind" a "title".
 - Povolené hodnoty "kind": ${ACTIVITY_KINDS.join(", ")}. Pokud navrhuješ interaktivní aktivitu (quiz), doplň v title typ v závorce – povolené typy: ${INTERACTIVE_TYPES.join(", ")}. Př.: "Rychlý kvíz na klíčové pojmy (mcq)".
 - Uveď stručné pedagogické zdůvodnění (methodNotes) pro každou zvolenou metodu – proč se pro toto téma hodí.
+- U každé fáze uveď "equipment" – pomůcky, které si učitel musí na tuto fázi nachystat (krátký seznam oddělený čárkami, prázdný řetězec, pokud nic není potřeba).
+- Do "teacherInstructions" napiš instrukce pro učitele: stručný postup vedení hodiny a na co si dát pozor. Toto vidí jen učitel.
 - Sečtený čas ve fázích by měl odpovídat cca 45 minutám.
 - Piš česky, formálně (vykání pro učitele).${thinkingInstructions}${curriculumInstructions}`;
 
