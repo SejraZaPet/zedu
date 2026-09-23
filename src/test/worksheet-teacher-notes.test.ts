@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
-import { emptyWorksheetSpec } from "@/lib/worksheet-spec";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 
 const spec = () => emptyWorksheetSpec({ title: "Test list" } as any);
 
