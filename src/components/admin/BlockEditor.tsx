@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Block, BLOCK_TYPES, createDefaultBlock, normalizeBlocks } from "@/lib/textbook-config";
+import LessonPresentationPreviewDialog from "@/components/presentation/LessonPresentationPreviewDialog";
 import {
   DndContext,
   closestCenter,
