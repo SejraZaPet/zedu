@@ -365,7 +365,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
                 </TabsList>
                 <TabsContent value="content" className="space-y-4 pt-4">
                   <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
-                  <BlockEditor blocks={draft.blocks} onChange={handleBlocksChange} />
+                  <BlockEditor blocks={draft.blocks} onChange={handleBlocksChange} lessonTitle={draft.title} lessonHeroImageUrl={draft.hero_image_url ?? null} />
                 </TabsContent>
                 <TabsContent value="activities" className="pt-4">
                   <LessonActivitiesPanel
