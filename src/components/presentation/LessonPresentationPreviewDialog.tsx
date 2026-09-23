@@ -69,6 +69,9 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
  */
 const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTitle, heroImageUrl }: Props) => {
   const [index, setIndex] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const slides = useMemo(() => {
     if (!open) return [];
