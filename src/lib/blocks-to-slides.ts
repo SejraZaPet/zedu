@@ -1,6 +1,5 @@
 import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
 import { getGroupChildFrames } from "@/lib/slide-groups";
-import { DEFAULT_THEME_ID } from "@/lib/presentation-themes";
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -450,7 +449,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     projector: { headline: lessonTitle, body: "Připojte se pomocí kódu níže." },
     device: { instructions: "Naskenujte QR kód nebo zadejte kód pro připojení." },
     teacherNotes: "",
-    themeId: DEFAULT_THEME_ID,
+    presentationSource: "lesson",
     layout: defaultLayoutForType("intro"),
     ...(options.heroImageUrl ? { heroImage: options.heroImageUrl, layout: "img-left" } : {}),
   });
@@ -471,7 +470,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
         (current.blocks && current.blocks.length))
     ) {
       current.slideId = `slide-${slideIndex++}`;
-      if (!current.themeId) current.themeId = DEFAULT_THEME_ID;
+      current.presentationSource = "lesson";
       if (!current.layout) current.layout = defaultLayoutForType(current.type);
       slides.push(current);
     }
@@ -485,6 +484,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     projector: { headline, body: "", assetRefs: [] as string[] },
     device: { instructions: "Sledujte výklad." },
     teacherNotes: "",
+    presentationSource: "lesson",
     blocks: [] as any[],
     ...(sourceBlockId ? { sourceBlockId } : {}),
   });
@@ -681,7 +681,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     projector: { headline: "Shrnutí", body: `Lekce: ${lessonTitle}` },
     device: { instructions: "Zkontrolujte si znalosti." },
     teacherNotes: "",
-    themeId: DEFAULT_THEME_ID,
+    presentationSource: "lesson",
     layout: defaultLayoutForType("summary"),
   });
 

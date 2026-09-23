@@ -39,7 +39,7 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
   }, []);
 
   return (
-    <div ref={frameRef} className="relative w-full aspect-video overflow-hidden rounded-lg bg-background">
+    <div ref={frameRef} className="relative h-full min-h-0 w-full overflow-hidden rounded-lg bg-background">
       <div
         className="absolute left-1/2 top-1/2 origin-center"
         style={{
@@ -52,7 +52,7 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
           fit={false}
           slide={slide}
           themeId={slide?.themeId}
-          darkMode
+          darkMode={slide?.presentationSource !== "lesson"}
         />
       </div>
     </div>
@@ -97,23 +97,25 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
   const canvasSlide = useMemo(() => (current ? slideWithFallbackBlocks(current) : null), [current]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[96vw] max-h-[92vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 py-3 border-b border-border">
+      <DialogContent className="flex h-[92vh] max-h-[92vh] w-[96vw] max-w-6xl flex-col overflow-hidden p-0">
+        <DialogHeader className="shrink-0 px-6 py-3 border-b border-border">
           <DialogTitle className="text-sm font-medium">
             Náhled prezentace{slides.length > 0 ? ` – snímek ${index + 1} / ${slides.length}` : ""}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 space-y-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
           {slides.length === 0 ? (
             <p className="text-muted-foreground text-sm py-12 text-center">
               Z obsahu lekce se zatím nedá vytvořit žádný snímek.
             </p>
           ) : (
             <>
-              {canvasSlide && <PreviewSlideStage key={index} slide={canvasSlide} />}
+              <div className="min-h-0 flex-1">
+                {canvasSlide && <PreviewSlideStage slide={canvasSlide} />}
+              </div>
 
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex shrink-0 items-center justify-center gap-3">
                 <Button
                   size="sm"
                   variant="outline"
@@ -137,7 +139,7 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
                 </Button>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex shrink-0 gap-2 overflow-x-auto pb-1">
                 {slides.map((s: any, i: number) => (
                   <button
                     key={s.slideKey || s.id || i}

@@ -1623,10 +1623,11 @@ export function SlideBody({
 
 
 
-  const explicitTheme = themeId ?? slide?.themeId;
+  const lessonPresentation = slide?.presentationSource === "lesson";
+  const explicitTheme = lessonPresentation ? undefined : (themeId ?? slide?.themeId);
   // Vlastní pozadí snímku (např. pastelová barva bloku z lekce) rozhoduje
   // o barvě textu – jinak vznikal světlý text na světlém pozadí.
-  const isDark = resolveSlideIsDark(slide, explicitTheme ? theme.isDark : darkMode);
+  const isDark = resolveSlideIsDark(slide, lessonPresentation ? false : (explicitTheme ? theme.isDark : darkMode));
   const headlineColors = headlineColorsForBackground(theme.primaryColor, theme.secondaryColor, isDark);
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
@@ -2420,11 +2421,18 @@ const SlideCanvas = ({
   };
 
 
-  const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
+  const lessonPresentation = (rest as any).slide?.presentationSource === "lesson";
+  const effectiveThemeId = lessonPresentation ? undefined : (themeId ?? (rest as any).slide?.themeId);
 
   const theme = getPresentationTheme(effectiveThemeId);
   const bgOverride = slideBackgroundOverrideStyle((rest as any).slide);
-  let bgStyle: React.CSSProperties = effectiveThemeId
+  let bgStyle: React.CSSProperties = lessonPresentation
+    ? {
+        ...((({ background: _background, ...tokens }) => tokens)(themeStageStyle(theme) as any)),
+        backgroundColor: "hsl(var(--background))",
+        backgroundImage: "none",
+      }
+    : effectiveThemeId
     ? themeStageStyle(theme)
     : darkMode
       ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", ...themeStageStyle(theme) }
@@ -2439,7 +2447,7 @@ const SlideCanvas = ({
 
   const body = (
     <SlideBody
-      darkMode={darkMode}
+      darkMode={lessonPresentation ? false : darkMode}
       themeId={effectiveThemeId}
       gestureCleanupRef={gestureCleanupRef}
       {...rest}

@@ -16,6 +16,56 @@ import { gameBackgroundStyle } from "@/lib/game-backgrounds";
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
 
+const ProjectorCanvasStage = ({
+  slide,
+  currentIndex,
+  revealStep,
+  isLessonPresentation,
+}: {
+  slide: any;
+  currentIndex: number;
+  revealStep?: number;
+  isLessonPresentation: boolean;
+}) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const update = () => {
+      if (!frame.clientWidth || !frame.clientHeight) return;
+      setScale(Math.min(frame.clientWidth / STAGE_WIDTH, frame.clientHeight / STAGE_HEIGHT));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={frameRef} className="relative h-full w-full overflow-hidden">
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: `${STAGE_WIDTH}px`,
+          height: `${STAGE_HEIGHT}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <SlideCanvas
+          key={currentIndex}
+          fit={false}
+          slide={slide}
+          themeId={slide?.themeId}
+          darkMode={!isLessonPresentation}
+          revealStep={revealStep}
+        />
+      </div>
+    </div>
+  );
+};
+
 interface Props {
   sessionId: string;
   session: any;
@@ -89,8 +139,11 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverrideStyle(currentSlide);
+  const isLessonPresentation = (currentSlide as any)?.presentationSource === "lesson";
   const projectorStageStyle: CSSProperties = projectorBgOverride
     ? { ...(({ background, ...rest }) => rest)(themeStageStyle(projectorTheme) as any), ...projectorBgOverride }
+    : isLessonPresentation
+      ? { backgroundColor: "hsl(var(--background))" }
     : backgroundUrl
       ? gameBackgroundStyle(backgroundUrl)
       : themeStageStyle(projectorTheme);
@@ -149,13 +202,12 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
                      proporčně zmenší do dostupného místa, takže se prvky
                      nepřekrývají a rozvržení odpovídá editoru. */
-                  <div className="w-full flex-1 min-h-0 flex items-center justify-center">
-                    <SlideCanvas
-                      key={currentIndex}
+                  <div className="w-full flex-1 min-h-0">
+                    <ProjectorCanvasStage
                       slide={canvasSlide}
-                      themeId={(currentSlide as any)?.themeId}
-                      darkMode
+                      currentIndex={currentIndex}
                       revealStep={(session?.settings as any)?.revealStep}
+                      isLessonPresentation={isLessonPresentation}
                     />
                   </div>
                 )}
