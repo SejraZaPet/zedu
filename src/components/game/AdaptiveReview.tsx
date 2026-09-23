@@ -69,17 +69,17 @@ export function computeWeakSlides(
     const rel = responses.filter((r) => r.question_index === idx);
     if (rel.length === 0) return;
 
-    // Prefer score average, fall back to is_correct ratio
-    const scored = rel.filter((r) => typeof r.score === "number");
-    let pct: number;
-    if (scored.length > 0) {
-      pct = Math.round(
-        scored.reduce((s, r) => s + (r.score ?? 0), 0) / scored.length
-      );
-    } else {
-      const correct = rel.filter((r) => r.is_correct === true).length;
-      pct = Math.round((correct / rel.length) * 100);
-    }
+    // Úspěšnost = podíl správných odpovědí. Dřív se počítal průměr `score`,
+    // což jsou body (0–1000), ne procenta – otázka s chybami tak vycházela
+    // nad 100 % a z adaptivního závěru vypadla.
+    const decided = rel.filter(
+      (r) => typeof r.is_correct === "boolean" || typeof r.score === "number"
+    );
+    if (decided.length === 0) return;
+    const correct = decided.filter((r) =>
+      typeof r.is_correct === "boolean" ? r.is_correct : (r.score ?? 0) > 0
+    ).length;
+    const pct = Math.round((correct / decided.length) * 100);
 
     // Zahrnout otázku, pokud NĚKDO odpověděl špatně (úspěšnost < 100 %)
     if (pct < FULL_SUCCESS) {
