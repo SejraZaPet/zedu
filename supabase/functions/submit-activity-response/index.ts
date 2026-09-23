@@ -109,8 +109,19 @@ serve(async (req) => {
     });
     if (insErr) throw insErr;
 
-    // NOTE: Intentionally do NOT call increment_player_score here.
-    return json({ success: true }, 200);
+    // Scored activities must also feed the player's running total, otherwise
+    // leaderboards / race track stay at zero even when students answer well.
+    // Open-ended activities (wall, wordcloud, open) carry no correctness, so they
+    // never contribute points.
+    if (!openEnded && safeScore > 0) {
+      const { error: incErr } = await admin.rpc("increment_player_score", {
+        _player_id: playerId,
+        _score_delta: safeScore,
+      });
+      if (incErr) console.error("increment_player_score failed:", incErr);
+    }
+
+    return json({ success: true, score: safeScore }, 200);
   } catch (e) {
     console.error("submit-activity-response error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
