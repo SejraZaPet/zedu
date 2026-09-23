@@ -155,9 +155,17 @@ const LessonPresentationPreviewDialog = ({ open, onOpenChange, blocks, lessonTit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[92vh] max-h-[92vh] w-[96vw] max-w-6xl flex-col overflow-hidden p-0">
         <DialogHeader className="shrink-0 px-6 py-3 border-b border-border">
-          <DialogTitle className="text-sm font-medium">
-            Náhled prezentace{slides.length > 0 ? ` – snímek ${index + 1} / ${slides.length}` : ""}
-          </DialogTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <DialogTitle className="text-sm font-medium">
+              Náhled prezentace{slides.length > 0 ? ` – snímek ${index + 1} / ${slides.length}` : ""}
+            </DialogTitle>
+            {slides.length > 0 && (
+              <Button size="sm" variant="outline" onClick={saveAsEditableCopy} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Copy className="mr-2 h-4 w-4" />}
+                Uložit jako upravitelnou kopii
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
