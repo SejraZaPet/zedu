@@ -788,7 +788,7 @@ export default function TeacherSuggestByMethod() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 pt-24 pb-8 max-w-5xl">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
@@ -1043,8 +1043,16 @@ export default function TeacherSuggestByMethod() {
                           </Badge>
                         )}
                         {(m.description || m.example) && (
+                          <span
+                            className="inline-flex"
+                            onClick={(e) => {
+                              // Až po otevření popoveru zabráníme přepnutí checkboxu v <label>.
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
                           <Popover>
-                            <PopoverTrigger asChild onClick={(e) => e.preventDefault()}>
+                            <PopoverTrigger asChild>
                               <button
                                 type="button"
                                 aria-label={`Nápověda: ${m.name}`}
@@ -1076,10 +1084,11 @@ export default function TeacherSuggestByMethod() {
                               )}
                             </PopoverContent>
                           </Popover>
+                          </span>
                         )}
                       </div>
                       {m.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{m.description}</p>
                       )}
                     </div>
                   </label>
