@@ -370,9 +370,47 @@ const StudentAssignmentPlayer = () => {
 
   const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline) < new Date() : false;
   const isReadOnly = attempt?.status !== "in_progress" || isDeadlinePassed;
+  /** Prohlížení už uzavřeného odevzdání (po termínu nebo po vyčerpání pokusů). */
+  const isReviewMode = isReadOnly && !!attempt;
+  /**
+   * Zobrazit žákovi i správné řešení? Učitel to může povolit v nastavení úlohy.
+   * Pokud volba chybí, správné odpovědi se neukazují.
+   */
+  const revealCorrectAnswers = !!(
+    (assignment?.settings as any)?.show_correct_answers ??
+    (assignment?.settings as any)?.showCorrectAnswers
+  );
   const answeredCount = Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== null).length;
   const progressPercent = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
   const currentItem = items[currentIndex];
+
+  /** Čitelný text odpovědi žáka pro prohlížení. */
+  const formatStudentAnswer = (item: any, value: any): string => {
+    if (value === undefined || value === null || value === "") return "Bez odpovědi";
+    if (typeof value === "boolean") return value ? "Pravda" : "Nepravda";
+    if (typeof value === "number" && Array.isArray(item?.choices)) {
+      return item.choices[value] ?? String(value);
+    }
+    if (Array.isArray(value)) return value.map((v) => String(v)).join(", ");
+    return String(value);
+  };
+
+  /** Správné řešení položky, pokud ho lze z dat zjistit. */
+  const formatCorrectAnswer = (item: any): string | null => {
+    if (item?.type === "mcq" && typeof item.correctIndex === "number") {
+      return item.choices?.[item.correctIndex] ?? null;
+    }
+    if (item?.type === "true_false" && typeof item.isTrue === "boolean") {
+      return item.isTrue ? "Pravda" : "Nepravda";
+    }
+    if (item?.correctAnswer !== undefined && item.correctAnswer !== null) {
+      return Array.isArray(item.correctAnswer)
+        ? item.correctAnswer.join(", ")
+        : String(item.correctAnswer);
+    }
+    return null;
+  };
+
 
   // Lockdown mode (bezpečný test)
   const lockdownEnabled = !!assignment?.lockdown_mode;
