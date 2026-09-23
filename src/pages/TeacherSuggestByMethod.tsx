@@ -457,6 +457,7 @@ export default function TeacherSuggestByMethod() {
     }
     setGenerating(true);
     setSuggestion(null);
+    setCreatedPlanId(null);
     try {
       const { text, title } = resolveSourceText();
       const { data, error } = await supabase.functions.invoke("suggest-lesson-from-methods", {
