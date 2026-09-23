@@ -94,12 +94,25 @@ const StudentAssignmentPlayer = () => {
   /** Lekce z učebnice propojená s úlohou (nepovinná). */
   const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
 
+  /** Všechny pokusy žáka (nejnovější první) – pro přepínač pokusů po termínu. */
+  const [allAttempts, setAllAttempts] = useState<AttemptData[]>([]);
+
   useEffect(() => {
     if (assignmentId) loadAssignment();
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
   }, [assignmentId]);
+
+  /** Přepne zobrazení na konkrétní pokus (prohlížení bez úprav). */
+  const selectAttempt = (a: AttemptData) => {
+    setAttempt(a);
+    setAnswers((a.answers as any) || {});
+    setNote(a.submission_note || "");
+    setCurrentIndex(0);
+    lastSavedAnswers.current = JSON.stringify(a.answers || {});
+  };
+
 
   const loadAssignment = async () => {
     setLoading(true);
