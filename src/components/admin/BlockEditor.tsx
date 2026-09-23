@@ -267,11 +267,13 @@ const GroupChildBlock = ({
   onChange,
   onRemove,
   onCreateActivity,
+  onToggleFlag,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onCreateActivity?: () => void;
+  onToggleFlag?: (key: PresentationFlagKey) => void;
 }) => {
   const [propsOpen, setPropsOpen] = useState(false);
   const ChildIcon = BLOCK_ICON[child.type];
@@ -299,7 +301,7 @@ const GroupChildBlock = ({
         >
           <Palette className="h-3.5 w-3.5" />
         </button>
-        {canCreateActivity && (
+        {(canCreateActivity || onToggleFlag) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -312,10 +314,16 @@ const GroupChildBlock = ({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => onCreateActivity?.()}>
-                <IconSparkles className="mr-2 h-4 w-4" />
-                Vytvořit aktivitu z tohoto obsahu
-              </DropdownMenuItem>
+              {canCreateActivity && (
+                <DropdownMenuItem onClick={() => onCreateActivity?.()}>
+                  <IconSparkles className="mr-2 h-4 w-4" />
+                  Vytvořit aktivitu z tohoto obsahu
+                </DropdownMenuItem>
+              )}
+              {canCreateActivity && onToggleFlag && <DropdownMenuSeparator />}
+              {onToggleFlag && (
+                <PresentationFlagMenuItems block={child} onToggleFlag={onToggleFlag} />
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -329,6 +337,9 @@ const GroupChildBlock = ({
           <IconX className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+
+      <PresentationFlagBadges block={child} className="mb-1.5 flex flex-wrap" />
+
 
 
       {propsOpen && (
