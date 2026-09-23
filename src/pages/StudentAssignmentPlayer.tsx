@@ -595,6 +595,52 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {/* Prohlížení uzavřeného úkolu – informace + přepínač pokusů */}
+        {isReviewMode && (
+          <Card className="mb-4 border-muted-foreground/30 bg-muted/30">
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-medium">
+                {isDeadlinePassed
+                  ? "Termín už uplynul – tohle je tvoje odevzdané řešení, jen pro prohlížení."
+                  : "Tohle je tvoje odevzdané řešení, jen pro prohlížení."}
+              </p>
+              {allAttempts.length > 1 && (
+                <div className="flex flex-wrap gap-2" role="tablist" aria-label="Moje pokusy">
+                  {[...allAttempts]
+                    .sort((a, b) => a.attempt_number - b.attempt_number)
+                    .map((a) => (
+                      <Button
+                        key={a.id}
+                        size="sm"
+                        role="tab"
+                        aria-selected={a.id === attempt?.id}
+                        variant={a.id === attempt?.id ? "default" : "outline"}
+                        onClick={() => selectAttempt(a)}
+                      >
+                        Pokus {a.attempt_number}
+                        {a.score != null && a.max_score != null && (
+                          <span className="ml-1.5 text-xs opacity-80">
+                            {a.score}/{a.max_score}
+                          </span>
+                        )}
+                      </Button>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Po termínu bez jakéhokoli pokusu */}
+        {isDeadlinePassed && !attempt && (
+          <Card className="mb-4 border-destructive/40">
+            <CardContent className="p-4 text-sm">
+              Termín už uplynul a nemáš u tohoto úkolu žádné odevzdané řešení.
+            </CardContent>
+          </Card>
+        )}
+
+
         {/* Celé zadání je společné pro všechny typy úkolů (pracovní list, aktivita i portfolio). */}
         {assignment.description && (
           <Card className="mb-4">
