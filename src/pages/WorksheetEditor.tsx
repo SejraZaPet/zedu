@@ -398,6 +398,9 @@ export default function WorksheetEditor() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
+  const [pdfVersion, setPdfVersion] = useState<"student" | "teacher">("student");
+  /** Poznámky pro učitele — ukládají se do worksheets.teacher_notes, nikdy do spec (žák spec čte). */
+  const [teacherNotes, setTeacherNotes] = useState("");
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
@@ -484,6 +487,7 @@ export default function WorksheetEditor() {
       const row = data as any;
       setAiMeta({ aiGenerated: !!row.ai_generated, aiModifiedAt: row.ai_modified_at ?? null });
       setSubjectId(row.subject_id ?? null);
+      setTeacherNotes(row.teacher_notes ?? "");
       let loaded: WorksheetSpec = row.spec && row.spec.version ? row.spec : emptyWorksheetSpec({
         title: row.title,
         subject: row.subject,
@@ -657,6 +661,7 @@ export default function WorksheetEditor() {
       grade_band: spec.header.gradeBand,
       worksheet_mode: spec.header.worksheetMode,
       spec: spec as any,
+      teacher_notes: teacherNotes.trim() ? teacherNotes : null,
     } as Record<string, any>;
     pendingSaveRef.current = payload;
 
@@ -681,7 +686,7 @@ export default function WorksheetEditor() {
     }, 1000);
 
     // Pozor: NEMAZAT timer při cleanup — chceme, aby pending save dokončil.
-  }, [spec, id, loading]);
+  }, [spec, id, loading, teacherNotes]);
 
   // Flush při unmount (fire-and-forget)
   useEffect(() => {
@@ -1031,7 +1036,9 @@ export default function WorksheetEditor() {
     try {
       await downloadWorksheetPdf(spec, {
         worksheetId: id,
-        includeAnswerKey: pdfIncludeAnswerKey,
+        includeAnswerKey: pdfVersion === "teacher" ? true : pdfIncludeAnswerKey,
+        teacherVersion: pdfVersion === "teacher",
+        teacherNotes: pdfVersion === "teacher" ? teacherNotes : undefined,
         includeNameField: pdfIncludeNameField,
       });
       setPdfDialogOpen(false);
@@ -1075,7 +1082,9 @@ export default function WorksheetEditor() {
     try {
       const url = await buildWorksheetPdfBlobUrl(spec, {
         worksheetId: id,
-        includeAnswerKey: pdfIncludeAnswerKey,
+        includeAnswerKey: pdfVersion === "teacher" ? true : pdfIncludeAnswerKey,
+        teacherVersion: pdfVersion === "teacher",
+        teacherNotes: pdfVersion === "teacher" ? teacherNotes : undefined,
         includeNameField: pdfIncludeNameField,
       });
       setPdfDialogOpen(false);
@@ -1799,8 +1808,13 @@ export default function WorksheetEditor() {
   }
 
   /** Sestaví pracovní list z voleb u jednotlivých sekcí lekce (v jejich pořadí). */
-  function handleBuildFromSections(built: BuiltWorksheetItem[]) {
+  function handleBuildFromSections(built: BuiltWorksheetItem[], sectionNotes = "") {
     if (!spec || built.length === 0) return;
+    if (sectionNotes.trim()) {
+      setTeacherNotes((prev) =>
+        aiReplaceMode === "replace" || !prev.trim() ? sectionNotes : `${prev.trim()}\n\n${sectionNotes}`,
+      );
+    }
     const baseNumber = aiReplaceMode === "replace" ? 0 : items.length;
     const newItems: WorksheetItem[] = [];
     const newKeys: ReturnType<typeof createDefaultAnswerKey>[] = [];
@@ -1838,7 +1852,9 @@ export default function WorksheetEditor() {
     setSectionsPanelOpen(false);
     toast({
       title: "Pracovní list sestaven",
-      description: `Z ${activeLessonSections.length} sekcí lekce vzniklo ${newItems.length} bloků.`,
+      description: `Z ${activeLessonSections.length} sekcí lekce vzniklo ${newItems.length} bloků.${
+        sectionNotes.trim() ? " Poznámky k sekcím jsou v „Poznámky pro učitele“." : ""
+      }`,
     });
   }
 
@@ -2467,6 +2483,27 @@ export default function WorksheetEditor() {
                   rows={2}
                 />
               </div>
+              <div
+                className="sm:col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-muted/40 p-3 space-y-1.5"
+                id="teacher-notes-section"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label htmlFor="ws-teacher-notes" className="text-xs font-semibold">
+                    Poznámky pro učitele
+                  </Label>
+                  <Badge variant="outline" className="text-[10px]">Žáci je nikdy neuvidí</Badge>
+                </div>
+                <Textarea
+                  id="ws-teacher-notes"
+                  value={teacherNotes}
+                  onChange={(e) => setTeacherNotes(e.target.value)}
+                  placeholder="Kdy list použít, doporučený čas, na co dát pozor, tipy k vyhodnocení…"
+                  rows={5}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Vytisknou se jen ve „Verzi pro učitele“ v Tisk / PDF. AI návrhy lze přidat v „Sekce lekce“.
+                </p>
+              </div>
               <div className="sm:col-span-2">
                 <Label className="text-xs">QR kódy v záhlaví</Label>
                 <div className="space-y-2 mt-1">
@@ -2716,6 +2753,35 @@ export default function WorksheetEditor() {
                 onCheckedChange={setPdfIncludeNameField}
               />
             </div>
+            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+              <Label className="text-sm">Verze</Label>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Verze PDF">
+                {([
+                  ["student", "Žákovská", "Jen zadání pro žáky"],
+                  ["teacher", "Verze pro učitele", "Poznámky + klíč odpovědí"],
+                ] as const).map(([v, label, hint]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={pdfVersion === v}
+                    onClick={() => setPdfVersion(v)}
+                    className={`text-left rounded-md border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      pdfVersion === v ? "border-primary bg-primary/10" : "border-border bg-background"
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{label}</div>
+                    <div className="text-[11px] text-muted-foreground">{hint}</div>
+                  </button>
+                ))}
+              </div>
+              {pdfVersion === "teacher" && !teacherNotes.trim() && (
+                <p className="text-[11px] text-muted-foreground">
+                  Poznámky pro učitele jsou zatím prázdné – vytiskne se jen klíč odpovědí.
+                </p>
+              )}
+            </div>
+            {pdfVersion === "student" && (
             <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
               <div>
                 <Label className="text-sm">Zahrnout odpověďový klíč</Label>
@@ -2726,6 +2792,7 @@ export default function WorksheetEditor() {
                 onCheckedChange={setPdfIncludeAnswerKey}
               />
             </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setPdfDialogOpen(false)} disabled={pdfExporting}>
                 Zrušit
@@ -2766,7 +2833,9 @@ export default function WorksheetEditor() {
           <DialogHeader>
             <DialogTitle>Náhled PDF</DialogTitle>
             <DialogDescription>
-              Takhle bude vypadat pracovní list pro žáky.
+              {pdfVersion === "teacher"
+                ? "Verze pro učitele – na konci jsou poznámky a klíč odpovědí. Nedávejte žákům."
+                : "Takhle bude vypadat pracovní list pro žáky."}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
