@@ -600,6 +600,67 @@ const ReplaceMenu = ({
 /** Textové bloky, které se edituji přímo v náhledu. */
 const INLINE_TEXT_TYPES = new Set(["heading", "paragraph", "bullet_list"]);
 
+/** Klíče čistě prezentačních příznaků bloku. */
+export type PresentationFlagKey = "slideBreakBefore" | "hiddenInPresentation" | "presentationOnly";
+
+/** Položky nabídky pro tři prezentační volby (stejné v hlavním seznamu i uvnitř snímku). */
+const PresentationFlagMenuItems = ({
+  block,
+  onToggleFlag,
+}: {
+  block: Block;
+  onToggleFlag: (key: PresentationFlagKey) => void;
+}) => (
+  <>
+    <DropdownMenuItem onClick={() => onToggleFlag("slideBreakBefore")}>
+      <MonitorPlay className="mr-2 h-4 w-4" />
+      {block.slideBreakBefore ? "Zrušit zalomení snímku" : "Začít tady nový snímek"}
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={() => onToggleFlag("hiddenInPresentation")}>
+      {block.hiddenInPresentation ? <Projector className="mr-2 h-4 w-4" /> : <MonitorOff className="mr-2 h-4 w-4" />}
+      {block.hiddenInPresentation ? "Zobrazit v prezentaci" : "Nezobrazovat v prezentaci"}
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={() => onToggleFlag("presentationOnly")}>
+      <Projector className="mr-2 h-4 w-4" />
+      {block.presentationOnly ? "Zobrazit i v lekci" : "Jen pro prezentaci"}
+    </DropdownMenuItem>
+  </>
+);
+
+/** Štítky prezentačních příznaků u bloku. */
+const PresentationFlagBadges = ({ block, className = "" }: { block: Block; className?: string }) => {
+  if (!block.slideBreakBefore && !block.hiddenInPresentation && !block.presentationOnly) return null;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${className}`}>
+      {block.slideBreakBefore && (
+        <span
+          title="Při promítání od tohoto bloku začíná nový snímek."
+          className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark"
+        >
+          <MonitorPlay className="h-3 w-3" /> Nový snímek
+        </span>
+      )}
+      {block.hiddenInPresentation && (
+        <span
+          title="Blok zůstane v lekci, ale při promítání se přeskočí."
+          className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <MonitorOff className="h-3 w-3" /> Skryto v prezentaci
+        </span>
+      )}
+      {block.presentationOnly && (
+        <span
+          title="Blok se promítne, ale při čtení lekce ho žák ani učitel neuvidí."
+          className="inline-flex items-center gap-1 rounded-full bg-secondary-pastel px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--secondary-dark))]"
+        >
+          <Projector className="h-3 w-3" /> Jen pro prezentaci
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 const SortableBlock = React.memo(({
   block,
   onUpdate,
