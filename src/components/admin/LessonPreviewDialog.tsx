@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Eye, RefreshCw } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { filterReadingBlocks } from "@/lib/reading-blocks";
+
 
 interface Props {
   title: string;
