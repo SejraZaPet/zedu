@@ -110,9 +110,11 @@ export default function RaceTrack({
             const si = typeof player.student_index === "number" ? player.student_index : 0;
             ratio = totalQuestions > 0 ? si / totalQuestions : 0;
           } else {
-            ratio = player.total_score / maxScore;
+            ratio = (player.total_score || 0) / maxScore;
           }
           ratio = Math.max(0, Math.min(1, ratio));
+          // Keep the avatar inside the lane (finish flag sits at the right edge).
+          ratio = 0.04 + ratio * 0.9;
 
           const isSelf = highlightPlayerId && player.id === highlightPlayerId;
 
