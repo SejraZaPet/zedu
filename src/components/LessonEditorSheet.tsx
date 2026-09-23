@@ -350,6 +350,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                 <BlockEditor
                   blocks={lesson.blocks}
                   onChange={handleBlocksChange}
+                  lessonTitle={(lesson as any).title}
+                  lessonHeroImageUrl={(lesson as any).hero_image_url ?? null}
                 />
               </div>
 

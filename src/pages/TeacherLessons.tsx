@@ -248,7 +248,7 @@ const TeacherLessons = () => {
             </SheetHeader>
             <div className="mt-4 space-y-4 mx-auto w-full max-w-[1400px]">
               <LessonCurriculumTopicsPicker lessonId={editingLesson.id} textbookId={textbookId} />
-              <BlockEditor blocks={editBlocks} onChange={setEditBlocks} />
+              <BlockEditor blocks={editBlocks} onChange={setEditBlocks} lessonTitle={editingLesson.title} />
               <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>
             </div>
           </SheetContent>
