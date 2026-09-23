@@ -1304,7 +1304,9 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 };
 
 
-const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange, aiSuggestedIds, onBlockEdited }: Props) => {
+const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange, aiSuggestedIds, onBlockEdited, lessonTitle, lessonHeroImageUrl }: Props) => {
+  const [presentationPreviewOpen, setPresentationPreviewOpen] = useState(false);
+
   const aiSuggestedSet = useMemo(() => new Set(aiSuggestedIds ?? []), [aiSuggestedIds]);
   const onBlockEditedRef = useRef(onBlockEdited);
   onBlockEditedRef.current = onBlockEdited;
