@@ -55,7 +55,7 @@ const AcademyEvidenceReviewManager = () => {
         reviewer_id, reviewer_comment, reviewed_at,
         academy_enrollments!inner (
           teacher_id, course_id,
-          profiles:teacher_id ( full_name, email ),
+          profiles:teacher_id ( first_name, last_name, email ),
           academy_courses ( title )
         )
       `)
@@ -76,7 +76,7 @@ const AcademyEvidenceReviewManager = () => {
       reviewer_comment: r.reviewer_comment,
       reviewed_at: r.reviewed_at,
       teacher_id: r.academy_enrollments?.teacher_id,
-      teacher_name: r.academy_enrollments?.profiles?.full_name ?? null,
+      teacher_name: [r.academy_enrollments?.profiles?.first_name, r.academy_enrollments?.profiles?.last_name].filter(Boolean).join(" ") || null,
       teacher_email: r.academy_enrollments?.profiles?.email ?? null,
       course_id: r.academy_enrollments?.course_id,
       course_title: r.academy_enrollments?.academy_courses?.title ?? "",
