@@ -7,7 +7,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, QrCode, FileText, Check, Table as TableIcon, Images, MessageSquareText } from "lucide-react";
+import { Loader2, Sparkles, QrCode, FileText, Check, Table as TableIcon, Images, MessageSquareText, NotebookPen } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -141,8 +142,11 @@ export default function LessonSectionsPanel({
   lessonTitle?: string;
   /** Vrátí odkaz na aktivitu v lekci pro QR kód (null = odkaz není dostupný). */
   activityUrlFor: (deepLinkIndex: number) => string | null;
-  onBuild: (items: BuiltWorksheetItem[]) => void;
+  /** items + poskládané poznámky pro učitele (prázdný řetězec = žádné). */
+  onBuild: (items: BuiltWorksheetItem[], teacherNotes: string) => void;
 }) {
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [noteLoading, setNoteLoading] = useState<Record<number, boolean>>({});
   const [modes, setModes] = useState<Record<number, SectionMode>>({});
   const [activityModes, setActivityModes] = useState<Record<number, "qr" | "convert">>({});
   const [aiTypes, setAiTypes] = useState<Record<number, string>>({});
@@ -175,7 +179,30 @@ export default function LessonSectionsPanel({
     setAiResults({});
     setAiLoading({});
     setTables(tb);
+    setNotes({});
+    setNoteLoading({});
   }, [open, sections]);
+
+  async function suggestNoteForSection(s: LessonSection) {
+    setNoteLoading((p) => ({ ...p, [s.index]: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-section-teacher-note", {
+        body: { sectionTitle: s.title, sectionText: s.text, lessonTitle },
+      });
+      if (error) {
+        let msg = error.message;
+        try { msg = (await (error as any).context?.json())?.error ?? msg; } catch { /* noop */ }
+        throw new Error(msg);
+      }
+      const note = String((data as any)?.note ?? "").trim();
+      if (!note) throw new Error("AI nevrátila poznámku");
+      setNotes((p) => ({ ...p, [s.index]: note }));
+    } catch (err: any) {
+      toast({ title: "Návrh poznámky se nepovedl", description: err?.message ?? "Zkuste to znovu", variant: "destructive" });
+    } finally {
+      setNoteLoading((p) => ({ ...p, [s.index]: false }));
+    }
+  }
 
   const chosenCount = useMemo(
     () => Object.values(modes).filter((m) => m !== "notes").length,
@@ -274,7 +301,11 @@ export default function LessonSectionsPanel({
         });
       }
     }
-    onBuild(out);
+    const composed = sections
+      .filter((s) => (notes[s.index] ?? "").trim())
+      .map((s) => `## ${s.title}\n${notes[s.index].trim()}`)
+      .join("\n\n");
+    onBuild(out, composed);
   }
 
   return (
@@ -448,6 +479,41 @@ export default function LessonSectionsPanel({
                   </div>
                 )}
 
+                <div className="rounded-md border border-dashed border-primary/40 bg-muted/40 p-2 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <NotebookPen className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-xs font-medium">Poznámka pro učitele</span>
+                    <span className="text-[11px] text-muted-foreground">(žáci ji neuvidí)</span>
+                    {notes[s.index] !== undefined && (
+                      <Badge variant="outline" className="text-[10px]">AI generováno</Badge>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto h-7 text-xs"
+                      disabled={!!noteLoading[s.index]}
+                      onClick={() => suggestNoteForSection(s)}
+                    >
+                      {noteLoading[s.index] ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3 mr-1" />
+                      )}
+                      {notes[s.index] ? "Navrhnout znovu" : "Navrhnout poznámku pro učitele (AI)"}
+                    </Button>
+                  </div>
+                  {notes[s.index] !== undefined && (
+                    <Textarea
+                      aria-label={`Poznámka pro učitele k sekci ${s.title}`}
+                      value={notes[s.index]}
+                      onChange={(e) => setNotes((p) => ({ ...p, [s.index]: e.target.value }))}
+                      rows={4}
+                      className="text-xs"
+                    />
+                  )}
+                </div>
+
                 {sectionTables.map(({ contentIndex }) => {
                   const key = `${s.index}-${contentIndex}`;
                   const table = tables[key];
@@ -475,7 +541,8 @@ export default function LessonSectionsPanel({
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <span className="text-xs text-muted-foreground mr-auto">
-            {sections.length} sekcí · {chosenCount} s aktivitou
+            {sections.length} sekcí · {chosenCount} s aktivitou ·{" "}
+            {Object.values(notes).filter((n) => n.trim()).length} s poznámkou
           </span>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Zrušit
