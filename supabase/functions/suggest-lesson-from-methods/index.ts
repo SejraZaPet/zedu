@@ -127,6 +127,10 @@ Pravidla:
       properties: {
         timeMin: { type: "string", description: "Doporučená doba v minutách (např. '5' nebo '10-15')" },
         description: { type: "string" },
+        equipment: {
+          type: "string",
+          description: "Pomůcky a co si učitel musí na tuto fázi nachystat – krátký seznam oddělený čárkami (např. 'projektor, A3 papíry, fixy'). Prázdný řetězec, pokud nic není potřeba.",
+        },
         activities: {
           type: "array",
           items: {
@@ -140,7 +144,7 @@ Pravidla:
           },
         },
       },
-      required: ["timeMin", "description", "activities"],
+      required: ["timeMin", "description", "equipment", "activities"],
       additionalProperties: false,
     };
 
@@ -184,6 +188,10 @@ Pravidla:
                     required: PHASE_KEYS,
                     additionalProperties: false,
                   },
+                  teacherInstructions: {
+                    type: "string",
+                    description: "Instrukce pro učitele: stručný postup vedení hodiny krok za krokem a na co si dát pozor (typické chyby žáků, organizace, časové riziko). 4–8 odrážek začínajících '• '.",
+                  },
                   methodNotes: {
                     type: "array",
                     items: {
@@ -210,8 +218,8 @@ Pravidla:
                   },
                 },
                 required: wantsModelSituation
-                  ? ["title", "summary", "phases", "methodNotes", "modelSituation"]
-                  : ["title", "summary", "phases", "methodNotes"],
+                  ? ["title", "summary", "phases", "methodNotes", "teacherInstructions", "modelSituation"]
+                  : ["title", "summary", "phases", "methodNotes", "teacherInstructions"],
                 additionalProperties: false,
               },
             },
