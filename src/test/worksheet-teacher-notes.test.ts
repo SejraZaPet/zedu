@@ -21,6 +21,6 @@ describe("Poznámky pro učitele v tisku", () => {
     });
     expect(html).toContain("Verze pro učitele");
     expect(html).toContain("<h3>Dělení masa</h3>");
-    expect(html).toContain("Klíč odpovědí");
+    expect(html).toContain("ws-teacher-notes");
   });
 });
