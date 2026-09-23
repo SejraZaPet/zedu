@@ -788,7 +788,7 @@ export default function TeacherSuggestByMethod() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 pt-24 pb-8 max-w-5xl">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
