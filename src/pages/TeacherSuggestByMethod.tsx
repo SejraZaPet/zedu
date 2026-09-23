@@ -27,6 +27,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { extractPdfText } from "@/lib/pdf-page-renderer";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
+import { savePlanEquipment } from "@/lib/lesson-plan-equipment";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import { BookOpen } from "lucide-react";
 
 interface LearningMethod {
@@ -83,6 +85,7 @@ function jsonToText(value: any, depth = 0): string {
 interface PhaseValue {
   timeMin: string;
   description: string;
+  equipment?: string;
   activities?: { kind: string; title: string }[];
 }
 
@@ -97,6 +100,7 @@ interface Suggestion {
   summary: string;
   phases: Record<string, PhaseValue>;
   methodNotes: { method_id: string; note: string }[];
+  teacherInstructions?: string;
   modelSituation?: ModelSituation | null;
 }
 
@@ -238,6 +242,9 @@ export default function TeacherSuggestByMethod() {
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [creatingWorksheet, setCreatingWorksheet] = useState(false);
+  /** Plán hodiny vytvořený z aktuálního návrhu (pro propojení s pracovním listem). */
+  const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
   const [insertingIntoLesson, setInsertingIntoLesson] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
@@ -506,22 +513,31 @@ export default function TeacherSuggestByMethod() {
         .filter(Boolean)
         .join("\n");
 
-      const description = [
-        suggestion.summary,
-        "",
-        "Pedagogické zdůvodnění metod:",
-        methodSummary,
+      const teacherInstructions = [
+        suggestion.teacherInstructions?.trim()
+          ? `Postup a na co si dát pozor:\n${suggestion.teacherInstructions.trim()}`
+          : "",
+        methodSummary ? `Pedagogické zdůvodnění metod:\n${methodSummary}` : "",
       ]
         .filter(Boolean)
-        .join("\n");
+        .join("\n\n");
+
+      const studentDescription = [
+        suggestion.modelSituation?.scenario?.trim() ?? "",
+        suggestion.modelSituation?.task?.trim() ? `Úkol: ${suggestion.modelSituation.task.trim()}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
       const { data, error } = await supabase
         .from("lesson_plans")
         .insert({
           teacher_id: user.id,
           title: suggestion.title || "Návrh podle metody",
+          student_description: studentDescription || null,
+          teacher_instructions: teacherInstructions || null,
           input_data: {
-            description,
+            description: suggestion.summary || "",
             subject: suggestion.subject || subject,
             phases: phasesForEditor,
             generatedFromMethods: selectedMethodIds,
@@ -532,12 +548,26 @@ export default function TeacherSuggestByMethod() {
         .select("id")
         .single();
       if (error) throw error;
+      const planId = (data as any).id as string;
+      setCreatedPlanId(planId);
+
+      // Pomůcky ke každé fázi (jen pro učitele).
+      const equipment: Record<string, string> = {};
+      for (const key of Object.keys(PHASE_LABELS)) {
+        const eq = suggestion.phases?.[key]?.equipment?.trim();
+        if (eq) equipment[key] = eq;
+      }
+      try {
+        await savePlanEquipment(planId, user.id, equipment, Object.keys(PHASE_LABELS));
+      } catch (eqErr) {
+        console.warn("Uložení pomůcek selhalo:", eqErr);
+      }
 
       // Link chosen methods to this lesson plan (best effort; ignore if table shape differs)
       try {
         const links = selectedMethodIds.map((mid) => ({
           method_id: mid,
-          lesson_plan_id: (data as any).id,
+          lesson_plan_id: planId,
         }));
         await supabase.from("lesson_method_links").insert(links as any);
       } catch (linkErr) {
@@ -545,7 +575,7 @@ export default function TeacherSuggestByMethod() {
       }
 
       toast({ title: "Draft plánu hodiny vytvořen." });
-      navigate(`/ucitel/plany-hodin/${(data as any).id}`);
+      navigate(`/ucitel/plany-hodin/${planId}`);
     } catch (err: any) {
       toast({
         title: "Nepodařilo se vytvořit draft",
@@ -554,6 +584,72 @@ export default function TeacherSuggestByMethod() {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  /** Otevře generátor pracovního listu předvyplněný z návrhu (bez automatického generování). */
+  const createWorksheetFromSuggestion = async () => {
+    if (!user || !suggestion) return;
+    setCreatingWorksheet(true);
+    try {
+      const topic = suggestion.title || "Návrh podle metody";
+      const lines: string[] = [`Téma hodiny: ${topic}`];
+      if (suggestion.summary) lines.push(`Shrnutí: ${suggestion.summary}`);
+      if (suggestion.modelSituation?.scenario || suggestion.modelSituation?.task) {
+        lines.push("", "Modelová situace:");
+        if (suggestion.modelSituation.scenario) lines.push(suggestion.modelSituation.scenario);
+        if (suggestion.modelSituation.task) lines.push(`Úkol pro žáky: ${suggestion.modelSituation.task}`);
+      }
+      lines.push("", "Fáze hodiny a aktivity:");
+      for (const [key, label] of Object.entries(PHASE_LABELS)) {
+        const p = suggestion.phases?.[key];
+        if (!p) continue;
+        lines.push(`## ${label}${p.timeMin ? ` (${p.timeMin} min)` : ""}`);
+        if (p.description) lines.push(p.description);
+        for (const a of p.activities ?? []) lines.push(`- ${activityKindLabel(a.kind)}: ${a.title}`);
+      }
+      const context = lines.join("\n");
+      const title = `Pracovní list – ${topic}`;
+      const subj = suggestion.subject || subject || "";
+      const { data: created, error } = await supabase
+        .from("worksheets" as any)
+        .insert({
+          teacher_id: user.id,
+          title,
+          spec: emptyWorksheetSpec({ title }) as any,
+          ...(subj ? { subject: subj } : {}),
+          ai_generated: true,
+        } as any)
+        .select("id")
+        .single();
+      if (error || !created) throw error ?? new Error("Nepodařilo se založit pracovní list");
+      const wsId = (created as any).id as string;
+      try {
+        sessionStorage.setItem(`bezli.worksheetPrefill:${wsId}`, context);
+      } catch {
+        /* ignore */
+      }
+      // Propojení s plánem hodiny vytvořeným ze stejného návrhu.
+      if (createdPlanId) {
+        const { data: planRow } = await supabase
+          .from("lesson_plans")
+          .select("worksheet_ids")
+          .eq("id", createdPlanId)
+          .maybeSingle();
+        const ids = Array.from(new Set([...(((planRow as any)?.worksheet_ids ?? []) as string[]), wsId]));
+        await supabase.from("lesson_plans").update({ worksheet_ids: ids } as any).eq("id", createdPlanId);
+      }
+      const params = new URLSearchParams({ topic });
+      if (subj) params.set("topic_subject", subj);
+      navigate(`/ucitel/pracovni-listy/${wsId}?${params.toString()}`);
+    } catch (err: any) {
+      toast({
+        title: "Nepodařilo se otevřít generátor pracovního listu",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingWorksheet(false);
     }
   };
 
@@ -1060,6 +1156,11 @@ export default function TeacherSuggestByMethod() {
                         )}
                       </div>
                       <p className="text-sm mb-3">{p.description}</p>
+                      {p.equipment && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          <strong>Pomůcky:</strong> {p.equipment}
+                        </p>
+                      )}
                       {p.activities && p.activities.length > 0 && (
                         <ul className="text-sm space-y-1">
                           {p.activities.map((a, i) => (
@@ -1081,6 +1182,13 @@ export default function TeacherSuggestByMethod() {
                   );
                 })}
               </div>
+
+              {suggestion.teacherInstructions && (
+                <div className="rounded-lg border bg-muted/20 p-4">
+                  <h3 className="font-semibold mb-2">Instrukce pro učitele</h3>
+                  <p className="text-sm whitespace-pre-line">{suggestion.teacherInstructions}</p>
+                </div>
+              )}
 
               {suggestion.methodNotes?.length > 0 && (
                 <div>
@@ -1118,6 +1226,15 @@ export default function TeacherSuggestByMethod() {
                     Vložit navržené aktivity do lekce „{selectedSource.title}"
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={createWorksheetFromSuggestion}
+                  disabled={creatingWorksheet}
+                >
+                  {creatingWorksheet ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                  Vytvořit pracovní list z návrhu
+                </Button>
                 <Button onClick={createDraft} disabled={creating} className="gap-2">
                   {creating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

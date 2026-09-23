@@ -2880,9 +2880,15 @@ export default function WorksheetEditor() {
             )}
             {topicParam && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-                Generuje se k tématu ŠVP <strong>{topicParam}</strong>
+                {suggestionContext ? "Generuje se z návrhu hodiny" : "Generuje se k tématu ŠVP"} <strong>{topicParam}</strong>
                 {topicRocnikParam ? ` · ${topicRocnikParam}. ročník` : ""}
                 {topicSubjectParam ? ` · ${topicSubjectParam}` : ""}
+                {suggestionContext && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-muted-foreground">Zobrazit předaný kontext</summary>
+                    <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{suggestionContext}</pre>
+                  </details>
+                )}
               </div>
             )}
             <div className="space-y-1.5">
