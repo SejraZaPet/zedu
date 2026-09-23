@@ -221,7 +221,12 @@ interface Props {
   aiSuggestedIds?: string[];
   /** Voláno, když uživatel blok ručně upraví (badge pak zmizí). */
   onBlockEdited?: (id: string) => void;
+  /** Název lekce pro náhled prezentace v liště. */
+  lessonTitle?: string;
+  /** Hero obrázek lekce pro náhled prezentace. */
+  lessonHeroImageUrl?: string | null;
 }
+
 
 
 
