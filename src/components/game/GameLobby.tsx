@@ -86,18 +86,27 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               onClick={copyCode}
               aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
               aria-describedby="game-code-label"
-              className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
+              className="inline-flex items-center gap-4 bg-primary/10 border-4 border-primary rounded-3xl px-10 py-6 shadow-lg ring-4 ring-primary/20 hover:bg-primary/15 transition-colors group"
             >
-              <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary" aria-hidden="true">
+              <span className="text-6xl md:text-8xl font-mono font-extrabold tracking-[0.3em] text-primary" aria-hidden="true">
                 {session.game_code}
               </span>
               {copied ? (
-                <Check className="w-6 h-6 text-green-500" />
+                <Check className="w-7 h-7 text-primary" />
               ) : (
-                <Copy className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                <Copy className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
               )}
             </button>
           </div>
+
+          {isTeacher && (
+            <p
+              className="mx-auto max-w-xl rounded-xl border-2 border-accent bg-accent/10 px-4 py-3 text-base font-medium text-foreground"
+              role="note"
+            >
+              Počkejte, až se žáci připojí tímto kódem, a teprve potom pokračujte na první snímek.
+            </p>
+          )}
         </div>
 
         {/* Players */}
@@ -147,7 +156,13 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         {/* Start button (teacher only) */}
         {isTeacher && onStart && (
           <Button
-            onClick={onStart}
+            onClick={() => {
+              if (
+                players.length === 0 &&
+                !window.confirm("Zatím se nepřipojil žádný žák. Opravdu chcete hru spustit bez žáků?")
+              ) return;
+              onStart();
+            }}
             size="lg"
             variant="hero"
             className="text-lg px-10 py-6 gap-3"
