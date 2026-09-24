@@ -50,7 +50,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
 
   const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
   const teamLeaderboard = useMemo(
-    () => computeTeamLeaderboard(session.teams?.teams, players),
+    () => computeTeamLeaderboard(session.teams?.teams, players, session.settings?.teamScoring ?? "avg"),
     [session.teams, players]
   );
 

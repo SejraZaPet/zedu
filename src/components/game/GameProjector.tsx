@@ -57,7 +57,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
 
   const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
   const teamLeaderboard = useMemo(
-    () => computeTeamLeaderboard(session.teams?.teams, players),
+    () => computeTeamLeaderboard(session.teams?.teams, players, session.settings?.teamScoring ?? "avg"),
     [session.teams, players]
   );
 
