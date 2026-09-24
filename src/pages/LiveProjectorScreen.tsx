@@ -36,12 +36,14 @@ const LiveProjectorScreen = () => {
   );
   const { session, players, responses, loading } = useGameSession(sessionId);
 
-  // 1s tick so the race countdown stays live without hammering re-renders.
+  // Tik jen při závodu — jinak se celý projektor (snímek, obrázky) překresloval 2× za sekundu.
   const [now, setNow] = useState(() => Date.now());
+  const raceTicking = (session?.settings as any)?.gameMode === "race" && session?.status === "playing";
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 500);
+    if (!raceTicking) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [raceTicking]);
 
   if (loading) {
     return (
