@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, LineChart, FilePlus2 } from "lucide-react";
+import { Loader2, LineChart, FilePlus2, Gamepad2 } from "lucide-react";
+import { QuickGameDialog } from "@/components/game/QuickGameDialog";
+import { weakSpotGameTopic } from "@/lib/assignment-difficulty";
 import { toast } from "@/hooks/use-toast";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import { createWorksheetForTopic } from "@/lib/assignment-difficulty";
@@ -135,6 +137,7 @@ const AssignmentDifficultyStats = ({
   const [subjectName, setSubjectName] = useState("");
   const [classYear, setClassYear] = useState<number | null>(null);
   const [worksheetBusyKey, setWorksheetBusyKey] = useState<string | null>(null);
+  const [gameTopic, setGameTopic] = useState<string | null>(null);
 
   // Kontext úlohy (předmět, ročník třídy) a počet úkolů se stejnou lekcí.
   useEffect(() => {
@@ -353,6 +356,16 @@ const AssignmentDifficultyStats = ({
                     Vygenerovat doplňkový list
                   </Button>
                 )}
+                {r.pct !== null && r.pct < 50 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    onClick={() => setGameTopic(weakSpotGameTopic(r.label.replace(/\s*\(povinné\)$/, ""), r.pct))}
+                  >
+                    <Gamepad2 className="h-3 w-3" /> Vytvořit hru na tohle
+                  </Button>
+                )}
               </div>
             </li>
           ))}
@@ -368,6 +381,18 @@ const AssignmentDifficultyStats = ({
           activityTitle={trendRow.label}
         />
       )}
+
+      <QuickGameDialog
+        open={gameTopic !== null}
+        onOpenChange={(o) => !o && setGameTopic(null)}
+        onSaved={() => {
+          setGameTopic(null);
+          toast({ title: "Hra uložena", description: "Najdete ji v sekci Moje hry a aktivity." });
+        }}
+        initialTopic={gameTopic ?? undefined}
+        initialType="mcq"
+        initialSubject={subjectName || undefined}
+      />
 
       {manualRows.length > 0 && (
         <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2">

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Loader2, BarChart3 } from "lucide-react";
-import { fetchAssignmentStudentIds, fetchLessonSuccessPct } from "@/lib/assignment-difficulty";
+import { ChevronDown, ChevronRight, Loader2, BarChart3, Gamepad2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { QuickGameDialog } from "@/components/game/QuickGameDialog";
+import { toast } from "sonner";
+import { fetchAssignmentStudentIds, fetchLessonSuccessPct, weakSpotGameTopic } from "@/lib/assignment-difficulty";
 
 interface Props {
   topicId: string;
@@ -30,6 +33,7 @@ const CurriculumTopicWeakSpots = ({ topicId, topicTitle }: Props) => {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
+  const [gameTopic, setGameTopic] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || loaded) return;
@@ -145,12 +149,32 @@ const CurriculumTopicWeakSpots = ({ topicId, topicTitle }: Props) => {
                       <div className={`h-full ${barColor(r.pct)}`} style={{ width: `${r.pct}%` }} />
                     </div>
                   )}
+                  {r.pct !== null && r.pct < 50 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 gap-1 px-1.5 text-[11px]"
+                      onClick={() => setGameTopic(weakSpotGameTopic(`${topicTitle} – ${r.title}`, r.pct))}
+                    >
+                      <Gamepad2 className="h-3 w-3" /> Vytvořit hru na tohle
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
           </div>
         )}
       </CollapsibleContent>
+      <QuickGameDialog
+        open={gameTopic !== null}
+        onOpenChange={(o) => !o && setGameTopic(null)}
+        onSaved={() => {
+          setGameTopic(null);
+          toast.success("Hra uložena – najdete ji v sekci Moje hry a aktivity.");
+        }}
+        initialTopic={gameTopic ?? undefined}
+        initialType="mcq"
+      />
     </Collapsible>
   );
 };
