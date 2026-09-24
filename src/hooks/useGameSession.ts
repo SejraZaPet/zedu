@@ -165,9 +165,13 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       })
       .subscribe((status, err) => {
         if (!mountedRef.current) return;
+        // Události ze starého (už odebraného) kanálu ignorujeme — jinak jeho
+        // CLOSED spouštělo další reconnect a vznikala smyčka nových kanálů.
+        if (channelRef.current !== channel) return;
 
         switch (status) {
           case "SUBSCRIBED":
+            connectedRef.current = true;
             setConnectionStatus("connected");
             // Reset reconnect counter on success
             if (reconnectAttemptRef.current > 0) {
@@ -179,13 +183,14 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
           case "CHANNEL_ERROR":
           case "TIMED_OUT":
+            connectedRef.current = false;
             console.warn(`Realtime ${status}:`, err);
             setConnectionStatus("reconnecting");
             scheduleReconnect();
             break;
 
           case "CLOSED":
-            // Only reconnect if still mounted (not intentional cleanup)
+            connectedRef.current = false;
             if (mountedRef.current) {
               setConnectionStatus("reconnecting");
               scheduleReconnect();
@@ -196,10 +201,15 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
     channelRef.current = channel;
 
-    // Polling fallback for unauthenticated users (Realtime may 401)
+    // Záložní obnovování: bez živého spojení každé 2 s, se spojením jen
+    // pojistně každých 15 s. Záložka na pozadí neobnovuje vůbec.
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(() => {
-      if (mountedRef.current) fetchData();
+      if (!mountedRef.current) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      const interval = connectedRef.current ? 15000 : 2000;
+      if (Date.now() - lastPollRef.current < interval - 100) return;
+      fetchData();
     }, 2000);
   }, [sessionId, fetchData]);
 
