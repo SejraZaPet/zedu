@@ -128,36 +128,64 @@ export async function downloadWorksheetPdf(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<void> {
-  const html = await buildPrintHtml(spec, options);
+  // Tiskneme STEJNÝ dokument jako náhled (včetně rozdělení na stránky),
+  // a to přes skrytý iframe v aktuální stránce — ne přes pop-up okno.
+  // Pop-up okno sdílelo s aplikací jedno vlákno: dokud v něm visel
+  // tiskový dialog (nebo zůstalo otevřené za aplikací), aplikace nereagovala.
+  const html = await buildPrintHtml(spec, options, true);
 
-  const printWindow = window.open("", "_blank", "width=900,height=1000");
-  if (!printWindow) {
-    console.error("[PDF] Failed to open print window — pop-up blocker?");
-    throw new Error(
-      "Pop-up okno bylo zablokováno. Povolte pop-upy pro tuto stránku a zkuste znovu.",
-    );
-  }
+  document.querySelectorAll("iframe[data-ws-print-frame]").forEach((el) => el.remove());
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("data-ws-print-frame", "true");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.tabIndex = -1;
+  Object.assign(iframe.style, {
+    position: "fixed",
+    right: "0",
+    bottom: "0",
+    width: "210mm",
+    height: "297mm",
+    border: "0",
+    opacity: "0",
+    pointerEvents: "none",
+    zIndex: "-1",
+  } as Partial<CSSStyleDeclaration>);
 
-  const triggerPrint = () => {
-    setTimeout(() => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch (e) {
-        console.error("[PDF] window.print() failed:", e);
-      }
-    }, 350);
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    iframe.remove();
   };
 
-  if (printWindow.document.readyState === "complete") {
-    triggerPrint();
-  } else {
-    printWindow.onload = triggerPrint;
+  await new Promise<void>((resolve, reject) => {
+    iframe.onload = () => resolve();
+    iframe.onerror = () => reject(new Error("Nepodařilo se připravit tisk."));
+    iframe.srcdoc = html;
+    document.body.appendChild(iframe);
+  });
+
+  const win = iframe.contentWindow;
+  if (!win) {
+    cleanup();
+    throw new Error("Nepodařilo se připravit tisk.");
   }
+
+  // Počkat na obrázky a dokončení rozdělení stránek (běží v load handleru).
+  await new Promise((r) => setTimeout(r, 300));
+
+  win.addEventListener("afterprint", () => setTimeout(cleanup, 100), { once: true });
+  try {
+    win.focus();
+    win.print();
+  } catch (e) {
+    console.error("[PDF] print() failed:", e);
+    cleanup();
+    throw e;
+  }
+  // Pojistka, kdyby prohlížeč afterprint nevyvolal.
+  setTimeout(cleanup, 60_000);
 }
 
 /**

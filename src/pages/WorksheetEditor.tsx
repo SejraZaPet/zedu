@@ -1061,11 +1061,16 @@ export default function WorksheetEditor() {
       setPdfPreviewUrl(null);
     }
     const skip = typeof window !== "undefined" && localStorage.getItem("Bezli-skip-print-tip") === "true";
-    if (skip) {
-      void performExportPdf();
-    } else {
-      setShowPrintTipDialog(true);
-    }
+    // Otevření dalšího dialogu ve stejném okamžiku, kdy se zavírá náhled,
+    // nechávalo na stránce "zamčené" klikání (pointer-events: none) → appka
+    // působila zamrzle. Počkáme, až se náhled zavře.
+    window.setTimeout(() => {
+      if (skip) {
+        void performExportPdf();
+      } else {
+        setShowPrintTipDialog(true);
+      }
+    }, 250);
   }
 
   function handleConfirmPrintTip() {
@@ -1243,6 +1248,17 @@ export default function WorksheetEditor() {
       if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
     };
   }, [pdfPreviewUrl]);
+
+  // Pojistka: když jsou všechny tiskové dialogy zavřené, uvolni případně
+  // zaseknuté zamčení klikání/scrollu, které po sobě dialog nechal.
+  useEffect(() => {
+    if (pdfPreviewUrl || pdfDialogOpen || showPrintTipDialog) return;
+    const t = window.setTimeout(() => {
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (document.body.style.pointerEvents === "none") document.body.style.pointerEvents = "";
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [pdfPreviewUrl, pdfDialogOpen, showPrintTipDialog]);
 
   // ── Per-block lesson pickers ──
   const [pickerForItem, setPickerForItem] = useState<string | null>(null);

@@ -650,6 +650,23 @@ p, li { orphans: 2; widows: 2; }
     orphans: 2;
     widows: 2;
   }
+  /* Stránky rozdělené stejně jako v náhledu v aplikaci → tisk = náhled 1:1 */
+  body.ws-preview-paginated .ws-page {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  body.ws-preview-paginated .ws-page:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  body.ws-preview-paginated .ws-content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
 }
 `;
 }
