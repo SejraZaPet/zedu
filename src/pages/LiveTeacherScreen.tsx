@@ -459,22 +459,7 @@ const LiveTeacherScreen = () => {
                     <option key={n} value={n}>{n}</option>
                   ))}
                 </select>
-                <span className="text-muted-foreground ml-2">Body týmu:</span>
-                <select
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                  value={settings?.teamScoring ?? "avg"}
-                  onChange={async (e) => {
-                    if (!sessionId) return;
-                    await supabase
-                      .from("game_sessions")
-                      .update({ settings: { ...(settings || {}), teamScoring: e.target.value } })
-                      .eq("id", sessionId);
-                  }}
-                  aria-label="Výpočet bodů týmu"
-                >
-                  <option value="avg">Průměr na člena</option>
-                  <option value="sum">Součet</option>
-                </select>
+                <span className="text-[11px] text-muted-foreground ml-2">Body týmu = průměr na člena</span>
               </div>
             )}
           </div>

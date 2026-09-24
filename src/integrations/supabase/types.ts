@@ -6594,6 +6594,33 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_team_presets: {
+        Row: {
+          id: string
+          source_id: string
+          source_kind: string
+          teacher_id: string
+          teams: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          source_id: string
+          source_kind: string
+          teacher_id?: string
+          teams?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          source_id?: string
+          source_kind?: string
+          teacher_id?: string
+          teams?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_textbook_enrollments: {
         Row: {
           enrolled_at: string

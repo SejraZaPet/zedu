@@ -78,7 +78,6 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamModeKind: teamKind,
         teamMode: teamKind !== "none",
         teamCount: Math.max(2, Math.min(6, Number(template.default_team_count) || 2)),
-        teamScoring: template.team_scoring === "sum" ? "sum" : "avg",
         subjectKey: subjectKeyFromLabel(template.subject),
         backgroundUrl: template.background_url ?? null,
       } as any,

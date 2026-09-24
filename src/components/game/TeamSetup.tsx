@@ -57,20 +57,32 @@ const PlayerChip = ({ player, color }: { player: GamePlayer; color?: string }) =
   );
 };
 
-const AbsentChip = ({ name, onRemove }: { name: string; onRemove: () => void }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-dashed border-border text-muted-foreground bg-muted/40">
-    {name} <span className="italic">· nepřipojen</span>
-    <button
-      type="button"
-      onClick={onRemove}
-      className="ml-1 rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`Vynechat žáka ${name}`}
-      title="Vynechat z týmu"
+const AbsentChip = ({ userId, name, onRemove }: { userId: string; name: string; onRemove: () => void }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `roster:${userId}` });
+  return (
+    <span
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-dashed border-border text-muted-foreground bg-muted/40 cursor-grab",
+        isDragging && "opacity-30",
+      )}
     >
-      <UserX className="w-3 h-3" />
-    </button>
-  </span>
-);
+      {name} <span className="italic">· nepřipojen/a</span>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={onRemove}
+        className="ml-1 rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Vynechat žáka ${name}`}
+        title="Vynechat z týmu"
+      >
+        <UserX className="w-3 h-3" />
+      </button>
+    </span>
+  );
+};
 
 const TeamColumn = ({
   id,
@@ -118,7 +130,7 @@ const TeamColumn = ({
           <PlayerChip key={p.id} player={p} color={team?.color} />
         ))}
         {absent.map((a) => (
-          <AbsentChip key={a.userId} name={a.name} onRemove={() => onRemoveAbsent?.(a.userId)} />
+          <AbsentChip key={a.userId} userId={a.userId} name={a.name} onRemove={() => onRemoveAbsent?.(a.userId)} />
         ))}
         {members.length === 0 && absent.length === 0 && (
           <p className="text-xs text-muted-foreground italic">
@@ -145,6 +157,8 @@ export const TeamSetup = ({ session, players }: Props) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingRoster, setLoadingRoster] = useState(false);
+  const [pool, setPool] = useState<{ userId: string; name: string }[]>(session.teams?.pool ?? []);
+  const [splitMode, setSplitMode] = useState<"random" | "manual">("random");
 
   // Synchronizace s DB (auto-zařazení nových žáků probíhá mimo tuto komponentu).
   const remoteKey = JSON.stringify(session.teams ?? null);
@@ -153,6 +167,7 @@ export const TeamSetup = ({ session, players }: Props) => {
     const existing = session.teams?.teams;
     if (existing && existing.length > 0) setTeams(existing);
     setRosterSource(session.teams?.rosterSource ?? null);
+    setPool(session.teams?.pool ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteKey]);
 
@@ -162,12 +177,17 @@ export const TeamSetup = ({ session, players }: Props) => {
   const unassigned = useMemo(() => players.filter((p) => !assignedIds.has(p.id)), [players, assignedIds]);
   const onlineUserIds = useMemo(() => new Set(players.map((p) => p.user_id).filter(Boolean) as string[]), [players]);
 
-  const persist = async (next: Team[], source: TeamsData["rosterSource"] = rosterSource) => {
+  const persist = async (
+    next: Team[],
+    source: TeamsData["rosterSource"] = rosterSource,
+    nextPool: { userId: string; name: string }[] = pool,
+  ) => {
     setTeams(next);
+    setPool(nextPool);
     setSaving(true);
     const { error } = await supabase
       .from("game_sessions")
-      .update({ teams: { teams: next, rosterSource: source ?? null } as any })
+      .update({ teams: { teams: next, rosterSource: source ?? null, pool: nextPool } as any })
       .eq("id", session.id);
     setSaving(false);
     if (error) toast({ title: "Nepodařilo se uložit týmy", description: error.message, variant: "destructive" });
@@ -181,7 +201,7 @@ export const TeamSetup = ({ session, players }: Props) => {
       color: teams[i]?.color ?? t.color,
       roster: undefined,
     }));
-    void persist(next, null);
+    void persist(next, null, []);
     toast({ title: "Žáci rozděleni do týmů" });
   };
 
@@ -225,15 +245,47 @@ export const TeamSetup = ({ session, players }: Props) => {
       const { data: profs } = await supabase.from("profiles").select("id, first_name, last_name").in("id", userIds);
       const nameOf = new Map(((profs as any[]) ?? []).map((p) => [p.id, `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()]));
       const roster = shuffleArray(userIds).map((uid) => ({ userId: uid, name: nameOf.get(uid) || "Žák" }));
-      const next: Team[] = teams.map((t) => ({ ...t, members: [], roster: [] }));
-      roster.forEach((r, i) => next[i % next.length].roster!.push(r));
+      const { data: preset } = await supabase
+        .from("teacher_team_presets")
+        .select("teams")
+        .eq("source_kind", srcKind)
+        .eq("source_id", id)
+        .maybeSingle();
+      const presetTeams = Array.isArray((preset as any)?.teams) ? ((preset as any).teams as any[]) : null;
+      let next: Team[];
+      let nextPool: { userId: string; name: string }[] = [];
+      let usedPreset = false;
+      if (presetTeams && presetTeams.length >= 2) {
+        usedPreset = true;
+        const known = new Set<string>();
+        next = buildDefaultTeams(presetTeams.length).map((t, i) => {
+          const r = (presetTeams[i]?.roster ?? [])
+            .filter((x: any) => userIds.includes(x.userId))
+            .map((x: any) => ({ userId: x.userId, name: nameOf.get(x.userId) || x.name || "Žák" }));
+          r.forEach((x: any) => known.add(x.userId));
+          return { ...t, name: presetTeams[i]?.name || t.name, color: presetTeams[i]?.color || t.color, roster: r };
+        });
+        nextPool = roster.filter((r) => !known.has(r.userId));
+      } else if (splitMode === "manual") {
+        next = teams.map((t) => ({ ...t, members: [], roster: [] }));
+        nextPool = roster;
+      } else {
+        next = teams.map((t) => ({ ...t, members: [], roster: [] }));
+        roster.forEach((r, i) => next[i % next.length].roster!.push(r));
+      }
       const assigned = autoAssignPlayers(next, players, kind) ?? next;
       const label =
         srcKind === "class"
           ? classes?.find((c: any) => c.id === id)?.name
           : groups?.find((g: any) => g.id === id)?.name;
-      await persist(assigned, { kind: srcKind, id, name: label ?? "" });
-      toast({ title: `Týmy připraveny ze seznamu (${roster.length} žáků)`, description: "Připojení žáci se zařadí sami." });
+      await persist(assigned, { kind: srcKind, id, name: label ?? "" }, nextPool);
+      toast({
+        title: usedPreset ? "Použito uložené rozdělení týmů" : `Seznam načten (${roster.length} žáků)`,
+        description:
+          !usedPreset && splitMode === "manual"
+            ? "Přetáhněte žáky ze seznamu do týmů."
+            : "Připojení žáci se zařadí do svého týmu sami.",
+      });
     } catch (e: any) {
       toast({ title: "Nepodařilo se načíst žáky", description: e?.message, variant: "destructive" });
     } finally {
@@ -241,8 +293,38 @@ export const TeamSetup = ({ session, players }: Props) => {
     }
   };
 
+  const handleSavePreset = async () => {
+    if (!rosterSource) return;
+    const byPlayer = new Map(players.map((p) => [p.id, p]));
+    const payload = teams.map((t) => {
+      const r = new Map((t.roster ?? []).map((x) => [x.userId, x]));
+      t.members.forEach((m) => {
+        const p = byPlayer.get(m);
+        if (p?.user_id && !r.has(p.user_id)) r.set(p.user_id, { userId: p.user_id, name: p.nickname });
+      });
+      return { name: t.name, color: t.color, roster: [...r.values()] };
+    });
+    const { data: { session: auth } } = await supabase.auth.getSession();
+    const { error } = await supabase.from("teacher_team_presets").upsert(
+      {
+        teacher_id: auth?.user.id,
+        source_kind: rosterSource.kind,
+        source_id: rosterSource.id,
+        teams: payload as any,
+        updated_at: new Date().toISOString(),
+      } as any,
+      { onConflict: "teacher_id,source_kind,source_id" },
+    );
+    if (error) toast({ title: "Rozdělení se nepodařilo uložit", description: error.message, variant: "destructive" });
+    else toast({ title: `Rozdělení uloženo pro ${rosterSource.name || "tuto třídu"}`, description: "Příště se načte automaticky." });
+  };
+
   const handleRemoveAbsent = (userId: string) => {
-    void persist(teams.map((t) => ({ ...t, roster: t.roster?.filter((r) => r.userId !== userId) })));
+    void persist(
+      teams.map((t) => ({ ...t, roster: t.roster?.filter((r) => r.userId !== userId) })),
+      rosterSource,
+      pool.filter((r) => r.userId !== userId),
+    );
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -250,6 +332,18 @@ export const TeamSetup = ({ session, players }: Props) => {
     const playerId = e.active.id as string;
     const overId = e.over?.id as string | undefined;
     if (!overId) return;
+    if (playerId.startsWith("roster:")) {
+      const uid = playerId.slice(7);
+      const entry =
+        pool.find((r) => r.userId === uid) ?? teams.flatMap((t) => t.roster ?? []).find((r) => r.userId === uid);
+      if (!entry) return;
+      const moved = teams.map((t) => ({ ...t, roster: (t.roster ?? []).filter((r) => r.userId !== uid) }));
+      let nextPool = pool.filter((r) => r.userId !== uid);
+      if (overId === UNASSIGNED) nextPool = [...nextPool, entry];
+      else moved.find((t) => t.id === overId)?.roster!.push(entry);
+      void persist(moved, rosterSource, nextPool);
+      return;
+    }
     const userId = players.find((p) => p.id === playerId)?.user_id;
     const next = teams.map((t) => ({
       ...t,
@@ -323,9 +417,23 @@ export const TeamSetup = ({ session, players }: Props) => {
             </optgroup>
           )}
         </select>
+        <select
+          aria-label="Způsob rozdělení"
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          value={splitMode}
+          onChange={(e) => setSplitMode(e.target.value as "random" | "manual")}
+        >
+          <option value="random">náhodně</option>
+          <option value="manual">ručně (přetažením)</option>
+        </select>
+        {rosterSource && (
+          <Button size="sm" variant="outline" className="gap-1" onClick={() => void handleSavePreset()}>
+            <Save className="w-4 h-4" /> Uložit pro příště
+          </Button>
+        )}
         {absentTotal > 0 && (
           <span className="text-xs text-muted-foreground">
-            {absentTotal} žáků zatím nepřipojeno – můžete je vynechat nebo týmy vyrovnat.
+            {absentTotal} žáků zatím nepřipojeno (šedě) – můžete je vynechat nebo týmy vyrovnat.
           </span>
         )}
       </div>
@@ -344,7 +452,9 @@ export const TeamSetup = ({ session, players }: Props) => {
             />
           ))}
         </div>
-        {unassigned.length > 0 && <TeamColumn id={UNASSIGNED} members={unassigned} />}
+        {(unassigned.length > 0 || pool.length > 0) && (
+          <TeamColumn id={UNASSIGNED} members={unassigned} absent={pool.filter((r) => !onlineUserIds.has(r.userId))} onRemoveAbsent={handleRemoveAbsent} />
+        )}
         <DragOverlay>{activePlayer ? <PlayerChip player={activePlayer} /> : null}</DragOverlay>
       </DndContext>
 

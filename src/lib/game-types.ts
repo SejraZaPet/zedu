@@ -21,9 +21,10 @@ export interface TeamsData {
   teams: Team[];
   /** Zdroj předem rozdělených žáků (třída nebo skupina). */
   rosterSource?: { kind: "class" | "group"; id: string; name: string } | null;
+  /** Žáci ze seznamu, kteří zatím nejsou v žádném týmu (ruční rozdělení). */
+  pool?: { userId: string; name: string }[];
 }
 
-export type TeamScoring = "avg" | "sum";
 
 export interface GameSettings {
   timePerQuestion: number;
@@ -44,8 +45,6 @@ export interface GameSettings {
   raceDurationSec?: number;
   /** ISO timestamp when the race actually started (set on Start in race mode). */
   raceStartedAt?: string | null;
-  /** Jak se počítají body týmu: průměr na člena (výchozí) nebo součet. */
-  teamScoring?: TeamScoring;
 }
 
 export const TEAM_COLORS = [
@@ -143,7 +142,6 @@ export function findPlayerTeam(teams: Team[] | undefined, playerId: string): Tea
 export function computeTeamLeaderboard(
   teams: Team[] | undefined,
   players: GamePlayer[],
-  scoring: TeamScoring = "avg",
 ): Array<{ team: Team; score: number; total: number; memberCount: number }> {
   if (!teams || teams.length === 0) return [];
   const byPlayer = new Map(players.map((p) => [p.id, p.total_score]));
@@ -151,7 +149,8 @@ export function computeTeamLeaderboard(
     .map((team) => {
       const present = team.members.filter((pid) => byPlayer.has(pid));
       const total = present.reduce((sum, pid) => sum + (byPlayer.get(pid) || 0), 0);
-      const score = scoring === "sum" ? total : present.length ? Math.round(total / present.length) : 0;
+      // Body týmu = průměr na připojeného člena (menší tým není v nevýhodě).
+      const score = present.length ? Math.round(total / present.length) : 0;
       return { team, score, total, memberCount: present.length };
     })
     .sort((a, b) => b.score - a.score);
