@@ -37,7 +37,7 @@ export const MATERIAL_EXTENSIONS = [
   "mov",
 ];
 
-export const MATERIAL_ACCEPT = MATERIAL_EXTENSIONS.map((e) => `.${e}`).join(",");
+export const MATERIAL_ACCEPT = "";
 
 export const VIDEO_EXTENSIONS = ["mp4", "mov"];
 export const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -63,13 +63,10 @@ export const formatBytes = (b?: number) => {
   return `${(b / 1024 / 1024).toFixed(1)} MB`;
 };
 
-/** Vrátí chybu, pokud soubor nevyhovuje povoleným formátům nebo velikosti. */
+/** Vrátí chybu, pokud soubor překročí limit velikosti. Typ/přípona není omezen. */
 export const validateMaterialFile = (file: File): string | null => {
   const ext = extOf(file.name);
-  if (!MATERIAL_EXTENSIONS.includes(ext)) {
-    return "Nepodporovaný formát. Povolené: PDF, Word, Excel, PowerPoint, JPG, PNG, MP3, MP4, MOV.";
-  }
-  const isVideo = VIDEO_EXTENSIONS.includes(ext);
+  const isVideo = file.type.startsWith("video/") || VIDEO_EXTENSIONS.includes(ext);
   const limit = isVideo ? VIDEO_MAX_BYTES : FILE_MAX_BYTES;
   if (file.size > limit) {
     return isVideo ? "Video může mít nejvýš 100 MB." : "Soubor může mít nejvýš 20 MB.";
