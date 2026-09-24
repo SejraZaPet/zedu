@@ -6392,12 +6392,14 @@ export type Database = {
           created_at: string
           curriculum_topic_id: string | null
           default_game_mode: string
+          default_team_count: number
           default_team_mode: string
           description: string | null
           id: string
           purpose: string | null
           subject: string | null
           teacher_id: string
+          team_scoring: string
           textbook_lesson_id: string | null
           title: string
           updated_at: string
@@ -6408,12 +6410,14 @@ export type Database = {
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
+          default_team_count?: number
           default_team_mode?: string
           description?: string | null
           id?: string
           purpose?: string | null
           subject?: string | null
           teacher_id: string
+          team_scoring?: string
           textbook_lesson_id?: string | null
           title: string
           updated_at?: string
@@ -6424,12 +6428,14 @@ export type Database = {
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
+          default_team_count?: number
           default_team_mode?: string
           description?: string | null
           id?: string
           purpose?: string | null
           subject?: string | null
           teacher_id?: string
+          team_scoring?: string
           textbook_lesson_id?: string | null
           title?: string
           updated_at?: string

@@ -197,6 +197,13 @@
       "when": 1790196882073,
       "tag": "0027_worksheet_teacher_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790244390248,
+      "tag": "0028_game_template_team_settings",
+      "breakpoints": true
     }
   ]
 }
