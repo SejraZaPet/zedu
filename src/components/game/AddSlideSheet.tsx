@@ -386,14 +386,56 @@ export function AddSlideSheet({
   };
 
 
-  /** Připraví snímky z lekce a zobrazí náhled před vložením. */
+  /** Připraví snímky z lekce a zobrazí náhled před vložením. Prázdné aktivity vynechá. */
   const openLessonPreview = (lesson: LessonOption) => {
     const built = blocksToSlides(lesson.blocks, lesson.title)
       .filter((s: any) => s.type !== "intro")
       .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}` }));
+    const { slides: kept, dropped } = dropEmptyActivitySlides(built);
     setPreviewLesson(lesson);
-    setPreviewSlides(built);
+    setPreviewSlides(kept);
+    setPreviewDropped(dropped);
     setKind("lessonpreview");
+  };
+
+  /**
+   * „Kvíz z lekce (AI)“ – AI z textu lekce vytvoří 8–10 otázek s výběrem
+   * odpovědi. Do hry jdou jen otázkové snímky (plus vyplněné kvízy z lekce).
+   */
+  const generateLessonQuiz = async (lesson: LessonOption) => {
+    setQuizLesson(lesson);
+    setQuizSlides([]);
+    setQuizError(null);
+    setQuizLoading(true);
+    setKind("quizpreview");
+    try {
+      const text = extractTextFromBlocks(lesson.blocks);
+      if (text.trim().length < 40) throw new Error("Lekce neobsahuje dost textu pro vytvoření kvízu.");
+      const { data, error } = await supabase.functions.invoke("generate-lesson-quiz", {
+        body: { text, title: lesson.title, count: 10 },
+      });
+      if (error) {
+        let msg = error.message;
+        try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      const qs: any[] = Array.isArray((data as any)?.questions) ? (data as any).questions : [];
+      const built = qs
+        .map((q, i) => {
+          const s: any = buildMcqSlide(String(q.question), q.answers.map(String), Number(q.correctIndex) || 0);
+          s.slideId = `quiz-${Date.now()}-${i}`;
+          s.ai_generated = true;
+          if (q.explanation) s.activitySpec.explanation = String(q.explanation);
+          return s;
+        });
+      const { slides: kept } = dropEmptyActivitySlides(built);
+      if (kept.length === 0) throw new Error("AI nevytvořila žádnou použitelnou otázku.");
+      setQuizSlides(kept);
+    } catch (e: any) {
+      setQuizError(e?.message || "Nepodařilo se vytvořit kvíz.");
+    } finally {
+      setQuizLoading(false);
+    }
   };
 
   /** Potvrzené vložení snímků z náhledu lekce do hry. */
@@ -610,7 +652,7 @@ export function AddSlideSheet({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setKind(kind === "lessonpreview" ? "lesson" : "menu")}
+                onClick={() => setKind(kind === "lessonpreview" || kind === "quizpreview" ? "lesson" : "menu")}
                 disabled={busy}
               >
                 <ArrowLeft className="w-4 h-4" />
