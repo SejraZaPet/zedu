@@ -627,8 +627,9 @@ export function AddSlideSheet({
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
               {kind === "presets" && "Další typy aktivit"}
-              {kind === "lesson" && "Vytvořit z lekce"}
+              {kind === "lesson" && (lessonPurpose === "quiz" ? "Kvíz z lekce (AI)" : "Vytvořit z lekce")}
               {kind === "lessonpreview" && "Náhled lekce"}
+              {kind === "quizpreview" && "Kvíz z lekce (AI)"}
               {kind === "fromtext" && "Aktivita z vlastního textu"}
 
               {kind === "library" && "Vložit z knihovny her"}
@@ -831,13 +832,26 @@ export function AddSlideSheet({
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"
-                onClick={openLessonPicker}
+                onClick={() => openLessonPicker("quiz")}
+              >
+                <Sparkles className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Kvíz z lekce (AI)</p>
+                  <p className="text-xs text-muted-foreground">
+                    AI z lekce vytvoří 8–10 otázek s výběrem odpovědi – jen otázky, bez výkladu
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => openLessonPicker("slides")}
               >
                 <BookOpen className="w-5 h-5 mr-3 text-primary" />
                 <div className="text-left">
                   <p className="font-medium">Vytvořit z lekce</p>
                   <p className="text-xs text-muted-foreground">
-                    Převezmi obsah hotové lekce jako slidy hry
+                    Převezmi celý obsah lekce (výklad i aktivity) jako slidy hry
                   </p>
                 </div>
               </Button>
@@ -902,7 +916,7 @@ export function AddSlideSheet({
                     variant="outline"
                     className="justify-start h-auto py-3 w-full whitespace-normal"
                     disabled={busy}
-                    onClick={() => openLessonPreview(l)}
+                    onClick={() => (lessonPurpose === "quiz" ? generateLessonQuiz(l) : openLessonPreview(l))}
                   >
                     <div className="text-left">
                       <p className="font-medium">{l.title}</p>
@@ -971,6 +985,38 @@ export function AddSlideSheet({
                 </>
               )}
 
+              {previewDropped > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {previewDropped} {previewDropped === 1 ? "prázdná aktivita byla vynechána" : "prázdné aktivity byly vynechány"} (chybí otázka nebo odpovědi).
+                </p>
+              )}
+
+              {(() => {
+                const total = previewSlides.length;
+                const q = previewSlides.filter((s: any) => s.type === "activity").length;
+                const low = total > 0 && q < total / 3;
+                if (!low) return null;
+                return (
+                  <div className="rounded-lg border-2 border-accent bg-accent/10 p-3 space-y-2" role="alert">
+                    <p className="text-sm font-medium">
+                      Tahle hra bude spíš prezentace – jen {q} z {total} snímků {q === 1 ? "je otázka" : "jsou otázky"}.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Žáci budou živě odpovídat jen u otázek. Chcete pokračovat, nebo raději nechat AI z lekce vytvořit kvíz?
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={busy || quizLoading}
+                      onClick={() => generateLessonQuiz(previewLesson)}
+                    >
+                      <Sparkles className="w-4 h-4" /> Zkusit „Kvíz z lekce (AI)“
+                    </Button>
+                  </div>
+                );
+              })()}
+
               <div className="flex gap-2 pt-1">
                 <Button
                   variant="outline"
@@ -985,9 +1031,77 @@ export function AddSlideSheet({
                   disabled={busy || previewSlides.length === 0}
                   onClick={confirmInsertLesson}
                 >
-                  Vložit do hry
+                  {previewSlides.length > 0 &&
+                  previewSlides.filter((s: any) => s.type === "activity").length < previewSlides.length / 3
+                    ? "Přesto vložit do hry"
+                    : "Vložit do hry"}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {kind === "quizpreview" && (
+            <div className="space-y-3">
+              {quizLoading ? (
+                <div className="py-8 text-center space-y-2">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    AI připravuje otázky z lekce „{quizLesson?.title}“… může to chvíli trvat.
+                  </p>
+                </div>
+              ) : quizError ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-destructive">{quizError}</p>
+                  <Button variant="outline" onClick={() => quizLesson && generateLessonQuiz(quizLesson)}>
+                    Zkusit znovu
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="font-medium">{quizLesson?.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {quizSlides.length} {quizSlides.length < 5 ? "otázky" : "otázek"} · vytvořeno AI – před spuštěním je zkontrolujte
+                    </p>
+                  </div>
+                  <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                    {quizSlides.map((s: any, i: number) => (
+                      <div key={s.slideId} className="rounded-lg border p-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium">{i + 1}. {s.activitySpec.question}</p>
+                          <button
+                            type="button"
+                            aria-label={`Odebrat otázku ${i + 1}`}
+                            className="shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => setQuizSlides((prev) => prev.filter((_, j) => j !== i))}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <ul className="text-xs space-y-0.5">
+                          {s.activitySpec.options.map((o: any, j: number) => (
+                            <li key={j} className={cn(o.correct ? "font-semibold text-primary" : "text-muted-foreground")}>
+                              {o.correct ? "✓ " : "• "}{o.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="outline" className="flex-1" disabled={busy} onClick={() => setKind("lesson")}>
+                      Zpět na seznam lekcí
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      disabled={busy || quizSlides.length === 0}
+                      onClick={() => appendMany(quizSlides.map((s: any, i: number) => ({ ...s, slideId: `quiz-${Date.now()}-${i}` })))}
+                    >
+                      Vložit {quizSlides.length} {quizSlides.length < 5 ? "otázky" : "otázek"} do hry
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
