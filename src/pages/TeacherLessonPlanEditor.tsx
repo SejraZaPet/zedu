@@ -77,6 +77,7 @@ import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-stor
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
@@ -1223,6 +1224,9 @@ export default function TeacherLessonPlanEditor() {
                 <p className="text-xs font-semibold mb-1">Instrukce pro učitele</p>
                 <p className="whitespace-pre-wrap text-sm">{teacherInstructions}</p>
               </div>
+            )}
+            {materials.length > 0 && (
+              <AssignmentMaterialsList materials={materials} title="Přílohy k hodině" />
             )}
           </div>
 
