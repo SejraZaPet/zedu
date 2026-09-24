@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,13 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onSaved: () => void;
+  /** Předvyplnění AI záložky (např. „Vytvořit hru na tohle“ ze statistik). */
+  initialTopic?: string;
+  initialType?: QuickType;
+  initialSubject?: string;
 }
 
-export const QuickGameDialog = ({ open, onOpenChange, onSaved }: Props) => {
+export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, initialType, initialSubject }: Props) => {
   const { subjects } = useTeacherSubjects();
   const [type, setType] = useState<QuickType | null>(null);
   const [title, setTitle] = useState("");
@@ -46,6 +50,14 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved }: Props) => {
     setTf([{ text: "", isTrue: true }]); setPairs([{ left: "", right: "" }, { left: "", right: "" }]);
     setTopic(""); setGrade(""); setAiUsed(false); setTab("manual");
   };
+  useEffect(() => {
+    if (!open || !initialTopic) return;
+    setType(initialType ?? "mcq");
+    setTopic(initialTopic);
+    setTab("ai");
+    if (initialSubject) setSubject(initialSubject);
+  }, [open, initialTopic, initialType, initialSubject]);
+
   const close = (o: boolean) => { if (!o) reset(); onOpenChange(o); };
 
   const generate = async () => {

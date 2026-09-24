@@ -69,3 +69,10 @@ export const createWorksheetForTopic = async (
   if (error || !data) throw error ?? new Error("Pracovní list se nepodařilo vytvořit.");
   return (data as { id: string }).id;
 };
+
+/** Zadání pro „Rychlou hru“ zaměřenou na slabé místo. */
+export const weakSpotGameTopic = (label: string, pct: number | null) => {
+  const t = label.trim() || "Opakování";
+  const detail = pct !== null ? `${t} (úspěšnost jen ${pct} %)` : t;
+  return `${t}\n\nZaměř se hlavně na tohle, protože to žákům dělalo problém: ${detail}`;
+};

@@ -5511,9 +5511,11 @@ export type Database = {
           activity_type: string
           completed_at: string
           id: string
-          lesson_id: string
+          lesson_id: string | null
           max_score: number
           score: number
+          source_game_session_id: string | null
+          source_lesson_id: string | null
           user_id: string
         }
         Insert: {
@@ -5521,9 +5523,11 @@ export type Database = {
           activity_type?: string
           completed_at?: string
           id?: string
-          lesson_id: string
+          lesson_id?: string | null
           max_score?: number
           score?: number
+          source_game_session_id?: string | null
+          source_lesson_id?: string | null
           user_id: string
         }
         Update: {
@@ -5531,9 +5535,11 @@ export type Database = {
           activity_type?: string
           completed_at?: string
           id?: string
-          lesson_id?: string
+          lesson_id?: string | null
           max_score?: number
           score?: number
+          source_game_session_id?: string | null
+          source_lesson_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -5542,6 +5548,20 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_activity_results_source_game_session_id_fkey"
+            columns: ["source_game_session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_activity_results_source_game_session_id_fkey"
+            columns: ["source_game_session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
             referencedColumns: ["id"]
           },
           {
