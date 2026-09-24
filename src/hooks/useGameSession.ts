@@ -73,8 +73,9 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       // (with answers[].correct flags) from the full game_sessions table.
       // RLS allows SELECT to auth.uid() = teacher_id.
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        const uid = userData?.user?.id;
+        // getSession je lokální (bez síťového dotazu), getUser volal server při každém pollu.
+        const { data: sessData } = await supabase.auth.getSession();
+        const uid = sessData?.session?.user?.id;
         if (uid && row.teacher_id && uid === row.teacher_id) {
           const { data: full } = await supabase
             .from("game_sessions")
@@ -90,18 +91,24 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       }
 
       if (!mountedRef.current) return;
-      setSession({
-        ...row,
-        activity_data: activityData,
-        settings: row.settings as any,
-        teams: row.teams ?? { teams: [] },
-      } as unknown as GameSession);
+      setSession((prev) => {
+        // Beze změny snímků ponecháme stejný objekt, aby se celá prezentace
+        // zbytečně nepřekreslovala po každém obnovení dat.
+        const prevData = (prev as any)?.activity_data;
+        const sameData = prevData && JSON.stringify(prevData) === JSON.stringify(activityData);
+        return {
+          ...row,
+          activity_data: sameData ? prevData : activityData,
+          settings: row.settings as any,
+          teams: row.teams ?? { teams: [] },
+        } as unknown as GameSession;
+      });
     }
 
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
     setLoading(false);
-  }, [sessionId, joinToken]);
+  };
 
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(() => {
