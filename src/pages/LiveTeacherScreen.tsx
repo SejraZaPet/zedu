@@ -35,6 +35,8 @@ import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import { useSwipe } from "@/hooks/useSwipe";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
+import { useTeamAutoAssign } from "@/hooks/useTeamAutoAssign";
+import { TeamSetup } from "@/components/game/TeamSetup";
 import AiClusterButton from "@/components/live/AiClusterButton";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
@@ -66,6 +68,8 @@ const LiveTeacherScreen = () => {
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
   const [progressGridOpen, setProgressGridOpen] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
+  const [teamsDialogOpen, setTeamsDialogOpen] = useState(false);
+  useTeamAutoAssign(session as any, players as any);
   const projectorPreviewRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -455,9 +459,22 @@ const LiveTeacherScreen = () => {
                     <option key={n} value={n}>{n}</option>
                   ))}
                 </select>
-                <span className="text-[11px] text-muted-foreground">
-                  {teamKind === "random" ? "Auto rozdělení po připojení" : "Drag & drop v lobby"}
-                </span>
+                <span className="text-muted-foreground ml-2">Body týmu:</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  value={settings?.teamScoring ?? "avg"}
+                  onChange={async (e) => {
+                    if (!sessionId) return;
+                    await supabase
+                      .from("game_sessions")
+                      .update({ settings: { ...(settings || {}), teamScoring: e.target.value } })
+                      .eq("id", sessionId);
+                  }}
+                  aria-label="Výpočet bodů týmu"
+                >
+                  <option value="avg">Průměr na člena</option>
+                  <option value="sum">Součet</option>
+                </select>
               </div>
             )}
           </div>
@@ -1379,6 +1396,11 @@ const LiveTeacherScreen = () => {
                 Odkrýt další ({Math.min(revealStep, maxRevealCount)}/{maxRevealCount})
               </Button>
             )}
+            {(settings?.teamModeKind ?? "none") !== "none" && (
+              <Button variant="outline" onClick={() => setTeamsDialogOpen(true)} className="gap-1.5">
+                <Users className="w-4 h-4" /> Upravit týmy
+              </Button>
+            )}
             <Button onClick={handleNext}>
               {currentIndex >= slides.length - 1 ? "Ukončit výuku" : "Další slide"}
               <ChevronRight className="w-4 h-4 ml-1" />
@@ -1399,6 +1421,7 @@ const LiveTeacherScreen = () => {
           players={players}
           gameCode={gameCode}
           zoom={activeZoom}
+          backgroundUrl={sessionBackgroundUrl(settings)}
           overlayContent={(
             <LiveWhiteboard
               sessionId={sessionId}
