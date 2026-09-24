@@ -400,7 +400,7 @@ export function AddSlideSheet({
   const openLessonPreview = (lesson: LessonOption) => {
     const built = blocksToSlides(lesson.blocks, lesson.title)
       .filter((s: any) => s.type !== "intro")
-      .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}` }));
+      .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}`, sourceLessonId: lesson.id }));
     const { slides: kept, dropped } = dropEmptyActivitySlides(built);
     setPreviewLesson(lesson);
     setPreviewSlides(kept);
@@ -435,6 +435,7 @@ export function AddSlideSheet({
           const s: any = buildMcqSlide(String(q.question), q.answers.map(String), Number(q.correctIndex) || 0);
           s.slideId = `quiz-${Date.now()}-${i}`;
           s.ai_generated = true;
+          s.sourceLessonId = lesson.id;
           if (q.explanation) s.activitySpec.explanation = String(q.explanation);
           return s;
         });

@@ -80,6 +80,8 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamCount: Math.max(2, Math.min(6, Number(template.default_team_count) || 2)),
         subjectKey: subjectKeyFromLabel(template.subject),
         backgroundUrl: template.background_url ?? null,
+        sourceLessonId: template.textbook_lesson_id ?? null,
+        sourceTemplateId: template.id,
       } as any,
 
       status: "lobby",
