@@ -405,10 +405,15 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                       />
                       <input
                         type="color"
-                        aria-label="Barva pozadí snímku"
-                        className="h-7 w-7 cursor-pointer rounded border border-border bg-transparent p-0"
+                        aria-label="Barva pozadí snímku (bez výběru platí pozadí celé hry)"
+                        title={s?.backgroundOverride?.color ? "Vlastní barva snímku" : "Bez vlastní barvy – platí pozadí hry"}
+                        className={`h-7 w-7 cursor-pointer rounded border bg-transparent p-0 ${s?.backgroundOverride?.color ? "border-border" : "border-dashed border-muted-foreground opacity-60"}`}
                         value={s?.backgroundOverride?.color || "#ffffff"}
-                        onChange={(e) => setSlideBackground(i, { color: e.target.value })}
+                        onChange={(e) => {
+                          // Pouhé otevření výběru bez změny barvy nesmí nastavit bílou.
+                          if (!s?.backgroundOverride?.color && e.target.value.toLowerCase() === "#ffffff") return;
+                          setSlideBackground(i, { color: e.target.value });
+                        }}
                       />
                       {s?.backgroundOverride && (
                         <Button
