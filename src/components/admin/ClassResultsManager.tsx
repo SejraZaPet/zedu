@@ -126,7 +126,7 @@ const ClassResultsManager = () => {
     // Skupiny předmětů (učitel vidí své, admin / školní admin všechny přes RLS)
     let groupsQuery = supabase
       .from("subject_groups")
-      .select("id, name, school_year, textbook_id, subjects(name, slug)")
+      .select("id, name, school_year, textbook_id, subjects(name)")
       .eq("archived", false)
       .order("name");
     if (!isElevated && user) groupsQuery = groupsQuery.eq("created_by", user.id);
@@ -187,7 +187,7 @@ const ClassResultsManager = () => {
       field_of_study: [g.subjects?.name, g.school_year].filter(Boolean).join(" · "),
       year: null,
       kind: "group" as const,
-      subject_keys: [g.subjects?.name, g.subjects?.slug, g.textbook_id ? tbSubj.get(g.textbook_id) : null]
+      subject_keys: [g.subjects?.name, g.textbook_id ? tbSubj.get(g.textbook_id) : null]
         .filter(Boolean)
         .map((x: string) => subjKey(x)),
     }));
