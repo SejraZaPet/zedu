@@ -2440,6 +2440,11 @@ const SlideCanvas = ({
       ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", ...themeStageStyle(theme) }
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
 
+  if ((rest as any).transparentStage && !bgOverride) {
+    const { background: _b, backgroundImage: _bi, backgroundColor: _bc, ...tokensOnly } = bgStyle as any;
+    bgStyle = { ...tokensOnly, background: "transparent" } as React.CSSProperties;
+  }
+
   if (bgOverride) {
     // Shorthand `background` se nesmí mísit s explicitními vlastnostmi – nejdřív ho odstraníme.
     const { background: _bg, backgroundImage: _bgi, backgroundColor: _bgc, ...withoutBg } = bgStyle as any;
