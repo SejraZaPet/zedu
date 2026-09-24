@@ -21,6 +21,8 @@ export interface TeamsData {
   teams: Team[];
   /** Zdroj předem rozdělených žáků (třída nebo skupina). */
   rosterSource?: { kind: "class" | "group"; id: string; name: string } | null;
+  /** Žáci ze seznamu, kteří zatím nejsou v žádném týmu (ruční rozdělení). */
+  pool?: { userId: string; name: string }[];
 }
 
 
