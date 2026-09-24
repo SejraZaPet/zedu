@@ -21,51 +21,7 @@ import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
-
-
-// Extract plain readable text from lesson blocks for TTS.
-const stripHtmlToText = (html: string): string => {
-  if (typeof document === "undefined") return html;
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html || "";
-  return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
-};
-
-const buildLessonReadableText = (title: string, blocks: Block[]): string => {
-  const parts: string[] = [title];
-  for (const b of blocks) {
-    if (b.visible === false) continue;
-    const p: any = b.props || {};
-    switch (b.type) {
-      case "heading":
-        parts.push(stripHtmlToText(p.text || ""));
-        break;
-      case "paragraph":
-      case "callout":
-      case "summary":
-        parts.push(stripHtmlToText(p.text || ""));
-        break;
-      case "bullet_list":
-        if (p.html) parts.push(stripHtmlToText(p.html));
-        else if (Array.isArray(p.items)) parts.push(p.items.join(". "));
-        break;
-      case "quote":
-        if (p.text) parts.push(`Citát: ${p.text}${p.author ? `, ${p.author}` : ""}`);
-        break;
-      case "two_column":
-        parts.push(stripHtmlToText(p.left || ""));
-        parts.push(stripHtmlToText(p.right || ""));
-        break;
-      case "image":
-      case "gallery":
-        if (p.caption) parts.push(p.caption);
-        break;
-      default:
-        break;
-    }
-  }
-  return parts.filter(Boolean).join(". ");
-};
+import { buildReadAloudText } from "@/lib/lesson-content-splitter";
 
 
 const LessonPage = () => {
@@ -266,7 +222,7 @@ const LessonPage = () => {
                     <NotebookPen className="h-4 w-4" /> Otevřít poznámky k této lekci
                   </Button>
                   <ReadAloudButton
-                    text={buildLessonReadableText(lesson.title, blocks)}
+                    text={buildReadAloudText(lesson.title, visibleBlocks)}
                     label="Přečíst"
                   />
                   <Button
