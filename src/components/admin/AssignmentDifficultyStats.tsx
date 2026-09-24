@@ -385,10 +385,7 @@ const AssignmentDifficultyStats = ({
       <QuickGameDialog
         open={gameTopic !== null}
         onOpenChange={(o) => !o && setGameTopic(null)}
-        onSaved={() => {
-          setGameTopic(null);
-          toast({ title: "Hra uložena", description: "Najdete ji v sekci Moje hry a aktivity." });
-        }}
+        onSaved={() => setGameTopic(null)}
         initialTopic={gameTopic ?? undefined}
         initialType="mcq"
         initialSubject={subjectName || undefined}

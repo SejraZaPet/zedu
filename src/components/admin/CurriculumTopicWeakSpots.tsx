@@ -4,7 +4,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronRight, Loader2, BarChart3, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickGameDialog } from "@/components/game/QuickGameDialog";
-import { toast } from "sonner";
 import { fetchAssignmentStudentIds, fetchLessonSuccessPct, weakSpotGameTopic } from "@/lib/assignment-difficulty";
 
 interface Props {
@@ -168,10 +167,7 @@ const CurriculumTopicWeakSpots = ({ topicId, topicTitle }: Props) => {
       <QuickGameDialog
         open={gameTopic !== null}
         onOpenChange={(o) => !o && setGameTopic(null)}
-        onSaved={() => {
-          setGameTopic(null);
-          toast.success("Hra uložena – najdete ji v sekci Moje hry a aktivity.");
-        }}
+        onSaved={() => setGameTopic(null)}
         initialTopic={gameTopic ?? undefined}
         initialType="mcq"
       />
