@@ -26,6 +26,10 @@ interface ClassOverview {
   total_lessons: number;
   total_activities: number;
   last_activity: string | null;
+  /** "group" = skupina předmětu (subject_groups), jinak třída */
+  kind?: "class" | "group";
+  /** Pro skupiny: klíče předmětu (název, slug, předmět učebnice) pro filtr lekcí */
+  subject_keys?: string[];
 }
 
 interface StudentDetail {
@@ -56,6 +60,9 @@ interface CompletionRow {
 }
 
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+/** Porovnávací klíč předmětu: bez diakritiky, mezery/podtržítka sjednocené. */
+const subjKey = (s: string | null | undefined) =>
+  norm(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 const ClassResultsManager = () => {
   const { toast } = useToast();
@@ -116,6 +123,24 @@ const ClassResultsManager = () => {
     // Get all class members
     const { data: members } = await supabase.from("class_members").select("class_id, user_id");
 
+    // Skupiny předmětů (učitel vidí své, admin / školní admin všechny přes RLS)
+    let groupsQuery = supabase
+      .from("subject_groups")
+      .select("id, name, school_year, textbook_id, subjects(name, slug)")
+      .eq("archived", false)
+      .order("name");
+    if (!isElevated && user) groupsQuery = groupsQuery.eq("created_by", user.id);
+    const { data: groupsData } = await groupsQuery;
+    const groupIds = ((groupsData as any[]) ?? []).map((g) => g.id);
+    const { data: groupMembers } = groupIds.length
+      ? await supabase.from("subject_group_members").select("group_id, student_id").in("group_id", groupIds)
+      : ({ data: [] } as any);
+    const groupTbIds = Array.from(new Set(((groupsData as any[]) ?? []).map((g) => g.textbook_id).filter(Boolean)));
+    const { data: groupTbs } = groupTbIds.length
+      ? await supabase.from("teacher_textbooks").select("id, subject").in("id", groupTbIds)
+      : ({ data: [] } as any);
+    const tbSubj = new Map<string, string>(((groupTbs as any[]) ?? []).map((t) => [t.id, t.subject]));
+
     // Get all activity results
     const { data: activityResults } = await supabase
       .from("student_activity_results")
@@ -131,6 +156,10 @@ const ClassResultsManager = () => {
     members?.forEach((m: any) => {
       if (!classMembersMap.has(m.class_id)) classMembersMap.set(m.class_id, new Set());
       classMembersMap.get(m.class_id)!.add(m.user_id);
+    });
+    ((groupMembers as any[]) ?? []).forEach((m: any) => {
+      if (!classMembersMap.has(m.group_id)) classMembersMap.set(m.group_id, new Set());
+      classMembersMap.get(m.group_id)!.add(m.student_id);
     });
 
     const userActivities = new Map<string, { count: number; totalScore: number; totalMax: number; lastAt: string | null }>();
@@ -151,7 +180,20 @@ const ClassResultsManager = () => {
       userLessons.set(l.user_id, entry);
     });
 
-    const enriched: ClassOverview[] = (classesData ?? []).map((c: any) => {
+    const groupRows = ((groupsData as any[]) ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      school: "",
+      field_of_study: [g.subjects?.name, g.school_year].filter(Boolean).join(" · "),
+      year: null,
+      kind: "group" as const,
+      subject_keys: [g.subjects?.name, g.subjects?.slug, g.textbook_id ? tbSubj.get(g.textbook_id) : null]
+        .filter(Boolean)
+        .map((x: string) => subjKey(x)),
+    }));
+    const allUnits = [...(classesData ?? []).map((c: any) => ({ ...c, kind: "class" as const })), ...groupRows];
+
+    const enriched: ClassOverview[] = allUnits.map((c: any) => {
       const memberIds = classMembersMap.get(c.id) || new Set<string>();
       let totalScore = 0, totalMax = 0, totalActivities = 0, totalLessons = 0;
       let activeStudents = 0;
@@ -188,15 +230,19 @@ const ClassResultsManager = () => {
     setLoading(false);
   };
 
-  const fetchClassDetail = async (classId: string) => {
+  const fetchClassDetail = async (unit: ClassOverview) => {
+    const classId = unit.id;
+    const isGroup = unit.kind === "group";
     setDetailLoading(true);
 
-    const { data: memberLinks } = await supabase
-      .from("class_members")
-      .select("user_id")
-      .eq("class_id", classId);
-
-    const memberIds = memberLinks?.map((m: any) => m.user_id) ?? [];
+    // Členové: u skupiny subject_group_members, u třídy class_members
+    const memberIds: string[] = isGroup
+      ? (((await supabase.from("subject_group_members").select("student_id").eq("group_id", classId)).data as any[]) ?? [])
+          .map((m) => m.student_id)
+          .filter(Boolean)
+      : (((await supabase.from("class_members").select("user_id").eq("class_id", classId)).data as any[]) ?? [])
+          .map((m) => m.user_id)
+          .filter(Boolean);
     if (memberIds.length === 0) {
       setStudents([]);
       setLessonActs([]);
@@ -227,6 +273,9 @@ const ClassResultsManager = () => {
     ].filter(Boolean))) as string[];
 
     let titles: Record<string, string> = {};
+    const slugKeyToLabel = new Map<string, string>();
+    /** lesson_id -> surový slug předmětu (pro skupiny) */
+    const lessonSubjectRaw = new Map<string, string>();
     /** lesson_id -> název předmětu učebnice (best-effort podle názvu) */
     const lessonSubject = new Map<string, string>();
     if (lessonIds.length > 0) {
@@ -247,6 +296,7 @@ const ClassResultsManager = () => {
       ]);
       const slugToLabel = new Map<string, string>();
       (subjRes.data ?? []).forEach((s: any) => slugToLabel.set(norm(s.slug), norm(s.label)));
+      (subjRes.data ?? []).forEach((s: any) => slugKeyToLabel.set(subjKey(s.slug), s.label));
       const tbSubject = new Map<string, string>();
       (tbRes.data ?? []).forEach((t: any) => tbSubject.set(t.id, slugToLabel.get(norm(t.subject)) ?? norm(t.subject)));
       const topicSubject = new Map<string, string>();
@@ -255,17 +305,30 @@ const ClassResultsManager = () => {
       (teacherRes.data ?? []).forEach((l: any) => {
         const s = tbSubject.get(l.textbook_id);
         if (s) lessonSubject.set(l.id, s);
+        const raw = (tbRes.data ?? []).find((t: any) => t.id === l.textbook_id)?.subject;
+        if (raw) lessonSubjectRaw.set(l.id, raw);
       });
       (textbookRes.data ?? []).forEach((l: any) => {
         const s = topicSubject.get(l.topic_id);
         if (s) lessonSubject.set(l.id, s);
+        const raw = (topicRes.data ?? []).find((t: any) => t.id === l.topic_id)?.subject;
+        if (raw) lessonSubjectRaw.set(l.id, raw);
       });
     }
 
     // Omezený přístup: jen lekce z učebnic předmětů, ke kterým je učitel v této třídě připojený
-    const limited = !hasFullAccess(classId);
+    // Skupina = jeden předmět: ukazujeme jen lekce toho předmětu (i adminovi),
+    // jinak by se do výsledků skupiny míchaly lekce jiných předmětů.
+    const groupKeys = new Set(unit.subject_keys ?? []);
+    const limited = !isGroup && !hasFullAccess(classId);
     const mySubjects = mySubjectsByClass.get(classId) ?? new Set<string>();
     const lessonAllowed = (lessonId: string | null) => {
+      if (isGroup) {
+        if (!lessonId) return false;
+        const raw = lessonSubjectRaw.get(lessonId);
+        const label = raw ? slugKeyToLabel.get(subjKey(raw)) : undefined;
+        return (!!raw && groupKeys.has(subjKey(raw))) || (!!label && groupKeys.has(subjKey(label)));
+      }
       if (!limited) return true;
       if (!lessonId) return false;
       const s = lessonSubject.get(lessonId);
@@ -314,12 +377,12 @@ const ClassResultsManager = () => {
     setDetailLoading(false);
   };
 
-  useEffect(() => { fetchOverview(); }, []);
+  useEffect(() => { fetchOverview(); }, [user?.id, isElevated]);
 
   useEffect(() => { fetchAccess(); }, [user?.id]);
 
   useEffect(() => {
-    if (selectedClass) fetchClassDetail(selectedClass.id);
+    if (selectedClass) fetchClassDetail(selectedClass);
   }, [selectedClass, homeroomClassIds, mySubjectsByClass, isElevated]);
 
   const filtered = useMemo(() => {
@@ -414,7 +477,10 @@ const ClassResultsManager = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{c.name}</p>
-                      {!hasFullAccess(c.id) && (
+                      {c.kind === "group" && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">skupina</Badge>
+                      )}
+                      {c.kind !== "group" && !hasFullAccess(c.id) && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">jen tvé předměty</Badge>
                       )}
                     </div>
