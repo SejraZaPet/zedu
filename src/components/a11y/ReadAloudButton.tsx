@@ -27,6 +27,37 @@ const stripHtml = (html: string): string => {
   return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
 };
 
+/** Rozdělí text na úseky do ~200 znaků na hranicích vět/slov, s offsety. */
+export const splitIntoChunks = (text: string, max = 200): { text: string; offset: number }[] => {
+  const out: { text: string; offset: number }[] = [];
+  const re = /[^.!?…]+[.!?…]*\s*/g;
+  let m: RegExpExecArray | null;
+  let cur = "";
+  let curStart = 0;
+  const flush = () => {
+    if (cur.trim()) out.push({ text: cur, offset: curStart });
+    cur = "";
+  };
+  while ((m = re.exec(text)) !== null) {
+    if (!m[0]) { re.lastIndex++; continue; }
+    let sentence = m[0];
+    let sStart = m.index;
+    if (cur && cur.length + sentence.length > max) flush();
+    while (sentence.length > max) {
+      let cut = sentence.lastIndexOf(" ", max);
+      if (cut <= 0) cut = max;
+      if (cur) flush();
+      out.push({ text: sentence.slice(0, cut), offset: sStart });
+      sentence = sentence.slice(cut);
+      sStart += cut;
+    }
+    if (!cur) curStart = sStart;
+    cur += sentence;
+  }
+  flush();
+  return out;
+};
+
 type SpeechState = "idle" | "speaking" | "paused";
 
 /**
@@ -44,6 +75,7 @@ export const ReadAloudButton = ({
   const [state, setState] = useState<SpeechState>("idle");
   const [charIndex, setCharIndex] = useState<number>(-1);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const sessionRef = useRef(0);
   const plainText = useMemo(() => stripHtml(text || ""), [text]);
 
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
@@ -63,6 +95,7 @@ export const ReadAloudButton = ({
 
   const stop = useCallback(() => {
     if (!supported) return;
+    sessionRef.current++;
     window.speechSynthesis.cancel();
     setState("idle");
     setCharIndex(-1);
@@ -71,6 +104,7 @@ export const ReadAloudButton = ({
 
   useEffect(() => {
     return () => {
+      sessionRef.current++;
       if (supported) window.speechSynthesis.cancel();
     };
   }, [supported]);
@@ -89,29 +123,36 @@ export const ReadAloudButton = ({
       return;
     }
 
-    // idle → start
+    // idle → start. Dlouhý text se čte po úsecích (~200 znaků) — Chrome
+    // jinak jedno dlouhé čtení po pár vteřinách tiše ukončí.
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(plainText);
-    u.lang = "cs-CZ";
-    u.rate = 1;
-    u.pitch = 1;
-    u.onboundary = (e) => {
-      if (e.name === "word" || (e as any).charIndex != null) {
-        setCharIndex(e.charIndex ?? -1);
+    const chunks = splitIntoChunks(plainText);
+    const session = ++sessionRef.current;
+    const speakChunk = (i: number) => {
+      if (session !== sessionRef.current) return;
+      if (i >= chunks.length) {
+        setState("idle");
+        setCharIndex(-1);
+        utterRef.current = null;
+        return;
       }
+      const { text: chunkText, offset } = chunks[i];
+      const u = new SpeechSynthesisUtterance(chunkText);
+      u.lang = "cs-CZ";
+      u.rate = 1;
+      u.pitch = 1;
+      u.onboundary = (e) => {
+        if (session === sessionRef.current) setCharIndex(offset + (e.charIndex ?? 0));
+      };
+      u.onend = () => speakChunk(i + 1);
+      u.onerror = (e: any) => {
+        if (e?.error === "interrupted" || e?.error === "canceled") return;
+        speakChunk(i + 1);
+      };
+      utterRef.current = u;
+      window.speechSynthesis.speak(u);
     };
-    u.onend = () => {
-      setState("idle");
-      setCharIndex(-1);
-      utterRef.current = null;
-    };
-    u.onerror = () => {
-      setState("idle");
-      setCharIndex(-1);
-      utterRef.current = null;
-    };
-    utterRef.current = u;
-    window.speechSynthesis.speak(u);
+    speakChunk(0);
     setState("speaking");
   }, [plainText, state, supported]);
 

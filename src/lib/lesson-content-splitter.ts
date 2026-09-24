@@ -548,3 +548,30 @@ export function splitLessonIntoSections(blocks: unknown): LessonSection[] {
 }
 
 
+
+/** Typy bloků, které se při hlasovém čtení vynechávají (aktivity, tabulky, média). */
+const READ_ALOUD_SKIP = new Set(["activity", "table", "youtube", "lesson_link", "divider", "gallery", "embed", "video", "audio"]);
+
+/**
+ * Text pro hlasové čtení lekce: všechny bloky v pořadí včetně obsahu karet
+ * (slide_group), bez aktivit, tabulek a obrázků bez popisu.
+ */
+export function buildReadAloudText(title: string, blocks: unknown): string {
+  const parts: string[] = [title];
+  for (const { block: b } of flattenLessonBlocks(blocks)) {
+    if (!b || READ_ALOUD_SKIP.has(b.type) || b.presentationOnly === true) continue;
+    if (b.type === "image") {
+      const cap = String(b.props?.caption ?? "").replace(/<[^>]+>/g, " ").trim();
+      if (cap) parts.push(cap);
+      continue;
+    }
+    for (const line of blockToText(b)) {
+      const clean = line.replace(/^#+\s*/, "").replace(/^-\s*/, "").replace(/^>\s*/, "").replace(/^\[[A-Z_]+\]\s*/, "").trim();
+      if (clean) parts.push(clean);
+    }
+  }
+  return parts
+    .filter(Boolean)
+    .map((p) => (/[.!?:;…]$/.test(p) ? p : `${p}.`))
+    .join(" ");
+}
