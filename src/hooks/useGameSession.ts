@@ -26,10 +26,27 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
+  // Brání souběžným stahováním: pomalá síť jinak hromadila dotazy každé 2 s
+  // (každý s kompletními snímky), až se prohlížeč zasekl.
+  const inFlightRef = useRef(false);
+  const connectedRef = useRef(false);
+  const lastPollRef = useRef(0);
+
   // Full data fetch (used for initial load and resync)
   const fetchData = useCallback(async (resyncClock = false) => {
     if (!sessionId) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await fetchDataInner(resyncClock);
+    } finally {
+      inFlightRef.current = false;
+      lastPollRef.current = Date.now();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, joinToken]);
 
+  const fetchDataInner = async (resyncClock: boolean) => {
     // Sync clock on initial load or after reconnect
     if (resyncClock) {
       await syncClock(true);
@@ -56,8 +73,9 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       // (with answers[].correct flags) from the full game_sessions table.
       // RLS allows SELECT to auth.uid() = teacher_id.
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        const uid = userData?.user?.id;
+        // getSession je lokální (bez síťového dotazu), getUser volal server při každém pollu.
+        const { data: sessData } = await supabase.auth.getSession();
+        const uid = sessData?.session?.user?.id;
         if (uid && row.teacher_id && uid === row.teacher_id) {
           const { data: full } = await supabase
             .from("game_sessions")
@@ -73,18 +91,24 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       }
 
       if (!mountedRef.current) return;
-      setSession({
-        ...row,
-        activity_data: activityData,
-        settings: row.settings as any,
-        teams: row.teams ?? { teams: [] },
-      } as unknown as GameSession);
+      setSession((prev) => {
+        // Beze změny snímků ponecháme stejný objekt, aby se celá prezentace
+        // zbytečně nepřekreslovala po každém obnovení dat.
+        const prevData = (prev as any)?.activity_data;
+        const sameData = prevData && JSON.stringify(prevData) === JSON.stringify(activityData);
+        return {
+          ...row,
+          activity_data: sameData ? prevData : activityData,
+          settings: row.settings as any,
+          teams: row.teams ?? { teams: [] },
+        } as unknown as GameSession;
+      });
     }
 
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
     setLoading(false);
-  }, [sessionId, joinToken]);
+  };
 
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(() => {
@@ -141,9 +165,13 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       })
       .subscribe((status, err) => {
         if (!mountedRef.current) return;
+        // Události ze starého (už odebraného) kanálu ignorujeme — jinak jeho
+        // CLOSED spouštělo další reconnect a vznikala smyčka nových kanálů.
+        if (channelRef.current !== channel) return;
 
         switch (status) {
           case "SUBSCRIBED":
+            connectedRef.current = true;
             setConnectionStatus("connected");
             // Reset reconnect counter on success
             if (reconnectAttemptRef.current > 0) {
@@ -155,13 +183,14 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
           case "CHANNEL_ERROR":
           case "TIMED_OUT":
+            connectedRef.current = false;
             console.warn(`Realtime ${status}:`, err);
             setConnectionStatus("reconnecting");
             scheduleReconnect();
             break;
 
           case "CLOSED":
-            // Only reconnect if still mounted (not intentional cleanup)
+            connectedRef.current = false;
             if (mountedRef.current) {
               setConnectionStatus("reconnecting");
               scheduleReconnect();
@@ -172,10 +201,15 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
     channelRef.current = channel;
 
-    // Polling fallback for unauthenticated users (Realtime may 401)
+    // Záložní obnovování: bez živého spojení každé 2 s, se spojením jen
+    // pojistně každých 15 s. Záložka na pozadí neobnovuje vůbec.
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(() => {
-      if (mountedRef.current) fetchData();
+      if (!mountedRef.current) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      const interval = connectedRef.current ? 15000 : 2000;
+      if (Date.now() - lastPollRef.current < interval - 100) return;
+      fetchData();
     }, 2000);
   }, [sessionId, fetchData]);
 
