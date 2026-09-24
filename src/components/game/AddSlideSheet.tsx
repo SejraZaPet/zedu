@@ -21,11 +21,13 @@ import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
+import { dropEmptyActivitySlides } from "@/lib/game-activity-validity";
+import { extractTextFromBlocks } from "@/lib/lesson-content-splitter";
 
 type AddKind =
   | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
   | "differentiated" | "escape" | "library" | "bezlistart"
-  | "presets" | "lesson" | "lessonpreview" | "fromtext";
+  | "presets" | "lesson" | "lessonpreview" | "quizpreview" | "fromtext";
 
 /** Typy aktivit, které mají v tomto panelu vlastní formulář – v „dalších typech“ se neopakují. */
 const PRESETS_WITH_OWN_FORM = new Set([
@@ -261,6 +263,13 @@ export function AddSlideSheet({
   /** Lekce vybraná k náhledu + snímky, které se z ní vytvoří. */
   const [previewLesson, setPreviewLesson] = useState<LessonOption | null>(null);
   const [previewSlides, setPreviewSlides] = useState<any[]>([]);
+  const [previewDropped, setPreviewDropped] = useState(0);
+  /** Co se po výběru lekce stane: celé snímky, nebo AI kvíz. */
+  const [lessonPurpose, setLessonPurpose] = useState<"slides" | "quiz">("slides");
+  const [quizLesson, setQuizLesson] = useState<LessonOption | null>(null);
+  const [quizSlides, setQuizSlides] = useState<any[]>([]);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState<string | null>(null);
 
   // vlastní text → AI aktivita
   const [aiText, setAiText] = useState("");
@@ -368,7 +377,8 @@ export function AddSlideSheet({
   const insertPreset = (preset: ActivityPreset) => appendAndJump(preset.build());
 
   /** Načte lekce učitele (učebnicové i vlastní) pro převzetí obsahu do hry. */
-  const openLessonPicker = async () => {
+  const openLessonPicker = async (purpose: "slides" | "quiz" = "slides") => {
+    setLessonPurpose(purpose);
     setKind("lesson");
     setLessonsLoading(true);
     try {
