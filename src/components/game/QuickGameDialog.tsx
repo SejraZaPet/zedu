@@ -167,7 +167,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved }: Props) => {
                   <SelectContent>
                     <SelectItem value={NONE}>Bez předmětu</SelectItem>
                     {subjects.map((s: any) => (
-                      <SelectItem key={s.id ?? s.name} value={s.name ?? s.label}>{s.name ?? s.label}</SelectItem>
+                      <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

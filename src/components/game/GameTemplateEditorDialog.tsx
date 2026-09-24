@@ -17,6 +17,7 @@ import { GameBackgroundPickerDialog } from "@/components/game/GameBackgroundPick
 import { GAME_PURPOSES, type GameTemplate } from "@/lib/game-templates";
 import { GAME_MODES } from "@/lib/game-modes";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { QUICK_TYPES, convertSlide, mergeMcqToMatching, slideType } from "@/lib/quick-game";
 
 /** Náhled pozadí snímku – barva nebo obrázek z per-slide přepisu. */
 const slideBackgroundPreview = (slide: any) => {
@@ -368,9 +369,17 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
                 <Label>Obsah hry ({slides.length})</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                {mergeMcqToMatching(slides) && (
+                  <Button size="sm" variant="ghost" className="gap-1" title="Kvízové otázky s krátkou odpovědí spojí do jednoho přiřazování"
+                    onClick={() => { const m = mergeMcqToMatching(slides); if (m) { setSlides(m); toast.success("Kvízy převedeny na přiřazování."); } }}>
+                    🔗 Kvízy → Přiřazování
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" className="gap-1" onClick={() => setAddOpen(true)}>
                   <Plus className="w-3.5 h-3.5" /> Přidat obsah
                 </Button>
+                </div>
               </div>
               {slides.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -389,6 +398,23 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                         <p className="text-[11px] text-muted-foreground">
                           {s.activitySpec?.activityType || s.type || "slide"}
                         </p>
+                        {["mcq", "true_false", "matching"].includes(slideType(s)) && (
+                          <div className="flex gap-1 mt-1 flex-wrap" role="group" aria-label="Přepnout typ otázky">
+                            {QUICK_TYPES.map((qt) => {
+                              const current = slideType(s) === qt.id;
+                              const ok = !current && convertSlide(s, qt.id) !== null;
+                              return (
+                                <button key={qt.id} type="button" disabled={!ok && !current} aria-pressed={current}
+                                  title={current ? "Aktuální typ" : ok ? `Převést na ${qt.label}` : "Tento převod u této otázky nedává smysl"}
+                                  onClick={() => { const c = convertSlide(s, qt.id); if (c) setSlides([...slides.slice(0, i), ...c, ...slides.slice(i + 1)]); }}
+                                  className={cn("text-[10px] px-1.5 py-0.5 rounded border",
+                                    current ? "border-primary bg-primary/10 text-primary" : ok ? "border-border hover:border-primary" : "border-border opacity-40 cursor-not-allowed")}>
+                                  {qt.emoji} {qt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div
                         className="h-7 w-10 shrink-0 rounded border border-border bg-cover bg-center"
