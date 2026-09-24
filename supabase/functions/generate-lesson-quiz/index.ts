@@ -115,6 +115,20 @@ ${shape}`;
       return json({ error: "AI vrátila neplatný kvíz. Zkuste to prosím znovu." }, 500, runHdr);
     }
 
+    if (fmt === "true_false") {
+      const statements = (Array.isArray(parsed?.statements) ? parsed.statements : [])
+        .map((s: any) => ({ text: String(s?.text ?? "").trim().slice(0, 200), isTrue: !!s?.isTrue }))
+        .filter((s: any) => s.text).slice(0, 12);
+      if (!statements.length) return json({ error: "AI nevytvořila žádné tvrzení." }, 500, runHdr);
+      return json({ statements }, 200, runHdr);
+    }
+    if (fmt === "matching") {
+      const pairs = (Array.isArray(parsed?.pairs) ? parsed.pairs : [])
+        .map((p: any) => ({ left: String(p?.left ?? "").trim().slice(0, 80), right: String(p?.right ?? "").trim().slice(0, 160) }))
+        .filter((p: any) => p.left && p.right).slice(0, 8);
+      if (pairs.length < 2) return json({ error: "AI nevytvořila dost dvojic." }, 500, runHdr);
+      return json({ pairs }, 200, runHdr);
+    }
     const questions = (Array.isArray(parsed?.questions) ? parsed.questions : [])
       .map((q: any) => {
         const question = String(q?.question ?? "").trim();
