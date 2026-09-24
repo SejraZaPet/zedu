@@ -25,23 +25,33 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { text, title, count } = await req.json();
-    if (typeof text !== "string" || text.trim().length < 40) {
+    const { text, title, count, topic, format, grade } = await req.json();
+    const fromTopic = typeof topic === "string" && topic.trim().length >= 3;
+    if (!fromTopic && (typeof text !== "string" || text.trim().length < 40)) {
       return json({ error: "Lekce neobsahuje dost textu pro vytvoření kvízu." }, 400);
     }
+    if (typeof topic === "string" && topic.length > 2000) return json({ error: "Zadání je příliš dlouhé." }, 400);
+    const fmt = format === "true_false" || format === "matching" ? format : "mcq";
     const n = Math.min(12, Math.max(3, Number(count) || 10));
 
-    const systemPrompt = `Jsi zkušený český pedagog. Z textu lekce vytvoříš kvíz do živé třídní hry (jako Kahoot).
-PRAVIDLA:
-- Vytvoř ${n} různých otázek (nejméně 8, pokud to obsah dovolí), které pokrývají celý text lekce, ne jen začátek.
-- Každá otázka má přesně 4 krátké odpovědi (max. 80 znaků), přesně 1 správnou; distraktory věrohodné.
-- Otázka max. 140 znaků, jednoznačná, bez "Která z následujících není..." dvojitých záporů.
-- Přidej krátké vysvětlení správné odpovědi (1 věta).
-- Vše česky. Nevymýšlej fakta, která v textu nejsou.
-Odpověz POUZE platným JSON objektem ve tvaru:
+    const source = fromTopic
+      ? `Na zadané téma vytvoříš obsah do živé třídní hry (jako Kahoot/Wordwall). Drž se ověřených, běžně učených faktů${grade ? ` a přizpůsob obtížnost: ${String(grade).slice(0, 60)}` : ""}.`
+      : `Z textu lekce vytvoříš kvíz do živé třídní hry (jako Kahoot). Nevymýšlej fakta, která v textu nejsou; pokryj celý text.`;
+    const shape = fmt === "true_false"
+      ? `Vytvoř ${n} tvrzení (max. 140 znaků), zhruba polovina pravdivých, polovina nepravdivých; nepravdivá věrohodná.
+{"statements":[{"text":"...","isTrue":true}]}`
+      : fmt === "matching"
+      ? `Vytvoř ${Math.min(n, 8)} dvojic pojem – krátké vysvětlení (pojem max. 40 znaků, vysvětlení max. 80), jednoznačně přiřaditelné.
+{"pairs":[{"left":"pojem","right":"vysvětlení"}]}`
+      : `Vytvoř ${n} různých otázek. Každá má přesně 4 krátké odpovědi (max. 80 znaků), přesně 1 správnou; distraktory věrohodné. Otázka max. 140 znaků, bez dvojitých záporů. Přidej 1větné vysvětlení.
 {"questions":[{"question":"...","answers":["...","...","...","..."],"correctIndex":0,"explanation":"..."}]}`;
+    const systemPrompt = `Jsi zkušený český pedagog. ${source}
+Vše česky. Odpověz POUZE platným JSON objektem ve tvaru:
+${shape}`;
 
-    const userPrompt = `Lekce: ${String(title || "").slice(0, 200)}\n\nText lekce:\n${text.slice(0, 14000)}`;
+    const userPrompt = fromTopic
+      ? `O čem má hra být:\n${topic.trim()}`
+      : `Lekce: ${String(title || "").slice(0, 200)}\n\nText lekce:\n${text.slice(0, 14000)}`;
 
     const incomingRunId = req.headers.get("X-Lovable-AIG-Run-ID")?.trim();
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
