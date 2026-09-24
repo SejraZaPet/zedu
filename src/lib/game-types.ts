@@ -13,11 +13,17 @@ export interface Team {
   name: string;
   color: string;
   members: string[]; // game_players.id
+  /** Předem naplánovaní žáci (ze třídy/skupiny) – po připojení se sami zařadí sem. */
+  roster?: { userId: string; name: string }[];
 }
 
 export interface TeamsData {
   teams: Team[];
+  /** Zdroj předem rozdělených žáků (třída nebo skupina). */
+  rosterSource?: { kind: "class" | "group"; id: string; name: string } | null;
 }
+
+export type TeamScoring = "avg" | "sum";
 
 export interface GameSettings {
   timePerQuestion: number;
@@ -38,6 +44,8 @@ export interface GameSettings {
   raceDurationSec?: number;
   /** ISO timestamp when the race actually started (set on Start in race mode). */
   raceStartedAt?: string | null;
+  /** Jak se počítají body týmu: průměr na člena (výchozí) nebo součet. */
+  teamScoring?: TeamScoring;
 }
 
 export const TEAM_COLORS = [
@@ -132,17 +140,65 @@ export function findPlayerTeam(teams: Team[] | undefined, playerId: string): Tea
   return teams.find((t) => t.members.includes(playerId)) ?? null;
 }
 
-export function computeTeamLeaderboard(teams: Team[] | undefined, players: GamePlayer[]):
-  Array<{ team: Team; score: number; memberCount: number }> {
+export function computeTeamLeaderboard(
+  teams: Team[] | undefined,
+  players: GamePlayer[],
+  scoring: TeamScoring = "avg",
+): Array<{ team: Team; score: number; total: number; memberCount: number }> {
   if (!teams || teams.length === 0) return [];
   const byPlayer = new Map(players.map((p) => [p.id, p.total_score]));
   return teams
-    .map((team) => ({
-      team,
-      score: team.members.reduce((sum, pid) => sum + (byPlayer.get(pid) || 0), 0),
-      memberCount: team.members.length,
-    }))
+    .map((team) => {
+      const present = team.members.filter((pid) => byPlayer.has(pid));
+      const total = present.reduce((sum, pid) => sum + (byPlayer.get(pid) || 0), 0);
+      const score = scoring === "sum" ? total : present.length ? Math.round(total / present.length) : 0;
+      return { team, score, total, memberCount: present.length };
+    })
     .sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Zařadí nepřiřazené připojené žáky: nejdřív podle předem připraveného
+ * seznamu (roster), v náhodném režimu pak do nejmenšího týmu.
+ * Vrací nové týmy, nebo null, když není co měnit.
+ */
+export function autoAssignPlayers(
+  teams: Team[],
+  players: GamePlayer[],
+  kind: TeamMode,
+): Team[] | null {
+  if (kind === "none" || teams.length === 0) return null;
+  const next = teams.map((t) => ({ ...t, members: [...t.members] }));
+  const assigned = new Set(next.flatMap((t) => t.members));
+  let changed = false;
+  const sorted = [...players].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+  for (const p of sorted) {
+    if (assigned.has(p.id)) continue;
+    let target = p.user_id ? next.find((t) => t.roster?.some((r) => r.userId === p.user_id)) : undefined;
+    if (!target && kind === "random") {
+      target = next.reduce((min, t) => (t.members.length < min.members.length ? t : min), next[0]);
+    }
+    if (target) {
+      target.members.push(p.id);
+      assigned.add(p.id);
+      changed = true;
+    }
+  }
+  return changed ? next : null;
+}
+
+/** Vyrovná počty připojených členů (rozdíl nejvýš 1), přesouvá z největšího do nejmenšího. */
+export function rebalanceTeams(teams: Team[], players: GamePlayer[]): Team[] {
+  const online = new Set(players.map((p) => p.id));
+  const next = teams.map((t) => ({ ...t, members: t.members.filter((m) => online.has(m)) }));
+  for (let guard = 0; guard < 200; guard++) {
+    const big = next.reduce((a, t) => (t.members.length > a.members.length ? t : a), next[0]);
+    const small = next.reduce((a, t) => (t.members.length < a.members.length ? t : a), next[0]);
+    if (big.members.length - small.members.length <= 1) break;
+    const moved = big.members.pop()!;
+    small.members.push(moved);
+  }
+  return next;
 }
 
 export interface GameResponse {

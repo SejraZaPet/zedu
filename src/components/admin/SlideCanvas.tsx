@@ -109,6 +109,8 @@ interface CanvasProps extends BodyProps {
   pan?: { x: number; y: number };
   onZoomChange?: (zoom: number) => void;
   onPanChange?: (pan: { x: number; y: number }) => void;
+  /** Průhledná scéna – pod snímkem je vidět pozadí celé hry. */
+  transparentStage?: boolean;
 }
 
 
@@ -2271,6 +2273,7 @@ const SlideCanvas = ({
   pan = { x: 0, y: 0 },
   onZoomChange,
   onPanChange,
+  transparentStage = false,
   ...rest
 }: CanvasProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -2439,6 +2442,11 @@ const SlideCanvas = ({
     : darkMode
       ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", ...themeStageStyle(theme) }
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
+
+  if (transparentStage && !bgOverride) {
+    const { background: _b, backgroundImage: _bi, backgroundColor: _bc, ...tokensOnly } = bgStyle as any;
+    bgStyle = { ...tokensOnly, background: "transparent" } as React.CSSProperties;
+  }
 
   if (bgOverride) {
     // Shorthand `background` se nesmí mísit s explicitními vlastnostmi – nejdřív ho odstraníme.

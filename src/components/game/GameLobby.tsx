@@ -149,7 +149,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         </div>
 
         {/* Team setup (teacher only when team mode active) */}
-        {isTeacher && (session.settings?.teamModeKind ?? "none") !== "none" && players.length > 0 && (
+        {isTeacher && (session.settings?.teamModeKind ?? "none") !== "none" && (
           <TeamSetup session={session} players={players} />
         )}
 

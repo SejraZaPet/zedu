@@ -17,6 +17,8 @@ export interface GameTemplate {
   textbook_lesson_id: string | null;
   /** Pozadí pro celou hru (URL z game_backgrounds nebo vlastní obrázek). */
   background_url?: string | null;
+  default_team_count?: number | null;
+  team_scoring?: string | null;
 
   created_at: string;
   updated_at: string;
@@ -75,7 +77,8 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         theme: getModeDef(mode).themes[0].id,
         teamModeKind: teamKind,
         teamMode: teamKind !== "none",
-        teamCount: 2,
+        teamCount: Math.max(2, Math.min(6, Number(template.default_team_count) || 2)),
+        teamScoring: template.team_scoring === "sum" ? "sum" : "avg",
         subjectKey: subjectKeyFromLabel(template.subject),
         backgroundUrl: template.background_url ?? null,
       } as any,

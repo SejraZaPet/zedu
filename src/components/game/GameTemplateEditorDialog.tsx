@@ -44,6 +44,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
   const [purpose, setPurpose] = useState<string>(NONE);
   const [mode, setMode] = useState("standard");
   const [teamMode, setTeamMode] = useState("none");
+  const [teamCount, setTeamCount] = useState(2);
+  const [teamScoring, setTeamScoring] = useState("avg");
   const [slides, setSlides] = useState<any[]>([]);
   const [subject, setSubject] = useState<string>(NONE);
   const [topicId, setTopicId] = useState<string>(NONE);
@@ -68,6 +70,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     setPurpose(template?.purpose ?? NONE);
     setMode(template?.default_game_mode ?? "standard");
     setTeamMode(template?.default_team_mode ?? "none");
+    setTeamCount((template as any)?.default_team_count ?? 2);
+    setTeamScoring((template as any)?.team_scoring ?? "avg");
     setSlides(Array.isArray(template?.activity_data) ? template!.activity_data : []);
     setSubject(template?.subject ?? NONE);
     setTopicId(template?.curriculum_topic_id ?? NONE);
@@ -200,6 +204,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
         activity_data: slides as any,
         default_game_mode: mode,
         default_team_mode: teamMode,
+        default_team_count: teamCount,
+        team_scoring: teamScoring,
         subject: subject === NONE ? null : subject,
         curriculum_topic_id: topicId === NONE ? null : topicId,
         textbook_lesson_id: lessonId === NONE ? null : lessonId,
@@ -307,6 +313,34 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                 </SelectContent>
               </Select>
             </div>
+            {teamMode !== "none" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Počet týmů</Label>
+                  <Select value={String(teamCount)} onValueChange={(v) => setTeamCount(Number(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[2, 3, 4, 5, 6].map((n) => (
+                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Body týmu</Label>
+                  <Select value={teamScoring} onValueChange={setTeamScoring}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="avg">Průměr na člena (spravedlivé)</SelectItem>
+                      <SelectItem value="sum">Součet bodů</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="col-span-2 text-xs text-muted-foreground">
+                  Třídu nebo skupinu pro rozdělení do týmů vyberete po spuštění hry na úvodní obrazovce.
+                </p>
+              </div>
+            )}
 
             {/* Pozadí celé hry */}
             <div className="space-y-2 pt-2 border-t border-border">
