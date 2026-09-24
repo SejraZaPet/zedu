@@ -104,8 +104,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               className="mx-auto max-w-xl rounded-xl border-2 border-accent bg-accent/10 px-4 py-3 text-base font-medium text-foreground"
               role="note"
             >
-              Počkejte, až se žáci připojí tímto kódem, a teprve potom hru spusťte.
-              Žáci se po spuštění už na úvodní obrazovku nedostanou.
+              Počkejte, až se žáci připojí tímto kódem, a teprve potom pokračujte na první snímek.
             </p>
           )}
         </div>
