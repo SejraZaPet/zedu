@@ -135,7 +135,7 @@ const AssignmentMaterialsEditor = ({ materials, onChange, teacherId }: Props) =>
         {/* Soubory */}
         <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-center">
           <p className="text-xs text-muted-foreground mb-2">
-            PDF, Word, Excel, PowerPoint, JPG, PNG, MP3 (do 20 MB) · video MP4/MOV (do 100 MB)
+            Jakýkoliv soubor (do 20 MB) · video (do 100 MB)
           </p>
           <Button
             type="button"
@@ -152,7 +152,6 @@ const AssignmentMaterialsEditor = ({ materials, onChange, teacherId }: Props) =>
             type="file"
             multiple
             className="hidden"
-            accept={MATERIAL_ACCEPT}
             onChange={(e) => {
               handleFiles(e.target.files);
               e.target.value = "";
