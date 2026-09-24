@@ -50,7 +50,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
 
   const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
   const teamLeaderboard = useMemo(
-    () => computeTeamLeaderboard(session.teams?.teams, players, session.settings?.teamScoring ?? "avg"),
+    () => computeTeamLeaderboard(session.teams?.teams, players),
     [session.teams, players]
   );
 
@@ -84,7 +84,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                   {row.team.name}
                 </span>
                 <span className="text-xs text-muted-foreground">{row.memberCount} hráčů</span>
-                <span className="font-mono font-bold text-xl">{row.score} b.{(session.settings?.teamScoring ?? "avg") === "avg" && <span className="ml-1 text-xs font-normal text-muted-foreground">/ člen</span>}</span>
+                <span className="font-mono font-bold text-xl">{row.score} b.{<span className="ml-1 text-xs font-normal text-muted-foreground">/ člen</span>}</span>
               </div>
             ))}
           </div>
