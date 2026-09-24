@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import {
   AssignmentMaterial,
-  MATERIAL_ACCEPT,
   formatBytes,
   mediaKindOf,
   normalizeUrl,
