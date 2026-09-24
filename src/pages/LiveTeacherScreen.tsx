@@ -1452,6 +1452,14 @@ const LiveTeacherScreen = () => {
         />
       </>
     )}
+    <Dialog open={teamsDialogOpen} onOpenChange={setTeamsDialogOpen}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Upravit týmy</DialogTitle>
+        </DialogHeader>
+        {session && <TeamSetup session={session as any} players={players as any} />}
+      </DialogContent>
+    </Dialog>
     </>
   );
 };
