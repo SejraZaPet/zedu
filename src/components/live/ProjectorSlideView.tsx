@@ -21,11 +21,13 @@ const ProjectorCanvasStage = ({
   currentIndex,
   revealStep,
   isLessonPresentation,
+  gameBackground = false,
 }: {
   slide: any;
   currentIndex: number;
   revealStep?: number;
   isLessonPresentation: boolean;
+  gameBackground?: boolean;
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -53,8 +55,13 @@ const ProjectorCanvasStage = ({
           transform: `translate(-50%, -50%) scale(${scale})`,
         }}
       >
+        {gameBackground && isLessonPresentation && (
+          /* Světlý „papír“, aby text lekce zůstal čitelný nad obrázkem hry. */
+          <div aria-hidden className="absolute inset-4 rounded-3xl bg-background/85 shadow-2xl" />
+        )}
         <SlideCanvas
           key={currentIndex}
+          transparentStage={gameBackground}
           fit={false}
           slide={slide}
           themeId={slide?.themeId}
@@ -140,12 +147,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverrideStyle(currentSlide);
   const isLessonPresentation = (currentSlide as any)?.presentationSource === "lesson";
+  // Pořadí: pozadí snímku → pozadí celé hry → výchozí vzhled (lekce / téma).
+  const useGameBg = !projectorBgOverride && !!backgroundUrl;
   const projectorStageStyle: CSSProperties = projectorBgOverride
     ? { ...(({ background, ...rest }) => rest)(themeStageStyle(projectorTheme) as any), ...projectorBgOverride }
+    : useGameBg
+      ? gameBackgroundStyle(backgroundUrl)
     : isLessonPresentation
       ? { backgroundColor: "hsl(var(--background))" }
-    : backgroundUrl
-      ? gameBackgroundStyle(backgroundUrl)
       : themeStageStyle(projectorTheme);
 
   // Snímky bez bloků dostanou dopočítané bloky, aby měly stejnou sazbu
@@ -208,6 +217,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       currentIndex={currentIndex}
                       revealStep={(session?.settings as any)?.revealStep}
                       isLessonPresentation={isLessonPresentation}
+                      gameBackground={useGameBg}
                     />
                   </div>
                 )}
