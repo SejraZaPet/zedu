@@ -26,10 +26,27 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
+  // Brání souběžným stahováním: pomalá síť jinak hromadila dotazy každé 2 s
+  // (každý s kompletními snímky), až se prohlížeč zasekl.
+  const inFlightRef = useRef(false);
+  const connectedRef = useRef(false);
+  const lastPollRef = useRef(0);
+
   // Full data fetch (used for initial load and resync)
   const fetchData = useCallback(async (resyncClock = false) => {
     if (!sessionId) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await fetchDataInner(resyncClock);
+    } finally {
+      inFlightRef.current = false;
+      lastPollRef.current = Date.now();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, joinToken]);
 
+  const fetchDataInner = async (resyncClock: boolean) => {
     // Sync clock on initial load or after reconnect
     if (resyncClock) {
       await syncClock(true);
