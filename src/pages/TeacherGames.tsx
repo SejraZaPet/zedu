@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Gamepad2, Trash2, Plus, Play, Pencil, Library } from "lucide-react";
+import { Gamepad2, Trash2, Plus, Play, Pencil, Library, Copy, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getModeDef, getThemeDef } from "@/lib/game-modes";
 import {
@@ -15,6 +15,10 @@ import {
   GAME_PURPOSES, type GameTemplate,
 } from "@/lib/game-templates";
 import { GameTemplateEditorDialog } from "@/components/game/GameTemplateEditorDialog";
+import { QuickGameDialog } from "@/components/game/QuickGameDialog";
+import { gameLibraryType, countQuestions, LIBRARY_TYPE_LABEL, type LibraryType } from "@/lib/quick-game";
+
+const TYPE_EMOJI: Record<LibraryType, string> = { mcq: "❓", true_false: "✅", matching: "🔗", mixed: "🧩", presentation: "🖼️" };
 
 interface GameSessionRow {
   id: string;
@@ -34,6 +38,8 @@ const TeacherGames = () => {
   const [loading, setLoading] = useState(true);
   const [purposeFilter, setPurposeFilter] = useState(ALL);
   const [subjectFilter, setSubjectFilter] = useState(ALL);
+  const [typeFilter, setTypeFilter] = useState(ALL);
+  const [quickOpen, setQuickOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<GameTemplate | null>(null);
   const navigate = useNavigate();
@@ -75,8 +81,9 @@ const TeacherGames = () => {
   const filteredTemplates = useMemo(
     () => templates.filter((t) =>
       (purposeFilter === ALL || t.purpose === purposeFilter) &&
+      (typeFilter === ALL || gameLibraryType(t.activity_data) === typeFilter) &&
       (subjectFilter === ALL || t.subject === subjectFilter)),
-    [templates, purposeFilter, subjectFilter],
+    [templates, purposeFilter, subjectFilter, typeFilter],
   );
 
   const deleteSession = async (id: string) => {
@@ -89,6 +96,15 @@ const TeacherGames = () => {
     await supabase.from("teacher_game_templates" as any).delete().eq("id", id);
     setTemplates((prev) => prev.filter((t) => t.id !== id));
     toast({ title: "Hra odstraněna z knihovny" });
+  };
+
+  const duplicateTemplate = async (t: GameTemplate) => {
+    const { id, created_at, updated_at, ...rest } = t as any;
+    const { error } = await supabase.from("teacher_game_templates" as any)
+      .insert({ ...rest, title: `${t.title} (kopie)` });
+    if (error) { toast({ title: "Nepodařilo se duplikovat", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Kopie vytvořena", description: "Upravte ji pro jinou třídu nebo skupinu." });
+    loadTemplates();
   };
 
   const launch = async (tpl: GameTemplate) => {
@@ -128,18 +144,24 @@ const TeacherGames = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
       <main className="flex-1 pb-16 px-4 md:px-8" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground flex items-center gap-3">
               <Gamepad2 className="w-7 h-7 text-primary" />
               Moje hry a aktivity
             </h1>
-            <Button
-              className="gap-1.5"
-              onClick={() => { setEditing(null); setEditorOpen(true); }}
-            >
-              <Plus className="w-4 h-4" /> Nová hra
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button className="gap-1.5" onClick={() => setQuickOpen(true)}>
+                <Zap className="w-4 h-4" /> Rychlá hra
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => { setEditing(null); setEditorOpen(true); }}
+              >
+                <Plus className="w-4 h-4" /> Nová hra
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="library">
@@ -154,6 +176,15 @@ const TeacherGames = () => {
 
             <TabsContent value="library" className="space-y-4 pt-4">
               <div className="flex gap-2 flex-wrap">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[180px]" aria-label="Typ hry"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Všechny typy</SelectItem>
+                    {(Object.keys(LIBRARY_TYPE_LABEL) as LibraryType[]).map((k) => (
+                      <SelectItem key={k} value={k}>{TYPE_EMOJI[k]} {LIBRARY_TYPE_LABEL[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={purposeFilter} onValueChange={setPurposeFilter}>
                   <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -186,54 +217,52 @@ const TeacherGames = () => {
                         : "Žádná hra neodpovídá filtru."}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Vytvořte samostatnou hru nebo aktivitu tlačítkem „Nová hra".
+                      Vytvořte samostatnou hru nebo aktivitu tlačítkem „Rychlá hra" nebo „Nová hra".
                     </p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredTemplates.map((t) => {
                     const mode = getModeDef(t.default_game_mode);
+                    const slides = Array.isArray(t.activity_data) ? t.activity_data : [];
+                    const lt = gameLibraryType(slides);
+                    const q = countQuestions(slides);
                     return (
-                      <Card key={t.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="flex items-center gap-3 py-4 flex-wrap">
-                          <div className="flex-1 min-w-[180px]">
-                            <h3 className="font-semibold text-foreground truncate">{t.title}</h3>
-                            {t.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-1">{t.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                                <span>{mode.emoji}</span>{mode.name}
-                              </span>
-                              <span className="text-xs">{purposeLabel(t.purpose)}</span>
-                              {t.subject && <><span>•</span><span className="text-xs">{t.subject}</span></>}
-                              <span>•</span>
-                              <span className="text-xs">
-                                {Array.isArray(t.activity_data) ? t.activity_data.length : 0} slidů
-                              </span>
-                            </div>
+                      <Card key={t.id} className="flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+                        <div
+                          className="h-24 flex items-center justify-center text-5xl bg-gradient-to-br from-primary/15 to-accent/20 bg-cover bg-center"
+                          style={t.background_url ? { backgroundImage: `url(${t.background_url})` } : undefined}
+                          aria-hidden
+                        >
+                          {!t.background_url && TYPE_EMOJI[lt]}
+                        </div>
+                        <CardContent className="flex-1 flex flex-col gap-2 pt-4">
+                          <h3 className="font-semibold text-foreground line-clamp-2">{t.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 text-xs">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                              {TYPE_EMOJI[lt]} {LIBRARY_TYPE_LABEL[lt]}
+                            </span>
+                            {t.subject && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{t.subject}</span>}
+                            <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{mode.emoji} {mode.name}</span>
                           </div>
-                          <Button size="sm" className="gap-1.5" onClick={() => launch(t)}>
-                            <Play className="w-3.5 h-3.5" /> Spustit
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => { setEditing(t); setEditorOpen(true); }}
-                            aria-label="Upravit"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={() => deleteTemplate(t.id)}
-                            aria-label="Smazat"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            {q > 0 ? `${q} otázek · ` : ""}{slides.length} snímků · {purposeLabel(t.purpose)}
+                          </p>
+                          <div className="mt-auto flex items-center gap-1 pt-2">
+                            <Button size="sm" className="gap-1.5 flex-1" onClick={() => launch(t)}>
+                              <Play className="w-3.5 h-3.5" /> Spustit
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => { setEditing(t); setEditorOpen(true); }} aria-label="Upravit" title="Upravit">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => duplicateTemplate(t)} aria-label="Duplikovat" title="Duplikovat">
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTemplate(t.id)} aria-label="Smazat" title="Smazat">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -317,6 +346,7 @@ const TeacherGames = () => {
         template={editing}
         onSaved={loadTemplates}
       />
+      <QuickGameDialog open={quickOpen} onOpenChange={setQuickOpen} onSaved={loadTemplates} />
     </div>
   );
 };
