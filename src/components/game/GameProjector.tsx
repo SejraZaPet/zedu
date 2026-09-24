@@ -202,7 +202,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                           {row.team.name}
                         </span>
                         <span className="text-xs text-muted-foreground">{row.memberCount} hráčů</span>
-                        <span className="font-mono font-bold text-2xl text-foreground">{row.score}</span>
+                        <span className="font-mono font-bold text-2xl text-foreground">{row.score}{(session.settings?.teamScoring ?? "avg") === "avg" && <span className="ml-1 text-xs font-normal text-muted-foreground">/ člen</span>}</span>
                       </div>
                     ))}
                   </div>
