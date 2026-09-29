@@ -286,6 +286,22 @@ function splitTextBlock(block: any, limit: number): any[] {
   }));
 }
 
+/** Obrazové a kompozitní bloky se nesmějí zploštit na text. */
+function isAtomicVisualBlock(block: any): boolean {
+  return ["image", "image_text", "gallery", "two_column", "table", "card_grid", "activity"].includes(block?.type);
+}
+
+/** Přibližná projekční náročnost: obrázek zabírá víc místa než stejně krátký text. */
+function blockVisualWeight(block: any): number {
+  const chars = blockToBodyText(block).text.length;
+  if (block?.type === "image") return Math.max(chars, 420);
+  if (block?.type === "gallery") return Math.max(chars, 280 * Math.max(1, block?.props?.images?.length || 0));
+  if (block?.type === "image_text" || block?.type === "two_column") return Math.max(chars, 700);
+  if (block?.type === "table") return Math.max(chars, 130 * Math.max(2, block?.props?.rows?.length || 0));
+  if (block?.type === "heading") return Math.max(chars, 140);
+  return chars;
+}
+
 /**
  * FÁZE 2 – přeplněný obsah se reálně rozdělí na navazující snímky
  * (dřív se jen zmenšoval až do nečitelnosti / oříznutí).
@@ -293,8 +309,9 @@ function splitTextBlock(block: any, limit: number): any[] {
 function splitSlide(slide: any): any[] {
   const layout = slide?.layout || "full";
   const chars = bodyLen(slide);
+  const visualWeight = Number(slide?.visualWeight || 0);
 
-  if (chars <= HARD_MAX_CHARS_PER_SLIDE || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
+  if ((chars <= HARD_MAX_CHARS_PER_SLIDE && visualWeight <= HARD_MAX_CHARS_PER_SLIDE) || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
     return [slide];
   }
 
@@ -327,13 +344,15 @@ function splitSlide(slide: any): any[] {
 
   // Karty / textové snímky dělíme po blocích, aby obsah zůstal celý.
   // Příliš dlouhý jednotlivý blok se předtím rozpadne na menší bloky.
-  const blocks: any[] = (slide.blocks || []).flatMap((b: any) => splitTextBlock(b, HARD_MAX_CHARS_PER_SLIDE));
+  const blocks: any[] = (slide.blocks || []).flatMap((b: any) =>
+    isAtomicVisualBlock(b) ? [b] : splitTextBlock(b, HARD_MAX_CHARS_PER_SLIDE),
+  );
   if (blocks.length > 1) {
     const groups: any[][] = [];
     let group: any[] = [];
     let groupChars = 0;
     for (const block of blocks) {
-      const len = blockToBodyText(block).text.length;
+      const len = blockVisualWeight(block);
       if (group.length > 0 && groupChars + len > HARD_MAX_CHARS_PER_SLIDE) {
         groups.push(group);
         group = [];
@@ -550,10 +569,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
       let headlineLevel: number | undefined;
       let bodyChildren = visibleChildren;
       const firstChild = visibleChildren[0];
-      // První nadpis skupiny je titulkem snímku. Jeho lokální styl se přenese
-      // přes headlineBlockProps; SlideCanvas jej vykreslí jako samostatný box,
-      // takže se barva nerozlije na pozadí celého snímku.
-      if (firstChild?.type === "heading") {
+       // Jen h1/h2 jsou titulkem snímku. h3/h4 zůstávají mezititulkem uvnitř
+       // karty, včetně vlastního rámečku a podbarvení z lekce.
+       const firstHeadingLevel = Number(firstChild?.props?.level) || 2;
+       if (firstChild?.type === "heading" && firstHeadingLevel <= 2) {
         headline = getText(firstChild.props || {});
         headlineLevel = Number(firstChild.props?.level) || undefined;
         bodyChildren = visibleChildren.slice(1);
@@ -604,13 +623,14 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
         groupSlide.projector.assetRefs.push(...refs);
 
       }
-      groupSlide.projector.body = texts.join("\n\n");
+       groupSlide.projector.body = texts.join("\n\n");
+       groupSlide.visualWeight = bodyChildren.reduce((sum: number, child: any) => sum + blockVisualWeight(child), 0);
       current = groupSlide;
       flush();
       continue;
     }
 
-    if (type === "heading") {
+    if (type === "heading" && (Number(props.level) || 2) <= 2) {
       flush();
       const headline = getText(props);
       if (!headline) continue;
@@ -685,8 +705,6 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     layout: defaultLayoutForType("summary"),
   });
 
-  return renumberSlides(
-    splitOverfullSlides(absorbEmptyHeadingSlides(mergeShortSections(slides))),
-  );
+  return renumberSlides(splitOverfullSlides(absorbEmptyHeadingSlides(mergeShortSections(slides))));
 
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSlideKeys, mergeSlideWithSaved } from "@/lib/presentation-merge";
+import { buildSlideKeys, mergePresentationSlides, mergeSlideWithSaved } from "@/lib/presentation-merge";
 
 /** Ochrana ručních úprav prezentace při tichém přegenerování z lekce (bod A). */
 describe("spojení uložené a nově vygenerované prezentace", () => {
@@ -44,5 +44,37 @@ describe("spojení uložené a nově vygenerované prezentace", () => {
     const fresh = { projector: { body: "nový" }, blocks: [{ id: "b1", type: "paragraph", props: {} }] };
     const saved = { projector: { body: "učitelův" }, blocks: [], lockedFromLesson: true };
     expect((mergeSlideWithSaved(fresh, saved) as any).projector.body).toBe("učitelův");
+  });
+
+  it("ruční pořadí a smazání zůstanou, nový blok z lekce se doplní", () => {
+    const fresh = {
+      sourceBlockId: "group",
+      projector: {},
+      blocks: [
+        { id: "a", type: "paragraph", props: { text: "nové A" } },
+        { id: "b", type: "paragraph", props: { text: "nové B" } },
+        { id: "c", type: "paragraph", props: { text: "nové C" } },
+      ],
+    };
+    const saved = {
+      sourceBlockId: "group",
+      projector: {},
+      structureEditedByTeacher: true,
+      deletedSourceBlockIds: ["a"],
+      blocks: [{ id: "b", type: "paragraph", props: { text: "staré B" } }],
+    };
+    const merged = mergeSlideWithSaved(fresh, saved) as any;
+    expect(merged.blocks.map((b: any) => b.id)).toEqual(["b", "c"]);
+    expect(merged.blocks[0].props.text).toBe("nové B");
+  });
+
+  it("přejmenování nadpisu nerozbije párování podle zdrojového bloku", () => {
+    const merged = mergePresentationSlides(
+      [{ sourceBlockId: "group#part1", projector: { headline: "Nový" }, blocks: [] }],
+      [{ sourceBlockId: "group#2", projector: { headline: "Starý", fontScale: 1.4 }, blocks: [] }],
+    ) as any[];
+    expect(merged).toHaveLength(1);
+    expect(merged[0].projector.headline).toBe("Nový");
+    expect(merged[0].projector.fontScale).toBe(1.4);
   });
 });

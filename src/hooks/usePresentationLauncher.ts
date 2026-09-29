@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { mergePresentationSlides } from "@/lib/presentation-merge";
 
 
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ export interface LessonItem {
   topic_id?: string;
   textbookId?: string;
   hero_image_url?: string | null;
+  presentation_slides?: any[] | null;
 }
 
 export function usePresentationLauncher() {
@@ -75,20 +77,32 @@ export function usePresentationLauncher() {
   };
 
 
-  /**
-   * Prezentace propojená s lekcí je čistě promítací režim lekce: snímky se
-   * VŽDY generují čerstvě z aktuálního obsahu lekce. Uložené kopie v
-   * teacher_presentations se nepoužívají (zůstávají jako archiv/historie).
-   */
+  /** Aktuální lekce + učitelova uložená práce. Globální lekce zůstává společná,
+   * ale každý učitel má vlastní propojenou verzi v teacher_presentations. */
   const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
-    return blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+    const fresh = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return fresh;
+
+    const { data: saved } = await supabase
+      .from("teacher_presentations" as any)
+      .select("id, slides")
+      .eq("teacher_id", user.id)
+      .eq("source_lesson_id", lesson.id)
+      .maybeSingle();
+    const savedSlides = Array.isArray((saved as any)?.slides)
+      ? (saved as any).slides
+      : Array.isArray(lesson.presentation_slides)
+        ? lesson.presentation_slides
+        : [];
+    setHasSavedPresentation(savedSlides.length > 0);
+    return mergePresentationSlides(fresh, savedSlides);
   };
 
 
 
   const openEditor = async (lesson: LessonItem) => {
     const slides = await buildSlidesForLesson(lesson);
-    setHasSavedPresentation(false);
     setPendingSlides(slides);
     setPresentationLesson(lesson);
     setEditingSlideIndex(0);
@@ -121,7 +135,7 @@ export function usePresentationLauncher() {
           .in("status", ["lobby", "playing"])
           .maybeSingle();
         if (existing) {
-          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+           const slides = prebuiltSlides || await buildSlidesForLesson(lesson);
           // Jediné rozhodnutí, které necháváme na učiteli.
           const win = projectorWindowRef.current;
           if (win && !win.closed) win.close();
@@ -133,7 +147,7 @@ export function usePresentationLauncher() {
 
       }
       const rawBlocks = lesson.blocks || [];
-      const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title, { heroImageUrl: lesson.hero_image_url });
+       const slides = prebuiltSlides || await buildSlidesForLesson(lesson);
       if (!session?.user) throw new Error("Není přihlášen");
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase.from("game_sessions").insert({
@@ -150,12 +164,13 @@ export function usePresentationLauncher() {
       const lessonTable = lesson.source === "teacher_textbook_lessons"
         ? "teacher_textbook_lessons"
         : "textbook_lessons";
-      await supabase
-        .from(lessonTable)
-        .update({ presentation_slides: slides } as any)
-        .eq("id", lesson.id);
-      // Propojená prezentace je promítací režim lekce – do teacher_presentations
-      // se neukládá; snímky žijí na lekci a v živé relaci.
+       if (lesson.source === "teacher_textbook_lessons") {
+         await supabase
+           .from(lessonTable)
+           .update({ presentation_slides: slides } as any)
+           .eq("id", lesson.id);
+       }
+       await savePresentationRow(lesson, slides);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
       showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);

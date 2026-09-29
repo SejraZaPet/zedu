@@ -83,7 +83,7 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     expect(styles).toContain("tip");
   });
 
-  it("přenese skutečné styly prvních nadpisů skupin Úvod maso do titulku snímku", () => {
+  it("přenese skutečné styly h3/h4 skupin jako mezititulky v těle", () => {
     const realHeadingGroups = [
       {
         id: "real-vyznam-group",
@@ -121,19 +121,16 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     ];
 
     const generated = blocksToSlides(realHeadingGroups as any, "Úvod maso");
-    const byHeadline = (headline: string) => generated.find((s: any) => s.projector?.headline === headline);
     const headingBlocks = generated.flatMap((s: any) => s.blocks || []).filter((b: any) => b.type === "heading");
-    const styleFor = (headline: string, sourceGroupId: string) =>
-      byHeadline(headline)?.headlineBlockProps
-      ?? headingBlocks.find((b: any) => String(b.id || "").startsWith(`${sourceGroupId}-h`))?.props;
+    const styleFor = (id: string) => headingBlocks.find((b: any) => b.id === id)?.props;
 
-    expect(styleFor("Význam masa", "real-vyznam-group")).toMatchObject({ level: 3, backgroundStyle: "important" });
-    expect(styleFor("Obsahuje", "real-obsahuje-group")).toMatchObject({
+    expect(styleFor("j1k2l3")).toMatchObject({ level: 3, backgroundStyle: "important" });
+    expect(styleFor("4c2301e8-695a-493d-b786-e808b018d5ac")).toMatchObject({
       level: 4,
       backgroundColor: "#fdf4e8",
     });
-    expect(styleFor("Druhy masa", "real-druhy-group")).toMatchObject({ level: 3, backgroundStyle: "example" });
-    expect(generated.flatMap((s: any) => s.blocks || []).some((b: any) => b.id === "j1k2l3")).toBe(false);
+    expect(styleFor("s1t2u3")).toMatchObject({ level: 3, backgroundStyle: "example" });
+    expect(generated.some((s: any) => s.projector?.headline === "Význam masa")).toBe(false);
   });
 
   it("callout zůstane calloutem, nedegraduje na odstavec", () => {
@@ -179,5 +176,38 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     const groupSlide = blocksToSlides(source as any, "Výšky").find((s: any) => s.sourceBlockId === "height-group");
     expect(groupSlide?.groupMinHeight).toBe(540);
     expect(groupSlide?.blocks.map((b: any) => b.props.groupHeight)).toEqual([260, 340]);
+  });
+
+  it("h3 uvnitř karty zůstane barevným mezititulkem v těle", () => {
+    const generated = blocksToSlides([{
+      id: "koleno-group",
+      type: "slide_group",
+      props: {
+        layout: 3,
+        children: [
+          { id: "koleno-image", type: "image", props: { url: "koleno.jpg" } },
+          { id: "koleno-heading", type: "heading", props: { text: "Koleno", level: 3, backgroundStyle: "tip" } },
+          { id: "koleno-points", type: "bullet_list", props: { items: ["První bod", "Druhý bod"] } },
+        ],
+      },
+    }] as any, "Vepřové maso");
+    const slide = generated.find((s: any) => s.sourceBlockId === "koleno-group");
+    expect(slide?.projector?.headline).toBe("");
+    expect(slide?.blocks.find((b: any) => b.id === "koleno-heading")).toMatchObject({
+      type: "heading",
+      props: { level: 3, backgroundStyle: "tip" },
+    });
+    expect(slide?.blocks.find((b: any) => b.id === "koleno-points")?.props.items).toHaveLength(2);
+  });
+
+  it("kompozitní bloky si při převodu zachovají svůj typ a data", () => {
+    const source = [
+      { id: "it", type: "image_text", props: { imageUrl: "a.jpg", imagePosition: "right", text: "Text" } },
+      { id: "tc", type: "two_column", props: { left: "Levá", right: "Pravá" } },
+      { id: "ga", type: "gallery", props: { images: [{ url: "a.jpg" }, { url: "b.jpg" }] } },
+    ];
+    const generated = blocksToSlides(source as any, "Kompozice");
+    const types = generated.flatMap((s: any) => s.blocks || []).map((b: any) => b.type);
+    expect(types).toEqual(expect.arrayContaining(["image_text", "two_column", "gallery"]));
   });
 });

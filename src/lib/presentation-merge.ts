@@ -42,10 +42,40 @@ export function buildSlideKeys(slides: any[]): string[] {
  * upravil (`editedByTeacher`), zůstane jeho – včetně velikosti písma a barev.
  * Ručně přidané bloky bez předlohy v lekci se připojí na konec.
  */
-export function mergeSlideBlocks(freshBlocks: any[], savedBlocks: any[]): any[] {
+export function mergeSlideBlocks(
+  freshBlocks: any[],
+  savedBlocks: any[],
+  options: { preserveStructure?: boolean; deletedBlockIds?: string[] } = {},
+): any[] {
   const fresh = Array.isArray(freshBlocks) ? freshBlocks : [];
   const saved = Array.isArray(savedBlocks) ? savedBlocks : [];
   if (saved.length === 0) return fresh;
+
+  const deleted = new Set((options.deletedBlockIds || []).map(String));
+  const freshById = new Map<string, any>();
+  fresh.forEach((b: any) => { if (b?.id) freshById.set(String(b.id), b); });
+
+  // Přesun, seskupení nebo smazání je ruční změna struktury snímku. V tom
+  // případě držíme pořadí uložené verze, ale neupraveným blokům dál obnovíme
+  // aktuální obsah z lekce. Výslovně smazané zdrojové bloky nevracíme.
+  if (options.preserveStructure) {
+    const mergedSaved = saved
+      .filter((b: any) => !deleted.has(String(b?.id || "")))
+      .map((savedBlock: any) => {
+        const freshBlock = savedBlock?.id ? freshById.get(String(savedBlock.id)) : null;
+        if (!freshBlock || savedBlock.editedByTeacher) return savedBlock;
+        return {
+          ...freshBlock,
+          ...(savedBlock.frame ? { frame: savedBlock.frame } : {}),
+          ...(typeof savedBlock.zIndex === "number" ? { zIndex: savedBlock.zIndex } : {}),
+        };
+      });
+    const savedIds = new Set(saved.map((b: any) => String(b?.id || "")));
+    const newFromLesson = fresh.filter(
+      (b: any) => !savedIds.has(String(b?.id || "")) && !deleted.has(String(b?.id || "")),
+    );
+    return [...mergedSaved, ...newFromLesson];
+  }
 
   const savedById = new Map<string, any>();
   saved.forEach((b: any) => { if (b?.id) savedById.set(String(b.id), b); });
@@ -96,7 +126,10 @@ export function mergeSlideWithSaved(freshSlide: any, savedSlide: any): any {
     headlineLevel: freshSlide.headlineLevel ?? savedSlide.headlineLevel,
     headlineBlockProps: freshSlide.headlineBlockProps ?? savedSlide.headlineBlockProps,
     groupMinHeight: freshSlide.groupMinHeight ?? savedSlide.groupMinHeight,
-    blocks: mergeSlideBlocks(freshSlide.blocks, savedSlide.blocks),
+    blocks: mergeSlideBlocks(freshSlide.blocks, savedSlide.blocks, {
+      preserveStructure: savedSlide.structureEditedByTeacher === true,
+      deletedBlockIds: savedSlide.deletedSourceBlockIds,
+    }),
     tableData: freshSlide.tableData,
     cardData: freshSlide.cardData,
     type: freshSlide.type,

@@ -330,7 +330,16 @@ export const PresentationEditorDialog = ({
     updateSlide({ projector: { ...currentSlide?.projector, ...patch } });
   };
   const blocks: Block[] = ((currentSlide?.blocks || []) as Block[]);
-  const setBlocks = (next: Block[]) => updateSlide({ blocks: next });
+  const setBlocks = (next: Block[], structural = false, deletedIds: string[] = []) => updateSlide({
+    blocks: next,
+    ...(structural ? {
+      structureEditedByTeacher: true,
+      deletedSourceBlockIds: Array.from(new Set([
+        ...((currentSlide?.deletedSourceBlockIds || []) as string[]),
+        ...deletedIds,
+      ])),
+    } : {}),
+  });
   const addBlock = (type: Block["type"]) =>
     setBlocks([...blocks, { ...createDefaultBlock(type), editedByTeacher: true } as Block]);
 
@@ -341,9 +350,9 @@ export const PresentationEditorDialog = ({
     if (j < 0 || j >= blocks.length) return;
     const next = [...blocks];
     [next[i], next[j]] = [next[j], next[i]];
-    setBlocks(next);
+    setBlocks(next, true);
   };
-  const deleteBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id));
+  const deleteBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id), true, [id]);
   /**
    * Úprava jednoho bloku. Pracuje funkčně nad `pendingSlides`, takže dvě
    * změny ve stejném ticku (např. commit textu při blur + povýšení do frame)
@@ -386,7 +395,7 @@ export const PresentationEditorDialog = ({
     );
     clone.zIndex = (typeof copiedBlock.zIndex === "number" ? copiedBlock.zIndex : maxZ) + 1;
     clone.editedByTeacher = true;
-    setBlocks([...blocks, clone]);
+    setBlocks([...blocks, clone], true);
 
     setSelectedBlockId(clone.id);
   };
@@ -499,7 +508,7 @@ export const PresentationEditorDialog = ({
     if (selectedFramed.length < 2) return;
     const ids = new Set(selectedFramed.map((b) => b.id));
     const group = makeGroupBlock(selectedFramed, crypto.randomUUID());
-    setBlocks([...blocks.filter((b) => !ids.has(b.id)), group as Block]);
+    setBlocks([...blocks.filter((b) => !ids.has(b.id)), { ...group, editedByTeacher: true } as Block], true);
     setSelectedBlockId(group.id);
     toast({ title: "Prvky spojeny", description: "Skupina se teď posouvá a mění velikost jako jeden celek." });
   };
@@ -510,7 +519,7 @@ export const PresentationEditorDialog = ({
     if (!group || group.type !== ("group" as Block["type"])) return;
     const parts = ungroupBlock(group) as Block[];
     if (!parts.length) return;
-    setBlocks([...blocks.filter((b) => b.id !== group.id), ...parts]);
+    setBlocks([...blocks.filter((b) => b.id !== group.id), ...parts.map((p) => ({ ...p, editedByTeacher: true }))], true);
     setSelectedBlockIds(parts.map((p) => p.id));
     toast({ title: "Skupina rozdělena" });
   };
@@ -519,7 +528,7 @@ export const PresentationEditorDialog = ({
   const deleteSelection = () => {
     if (!selectedBlockIds.length) return;
     const ids = new Set(selectedBlockIds);
-    setBlocks(blocks.filter((b) => !ids.has(b.id)));
+    setBlocks(blocks.filter((b) => !ids.has(b.id)), true, [...ids]);
     setSelectedBlockIds([]);
   };
 
@@ -800,7 +809,7 @@ export const PresentationEditorDialog = ({
                   }
                 >
                   {currentSlide?.lockedFromLesson ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
-                  {currentSlide?.lockedFromLesson ? "Uzamčeno" : "Zamknout"}
+                   {currentSlide?.lockedFromLesson ? "Znovu aktualizovat z lekce" : "Neaktualizovat z lekce"}
                 </button>
 
                 {pendingSlides.some((s: any) => s?.lockedFromLesson) && (

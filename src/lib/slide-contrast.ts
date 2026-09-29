@@ -76,6 +76,15 @@ export function resolveSlideIsDark(
   return !light;
 }
 
+/** Kontrastní třída jednoho bloku s vlastním pozadím. */
+export function blockContrastClass(block: any, slideIsDark: boolean, resolvedBackground?: string | null): string {
+  const ownBg = resolvedBackground || block?.props?.backgroundColor || block?.props?.boxBackground || null;
+  const lightness = cssColorLightness(ownBg);
+  if (slideIsDark && lightness !== null && lightness > 0.6) return "text-foreground [&_*]:text-inherit";
+  if (!slideIsDark && lightness !== null && lightness <= 0.35) return "text-white [&_*]:text-inherit";
+  return "";
+}
+
 /** Čitelný nadpis: barvy motivu se použijí jen tam, kde mají kontrast. */
 export function headlineColorsForBackground(
   primary: string,
