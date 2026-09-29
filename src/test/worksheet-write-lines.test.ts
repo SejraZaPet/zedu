@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createWriteLinePatch, getWriteLineCount } from "@/lib/worksheet-write-lines";
+import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
+import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 describe("worksheet write lines compatibility", () => {
   it("prefers the legacy top-level count when both stored values differ", () => {
@@ -20,5 +22,28 @@ describe("worksheet write lines compatibility", () => {
   it("clamps unsupported values", () => {
     expect(getWriteLineCount({ lineCount: 30, answerSpace: { type: "lines", heightMm: 30 } })).toBe(20);
     expect(createWriteLinePatch({ answerSpace: { type: "lines", heightMm: 30 } }, 0).lineCount).toBe(1);
+  });
+
+  it("prints a legacy item from its compatible answer-space count", () => {
+    const spec = {
+      version: "1.0",
+      worksheetId: "write-lines-test",
+      header: { title: "Test", subject: "Test", gradeBand: "Test", mode: "practice" },
+      sections: [{ id: "section", title: "", itemIds: ["lines"] }],
+      items: [{
+        id: "lines",
+        type: "write_lines",
+        itemNumber: 1,
+        prompt: "Napište odpověď",
+        difficulty: "easy",
+        timeEstimateSec: 30,
+        answerSpace: { type: "lines", heightMm: 45, lineCount: 6 },
+      }],
+      answerKey: [],
+      variants: [{ variantId: "A", seed: "test", itemOrder: ["lines"], choiceOrder: {} }],
+    } as WorksheetSpec;
+
+    const html = renderWorksheetVariantHtml(spec, "A");
+    expect(html.match(/border-bottom:1px dotted #999/g)).toHaveLength(6);
   });
 });
