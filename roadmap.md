@@ -17,3 +17,9 @@
 - [x] Rychlá hra ze slabých otázek pod 50 %.
 - [x] Regresní testy, build a praktické ověření.
 
+## A4 editor pracovních listů (2026-09-29)
+- [ ] Nahradit formulářový seznam živým A4 plátnem se stránkováním.
+- [ ] Přesunout metadata a vlastnosti položek do pravého panelu.
+- [ ] Sjednotit vzhled položek, palety a 21:9 záhlaví s editorem lekcí.
+- [ ] Ověřit ukládání, přetahování, tisk/PDF, mobil, build a testy.
+
