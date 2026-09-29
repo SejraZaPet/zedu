@@ -2200,6 +2200,141 @@ export default function WorksheetEditor() {
     </>
   );
 
+  const worksheetSettingsContent = (
+    <div className="space-y-5">
+      <div>
+        <h3 className="font-heading text-sm font-semibold text-foreground">Nastavení listu</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Údaje záhlaví a tiskové volby</p>
+      </div>
+      <div className="space-y-4 border-b border-border pb-5">
+        <div>
+          <Label className="text-xs">Předmět</Label>
+          <div className="mt-1">
+            <SubjectPicker
+              value={subjectId}
+              textValue={spec.header.subject || ""}
+              onChange={({ subjectId: nextSubjectId, name }) => {
+                setSubjectId(nextSubjectId);
+                updateSpec((state) => ({ ...state, header: { ...state.header, subject: name } }));
+              }}
+              placeholder="Vyber nebo založ předmět…"
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Ročník</Label>
+          <Select
+            value={spec.header.gradeBand || "__none__"}
+            onValueChange={(value) => updateSpec((state) => ({
+              ...state,
+              header: { ...state.header, gradeBand: value === "__none__" ? "" : value },
+            }))}
+          >
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Vyber ročník…" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Nezadáno —</SelectItem>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
+                <SelectItem key={number} value={`${number}. ročník`}>{number}. ročník</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Režim</Label>
+          <Select
+            value={spec.header.worksheetMode}
+            onValueChange={(value) => updateSpec((state) => ({ ...state, header: { ...state.header, worksheetMode: value } }))}
+          >
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MODE_OPTIONS.map((mode) => <SelectItem key={mode.value} value={mode.value}>{mode.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Pokyny pro žáka</Label>
+          <Textarea
+            className="mt-1"
+            value={spec.header.instructions ?? ""}
+            onChange={(event) => updateSpec((state) => ({
+              ...state,
+              header: { ...state.header, instructions: event.target.value },
+            }))}
+            rows={3}
+            placeholder="Pokyny pro žáka…"
+          />
+        </div>
+        <Collapsible>
+          <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-sm font-medium">
+            Poznámky pro učitele
+            <ChevronDown className="h-4 w-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <Textarea
+              value={teacherNotes}
+              onChange={(event) => setTeacherNotes(event.target.value)}
+              rows={5}
+              placeholder="Kdy list použít, doporučený čas, tipy k vyhodnocení…"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">Žáci je neuvidí; patří jen do verze pro učitele.</p>
+          </CollapsibleContent>
+        </Collapsible>
+        <Collapsible>
+          <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-sm font-medium">
+            QR kódy v záhlaví
+            <ChevronDown className="h-4 w-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            {(spec.header.qrCodes ?? []).map((qrCode, index) => (
+              <div key={index} className="space-y-1 rounded-md border border-border p-2">
+                <Input
+                  value={qrCode.label}
+                  placeholder="Popisek"
+                  onChange={(event) => updateSpec((state) => ({
+                    ...state,
+                    header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, label: event.target.value } : entry) },
+                  }))}
+                />
+                <div className="flex gap-1">
+                  <Input
+                    value={qrCode.url}
+                    placeholder="https://…"
+                    onChange={(event) => updateSpec((state) => ({
+                      ...state,
+                      header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, url: event.target.value } : entry) },
+                    }))}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Smazat QR kód"
+                    onClick={() => updateSpec((state) => ({
+                      ...state,
+                      header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).filter((_, entryIndex) => entryIndex !== index) },
+                    }))}
+                  ><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
+            {(spec.header.qrCodes ?? []).length < 5 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateSpec((state) => ({
+                  ...state,
+                  header: { ...state.header, qrCodes: [...(state.header.qrCodes ?? []), { label: "", url: "" }] },
+                }))}
+              ><Plus className="mr-1 h-4 w-4" /> Přidat QR kód</Button>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+      {propertiesContent}
+    </div>
+  );
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
