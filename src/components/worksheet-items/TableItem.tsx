@@ -14,12 +14,12 @@ export default function TableItem({ item }: WorksheetItemProps) {
 
   return (
     <div className="space-y-2">
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full border-collapse text-sm">
+      <div className="w-full overflow-x-auto rounded-lg border border-border">
+        <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr className="bg-muted/50">
               {head.map((cell, i) => (
-                <th key={i} className="border border-border px-3 py-2 text-left font-semibold text-foreground">
+                <th key={i} className="min-w-0 break-words border border-border px-3 py-2 text-left font-semibold text-foreground">
                   {cell}
                 </th>
               ))}
@@ -29,7 +29,7 @@ export default function TableItem({ item }: WorksheetItemProps) {
             {rest.map((row, ri) => (
               <tr key={ri}>
                 {row.map((cell, ci) => (
-                  <td key={ci} className="border border-border px-3 py-2 align-top text-foreground">
+                  <td key={ci} className="min-w-0 break-words border border-border px-3 py-2 align-top text-foreground">
                     {cell}
                   </td>
                 ))}

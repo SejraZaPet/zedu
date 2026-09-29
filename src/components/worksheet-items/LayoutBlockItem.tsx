@@ -1,6 +1,7 @@
 import { Info, Video, PenLine, MessageCircle, Users } from "lucide-react";
 import type { WorksheetItemProps } from "./types";
 import type { InstructionIcon } from "@/lib/worksheet-spec";
+import { getWriteLineCount } from "@/lib/worksheet-write-lines";
 import { QRCodeSVG } from "qrcode.react";
 
 const ICONS: Record<InstructionIcon, typeof Info> = {
@@ -33,7 +34,7 @@ export default function LayoutBlockItem({ item }: WorksheetItemProps) {
       );
 
     case "write_lines": {
-      const count = Math.max(1, Math.min(20, item.lineCount ?? 3));
+      const count = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
       return (
         <div className="space-y-1">
