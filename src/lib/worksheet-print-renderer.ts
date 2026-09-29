@@ -425,6 +425,30 @@ html, body {
   min-width: 100pt;
 }
 
+/* ─── Content table ─── */
+.ws-content-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ws-content-table th {
+  border: 1px solid #333;
+  padding: 5px 7px;
+  font-size: 10pt;
+  font-weight: 700;
+  text-align: left;
+  background: #F3F4F6 !important;
+}
+.ws-content-table tbody tr,
+.ws-content-table tbody td {
+  height: 10mm;
+}
+.ws-content-table td {
+  border: 1px solid #333;
+  padding: 2mm 7px;
+  font-size: 10pt;
+  vertical-align: top;
+}
+
 /* ─── Ordering ─── */
 .ws-ordering-list {
   list-style: none;
@@ -964,16 +988,16 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       if (rows.length === 0) return "";
       const [head, ...rest] = rows;
       const thead = `<thead><tr>${head
-        .map((c) => `<th style="border:1px solid #333;padding:5px 7px;font-weight:bold;font-size:10pt;text-align:left;background:#f3f4f6;">${esc(c)}</th>`)
+        .map((c) => `<th>${esc(c)}</th>`)
         .join("")}</tr></thead>`;
       const tbody = `<tbody>${rest
         .map((r) => `<tr>${r
-          .map((c) => `<td style="border:1px solid #333;padding:5px 7px;font-size:10pt;vertical-align:top;">${esc(c)}</td>`)
+          .map((c) => `<td>${esc(c)}</td>`)
           .join("")}</tr>`)
         .join("")}</tbody>`;
       return `<div style="margin:10px 0;page-break-inside:avoid;">
         ${item.prompt ? `<p style="font-size:10pt;margin:0 0 5px;">${esc(item.prompt)}</p>` : ""}
-        <table style="width:100%;border-collapse:collapse;">${thead}${tbody}</table>
+        <table class="ws-content-table">${thead}${tbody}</table>
         ${item.tableCaption ? `<p style="font-size:9pt;color:#555;margin:4px 0 0;">${esc(item.tableCaption)}</p>` : ""}
       </div>`;
     }

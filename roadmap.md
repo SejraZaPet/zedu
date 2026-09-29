@@ -28,3 +28,8 @@
 - [x] Rozšířit náhled a editor tabulek na dostupnou šířku A4.
 - [x] Ověřit reprezentativní typy, stránkování, tisk/PDF, build a testy.
 
+## Výška řádků tabulek pracovních listů (2026-09-29)
+- [x] Nastavit tělo tabulky na jednotnou minimální výšku 10 mm v živém A4 plátně.
+- [x] Použít stejnou výšku a odsazení v tiskovém/PDF výstupu.
+- [x] Ověřit sestavení a regresní testy obou výstupů.
+
