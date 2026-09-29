@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createWriteLinePatch, getWriteLineCount } from "@/lib/worksheet-write-lines";
 import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
-import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 describe("worksheet write lines compatibility", () => {
   it("prefers the legacy top-level count when both stored values differ", () => {
@@ -25,23 +24,31 @@ describe("worksheet write lines compatibility", () => {
   });
 
   it("prints a legacy item from its compatible answer-space count", () => {
-    const spec = {
-      version: "1.0",
+    const spec: any = {
+      specVersion: "1",
       worksheetId: "write-lines-test",
-      header: { title: "Test", subject: "Test", gradeBand: "Test", mode: "practice" },
-      sections: [{ id: "section", title: "", itemIds: ["lines"] }],
-      items: [{
-        id: "lines",
-        type: "write_lines",
-        itemNumber: 1,
-        prompt: "Napište odpověď",
-        difficulty: "easy",
-        timeEstimateSec: 30,
-        answerSpace: { type: "lines", heightMm: 45, lineCount: 6 },
+      title: "Test",
+      subject: "Test",
+      grade: 1,
+      language: "cs-CZ",
+      variants: [{
+        variantId: "A",
+        seed: 1,
+        items: [{
+          id: "lines",
+          type: "write_lines",
+          itemNumber: 1,
+          prompt: "Napište odpověď",
+          difficulty: "easy",
+          timeEstimateSec: 30,
+          answerSpace: { type: "lines", heightMm: 45, lineCount: 6 },
+        }],
       }],
-      answerKey: [],
-      variants: [{ variantId: "A", seed: "test", itemOrder: ["lines"], choiceOrder: {} }],
-    } as WorksheetSpec;
+      answerKeys: { A: [] },
+      randomizationRules: [],
+      header: { title: "Test", studentNameField: true },
+      renderConfig: { showPoints: false, pointsEnabled: false, includeAnswerKey: false },
+    };
 
     const html = renderWorksheetVariantHtml(spec, "A");
     expect(html.match(/border-bottom:1px dotted #999/g)).toHaveLength(6);
