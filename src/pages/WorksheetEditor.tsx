@@ -805,6 +805,9 @@ export default function WorksheetEditor() {
   const items = spec?.variants[0]?.items ?? [];
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
+  useEffect(() => {
+    if (selectedId) document.getElementById("worksheet-settings-aside")?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [selectedId]);
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
   const editorPages = useMemo(
     () => paginateWorksheetEditorItems(items, itemHeights, {
@@ -2580,7 +2583,7 @@ export default function WorksheetEditor() {
         <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
+          <aside id="worksheet-settings-aside" className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
 
             {paletteContent}
           </aside>
