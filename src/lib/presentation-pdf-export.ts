@@ -9,6 +9,7 @@ import { createElement } from "react";
 import { SlideBody, STAGE_W, STAGE_H } from "@/components/admin/SlideCanvas";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
+import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 
 function sanitizeFileName(name: string): string {
   return (name || "prezentace")
@@ -52,7 +53,7 @@ export async function exportSlidesToPdf(
 
   try {
     for (let i = 0; i < slides.length; i++) {
-      const slide = slides[i];
+      const slide = slideWithFallbackBlocks(slides[i]);
 
       const stage = document.createElement("div");
       stage.style.width = `${STAGE_W}px`;

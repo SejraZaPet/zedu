@@ -35,7 +35,7 @@ import {
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
-import { headlineColorsForBackground, resolveSlideIsDark, cssColorLightness } from "@/lib/slide-contrast";
+import { blockContrastClass, headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
 import { blockBackgroundSlideColor, blockBackgroundStyle } from "@/lib/block-backgrounds";
 import { getGroupChildHeight } from "@/lib/slide-groups";
 
@@ -786,6 +786,43 @@ function EditableBlockInner({
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
+      </div>
+    );
+  }
+
+  if (block.type === "image_text") {
+    const p = block.props || {};
+    const imageRight = p.imagePosition === "right";
+    return (
+      <div className={`grid h-full min-h-0 grid-cols-2 items-stretch gap-6 ${imageRight ? "[&>*:first-child]:order-2" : ""}`}>
+        <div className="min-h-0 overflow-hidden rounded-[var(--slide-radius,0.75rem)] bg-muted/30">
+          {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full max-h-[500px] w-full object-cover" /> : <SlideImageFallback className="h-full" />}
+        </div>
+        <EditableText editable={editable} multiline html={/<[^>]+>/.test(p.text || "")} value={p.text || ""} placeholder={BLOCK_PLACEHOLDER} className="self-center text-[2rem] leading-relaxed text-foreground" style={slideTextStyle(p)} onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))} />
+      </div>
+    );
+  }
+
+  if (block.type === "two_column") {
+    const p = block.props || {};
+    const column = (key: "left" | "right") => (
+      <EditableText editable={editable} multiline html value={p[key] || ""} placeholder={BLOCK_PLACEHOLDER} className="min-w-0 text-[2rem] leading-relaxed text-foreground [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_h2]:text-[2.75rem] [&_h3]:text-[2.35rem] [&_h2]:font-semibold [&_h3]:font-semibold" style={slideTextStyle(p)} onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, [key]: v } }))} />
+    );
+    return <div className="grid grid-cols-2 gap-8">{column("left")}{column("right")}</div>;
+  }
+
+  if (block.type === "gallery") {
+    const p = block.props || {};
+    const images: { url?: string; caption?: string }[] = Array.isArray(p.images) ? p.images : [];
+    const columns = Math.min(4, Math.max(2, Number(p.columns) || 3));
+    return (
+      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        {images.filter((image) => image.url).map((image, index) => (
+          <figure key={`${image.url}-${index}`} className="min-w-0 text-center">
+            <img src={image.url} alt={image.caption || ""} className="h-52 w-full rounded-[var(--slide-radius,0.75rem)] bg-muted/30 object-contain" />
+            <EditableText editable={editable} value={image.caption || ""} placeholder="Popisek…" className="mt-2 text-[1.35rem] text-foreground/80" onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, images: images.map((img, i) => i === index ? { ...img, caption: v } : img) } }))} />
+          </figure>
+        ))}
       </div>
     );
   }
@@ -1968,15 +2005,7 @@ export function SlideBody({
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
     // Blok si nese vlastní podbarvení z lekce – kontrast textu se proto počítá
     // pro každý barevný blok zvlášť, ne jen jednou pro celý snímek.
-    const ownBg = blockBackgroundSlideColor((b.props as any) || null);
-    const ownLightness = ownBg ? cssColorLightness(ownBg) : null;
-    const forceDarkText = isDark && ownLightness !== null && ownLightness > 0.6;
-    const forceLightText = !isDark && ownLightness !== null && ownLightness <= 0.35;
-    const contrastClass = forceDarkText
-      ? "text-foreground [&_*]:text-inherit"
-      : forceLightText
-        ? "text-white [&_*]:text-inherit"
-        : "";
+    const contrastClass = blockContrastClass(b, isDark);
     const manualHeight = getGroupChildHeight(b);
     const shell = (
       <BlockShell
@@ -2203,8 +2232,8 @@ export function SlideBody({
           )}
 
           {framedBlocks.map(({ block, frame }, frameIndex) => (
+            <div key={block.id} className={blockContrastClass(block, isDark)}>
             <FreeFrameBlock
-              key={block.id}
               block={block}
               frame={frame}
               rotation={getBlockRotation(block)}
@@ -2251,6 +2280,7 @@ export function SlideBody({
                 </div>
               )}
             </FreeFrameBlock>
+            </div>
           ))}
         </div>
       )}

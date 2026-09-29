@@ -57,6 +57,9 @@ describe("worksheet table writing space", () => {
         showPoints: false,
         pointsEnabled: false,
         includeAnswerKey: false,
+        showDifficulty: false,
+        showTimeEstimate: false,
+        showTypeLabels: false,
       },
     };
 

@@ -180,4 +180,37 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     expect(groupSlide?.groupMinHeight).toBe(540);
     expect(groupSlide?.blocks.map((b: any) => b.props.groupHeight)).toEqual([260, 340]);
   });
+
+  it("h3 uvnitř karty zůstane barevným mezititulkem v těle", () => {
+    const generated = blocksToSlides([{
+      id: "koleno-group",
+      type: "slide_group",
+      props: {
+        layout: 3,
+        children: [
+          { id: "koleno-image", type: "image", props: { url: "koleno.jpg" } },
+          { id: "koleno-heading", type: "heading", props: { text: "Koleno", level: 3, backgroundStyle: "tip" } },
+          { id: "koleno-points", type: "bullet_list", props: { items: ["První bod", "Druhý bod"] } },
+        ],
+      },
+    }] as any, "Vepřové maso");
+    const slide = generated.find((s: any) => s.sourceBlockId === "koleno-group");
+    expect(slide?.projector?.headline).toBe("");
+    expect(slide?.blocks.find((b: any) => b.id === "koleno-heading")).toMatchObject({
+      type: "heading",
+      props: { level: 3, backgroundStyle: "tip" },
+    });
+    expect(slide?.blocks.find((b: any) => b.id === "koleno-points")?.props.items).toHaveLength(2);
+  });
+
+  it("kompozitní bloky si při převodu zachovají svůj typ a data", () => {
+    const source = [
+      { id: "it", type: "image_text", props: { imageUrl: "a.jpg", imagePosition: "right", text: "Text" } },
+      { id: "tc", type: "two_column", props: { left: "Levá", right: "Pravá" } },
+      { id: "ga", type: "gallery", props: { images: [{ url: "a.jpg" }, { url: "b.jpg" }] } },
+    ];
+    const generated = blocksToSlides(source as any, "Kompozice");
+    const types = generated.flatMap((s: any) => s.blocks || []).map((b: any) => b.type);
+    expect(types).toEqual(expect.arrayContaining(["image_text", "two_column", "gallery"]));
+  });
 });
