@@ -2361,6 +2361,16 @@ export default function WorksheetEditor() {
           >
             <Menu className="w-4 h-4" />
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="xl:hidden shrink-0"
+            onClick={() => setMobilePropsOpen(true)}
+            title="Otevřít nastavení"
+            aria-label="Otevřít nastavení"
+          >
+            <PanelRight className="w-4 h-4" />
+          </Button>
 
           <Input
             value={spec.header.title}
@@ -3891,6 +3901,7 @@ function SortableItemBlock({
   hasLesson,
   onPickFromLesson,
   onAiFromLesson,
+  onMeasure,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
@@ -3907,6 +3918,7 @@ function SortableItemBlock({
   hasLesson: boolean;
   onPickFromLesson: () => void;
   onAiFromLesson: () => void;
+  onMeasure: (itemId: string, height: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -3916,212 +3928,67 @@ function SortableItemBlock({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const Renderer = ITEM_RENDERERS[item.type];
+  const numberedTypes: ItemType[] = ["mcq", "true_false", "fill_blank", "matching", "ordering", "short_answer", "open_answer", "offline_activity"];
+  const showQuestionHeader = numberedTypes.includes(item.type);
+
+  useEffect(() => {
+    const node = measureRef.current;
+    if (!node) return;
+    const report = () => onMeasure(item.id, node.getBoundingClientRect().height);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [item.id, onMeasure]);
+
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    measureRef.current = node;
+  }, [setNodeRef]);
 
   const isOffline = item.type === "offline_activity";
   const offlineMeta = isOffline && item.offlineMode ? OFFLINE_MODE_META[item.offlineMode] : null;
   const OfflineIcon = offlineMeta?.icon;
   const typeLabel = ITEM_TYPE_LABELS[item.type].label;
 
-  if (!expanded) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        onClick={onExpand}
-        className={`group flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
-          isOffline
-            ? "border-accent/40 bg-accent/5 hover:border-accent/60"
-            : "border-border bg-background hover:border-primary/40 hover:bg-muted/30"
-        }`}
-      >
-        <button
-          {...attributes}
-          {...listeners}
-          className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Přesunout"
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
-          {item.itemNumber}
-        </div>
-        {isOffline && OfflineIcon ? (
-          <OfflineIcon className="w-3.5 h-3.5 text-accent shrink-0" />
-        ) : null}
-        <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{typeLabel}</span>
-        <span className="text-sm flex-1 truncate">
-          {item.prompt || <em className="text-muted-foreground">Bez zadání</em>}
-        </span>
-        {pointsEnabled && item.points > 0 && (
-          <span className="text-xs text-muted-foreground shrink-0">{item.points} b</span>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="text-muted-foreground hover:text-destructive inline-flex items-center justify-center h-11 w-11 sm:h-8 sm:w-8 sm:p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
-          aria-label="Smazat"
-        >
-          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
-      className="border-2 border-primary rounded-xl p-4 bg-card shadow-md"
+      className="worksheet-paper-item group"
+      data-selected={expanded}
+      onClick={onExpand}
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            {...attributes}
-            {...listeners}
-            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto"
-            aria-label="Přesunout"
-          >
-            <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
-          </button>
-          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
-            {item.itemNumber}
-          </div>
-          <span className="text-xs font-medium text-primary truncate">{typeLabel}</span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-11 sm:h-8 px-2 sm:px-3">
-            <Check className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Hotovo</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive h-11 w-11 sm:h-8 sm:w-8 p-0"
-            onClick={onDelete}
-            title="Smazat blok"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+      <div className="worksheet-paper-toolbar rounded-md border border-border bg-card p-0.5 shadow-md" onClick={(event) => event.stopPropagation()}>
+        <Button {...attributes} {...listeners} size="icon" variant="ghost" className="h-7 w-7 touch-none cursor-grab" aria-label="Přesunout"><GripVertical className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onMoveUp} title="Nahoru"><ChevronUp className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onMoveDown} title="Dolů"><ChevronDown className="h-4 w-4" /></Button>
+        {expanded && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCollapse} title="Dokončit"><Check className="h-4 w-4" /></Button>}
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete} title="Smazat blok"><Trash2 className="h-4 w-4" /></Button>
       </div>
-
-      <Textarea
-        value={item.prompt}
-        onChange={(e) => onUpdateItem({ prompt: e.target.value })}
-        placeholder="Otázka / zadání…"
-        rows={2}
-        className="mb-2"
-      />
-
-      <TooltipProvider delayDuration={200}>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={!hasLesson ? "inline-block" : undefined}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onPickFromLesson}
-                  disabled={!hasLesson}
-                  className="h-8"
-                >
-                  <BookOpen className="w-4 h-4 mr-1" /> Vybrat z lekce
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasLesson && (
-              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={!hasLesson ? "inline-block" : undefined}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onAiFromLesson}
-                  disabled={!hasLesson}
-                  className="h-8"
-                >
-                  <Sparkles className="w-4 h-4 mr-1" /> AI návrh z lekce
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasLesson && (
-              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
-            )}
-          </Tooltip>
-        </div>
-      </TooltipProvider>
-
-      <TypeSpecificEditor
-        item={item}
-        answerKey={answerKey}
-        onUpdateItem={onUpdateItem}
-        onUpdateKey={onUpdateKey}
-        hasLesson={hasLesson}
-        onPickFromLesson={onPickFromLesson}
-      />
-
-      <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
-
-      <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-border">
-        {pointsEnabled && (
-          <div className="flex items-center gap-1">
-            <Label className="text-xs mr-1">Body:</Label>
-            {[1, 2, 3, 5].map((p) => (
-              <Button
-                key={p}
-                size="sm"
-                type="button"
-                variant={item.points === p ? "default" : "outline"}
-                onClick={() => onUpdateItem({ points: p })}
-                className="h-7 min-w-8 px-2 text-xs"
-              >
-                {p}
-              </Button>
-            ))}
+      <div className="worksheet-paper-body">
+        {showQuestionHeader && (
+          <div className="worksheet-paper-prompt">
+            <span className="worksheet-paper-number">{item.itemNumber}.</span>
+            <span>{item.prompt || <em className="font-normal text-muted-foreground">Bez zadání</em>}</span>
+            {pointsEnabled && item.points > 0 && <span className="worksheet-paper-points">{item.points} b</span>}
           </div>
         )}
-        <div className="flex items-center gap-1">
-          <Label className="text-xs">Obtížnost:</Label>
-          <Select
-            value={item.difficulty}
-            onValueChange={(v) => onUpdateItem({ difficulty: v as Difficulty })}
-          >
-            <SelectTrigger className="w-24 h-7 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Lehká</SelectItem>
-              <SelectItem value="medium">Střední</SelectItem>
-              <SelectItem value="hard">Těžká</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
+          {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
         </div>
-        <div className="flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            type="number"
-            min={0}
-            value={Math.round((item.timeEstimateSec || 0) / 60) || ""}
-            onChange={(e) => {
-              const m = parseInt(e.target.value) || 0;
-              onUpdateItem({ timeEstimateSec: m * 60, durationMin: m });
-            }}
-            className="w-16 h-7 text-xs"
-            placeholder="min"
-          />
-          <span className="text-xs text-muted-foreground">min</span>
-        </div>
+        {item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
+          <div className="worksheet-paper-answer" style={{ height: `${item.answerSpace.heightMm}mm` }} />
+        )}
+        {expanded && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-dashed border-border px-1 pt-3" onClick={(event) => event.stopPropagation()}>
+            <Button size="sm" variant="outline" onClick={onPickFromLesson} disabled={!hasLesson}><BookOpen className="mr-1 h-4 w-4" /> Vybrat z lekce</Button>
+            <Button size="sm" variant="outline" onClick={onAiFromLesson} disabled={!hasLesson}><Sparkles className="mr-1 h-4 w-4" /> AI návrh</Button>
+            <Button size="sm" variant="outline" onClick={onCollapse}><PanelRight className="mr-1 h-4 w-4" /> Upravit v nastavení</Button>
+          </div>
+        )}
       </div>
     </div>
   );
