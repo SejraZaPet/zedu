@@ -75,7 +75,7 @@ export default function TableFieldsEditor({
       </div>
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full table-fixed border-separate border-spacing-1">
+        <table className={`${colCount <= 4 ? "w-full" : "min-w-[720px]"} table-fixed border-separate border-spacing-1`}>
           <thead>
             <tr>
               <th />

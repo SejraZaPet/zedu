@@ -4185,7 +4185,7 @@ function PropertiesPanel({
       </div>}
 
 
-      <div className="pt-3 border-t border-border">
+      {item.type !== "write_lines" && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
         <Select
           value={item.answerSpace.type}
@@ -4231,7 +4231,7 @@ function PropertiesPanel({
             )}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

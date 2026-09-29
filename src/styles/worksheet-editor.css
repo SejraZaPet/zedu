@@ -180,6 +180,14 @@
     overflow-x: auto;
     padding-bottom: 12px;
   }
+
+  .worksheet-item-context-panel {
+    position: fixed !important;
+    inset: auto 12px 12px 12px !important;
+    width: auto !important;
+    max-height: min(72vh, 680px) !important;
+    transform: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
