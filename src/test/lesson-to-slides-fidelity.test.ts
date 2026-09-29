@@ -83,7 +83,7 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     expect(styles).toContain("tip");
   });
 
-  it("přenese skutečné styly prvních nadpisů skupin Úvod maso do titulku snímku", () => {
+  it("přenese skutečné styly h3/h4 skupin jako mezititulky v těle", () => {
     const realHeadingGroups = [
       {
         id: "real-vyznam-group",
@@ -121,19 +121,16 @@ describe("prezentace z lekce – věrnost vizuálu", () => {
     ];
 
     const generated = blocksToSlides(realHeadingGroups as any, "Úvod maso");
-    const byHeadline = (headline: string) => generated.find((s: any) => s.projector?.headline === headline);
     const headingBlocks = generated.flatMap((s: any) => s.blocks || []).filter((b: any) => b.type === "heading");
-    const styleFor = (headline: string, sourceGroupId: string) =>
-      byHeadline(headline)?.headlineBlockProps
-      ?? headingBlocks.find((b: any) => String(b.id || "").startsWith(`${sourceGroupId}-h`))?.props;
+    const styleFor = (id: string) => headingBlocks.find((b: any) => b.id === id)?.props;
 
-    expect(styleFor("Význam masa", "real-vyznam-group")).toMatchObject({ level: 3, backgroundStyle: "important" });
-    expect(styleFor("Obsahuje", "real-obsahuje-group")).toMatchObject({
+    expect(styleFor("j1k2l3")).toMatchObject({ level: 3, backgroundStyle: "important" });
+    expect(styleFor("4c2301e8-695a-493d-b786-e808b018d5ac")).toMatchObject({
       level: 4,
       backgroundColor: "#fdf4e8",
     });
-    expect(styleFor("Druhy masa", "real-druhy-group")).toMatchObject({ level: 3, backgroundStyle: "example" });
-    expect(generated.flatMap((s: any) => s.blocks || []).some((b: any) => b.id === "j1k2l3")).toBe(false);
+    expect(styleFor("s1t2u3")).toMatchObject({ level: 3, backgroundStyle: "example" });
+    expect(generated.some((s: any) => s.projector?.headline === "Význam masa")).toBe(false);
   });
 
   it("callout zůstane calloutem, nedegraduje na odstavec", () => {

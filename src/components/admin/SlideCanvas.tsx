@@ -2005,7 +2005,7 @@ export function SlideBody({
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
     // Blok si nese vlastní podbarvení z lekce – kontrast textu se proto počítá
     // pro každý barevný blok zvlášť, ne jen jednou pro celý snímek.
-    const contrastClass = blockContrastClass(b, isDark);
+    const contrastClass = blockContrastClass(b, isDark, blockBackgroundSlideColor((b.props as any) || null));
     const manualHeight = getGroupChildHeight(b);
     const shell = (
       <BlockShell
@@ -2232,7 +2232,7 @@ export function SlideBody({
           )}
 
           {framedBlocks.map(({ block, frame }, frameIndex) => (
-            <div key={block.id} className={blockContrastClass(block, isDark)}>
+             <div key={block.id} className={blockContrastClass(block, isDark, blockBackgroundSlideColor((block.props as any) || null))}>
             <FreeFrameBlock
               block={block}
               frame={frame}

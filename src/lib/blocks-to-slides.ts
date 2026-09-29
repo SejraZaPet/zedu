@@ -309,8 +309,9 @@ function blockVisualWeight(block: any): number {
 function splitSlide(slide: any): any[] {
   const layout = slide?.layout || "full";
   const chars = bodyLen(slide);
+  const visualWeight = Number(slide?.visualWeight || 0);
 
-  if (chars <= HARD_MAX_CHARS_PER_SLIDE || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
+  if ((chars <= HARD_MAX_CHARS_PER_SLIDE && visualWeight <= HARD_MAX_CHARS_PER_SLIDE) || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
     return [slide];
   }
 
@@ -629,7 +630,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
       continue;
     }
 
-    if (type === "heading") {
+    if (type === "heading" && (Number(props.level) || 2) <= 2) {
       flush();
       const headline = getText(props);
       if (!headline) continue;
@@ -704,13 +705,6 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     layout: defaultLayoutForType("summary"),
   });
 
-  return renumberSlides(
-     splitOverfullSlides(absorbEmptyHeadingSlides(mergeShortSections(slides))).flatMap((slide: any) => {
-       if (slide.layout === "free" || Number(slide.visualWeight || 0) <= HARD_MAX_CHARS_PER_SLIDE) return [slide];
-       // Poslední pojistka pro obrazově/textově přeplněné skupiny, které mají
-       // málo znaků, ale velkou skutečnou plochu. Typy bloků zůstávají zachované.
-       return splitSlide({ ...slide, projector: { ...slide.projector, body: `${slide.projector?.body || ""}${" ".repeat(HARD_MAX_CHARS_PER_SLIDE + 1)}` } });
-     }),
-  );
+  return renumberSlides(splitOverfullSlides(absorbEmptyHeadingSlides(mergeShortSections(slides))));
 
 }
