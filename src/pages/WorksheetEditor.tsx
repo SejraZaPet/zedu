@@ -164,6 +164,9 @@ import type { AiGeneratedItem } from "@/components/worksheet/LessonContentTools"
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
+import { ITEM_RENDERERS } from "@/components/worksheet-items";
+import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
+import "@/styles/worksheet-editor.css";
 import {
   Tooltip,
   TooltipContent,
@@ -392,6 +395,7 @@ export default function WorksheetEditor() {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
+  const [itemHeights, setItemHeights] = useState<Record<string, number>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -800,6 +804,20 @@ export default function WorksheetEditor() {
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
+  const editorPages = useMemo(
+    () => paginateWorksheetEditorItems(items, itemHeights, {
+      firstPageCapacity: 640,
+      pageCapacity: 1009,
+      gap: 8,
+      fallbackItemHeight: 150,
+    }),
+    [items, itemHeights],
+  );
+
+  const handleItemMeasure = useCallback((itemId: string, height: number) => {
+    const rounded = Math.ceil(height);
+    setItemHeights((current) => current[itemId] === rounded ? current : { ...current, [itemId]: rounded });
+  }, []);
 
   function insertItem(type: ItemType, insertAt = items.length) {
     if (!spec) return;
@@ -2182,6 +2200,141 @@ export default function WorksheetEditor() {
     </>
   );
 
+  const worksheetSettingsContent = (
+    <div className="space-y-5">
+      <div>
+        <h3 className="font-heading text-sm font-semibold text-foreground">Nastavení listu</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Údaje záhlaví a tiskové volby</p>
+      </div>
+      <div className="space-y-4 border-b border-border pb-5">
+        <div>
+          <Label className="text-xs">Předmět</Label>
+          <div className="mt-1">
+            <SubjectPicker
+              value={subjectId}
+              textValue={spec.header.subject || ""}
+              onChange={({ subjectId: nextSubjectId, name }) => {
+                setSubjectId(nextSubjectId);
+                updateSpec((state) => ({ ...state, header: { ...state.header, subject: name } }));
+              }}
+              placeholder="Vyber nebo založ předmět…"
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Ročník</Label>
+          <Select
+            value={spec.header.gradeBand || "__none__"}
+            onValueChange={(value) => updateSpec((state) => ({
+              ...state,
+              header: { ...state.header, gradeBand: value === "__none__" ? "" : value },
+            }))}
+          >
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Vyber ročník…" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Nezadáno —</SelectItem>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
+                <SelectItem key={number} value={`${number}. ročník`}>{number}. ročník</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Režim</Label>
+          <Select
+            value={spec.header.worksheetMode}
+            onValueChange={(value) => updateSpec((state) => ({ ...state, header: { ...state.header, worksheetMode: value } }))}
+          >
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MODE_OPTIONS.map((mode) => <SelectItem key={mode.value} value={mode.value}>{mode.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Pokyny pro žáka</Label>
+          <Textarea
+            className="mt-1"
+            value={spec.header.instructions ?? ""}
+            onChange={(event) => updateSpec((state) => ({
+              ...state,
+              header: { ...state.header, instructions: event.target.value },
+            }))}
+            rows={3}
+            placeholder="Pokyny pro žáka…"
+          />
+        </div>
+        <Collapsible>
+          <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-sm font-medium">
+            Poznámky pro učitele
+            <ChevronDown className="h-4 w-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <Textarea
+              value={teacherNotes}
+              onChange={(event) => setTeacherNotes(event.target.value)}
+              rows={5}
+              placeholder="Kdy list použít, doporučený čas, tipy k vyhodnocení…"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">Žáci je neuvidí; patří jen do verze pro učitele.</p>
+          </CollapsibleContent>
+        </Collapsible>
+        <Collapsible>
+          <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-sm font-medium">
+            QR kódy v záhlaví
+            <ChevronDown className="h-4 w-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            {(spec.header.qrCodes ?? []).map((qrCode, index) => (
+              <div key={index} className="space-y-1 rounded-md border border-border p-2">
+                <Input
+                  value={qrCode.label}
+                  placeholder="Popisek"
+                  onChange={(event) => updateSpec((state) => ({
+                    ...state,
+                    header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, label: event.target.value } : entry) },
+                  }))}
+                />
+                <div className="flex gap-1">
+                  <Input
+                    value={qrCode.url}
+                    placeholder="https://…"
+                    onChange={(event) => updateSpec((state) => ({
+                      ...state,
+                      header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).map((entry, entryIndex) => entryIndex === index ? { ...entry, url: event.target.value } : entry) },
+                    }))}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Smazat QR kód"
+                    onClick={() => updateSpec((state) => ({
+                      ...state,
+                      header: { ...state.header, qrCodes: (state.header.qrCodes ?? []).filter((_, entryIndex) => entryIndex !== index) },
+                    }))}
+                  ><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
+            {(spec.header.qrCodes ?? []).length < 5 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateSpec((state) => ({
+                  ...state,
+                  header: { ...state.header, qrCodes: [...(state.header.qrCodes ?? []), { label: "", url: "" }] },
+                }))}
+              ><Plus className="mr-1 h-4 w-4" /> Přidat QR kód</Button>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+      {propertiesContent}
+    </div>
+  );
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -2208,14 +2361,20 @@ export default function WorksheetEditor() {
           >
             <Menu className="w-4 h-4" />
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="2xl:hidden shrink-0"
+            onClick={() => setMobilePropsOpen(true)}
+            title="Otevřít nastavení"
+            aria-label="Otevřít nastavení"
+          >
+            <PanelRight className="w-4 h-4" />
+          </Button>
 
-          <Input
-            value={spec.header.title}
-            onChange={(e) =>
-              updateSpec((s) => ({ ...s, header: { ...s.header, title: e.target.value } }))
-            }
-            className="font-heading text-sm sm:text-base font-semibold border-0 shadow-none focus-visible:ring-1 min-w-0 flex-1 sm:flex-none sm:max-w-md"
-          />
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold sm:max-w-md sm:text-base">
+            {spec.header.title}
+          </span>
           <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} className="hidden sm:inline-flex" />
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
@@ -2414,280 +2573,97 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+      <main className="worksheet-editor-shell flex-1 w-full px-3 pb-8 pt-6 xl:px-6">
+        <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden md:block bg-card border border-border rounded-xl p-3 lg:p-4 md:sticky md:top-[140px] md:max-h-[calc(100vh-160px)] md:overflow-y-auto">
+          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
 
             {paletteContent}
           </aside>
 
           {/* ── CANVAS ── */}
-          <section className="bg-card border border-border rounded-xl p-6 min-w-0">
-            {/* Hlavička pracovního listu */}
-            <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
-              <div>
-                <Label className="text-xs">Předmět</Label>
-                <div className="mt-1">
-                  <SubjectPicker
-                    value={subjectId}
-                    textValue={spec.header.subject || ""}
-                    onChange={({ subjectId: id, name }) => {
-                      setSubjectId(id);
-                      updateSpec((st) => ({ ...st, header: { ...st.header, subject: name } }));
-                    }}
-                    placeholder="Vyber nebo založ předmět…"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Ročník</Label>
-                <Select
-                  value={spec.header.gradeBand || "__none__"}
-                  onValueChange={(v) =>
-                    updateSpec((s) => ({
-                      ...s,
-                      header: { ...s.header, gradeBand: v === "__none__" ? "" : v },
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyber ročník…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Nezadáno —</SelectItem>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                      <SelectItem key={n} value={`${n}. ročník`}>
-                        {n}. ročník
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Režim</Label>
-                <Select
-                  value={spec.header.worksheetMode}
-                  onValueChange={(v) =>
-                    updateSpec((s) => ({ ...s, header: { ...s.header, worksheetMode: v } }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MODE_OPTIONS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-xs">Pokyny</Label>
-                <Textarea
-                  value={spec.header.instructions ?? ""}
-                  onChange={(e) =>
-                    updateSpec((s) => ({
-                      ...s,
-                      header: { ...s.header, instructions: e.target.value },
-                    }))
-                  }
-                  placeholder="Pokyny pro žáka…"
-                  rows={2}
-                />
-              </div>
-              <div
-                className="sm:col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-muted/40 p-3 space-y-1.5"
-                id="teacher-notes-section"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="ws-teacher-notes" className="text-xs font-semibold">
-                    Poznámky pro učitele
-                  </Label>
-                  <Badge variant="outline" className="text-[10px]">Žáci je nikdy neuvidí</Badge>
-                </div>
-                <Textarea
-                  id="ws-teacher-notes"
-                  value={teacherNotes}
-                  onChange={(e) => setTeacherNotes(e.target.value)}
-                  placeholder="Kdy list použít, doporučený čas, na co dát pozor, tipy k vyhodnocení…"
-                  rows={5}
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Vytisknou se jen ve „Verzi pro učitele“ v Tisk / PDF. AI návrhy lze přidat v „Sekce lekce“.
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-xs">QR kódy v záhlaví</Label>
-                <div className="space-y-2 mt-1">
-                  {(spec.header.qrCodes ?? []).map((q, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row gap-2">
-                      <Input
-                        className="sm:w-40"
-                        value={q.label}
-                        placeholder="Popisek (např. Teorie)"
-                        onChange={(e) =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
-                                j === i ? { ...x, label: e.target.value } : x,
-                              ),
-                            },
-                          }))
-                        }
-                      />
-                      <Input
-                        className="flex-1"
-                        value={q.url}
-                        placeholder="https://…"
-                        onChange={(e) =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
-                                j === i ? { ...x, url: e.target.value } : x,
-                              ),
-                            },
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Smazat QR kód"
-                        onClick={() =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).filter((_, j) => j !== i),
-                            },
-                          }))
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {(spec.header.qrCodes ?? []).length < 5 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        updateSpec((s) => ({
-                          ...s,
-                          header: {
-                            ...s.header,
-                            qrCodes: [...(s.header.qrCodes ?? []), { label: "", url: "" }],
-                          },
-                        }))
-                      }
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Přidat QR kód
-                    </Button>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Prázdný odkaz se v tisku vykreslí jako rámeček „Sem vlož odkaz“.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Náhled přiřazené lekce */}
-            <Collapsible defaultOpen={false} className="mb-6">
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-between py-2 px-3 rounded-lg bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-                <span className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Náhled přiřazené lekce
-                  {activeLessonId && allLessons.find((l) => l.id === activeLessonId)?.title && (
-                    <span className="text-xs text-foreground/70 truncate max-w-[260px]">
-                      — {allLessons.find((l) => l.id === activeLessonId)?.title}
-                    </span>
-                  )}
-                </span>
-                <ChevronDown className="w-4 h-4 transition-transform" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg p-4 mt-2 bg-card">
-                  {!activeLessonId ? (
-                    <p className="text-sm text-muted-foreground">
-                      Žádná lekce není přiřazena. Vyberte aktivní lekci v paletě vlevo nebo propojte lekci tlačítkem „Přidat další lekci".
-                    </p>
-                  ) : lessonBlocks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Lekce nemá žádný obsah k zobrazení.
-                    </p>
-                  ) : (
-                    <div className="space-y-3 text-sm">
-                      {lessonBlocks.map((b) => (
-                        <div key={b.id} className="pb-2 border-b border-border/50 last:border-0">
-                          <div className="font-semibold text-foreground mb-1">{b.title}</div>
-                          {b.text && b.text !== b.title && (
-                            <div className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
-                              {b.text}
+          <section className="worksheet-a4-stage min-w-0 rounded-lg bg-muted/50 px-3 py-5 sm:px-5">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                <div className="mx-auto flex w-max flex-col gap-5">
+                  {editorPages.map((page, pageIndex) => (
+                    <article key={`${pageIndex}-${page.items[0]?.id ?? "empty"}`} className="worksheet-a4-page relative">
+                      <div className="worksheet-a4-content">
+                        {pageIndex === 0 && (
+                          <>
+                            <div className="worksheet-a4-hero">
+                              <div className="mb-2 text-[8.5pt] font-semibold text-muted-foreground">
+                                {[spec.header.subject, spec.header.gradeBand].filter(Boolean).join(" · ") || "Pracovní list"}
+                              </div>
+                              <Input
+                                aria-label="Název pracovního listu"
+                                value={spec.header.title}
+                                onChange={(event) => updateSpec((state) => ({ ...state, header: { ...state.header, title: event.target.value } }))}
+                              />
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                            <div className="mt-3 flex flex-wrap gap-x-7 gap-y-2 border-b border-border pb-3 text-[9pt]">
+                              {spec.header.studentNameField && <span><strong>Jméno:</strong> ____________________</span>}
+                              {spec.header.dateField && <span><strong>Datum:</strong> ____________</span>}
+                              {spec.header.classField && <span><strong>Třída:</strong> ____________</span>}
+                            </div>
+                            {spec.header.instructions && <div className="worksheet-a4-instructions">{spec.header.instructions}</div>}
+                            {!spec.header.instructions && <div className="h-[8mm]" />}
+                          </>
+                        )}
+                        {page.items.length === 0 ? (
+                          <button type="button" onClick={() => setMobilePaletteOpen(true)} className="flex min-h-[160px] w-full flex-col items-center justify-center rounded-md border border-dashed border-border text-muted-foreground md:pointer-events-none">
+                            <span className="font-medium">Zatím žádné položky</span>
+                            <span className="mt-1 text-sm">Přidejte první položku z palety.</span>
+                          </button>
+                        ) : page.items.map((item) => {
+                          const itemIndex = items.findIndex((entry) => entry.id === item.id);
+                          const answerKey = answerKeys.find((entry) => entry.itemId === item.id) ?? null;
+                          return (
+                            <div key={item.id} className="group/insert">
+                              <SortableItemBlock
+                                item={item}
+                                answerKey={answerKey}
+                                expanded={item.id === selectedId}
+                                pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
+                                onExpand={() => setSelectedId(item.id)}
+                                onCollapse={() => setSelectedId(null)}
+                                onDelete={() => deleteItem(item.id)}
+                                onUpdateItem={(patch) => updateItem(item.id, patch)}
+                                onUpdateKey={(patch) => updateAnswerKey(item.id, patch)}
+                                onApplyRefined={(refined) => replaceItem(item.id, refined)}
+                                onMoveUp={() => moveItem(item.id, -1)}
+                                onMoveDown={() => moveItem(item.id, 1)}
+                                hasLesson={lessonBlocks.length > 0}
+                                onPickFromLesson={() => setPickerForItem(item.id)}
+                                onAiFromLesson={() => setAiPickerForItem(item.id)}
+                                onOpenProperties={() => setMobilePropsOpen(true)}
+                                onMeasure={handleItemMeasure}
+                              />
+                              <InsertItemControl
+                                onInsert={(type) => insertItem(type, itemIndex + 1)}
+                                onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
+                              />
+                            </div>
+                          );
+                        })}
+                        {page.hasOversizedItem && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                            <AlertTriangle className="h-4 w-4" /> Tato položka přesahuje jednu tiskovou stranu.
+                          </div>
+                        )}
+                      </div>
+                      <span className="worksheet-page-number">{pageIndex + 1} / {editorPages.length}</span>
+                    </article>
+                  ))}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Bloky otázek */}
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-3">Zatím žádné otázky.</p>
-                <p className="text-sm">Přidej otázku z palety vlevo.</p>
-              </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-3">
-                    {items.map((item, itemIndex) => {
-                      const ak = answerKeys.find((a) => a.itemId === item.id) ?? null;
-                      return (
-                        <div key={item.id} className="group/insert">
-                          <SortableItemBlock
-                            item={item}
-                            answerKey={ak}
-                            expanded={item.id === selectedId}
-                            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-                            onExpand={() => setSelectedId(item.id)}
-                            onCollapse={() => setSelectedId(null)}
-                            onDelete={() => deleteItem(item.id)}
-                            onUpdateItem={(p) => updateItem(item.id, p)}
-                            onUpdateKey={(p) => updateAnswerKey(item.id, p)}
-                            onApplyRefined={(refined) => replaceItem(item.id, refined)}
-                            onMoveUp={() => moveItem(item.id, -1)}
-                            onMoveDown={() => moveItem(item.id, 1)}
-                            hasLesson={lessonBlocks.length > 0}
-                            onPickFromLesson={() => setPickerForItem(item.id)}
-                            onAiFromLesson={() => setAiPickerForItem(item.id)}
-                          />
-                          <InsertItemControl
-                            onInsert={(type) => insertItem(type, itemIndex + 1)}
-                            onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-
+              </SortableContext>
+            </DndContext>
           </section>
+
+          <aside className="hidden rounded-lg border border-border bg-card p-4 2xl:sticky 2xl:top-[140px] 2xl:block 2xl:max-h-[calc(100vh-160px)] 2xl:overflow-y-auto">
+            {worksheetSettingsContent}
+          </aside>
         </div>
       </main>
 
@@ -2698,6 +2674,13 @@ export default function WorksheetEditor() {
             <SheetTitle>Paleta</SheetTitle>
           </SheetHeader>
           {paletteContent}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
+        <SheetContent side="right" className="w-[92vw] overflow-y-auto p-4 sm:max-w-md">
+          <SheetHeader className="mb-3"><SheetTitle>Nastavení</SheetTitle></SheetHeader>
+          {worksheetSettingsContent}
         </SheetContent>
       </Sheet>
 
@@ -3915,6 +3898,8 @@ function SortableItemBlock({
   hasLesson,
   onPickFromLesson,
   onAiFromLesson,
+  onOpenProperties,
+  onMeasure,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
@@ -3931,6 +3916,8 @@ function SortableItemBlock({
   hasLesson: boolean;
   onPickFromLesson: () => void;
   onAiFromLesson: () => void;
+  onOpenProperties: () => void;
+  onMeasure: (itemId: string, height: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -3940,212 +3927,67 @@ function SortableItemBlock({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const Renderer = ITEM_RENDERERS[item.type];
+  const numberedTypes: ItemType[] = ["mcq", "true_false", "fill_blank", "matching", "ordering", "short_answer", "open_answer", "offline_activity"];
+  const showQuestionHeader = numberedTypes.includes(item.type);
+
+  useEffect(() => {
+    const node = measureRef.current;
+    if (!node) return;
+    const report = () => onMeasure(item.id, node.getBoundingClientRect().height);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [item.id, onMeasure]);
+
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    measureRef.current = node;
+  }, [setNodeRef]);
 
   const isOffline = item.type === "offline_activity";
   const offlineMeta = isOffline && item.offlineMode ? OFFLINE_MODE_META[item.offlineMode] : null;
   const OfflineIcon = offlineMeta?.icon;
   const typeLabel = ITEM_TYPE_LABELS[item.type].label;
 
-  if (!expanded) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        onClick={onExpand}
-        className={`group flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
-          isOffline
-            ? "border-accent/40 bg-accent/5 hover:border-accent/60"
-            : "border-border bg-background hover:border-primary/40 hover:bg-muted/30"
-        }`}
-      >
-        <button
-          {...attributes}
-          {...listeners}
-          className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Přesunout"
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
-          {item.itemNumber}
-        </div>
-        {isOffline && OfflineIcon ? (
-          <OfflineIcon className="w-3.5 h-3.5 text-accent shrink-0" />
-        ) : null}
-        <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{typeLabel}</span>
-        <span className="text-sm flex-1 truncate">
-          {item.prompt || <em className="text-muted-foreground">Bez zadání</em>}
-        </span>
-        {pointsEnabled && item.points > 0 && (
-          <span className="text-xs text-muted-foreground shrink-0">{item.points} b</span>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="text-muted-foreground hover:text-destructive inline-flex items-center justify-center h-11 w-11 sm:h-8 sm:w-8 sm:p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
-          aria-label="Smazat"
-        >
-          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
-      className="border-2 border-primary rounded-xl p-4 bg-card shadow-md"
+      className="worksheet-paper-item group"
+      data-selected={expanded}
+      onClick={onExpand}
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            {...attributes}
-            {...listeners}
-            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto"
-            aria-label="Přesunout"
-          >
-            <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
-          </button>
-          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
-            {item.itemNumber}
-          </div>
-          <span className="text-xs font-medium text-primary truncate">{typeLabel}</span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-11 sm:h-8 px-2 sm:px-3">
-            <Check className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Hotovo</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive h-11 w-11 sm:h-8 sm:w-8 p-0"
-            onClick={onDelete}
-            title="Smazat blok"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+      <div className="worksheet-paper-toolbar rounded-md border border-border bg-card p-0.5 shadow-md" onClick={(event) => event.stopPropagation()}>
+        <Button {...attributes} {...listeners} size="icon" variant="ghost" className="h-7 w-7 touch-none cursor-grab" aria-label="Přesunout"><GripVertical className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onMoveUp} title="Nahoru"><ChevronUp className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onMoveDown} title="Dolů"><ChevronDown className="h-4 w-4" /></Button>
+        {expanded && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCollapse} title="Dokončit"><Check className="h-4 w-4" /></Button>}
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete} title="Smazat blok"><Trash2 className="h-4 w-4" /></Button>
       </div>
-
-      <Textarea
-        value={item.prompt}
-        onChange={(e) => onUpdateItem({ prompt: e.target.value })}
-        placeholder="Otázka / zadání…"
-        rows={2}
-        className="mb-2"
-      />
-
-      <TooltipProvider delayDuration={200}>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={!hasLesson ? "inline-block" : undefined}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onPickFromLesson}
-                  disabled={!hasLesson}
-                  className="h-8"
-                >
-                  <BookOpen className="w-4 h-4 mr-1" /> Vybrat z lekce
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasLesson && (
-              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={!hasLesson ? "inline-block" : undefined}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onAiFromLesson}
-                  disabled={!hasLesson}
-                  className="h-8"
-                >
-                  <Sparkles className="w-4 h-4 mr-1" /> AI návrh z lekce
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasLesson && (
-              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
-            )}
-          </Tooltip>
-        </div>
-      </TooltipProvider>
-
-      <TypeSpecificEditor
-        item={item}
-        answerKey={answerKey}
-        onUpdateItem={onUpdateItem}
-        onUpdateKey={onUpdateKey}
-        hasLesson={hasLesson}
-        onPickFromLesson={onPickFromLesson}
-      />
-
-      <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
-
-      <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-border">
-        {pointsEnabled && (
-          <div className="flex items-center gap-1">
-            <Label className="text-xs mr-1">Body:</Label>
-            {[1, 2, 3, 5].map((p) => (
-              <Button
-                key={p}
-                size="sm"
-                type="button"
-                variant={item.points === p ? "default" : "outline"}
-                onClick={() => onUpdateItem({ points: p })}
-                className="h-7 min-w-8 px-2 text-xs"
-              >
-                {p}
-              </Button>
-            ))}
+      <div className="worksheet-paper-body">
+        {showQuestionHeader && (
+          <div className="worksheet-paper-prompt">
+            <span className="worksheet-paper-number">{item.itemNumber}.</span>
+            <span>{item.prompt || <em className="font-normal text-muted-foreground">Bez zadání</em>}</span>
+            {pointsEnabled && item.points > 0 && <span className="worksheet-paper-points">{item.points} b</span>}
           </div>
         )}
-        <div className="flex items-center gap-1">
-          <Label className="text-xs">Obtížnost:</Label>
-          <Select
-            value={item.difficulty}
-            onValueChange={(v) => onUpdateItem({ difficulty: v as Difficulty })}
-          >
-            <SelectTrigger className="w-24 h-7 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Lehká</SelectItem>
-              <SelectItem value="medium">Střední</SelectItem>
-              <SelectItem value="hard">Těžká</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
+          {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
         </div>
-        <div className="flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            type="number"
-            min={0}
-            value={Math.round((item.timeEstimateSec || 0) / 60) || ""}
-            onChange={(e) => {
-              const m = parseInt(e.target.value) || 0;
-              onUpdateItem({ timeEstimateSec: m * 60, durationMin: m });
-            }}
-            className="w-16 h-7 text-xs"
-            placeholder="min"
-          />
-          <span className="text-xs text-muted-foreground">min</span>
-        </div>
+        {item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
+          <div className="worksheet-paper-answer" style={{ height: `${item.answerSpace.heightMm}mm` }} />
+        )}
+        {expanded && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-dashed border-border px-1 pt-3" onClick={(event) => event.stopPropagation()}>
+            <Button size="sm" variant="outline" onClick={onPickFromLesson} disabled={!hasLesson}><BookOpen className="mr-1 h-4 w-4" /> Vybrat z lekce</Button>
+            <Button size="sm" variant="outline" onClick={onAiFromLesson} disabled={!hasLesson}><Sparkles className="mr-1 h-4 w-4" /> AI návrh</Button>
+            <Button size="sm" variant="outline" onClick={onOpenProperties} className="2xl:hidden"><PanelRight className="mr-1 h-4 w-4" /> Upravit v nastavení</Button>
+          </div>
+        )}
       </div>
     </div>
   );
