@@ -15,5 +15,5 @@
 - [ ] Osobní karta žáka: správné otázky a otázky k procvičení.
 - [ ] Učitelský přehled otázek seřazený podle úspěšnosti.
 - [ ] Rychlá hra ze slabých otázek pod 50 %.
-- [ ] Regresní testy, build a praktické ověření.
+- [x] Regresní testy, build a praktické ověření.
 
