@@ -80,6 +80,7 @@ interface LessonItem {
   topic_id?: string;
   hero_image_url?: string | null;
   scheduled_publish_at?: string | null;
+  presentation_slides?: any[] | null;
 }
 
 interface TopicItem {
@@ -157,7 +158,7 @@ const TeacherTextbooks = () => {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    launchLiveSession, launchNew, quickLaunch, showProjector,
+    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
     savePresentationRow,
   } = usePresentationLauncher();
 
@@ -249,7 +250,7 @@ const TeacherTextbooks = () => {
     // Load lessons placed via lesson_placements
     const { data: placementData } = await supabase
       .from("lesson_placements")
-      .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order, hero_image_url, scheduled_publish_at)")
+          .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order, hero_image_url, scheduled_publish_at, presentation_slides)")
       .eq("subject_slug", tb.subject);
 
     const buildTopic = (t: any, gradeNumber: number | null): TopicItem => {
@@ -265,6 +266,7 @@ const TeacherTextbooks = () => {
           topic_id: t.id,
           hero_image_url: l.hero_image_url ?? null,
           scheduled_publish_at: l.scheduled_publish_at ?? null,
+           presentation_slides: l.presentation_slides ?? null,
         }));
 
       const placedLessons: LessonItem[] = (placementData ?? [])
@@ -282,6 +284,7 @@ const TeacherTextbooks = () => {
           topic_id: t.id,
           hero_image_url: p.teacher_textbook_lessons.hero_image_url ?? null,
           scheduled_publish_at: p.teacher_textbook_lessons.scheduled_publish_at ?? null,
+           presentation_slides: p.teacher_textbook_lessons.presentation_slides ?? null,
         }));
 
       const allLessons = [...topicLessons];
@@ -851,7 +854,7 @@ const TeacherTextbooks = () => {
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
                 onOpenPresentation={handleOpenPresentation}
-                onEditPresentation={openLessonEditor}
+                onEditPresentation={openEditor}
                 onOpenWorksheet={async (lesson, generate) => {
                   const lessonType: "global" | "teacher" =
                     lesson.source === "textbook_lessons" ? "global" : "teacher";
@@ -1182,10 +1185,12 @@ const TeacherTextbooks = () => {
             const table = presentationLesson.source === "teacher_textbook_lessons"
               ? "teacher_textbook_lessons"
               : "textbook_lessons";
-            await supabase
-              .from(table)
-              .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
-              .eq("id", presentationLesson.id);
+            if (presentationLesson.source === "teacher_textbook_lessons") {
+              await supabase
+                .from(table)
+                .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
+                .eq("id", presentationLesson.id);
+            }
             await savePresentationRow(presentationLesson, slides);
           }}
           existingSession={existingSession}
@@ -1311,10 +1316,12 @@ const TeacherTextbooks = () => {
           const table = presentationLesson.source === "teacher_textbook_lessons"
             ? "teacher_textbook_lessons"
             : "textbook_lessons";
-          await supabase
-            .from(table)
-            .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
-            .eq("id", presentationLesson.id);
+          if (presentationLesson.source === "teacher_textbook_lessons") {
+            await supabase
+              .from(table)
+              .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
+              .eq("id", presentationLesson.id);
+          }
           await savePresentationRow(presentationLesson, slides);
         }}
         existingSession={existingSession}
