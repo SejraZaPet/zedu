@@ -2372,13 +2372,9 @@ export default function WorksheetEditor() {
             <PanelRight className="w-4 h-4" />
           </Button>
 
-          <Input
-            value={spec.header.title}
-            onChange={(e) =>
-              updateSpec((s) => ({ ...s, header: { ...s.header, title: e.target.value } }))
-            }
-            className="font-heading text-sm sm:text-base font-semibold border-0 shadow-none focus-visible:ring-1 min-w-0 flex-1 sm:flex-none sm:max-w-md"
-          />
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold sm:max-w-md sm:text-base">
+            {spec.header.title}
+          </span>
           <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} className="hidden sm:inline-flex" />
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
@@ -2578,7 +2574,7 @@ export default function WorksheetEditor() {
       </div>
 
       <main className="worksheet-editor-shell flex-1 w-full px-3 pb-8 pt-6 xl:px-6">
-        <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_300px]">
+        <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
           <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
@@ -2641,6 +2637,7 @@ export default function WorksheetEditor() {
                                 hasLesson={lessonBlocks.length > 0}
                                 onPickFromLesson={() => setPickerForItem(item.id)}
                                 onAiFromLesson={() => setAiPickerForItem(item.id)}
+                                onOpenProperties={() => setMobilePropsOpen(true)}
                                 onMeasure={handleItemMeasure}
                               />
                               <InsertItemControl
@@ -2664,7 +2661,7 @@ export default function WorksheetEditor() {
             </DndContext>
           </section>
 
-          <aside className="hidden rounded-lg border border-border bg-card p-4 xl:sticky xl:top-[140px] xl:block xl:max-h-[calc(100vh-160px)] xl:overflow-y-auto">
+          <aside className="hidden rounded-lg border border-border bg-card p-4 2xl:sticky 2xl:top-[140px] 2xl:block 2xl:max-h-[calc(100vh-160px)] 2xl:overflow-y-auto">
             {worksheetSettingsContent}
           </aside>
         </div>
@@ -3901,6 +3898,7 @@ function SortableItemBlock({
   hasLesson,
   onPickFromLesson,
   onAiFromLesson,
+  onOpenProperties,
   onMeasure,
 }: {
   item: WorksheetItem;
@@ -3918,6 +3916,7 @@ function SortableItemBlock({
   hasLesson: boolean;
   onPickFromLesson: () => void;
   onAiFromLesson: () => void;
+  onOpenProperties: () => void;
   onMeasure: (itemId: string, height: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -3986,7 +3985,7 @@ function SortableItemBlock({
           <div className="mt-3 flex flex-wrap gap-2 border-t border-dashed border-border px-1 pt-3" onClick={(event) => event.stopPropagation()}>
             <Button size="sm" variant="outline" onClick={onPickFromLesson} disabled={!hasLesson}><BookOpen className="mr-1 h-4 w-4" /> Vybrat z lekce</Button>
             <Button size="sm" variant="outline" onClick={onAiFromLesson} disabled={!hasLesson}><Sparkles className="mr-1 h-4 w-4" /> AI návrh</Button>
-            <Button size="sm" variant="outline" onClick={onCollapse}><PanelRight className="mr-1 h-4 w-4" /> Upravit v nastavení</Button>
+            <Button size="sm" variant="outline" onClick={onOpenProperties} className="2xl:hidden"><PanelRight className="mr-1 h-4 w-4" /> Upravit v nastavení</Button>
           </div>
         )}
       </div>
