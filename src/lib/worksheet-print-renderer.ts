@@ -19,6 +19,7 @@ import type {
   AnswerKeyEntry,
   AnswerSpace,
 } from "./worksheet-spec";
+import { getWriteLineCount } from "./worksheet-write-lines";
 
 
 /**
@@ -895,7 +896,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       return `<div class="ws-section-header" style="font-size:14pt;font-weight:bold;margin:16px 0 8px;border-bottom:2px solid #333;padding-bottom:4px;">${esc(item.prompt)}</div>`;
 
     case "write_lines": {
-      const n = Math.max(1, Math.min(20, item.lineCount ?? 3));
+      const n = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
       const lines = Array.from({ length: n })
         .map(() => `<div style="border-bottom:1px ${style} #999;height:24px;margin-bottom:2px;"></div>`)

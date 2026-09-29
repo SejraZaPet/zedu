@@ -74,8 +74,8 @@ export default function TableFieldsEditor({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="border-separate border-spacing-1">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full table-fixed border-separate border-spacing-1">
           <thead>
             <tr>
               <th />
@@ -117,7 +117,7 @@ export default function TableFieldsEditor({
                     <Input
                       value={row[ci] ?? ""}
                       onChange={(e) => setCell(ri, ci, e.target.value)}
-                      className={`h-8 min-w-[140px] text-sm ${ri === 0 ? "font-semibold" : ""}`}
+                      className={`h-8 min-w-0 text-sm ${ri === 0 ? "font-semibold" : ""}`}
                       placeholder={ri === 0 ? `Sloupec ${ci + 1}` : ""}
                     />
                   </td>

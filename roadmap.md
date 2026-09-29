@@ -22,4 +22,9 @@
 - [x] Přesunout metadata a vlastnosti položek do pravého panelu.
 - [x] Sjednotit vzhled položek, palety a 21:9 záhlaví s editorem lekcí.
 - [x] Ověřit ukládání, výběr položek, tisk/PDF regresními testy, build a testy.
+## Kontextová editace položek pracovních listů (2026-09-29)
+- [x] Přesunout vlastnosti položek z pravého panelu do kontextového editoru u bloku.
+- [x] Sjednotit `write_lines` na jedno nastavení a odstranit dvojité vykreslení linek.
+- [x] Rozšířit náhled a editor tabulek na dostupnou šířku A4.
+- [x] Ověřit reprezentativní typy, stránkování, tisk/PDF, build a testy.
 

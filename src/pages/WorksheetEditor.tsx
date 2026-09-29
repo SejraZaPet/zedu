@@ -43,7 +43,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Sheet,
@@ -167,6 +167,7 @@ import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
 import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
+import { createWriteLinePatch, getWriteLineCount } from "@/lib/worksheet-write-lines";
 import "@/styles/worksheet-editor.css";
 import {
   Tooltip,
@@ -806,9 +807,6 @@ export default function WorksheetEditor() {
   const items = spec?.variants[0]?.items ?? [];
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
-  useEffect(() => {
-    if (selectedId) document.getElementById("worksheet-settings-aside")?.scrollTo({ top: 0, behavior: "smooth" });
-  }, [selectedId]);
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
   const editorPages = useMemo(
     () => paginateWorksheetEditorItems(items, itemHeights, {
@@ -2181,34 +2179,8 @@ export default function WorksheetEditor() {
     </>
   );
 
-  const propertiesContent = (
-    <>
-      <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-        Vlastnosti
-      </h3>
-      {!selectedItem ? (
-        <p className="text-sm text-muted-foreground">Vyber blok pro úpravu.</p>
-      ) : (
-        <>
-          <PropertiesPanel
-            item={selectedItem}
-            answerKey={selectedAnswer}
-            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-            onUpdateItem={(p) => updateItem(selectedItem.id, p)}
-            onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
-          />
-          <AiBlockChat
-            item={selectedItem}
-            onApplyRefined={(refined) => replaceItem(selectedItem.id, refined)}
-          />
-        </>
-      )}
-    </>
-  );
-
   const worksheetSettingsContent = (
     <div className="space-y-5">
-      {selectedItem && <div className="border-b border-border pb-5">{propertiesContent}</div>}
       <div>
         <h3 className="font-heading text-sm font-semibold text-foreground">Nastavení listu</h3>
         <p className="mt-1 text-xs text-muted-foreground">Údaje záhlaví a tiskové volby</p>
@@ -2338,7 +2310,6 @@ export default function WorksheetEditor() {
           </CollapsibleContent>
         </Collapsible>
       </div>
-      {!selectedItem && propertiesContent}
     </div>
   );
 
@@ -2584,7 +2555,7 @@ export default function WorksheetEditor() {
         <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside id="worksheet-settings-aside" className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
+          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
 
             {paletteContent}
           </aside>
@@ -2661,7 +2632,6 @@ export default function WorksheetEditor() {
                                 hasLesson={lessonBlocks.length > 0}
                                 onPickFromLesson={() => setPickerForItem(item.id)}
                                 onAiFromLesson={() => setAiPickerForItem(item.id)}
-                                onOpenProperties={() => setMobilePropsOpen(true)}
                                 onMeasure={handleItemMeasure}
                               />
                               <InsertItemControl
@@ -3344,577 +3314,6 @@ function InsertItemControl({
   );
 }
 
-// ─────────────────────────── Sortable block (canvas) ───────────────────────────
-
-/**
- * Renders the type-specific editor fields, image picker, and answer space config.
- * Shared between collapsed/expanded block view (used in expanded only).
- */
-function TypeSpecificEditor({
-  item,
-  answerKey,
-  onUpdateItem,
-  onUpdateKey,
-  hasLesson = false,
-  onPickFromLesson,
-}: {
-  item: WorksheetItem;
-  answerKey: AnswerKeyEntry | null;
-  onUpdateItem: (p: Partial<WorksheetItem>) => void;
-  onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
-  hasLesson?: boolean;
-  onPickFromLesson?: () => void;
-}) {
-  return (
-    <div className="space-y-4 text-sm">
-      {LESSON_VISUAL_TYPES.includes(item.type) && (
-        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
-          <p className="text-xs font-medium text-muted-foreground">Náhled bloku převzatého z lekce</p>
-          <LessonVisualBlockItem
-            item={item}
-            value={undefined}
-            onChange={() => undefined}
-            disabled
-            showResults={false}
-          />
-        </div>
-      )}
-      {item.type === "mcq" && (
-        <div>
-          <Label className="text-xs mb-1 block">Volby (zaškrtni správnou)</Label>
-          {(item.choices ?? []).map((c, idx) => {
-            const correct = answerKey?.correctAnswer === c;
-            return (
-              <div key={idx} className="flex gap-2 mb-1.5">
-                <button
-                  type="button"
-                  onClick={() => onUpdateKey({ correctAnswer: c })}
-                  className={`shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-xs ${
-                    correct ? "bg-primary border-primary text-primary-foreground" : "border-border"
-                  }`}
-                  title="Označit jako správnou"
-                >
-                  {correct ? "✓" : ""}
-                </button>
-                <Input
-                  value={c}
-                  onChange={(e) => {
-                    const next = [...(item.choices ?? [])];
-                    next[idx] = e.target.value;
-                    onUpdateItem({ choices: next });
-                    if (correct) onUpdateKey({ correctAnswer: e.target.value });
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const next = (item.choices ?? []).filter((_, i) => i !== idx);
-                    onUpdateItem({ choices: next });
-                  }}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            );
-          })}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onUpdateItem({ choices: [...(item.choices ?? []), "Nová volba"] })}
-          >
-            <Plus className="w-3 h-3 mr-1" /> Přidat volbu
-          </Button>
-        </div>
-      )}
-
-      {item.type === "true_false" && (
-        <div>
-          <Label className="text-xs mb-1 block">Správná odpověď</Label>
-          <Select
-            value={String(answerKey?.correctAnswer ?? "true")}
-            onValueChange={(v) => onUpdateKey({ correctAnswer: v })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Pravda</SelectItem>
-              <SelectItem value="false">Nepravda</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {item.type === "fill_blank" && (
-        <div>
-          <Label className="text-xs">Text s ___ (3 podtržítka jako mezera)</Label>
-          <Textarea
-            value={item.blankText ?? ""}
-            onChange={(e) => onUpdateItem({ blankText: e.target.value })}
-            rows={3}
-          />
-          <Label className="text-xs mt-2">Správná odpověď (oddělená čárkami pro více mezer)</Label>
-          <Input
-            value={Array.isArray(answerKey?.correctAnswer) ? answerKey?.correctAnswer.join(", ") : (answerKey?.correctAnswer as string ?? "")}
-            onChange={(e) =>
-              onUpdateKey({
-                correctAnswer: e.target.value.includes(",")
-                  ? e.target.value.split(",").map((s) => s.trim())
-                  : e.target.value,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {item.type === "matching" && (
-        <div>
-          <Label className="text-xs mb-1 block">Páry</Label>
-          {(item.matchPairs ?? []).map((p, idx) => (
-            <div key={idx} className="flex gap-1 mb-1.5">
-              <Input
-                value={p.left}
-                onChange={(e) => {
-                  const next = [...(item.matchPairs ?? [])];
-                  next[idx] = { ...next[idx], left: e.target.value };
-                  onUpdateItem({ matchPairs: next });
-                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
-                }}
-                placeholder="Levý"
-              />
-              <Input
-                value={p.right}
-                onChange={(e) => {
-                  const next = [...(item.matchPairs ?? [])];
-                  next[idx] = { ...next[idx], right: e.target.value };
-                  onUpdateItem({ matchPairs: next });
-                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
-                }}
-                placeholder="Pravý"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const next = (item.matchPairs ?? []).filter((_, i) => i !== idx);
-                  onUpdateItem({ matchPairs: next });
-                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
-                }}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const next = [...(item.matchPairs ?? []), { left: "", right: "" }];
-              onUpdateItem({ matchPairs: next });
-            }}
-          >
-            <Plus className="w-3 h-3 mr-1" /> Přidat pár
-          </Button>
-        </div>
-      )}
-
-      {item.type === "ordering" && (
-        <div>
-          <Label className="text-xs mb-1 block">Položky (ve správném pořadí)</Label>
-          {(item.orderItems ?? []).map((o, idx) => (
-            <div key={idx} className="flex gap-1 mb-1.5">
-              <span className="text-xs text-muted-foreground self-center w-4">{idx + 1}.</span>
-              <Input
-                value={o}
-                onChange={(e) => {
-                  const next = [...(item.orderItems ?? [])];
-                  next[idx] = e.target.value;
-                  onUpdateItem({ orderItems: next });
-                  onUpdateKey({ correctAnswer: next });
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const next = (item.orderItems ?? []).filter((_, i) => i !== idx);
-                  onUpdateItem({ orderItems: next });
-                  onUpdateKey({ correctAnswer: next });
-                }}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const next = [...(item.orderItems ?? []), "Nová položka"];
-              onUpdateItem({ orderItems: next });
-              onUpdateKey({ correctAnswer: next });
-            }}
-          >
-            <Plus className="w-3 h-3 mr-1" /> Přidat položku
-          </Button>
-        </div>
-      )}
-
-      {item.type === "short_answer" && (
-        <div>
-          <Label className="text-xs">Správná odpověď</Label>
-          <Input
-            value={(answerKey?.correctAnswer as string) ?? ""}
-            onChange={(e) => onUpdateKey({ correctAnswer: e.target.value })}
-          />
-          <Label className="text-xs mt-2">Vysvětlení (volitelné)</Label>
-          <Textarea
-            value={answerKey?.explanation ?? ""}
-            onChange={(e) => onUpdateKey({ explanation: e.target.value })}
-            rows={2}
-          />
-        </div>
-      )}
-
-      {item.type === "open_answer" && (
-        <div>
-          <Label className="text-xs">Hodnotící kritéria (rubric)</Label>
-          <Textarea
-            value={answerKey?.rubric ?? ""}
-            onChange={(e) => onUpdateKey({ rubric: e.target.value })}
-            rows={3}
-          />
-        </div>
-      )}
-
-      {item.type === "offline_activity" && (
-        <div className="space-y-3 rounded-lg border border-dashed border-accent/40 bg-accent/5 p-3">
-          <div>
-            <Label className="text-xs">Režim aktivity</Label>
-            <Select
-              value={item.offlineMode ?? "discussion"}
-              onValueChange={(v) => onUpdateItem({ offlineMode: v as OfflineMode })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.entries(OFFLINE_MODE_LABELS) as [OfflineMode, string][]).map(([k, label]) => (
-                  <SelectItem key={k} value={k}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Velikost skupiny</Label>
-              <Select
-                value={item.groupSize ?? "class"}
-                onValueChange={(v) => onUpdateItem({ groupSize: v as GroupSize })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.entries(GROUP_SIZE_LABELS) as [GroupSize, string][]).map(([k, label]) => (
-                    <SelectItem key={k} value={k}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Délka (min)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={item.durationMin ?? 0}
-                onChange={(e) =>
-                  onUpdateItem({
-                    durationMin: Number(e.target.value) || 0,
-                    timeEstimateSec: (Number(e.target.value) || 0) * 60,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Pokyny pro hodnocení (volitelné)</Label>
-            <Textarea
-              value={answerKey?.rubric ?? ""}
-              onChange={(e) => onUpdateKey({ rubric: e.target.value })}
-              rows={2}
-              placeholder="Např. body za aktivní účast, splnění zadání…"
-            />
-          </div>
-        </div>
-      )}
-
-      {item.type === "section_header" && (
-        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-          Nadpis sekce. Vyplňte název v poli „Otázka / zadání" výše.
-        </div>
-      )}
-
-      {item.type === "write_lines" && (
-        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Počet řádků</Label>
-              <Input
-                type="number"
-                min={1}
-                max={20}
-                value={item.lineCount ?? 3}
-                onChange={(e) =>
-                  onUpdateItem({
-                    lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
-                    answerSpace: {
-                      ...item.answerSpace,
-                      type: "lines",
-                      lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
-                    },
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Styl čáry</Label>
-              <Select
-                value={item.lineStyle ?? "dotted"}
-                onValueChange={(v) => onUpdateItem({ lineStyle: v as any })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dotted">Tečkovaný</SelectItem>
-                  <SelectItem value="solid">Plný</SelectItem>
-                  <SelectItem value="dashed">Čárkovaný</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {item.type === "instruction_box" && (
-        <div className="grid grid-cols-2 gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div>
-            <Label className="text-xs">Ikona</Label>
-            <Select
-              value={item.instructionIcon ?? "info"}
-              onValueChange={(v) => onUpdateItem({ instructionIcon: v as any })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="info">ℹ️ Info</SelectItem>
-                <SelectItem value="video">🎥 Video</SelectItem>
-                <SelectItem value="write">✏️ Zápis</SelectItem>
-                <SelectItem value="discuss">💬 Diskuse</SelectItem>
-                <SelectItem value="group">👥 Skupina</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Barva</Label>
-            <Select
-              value={item.instructionVariant ?? "blue"}
-              onValueChange={(v) => onUpdateItem({ instructionVariant: v as any })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="blue">Modrá</SelectItem>
-                <SelectItem value="yellow">Žlutá</SelectItem>
-                <SelectItem value="green">Zelená</SelectItem>
-                <SelectItem value="purple">Fialová</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
-      {item.type === "two_boxes" && (
-        <div className="grid grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div>
-            <Label className="text-xs">Levý box: nadpis</Label>
-            <Input
-              value={item.leftTitle ?? ""}
-              onChange={(e) => onUpdateItem({ leftTitle: e.target.value })}
-            />
-            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
-            <Textarea
-              value={item.leftContent ?? ""}
-              onChange={(e) => onUpdateItem({ leftContent: e.target.value })}
-              rows={3}
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Pravý box: nadpis</Label>
-            <Input
-              value={item.rightTitle ?? ""}
-              onChange={(e) => onUpdateItem({ rightTitle: e.target.value })}
-            />
-            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
-            <Textarea
-              value={item.rightContent ?? ""}
-              onChange={(e) => onUpdateItem({ rightContent: e.target.value })}
-              rows={3}
-            />
-          </div>
-        </div>
-      )}
-
-      {item.type === "qr_link" && (
-        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <Label className="text-xs">URL pro QR kód</Label>
-          <Input
-            value={item.qrUrl ?? ""}
-            onChange={(e) => onUpdateItem({ qrUrl: e.target.value })}
-            placeholder="https://…"
-          />
-        </div>
-      )}
-
-      {item.type === "flow_steps" && (
-        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <Label className="text-xs">Kroky (každý řádek = jeden krok)</Label>
-          <Textarea
-            value={(item.flowSteps ?? []).join("\n")}
-            onChange={(e) =>
-              onUpdateItem({
-                flowSteps: e.target.value.split("\n").filter((s) => s.trim()),
-              })
-            }
-            rows={5}
-            placeholder={"Krok 1\nKrok 2\nKrok 3"}
-          />
-          <div>
-            <Label className="text-xs">Směr</Label>
-            <Select
-              value={item.flowDirection ?? "vertical"}
-              onValueChange={(v) => onUpdateItem({ flowDirection: v as any })}
-            >
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="vertical">↓ Svisle</SelectItem>
-                <SelectItem value="horizontal">→ Vodorovně</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
-      <TableFieldsEditor item={item} onUpdate={onUpdateItem} />
-
-      <ActivityBlockEditor
-        item={item}
-        onUpdate={onUpdateItem}
-        hasLesson={hasLesson}
-        onPickFromLesson={onPickFromLesson}
-      />
-
-      {!LESSON_VISUAL_TYPES.includes(item.type) && <div className="pt-3 border-t border-border">
-        <Label className="text-xs">Obrázek (URL, volitelné)</Label>
-        <div className="flex gap-2 items-start">
-          <Input
-            value={item.imageUrl ?? ""}
-            onChange={(e) => onUpdateItem({ imageUrl: e.target.value || undefined })}
-            placeholder="https://…"
-            className="flex-1"
-          />
-          <MediaPickerDialog
-            imageOnly
-            onPick={(url) => onUpdateItem({ imageUrl: url })}
-            trigger={
-              <Button size="sm" variant="outline" type="button">
-                <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
-              </Button>
-            }
-          />
-        </div>
-        {item.imageUrl && (
-          <Input
-            className="mt-1"
-            value={item.imageAlt ?? ""}
-            onChange={(e) => onUpdateItem({ imageAlt: e.target.value })}
-            placeholder="Popisek obrázku"
-          />
-        )}
-      </div>}
-
-      <div className="pt-3 border-t border-border">
-        <Label className="text-xs">Odkaz (URL, volitelné)</Label>
-        <Input
-          value={item.linkUrl ?? ""}
-          onChange={(e) => onUpdateItem({ linkUrl: e.target.value || undefined })}
-          placeholder="https://…"
-          className="flex-1"
-        />
-        {item.linkUrl && (
-          <Input
-            className="mt-1"
-            value={item.linkLabel ?? ""}
-            onChange={(e) => onUpdateItem({ linkLabel: e.target.value || undefined })}
-            placeholder="Popisek odkazu (např. 'Otevřít video')"
-          />
-        )}
-      </div>
-
-
-      <div className="pt-3 border-t border-border">
-        <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
-        <Select
-          value={item.answerSpace.type}
-          onValueChange={(v) =>
-            onUpdateItem({ answerSpace: { ...item.answerSpace, type: v as any } })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Žádný</SelectItem>
-            <SelectItem value="lines">Linky</SelectItem>
-            <SelectItem value="grid">Mřížka</SelectItem>
-            <SelectItem value="blank">Prázdný box</SelectItem>
-          </SelectContent>
-        </Select>
-        {item.answerSpace.type !== "none" && (
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input
-              type="number"
-              value={item.answerSpace.heightMm}
-              onChange={(e) =>
-                onUpdateItem({
-                  answerSpace: { ...item.answerSpace, heightMm: Number(e.target.value) || 0 },
-                })
-              }
-              placeholder="Výška (mm)"
-            />
-            {item.answerSpace.type === "lines" && (
-              <Input
-                type="number"
-                value={item.answerSpace.lineCount ?? 0}
-                onChange={(e) =>
-                  onUpdateItem({
-                    answerSpace: { ...item.answerSpace, lineCount: Number(e.target.value) || 0 },
-                  })
-                }
-                placeholder="Počet linek"
-              />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SortableItemBlock({
   item,
   answerKey,
@@ -3931,7 +3330,6 @@ function SortableItemBlock({
   hasLesson,
   onPickFromLesson,
   onAiFromLesson,
-  onOpenProperties,
   onMeasure,
 }: {
   item: WorksheetItem;
@@ -3949,7 +3347,6 @@ function SortableItemBlock({
   hasLesson: boolean;
   onPickFromLesson: () => void;
   onAiFromLesson: () => void;
-  onOpenProperties: () => void;
   onMeasure: (itemId: string, height: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -3986,7 +3383,9 @@ function SortableItemBlock({
   const typeLabel = ITEM_TYPE_LABELS[item.type].label;
 
   return (
-    <div
+    <Popover open={expanded} onOpenChange={(open) => open ? onExpand() : onCollapse()}>
+      <PopoverAnchor asChild>
+      <div
       ref={setRefs}
       style={style}
       className="worksheet-paper-item group"
@@ -4011,18 +3410,48 @@ function SortableItemBlock({
         <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
           {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
         </div>
-        {item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
+        {item.type !== "write_lines" && item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
           <div className="worksheet-paper-answer" style={{ height: `${item.answerSpace.heightMm}mm` }} />
         )}
         {expanded && (
           <div className="mt-3 flex flex-wrap gap-2 border-t border-dashed border-border px-1 pt-3" onClick={(event) => event.stopPropagation()}>
             <Button size="sm" variant="outline" onClick={onPickFromLesson} disabled={!hasLesson}><BookOpen className="mr-1 h-4 w-4" /> Vybrat z lekce</Button>
             <Button size="sm" variant="outline" onClick={onAiFromLesson} disabled={!hasLesson}><Sparkles className="mr-1 h-4 w-4" /> AI návrh</Button>
-            <Button size="sm" variant="outline" onClick={onOpenProperties} className="2xl:hidden"><PanelRight className="mr-1 h-4 w-4" /> Upravit v nastavení</Button>
           </div>
         )}
       </div>
-    </div>
+      </div>
+      </PopoverAnchor>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={10}
+        collisionPadding={16}
+        className="worksheet-item-context-panel w-[min(720px,calc(100vw-2rem))] max-h-[72vh] overflow-y-auto p-0"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-popover px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">{typeLabel}</p>
+            <p className="text-xs text-muted-foreground">Úpravy vybrané položky</p>
+          </div>
+          <Button type="button" size="sm" variant="ghost" onClick={onCollapse}>
+            <Check className="mr-1 h-4 w-4" /> Hotovo
+          </Button>
+        </div>
+        <div className="p-4">
+          <PropertiesPanel
+            item={item}
+            answerKey={answerKey}
+            pointsEnabled={pointsEnabled}
+            onUpdateItem={onUpdateItem}
+            onUpdateKey={onUpdateKey}
+          />
+          <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -4573,16 +4002,9 @@ function PropertiesPanel({
                 type="number"
                 min={1}
                 max={20}
-                value={item.lineCount ?? 3}
+                value={getWriteLineCount(item)}
                 onChange={(e) =>
-                  onUpdateItem({
-                    lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
-                    answerSpace: {
-                      ...item.answerSpace,
-                      type: "lines",
-                      lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
-                    },
-                  })
+                  onUpdateItem(createWriteLinePatch(item, Number(e.target.value)))
                 }
               />
             </div>
@@ -4744,7 +4166,7 @@ function PropertiesPanel({
         )}
       </div>}
 
-      <div className="pt-3 border-t border-border">
+      {item.type !== "write_lines" && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Odkaz (URL, volitelné)</Label>
         <Input
           value={item.linkUrl ?? ""}
@@ -4760,7 +4182,7 @@ function PropertiesPanel({
             placeholder="Popisek odkazu (např. 'Otevřít video')"
           />
         )}
-      </div>
+      </div>}
 
 
       <div className="pt-3 border-t border-border">

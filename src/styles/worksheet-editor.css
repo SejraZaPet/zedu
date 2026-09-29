@@ -126,6 +126,15 @@
 .worksheet-paper-renderer {
   margin-left: 18pt;
   pointer-events: none;
+  min-width: 0;
+}
+
+.worksheet-paper-renderer > * {
+  max-width: 100%;
+}
+
+.worksheet-item-context-panel {
+  font-family: "Lato", system-ui, sans-serif;
 }
 
 .worksheet-paper-renderer .space-y-2 > :not([hidden]) ~ :not([hidden]) {
