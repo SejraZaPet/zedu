@@ -218,6 +218,7 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "two_boxes",
   "qr_link",
   "flow_steps",
+  "table",
   "image",
   "image_text",
   "gallery",

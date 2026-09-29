@@ -206,7 +206,7 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
     case "table":
       return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
         tableCaption: "",
-        tableRows: [["Sloupec 1", "Sloupec 2"], ["", ""]],
+        tableRows: [["Sloupec 1", "Sloupec 2", "Sloupec 3"], ["", "", ""]],
         answerSpace: { type: "none", heightMm: 0 } };
     case "image":
       return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
@@ -305,7 +305,7 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   flashcards: { label: "Kartičky k vystřižení", description: "Páry pojem/vysvětlení pro tisk a stříhání" },
   image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
   image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
-  table: { label: "Tabulka", description: "Tabulka převzatá z lekce (jen ke čtení)" },
+  table: { label: "Tabulka", description: "Tabulka s libovolným počtem řádků a sloupců" },
   image: { label: "Obrázek z lekce", description: "Needitovatelný obrázek převzatý z lekce" },
   image_text: { label: "Obrázek + text z lekce", description: "Needitovatelný obrazový blok převzatý z lekce" },
   gallery: { label: "Galerie z lekce", description: "Needitovatelná galerie převzatá z lekce" },
