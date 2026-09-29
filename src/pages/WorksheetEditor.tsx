@@ -164,6 +164,9 @@ import type { AiGeneratedItem } from "@/components/worksheet/LessonContentTools"
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
+import { ITEM_RENDERERS } from "@/components/worksheet-items";
+import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
+import "@/styles/worksheet-editor.css";
 import {
   Tooltip,
   TooltipContent,
@@ -392,6 +395,7 @@ export default function WorksheetEditor() {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
+  const [itemHeights, setItemHeights] = useState<Record<string, number>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -800,6 +804,20 @@ export default function WorksheetEditor() {
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
+  const editorPages = useMemo(
+    () => paginateWorksheetEditorItems(items, itemHeights, {
+      firstPageCapacity: 640,
+      pageCapacity: 1009,
+      gap: 8,
+      fallbackItemHeight: 150,
+    }),
+    [items, itemHeights],
+  );
+
+  const handleItemMeasure = useCallback((itemId: string, height: number) => {
+    const rounded = Math.ceil(height);
+    setItemHeights((current) => current[itemId] === rounded ? current : { ...current, [itemId]: rounded });
+  }, []);
 
   function insertItem(type: ItemType, insertAt = items.length) {
     if (!spec) return;
