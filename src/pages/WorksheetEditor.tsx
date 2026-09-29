@@ -395,6 +395,7 @@ export default function WorksheetEditor() {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
+  const [returnBannerDismissed, setReturnBannerDismissed] = useState(false);
   const [itemHeights, setItemHeights] = useState<Record<string, number>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
