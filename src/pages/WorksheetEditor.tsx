@@ -3220,8 +3220,8 @@ export default function WorksheetEditor() {
 
 
 
-      {returnTo && id && (
-        <div className="fixed bottom-4 right-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
+      {returnTo && id && !returnBannerDismissed && (
+        <div className="fixed bottom-4 left-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Pokračovat zpět do úkolu:</span>
           <Button
             size="sm"
@@ -3231,6 +3231,15 @@ export default function WorksheetEditor() {
             }}
           >
             Vrátit se k úkolu
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label="Zavřít upozornění"
+            className="h-7 w-7 p-0"
+            onClick={() => setReturnBannerDismissed(true)}
+          >
+            <X className="w-4 h-4" />
           </Button>
         </div>
       )}
