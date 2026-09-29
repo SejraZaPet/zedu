@@ -11,3 +11,9 @@
 - [x] Launcher: vždy čerstvé snímky z lekce, bez merge a bez zápisu do teacher_presentations.
 - [x] Seznam Prezentace: propojené = jen náhled/spuštění + poznámka, bez editoru/tématu.
 - [x] Nové regresní testy; ověřit build a testy.
+## Závěrečné vyhodnocení živé hry (2026-09-29)
+- [x] Osobní karta žáka: správné otázky a otázky k procvičení.
+- [x] Učitelský přehled otázek seřazený podle úspěšnosti.
+- [x] Rychlá hra ze slabých otázek pod 50 %.
+- [x] Regresní testy, build a praktické ověření.
+
