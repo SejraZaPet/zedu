@@ -34,14 +34,16 @@ describe("worksheet table writing space", () => {
 
   it("uses the same 10 mm body-row height in print and PDF HTML", () => {
     const spec: WorksheetSpec = {
-      specVersion: "v1",
-      worksheetId: "table-row-height-test",
-      title: "Test",
-      subject: "Test",
-      grade: 1,
-      language: "cs-CZ",
+      version: "v1",
       variants: [{ variantId: "A", seed: 1, items: [tableItem] }],
       answerKeys: { A: [] },
+      metadata: {
+        totalPoints: 0,
+        totalTimeMin: 1,
+        difficultyDistribution: { easy: 1, medium: 0, hard: 0 },
+        typeDistribution: { table: 1 },
+        createdAt: "2026-09-29T00:00:00.000Z",
+      },
       randomizationRules: [],
       header: {
         title: "Test",
