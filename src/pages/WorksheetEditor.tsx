@@ -2567,280 +2567,96 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+      <main className="worksheet-editor-shell flex-1 w-full px-3 pb-8 pt-6 xl:px-6">
+        <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden md:block bg-card border border-border rounded-xl p-3 lg:p-4 md:sticky md:top-[140px] md:max-h-[calc(100vh-160px)] md:overflow-y-auto">
+          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
 
             {paletteContent}
           </aside>
 
           {/* ── CANVAS ── */}
-          <section className="bg-card border border-border rounded-xl p-6 min-w-0">
-            {/* Hlavička pracovního listu */}
-            <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
-              <div>
-                <Label className="text-xs">Předmět</Label>
-                <div className="mt-1">
-                  <SubjectPicker
-                    value={subjectId}
-                    textValue={spec.header.subject || ""}
-                    onChange={({ subjectId: id, name }) => {
-                      setSubjectId(id);
-                      updateSpec((st) => ({ ...st, header: { ...st.header, subject: name } }));
-                    }}
-                    placeholder="Vyber nebo založ předmět…"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Ročník</Label>
-                <Select
-                  value={spec.header.gradeBand || "__none__"}
-                  onValueChange={(v) =>
-                    updateSpec((s) => ({
-                      ...s,
-                      header: { ...s.header, gradeBand: v === "__none__" ? "" : v },
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyber ročník…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Nezadáno —</SelectItem>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                      <SelectItem key={n} value={`${n}. ročník`}>
-                        {n}. ročník
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Režim</Label>
-                <Select
-                  value={spec.header.worksheetMode}
-                  onValueChange={(v) =>
-                    updateSpec((s) => ({ ...s, header: { ...s.header, worksheetMode: v } }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MODE_OPTIONS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-xs">Pokyny</Label>
-                <Textarea
-                  value={spec.header.instructions ?? ""}
-                  onChange={(e) =>
-                    updateSpec((s) => ({
-                      ...s,
-                      header: { ...s.header, instructions: e.target.value },
-                    }))
-                  }
-                  placeholder="Pokyny pro žáka…"
-                  rows={2}
-                />
-              </div>
-              <div
-                className="sm:col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-muted/40 p-3 space-y-1.5"
-                id="teacher-notes-section"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label htmlFor="ws-teacher-notes" className="text-xs font-semibold">
-                    Poznámky pro učitele
-                  </Label>
-                  <Badge variant="outline" className="text-[10px]">Žáci je nikdy neuvidí</Badge>
-                </div>
-                <Textarea
-                  id="ws-teacher-notes"
-                  value={teacherNotes}
-                  onChange={(e) => setTeacherNotes(e.target.value)}
-                  placeholder="Kdy list použít, doporučený čas, na co dát pozor, tipy k vyhodnocení…"
-                  rows={5}
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Vytisknou se jen ve „Verzi pro učitele“ v Tisk / PDF. AI návrhy lze přidat v „Sekce lekce“.
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-xs">QR kódy v záhlaví</Label>
-                <div className="space-y-2 mt-1">
-                  {(spec.header.qrCodes ?? []).map((q, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row gap-2">
-                      <Input
-                        className="sm:w-40"
-                        value={q.label}
-                        placeholder="Popisek (např. Teorie)"
-                        onChange={(e) =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
-                                j === i ? { ...x, label: e.target.value } : x,
-                              ),
-                            },
-                          }))
-                        }
-                      />
-                      <Input
-                        className="flex-1"
-                        value={q.url}
-                        placeholder="https://…"
-                        onChange={(e) =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
-                                j === i ? { ...x, url: e.target.value } : x,
-                              ),
-                            },
-                          }))
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Smazat QR kód"
-                        onClick={() =>
-                          updateSpec((s) => ({
-                            ...s,
-                            header: {
-                              ...s.header,
-                              qrCodes: (s.header.qrCodes ?? []).filter((_, j) => j !== i),
-                            },
-                          }))
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {(spec.header.qrCodes ?? []).length < 5 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        updateSpec((s) => ({
-                          ...s,
-                          header: {
-                            ...s.header,
-                            qrCodes: [...(s.header.qrCodes ?? []), { label: "", url: "" }],
-                          },
-                        }))
-                      }
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Přidat QR kód
-                    </Button>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Prázdný odkaz se v tisku vykreslí jako rámeček „Sem vlož odkaz“.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Náhled přiřazené lekce */}
-            <Collapsible defaultOpen={false} className="mb-6">
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-between py-2 px-3 rounded-lg bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-                <span className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Náhled přiřazené lekce
-                  {activeLessonId && allLessons.find((l) => l.id === activeLessonId)?.title && (
-                    <span className="text-xs text-foreground/70 truncate max-w-[260px]">
-                      — {allLessons.find((l) => l.id === activeLessonId)?.title}
-                    </span>
-                  )}
-                </span>
-                <ChevronDown className="w-4 h-4 transition-transform" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg p-4 mt-2 bg-card">
-                  {!activeLessonId ? (
-                    <p className="text-sm text-muted-foreground">
-                      Žádná lekce není přiřazena. Vyberte aktivní lekci v paletě vlevo nebo propojte lekci tlačítkem „Přidat další lekci".
-                    </p>
-                  ) : lessonBlocks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Lekce nemá žádný obsah k zobrazení.
-                    </p>
-                  ) : (
-                    <div className="space-y-3 text-sm">
-                      {lessonBlocks.map((b) => (
-                        <div key={b.id} className="pb-2 border-b border-border/50 last:border-0">
-                          <div className="font-semibold text-foreground mb-1">{b.title}</div>
-                          {b.text && b.text !== b.title && (
-                            <div className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
-                              {b.text}
+          <section className="worksheet-a4-stage min-w-0 rounded-lg bg-muted/50 px-3 py-5 sm:px-5">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                <div className="mx-auto flex w-max flex-col gap-5">
+                  {editorPages.map((page, pageIndex) => (
+                    <article key={`${pageIndex}-${page.items[0]?.id ?? "empty"}`} className="worksheet-a4-page relative">
+                      <div className="worksheet-a4-content">
+                        {pageIndex === 0 && (
+                          <>
+                            <div className="worksheet-a4-hero">
+                              <div className="mb-2 text-[8.5pt] font-semibold text-muted-foreground">
+                                {[spec.header.subject, spec.header.gradeBand].filter(Boolean).join(" · ") || "Pracovní list"}
+                              </div>
+                              <Input
+                                aria-label="Název pracovního listu"
+                                value={spec.header.title}
+                                onChange={(event) => updateSpec((state) => ({ ...state, header: { ...state.header, title: event.target.value } }))}
+                              />
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                            <div className="mt-3 flex flex-wrap gap-x-7 gap-y-2 border-b border-border pb-3 text-[9pt]">
+                              {spec.header.studentNameField && <span><strong>Jméno:</strong> ____________________</span>}
+                              {spec.header.dateField && <span><strong>Datum:</strong> ____________</span>}
+                              {spec.header.classField && <span><strong>Třída:</strong> ____________</span>}
+                            </div>
+                            {spec.header.instructions && <div className="worksheet-a4-instructions">{spec.header.instructions}</div>}
+                            {!spec.header.instructions && <div className="h-[8mm]" />}
+                          </>
+                        )}
+                        {page.items.length === 0 ? (
+                          <button type="button" onClick={() => setMobilePaletteOpen(true)} className="flex min-h-[160px] w-full flex-col items-center justify-center rounded-md border border-dashed border-border text-muted-foreground md:pointer-events-none">
+                            <span className="font-medium">Zatím žádné položky</span>
+                            <span className="mt-1 text-sm">Přidejte první položku z palety.</span>
+                          </button>
+                        ) : page.items.map((item) => {
+                          const itemIndex = items.findIndex((entry) => entry.id === item.id);
+                          const answerKey = answerKeys.find((entry) => entry.itemId === item.id) ?? null;
+                          return (
+                            <div key={item.id} className="group/insert">
+                              <SortableItemBlock
+                                item={item}
+                                answerKey={answerKey}
+                                expanded={item.id === selectedId}
+                                pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
+                                onExpand={() => setSelectedId(item.id)}
+                                onCollapse={() => setSelectedId(null)}
+                                onDelete={() => deleteItem(item.id)}
+                                onUpdateItem={(patch) => updateItem(item.id, patch)}
+                                onUpdateKey={(patch) => updateAnswerKey(item.id, patch)}
+                                onApplyRefined={(refined) => replaceItem(item.id, refined)}
+                                onMoveUp={() => moveItem(item.id, -1)}
+                                onMoveDown={() => moveItem(item.id, 1)}
+                                hasLesson={lessonBlocks.length > 0}
+                                onPickFromLesson={() => setPickerForItem(item.id)}
+                                onAiFromLesson={() => setAiPickerForItem(item.id)}
+                                onMeasure={handleItemMeasure}
+                              />
+                              <InsertItemControl
+                                onInsert={(type) => insertItem(type, itemIndex + 1)}
+                                onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
+                              />
+                            </div>
+                          );
+                        })}
+                        {page.hasOversizedItem && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                            <AlertTriangle className="h-4 w-4" /> Tato položka přesahuje jednu tiskovou stranu.
+                          </div>
+                        )}
+                      </div>
+                      <span className="worksheet-page-number">{pageIndex + 1} / {editorPages.length}</span>
+                    </article>
+                  ))}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Bloky otázek */}
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-3">Zatím žádné otázky.</p>
-                <p className="text-sm">Přidej otázku z palety vlevo.</p>
-              </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-3">
-                    {items.map((item, itemIndex) => {
-                      const ak = answerKeys.find((a) => a.itemId === item.id) ?? null;
-                      return (
-                        <div key={item.id} className="group/insert">
-                          <SortableItemBlock
-                            item={item}
-                            answerKey={ak}
-                            expanded={item.id === selectedId}
-                            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-                            onExpand={() => setSelectedId(item.id)}
-                            onCollapse={() => setSelectedId(null)}
-                            onDelete={() => deleteItem(item.id)}
-                            onUpdateItem={(p) => updateItem(item.id, p)}
-                            onUpdateKey={(p) => updateAnswerKey(item.id, p)}
-                            onApplyRefined={(refined) => replaceItem(item.id, refined)}
-                            onMoveUp={() => moveItem(item.id, -1)}
-                            onMoveDown={() => moveItem(item.id, 1)}
-                            hasLesson={lessonBlocks.length > 0}
-                            onPickFromLesson={() => setPickerForItem(item.id)}
-                            onAiFromLesson={() => setAiPickerForItem(item.id)}
-                          />
-                          <InsertItemControl
-                            onInsert={(type) => insertItem(type, itemIndex + 1)}
-                            onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-
+              </SortableContext>
+            </DndContext>
           </section>
+
+          <aside className="hidden rounded-lg border border-border bg-card p-4 xl:sticky xl:top-[140px] xl:block xl:max-h-[calc(100vh-160px)] xl:overflow-y-auto">
+            {worksheetSettingsContent}
+          </aside>
         </div>
       </main>
 
@@ -2851,6 +2667,13 @@ export default function WorksheetEditor() {
             <SheetTitle>Paleta</SheetTitle>
           </SheetHeader>
           {paletteContent}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
+        <SheetContent side="right" className="w-[92vw] overflow-y-auto p-4 sm:max-w-md">
+          <SheetHeader className="mb-3"><SheetTitle>Nastavení</SheetTitle></SheetHeader>
+          {worksheetSettingsContent}
         </SheetContent>
       </Sheet>
 
