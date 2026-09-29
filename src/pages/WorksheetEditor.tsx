@@ -2364,7 +2364,7 @@ export default function WorksheetEditor() {
           <Button
             variant="outline"
             size="sm"
-            className="xl:hidden shrink-0"
+            className="2xl:hidden shrink-0"
             onClick={() => setMobilePropsOpen(true)}
             title="Otevřít nastavení"
             aria-label="Otevřít nastavení"

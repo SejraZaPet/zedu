@@ -129,6 +129,20 @@
   pointer-events: none;
 }
 
+.worksheet-paper-renderer .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 5pt;
+}
+
+.worksheet-paper-renderer label,
+.worksheet-paper-renderer p,
+.worksheet-paper-renderer li,
+.worksheet-paper-renderer td,
+.worksheet-paper-renderer th {
+  font-family: "Lato", system-ui, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+}
+
 .worksheet-paper-renderer [data-radix-collection-item] {
   pointer-events: none;
 }
