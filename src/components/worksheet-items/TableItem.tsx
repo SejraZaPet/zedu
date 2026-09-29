@@ -27,9 +27,9 @@ export default function TableItem({ item }: WorksheetItemProps) {
           </thead>
           <tbody>
             {rest.map((row, ri) => (
-              <tr key={ri}>
+              <tr key={ri} className="h-[10mm]">
                 {row.map((cell, ci) => (
-                  <td key={ci} className="min-w-0 break-words border border-border px-3 py-2 align-top text-foreground">
+                  <td key={ci} className="h-[10mm] min-w-0 break-words border border-border px-3 py-[2mm] align-top text-foreground">
                     {cell}
                   </td>
                 ))}
