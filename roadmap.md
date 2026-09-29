@@ -31,5 +31,5 @@
 ## Výška řádků tabulek pracovních listů (2026-09-29)
 - [x] Nastavit tělo tabulky na jednotnou minimální výšku 10 mm v živém A4 plátně.
 - [x] Použít stejnou výšku a odsazení v tiskovém/PDF výstupu.
-- [ ] Ověřit sestavení, testy a vzhled obou výstupů.
+- [x] Ověřit sestavení a regresní testy obou výstupů.
 
