@@ -1,3 +1,4 @@
+import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -804,6 +805,9 @@ export default function WorksheetEditor() {
   const items = spec?.variants[0]?.items ?? [];
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
+  useEffect(() => {
+    if (selectedId) document.getElementById("worksheet-settings-aside")?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [selectedId]);
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
   const editorPages = useMemo(
     () => paginateWorksheetEditorItems(items, itemHeights, {
@@ -2203,6 +2207,7 @@ export default function WorksheetEditor() {
 
   const worksheetSettingsContent = (
     <div className="space-y-5">
+      {selectedItem && <div className="border-b border-border pb-5">{propertiesContent}</div>}
       <div>
         <h3 className="font-heading text-sm font-semibold text-foreground">Nastavení listu</h3>
         <p className="mt-1 text-xs text-muted-foreground">Údaje záhlaví a tiskové volby</p>
@@ -2332,7 +2337,7 @@ export default function WorksheetEditor() {
           </CollapsibleContent>
         </Collapsible>
       </div>
-      {propertiesContent}
+      {!selectedItem && propertiesContent}
     </div>
   );
 
@@ -2578,7 +2583,7 @@ export default function WorksheetEditor() {
         <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
+          <aside id="worksheet-settings-aside" className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
 
             {paletteContent}
           </aside>
@@ -2593,16 +2598,33 @@ export default function WorksheetEditor() {
                       <div className="worksheet-a4-content">
                         {pageIndex === 0 && (
                           <>
-                            <div className="worksheet-a4-hero">
-                              <div className="mb-2 text-[8.5pt] font-semibold text-muted-foreground">
-                                {[spec.header.subject, spec.header.gradeBand].filter(Boolean).join(" · ") || "Pracovní list"}
-                              </div>
-                              <Input
-                                aria-label="Název pracovního listu"
-                                value={spec.header.title}
-                                onChange={(event) => updateSpec((state) => ({ ...state, header: { ...state.header, title: event.target.value } }))}
-                              />
-                            </div>
+                            {(() => {
+                              const qrs = (spec.header.qrCodes ?? []).filter((qr) => qr.url?.trim());
+                              return (
+                                <div className="worksheet-a4-hero">
+                                  {qrs.length > 0 && (
+                                    <div className="flex shrink-0 items-start gap-2" aria-label="QR kódy v záhlaví">
+                                      {qrs.map((qr, qrIndex) => (
+                                        <figure key={qrIndex} className="flex w-[18mm] flex-col items-center gap-0.5">
+                                          <div className="rounded-sm bg-card p-0.5"><QRCodeSVG value={qr.url} size={60} /></div>
+                                          {qr.label && <figcaption className="line-clamp-2 text-center text-[6.5pt] leading-tight text-muted-foreground">{qr.label}</figcaption>}
+                                        </figure>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <Input
+                                      aria-label="Název pracovního listu"
+                                      value={spec.header.title}
+                                      onChange={(event) => updateSpec((state) => ({ ...state, header: { ...state.header, title: event.target.value } }))}
+                                    />
+                                    <div className="mt-1 text-[8.5pt] font-semibold text-muted-foreground">
+                                      {[spec.header.subject, spec.header.gradeBand].filter(Boolean).join(" · ") || "Pracovní list"}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             <div className="mt-3 flex flex-wrap gap-x-7 gap-y-2 border-b border-border pb-3 text-[9pt]">
                               {spec.header.studentNameField && <span><strong>Jméno:</strong> ____________________</span>}
                               {spec.header.dateField && <span><strong>Datum:</strong> ____________</span>}
