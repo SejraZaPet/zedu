@@ -1,11 +1,11 @@
 # Roadmap
 
 ## Prezentace z lekce — věrnost a ukládání (2026-09-29)
-- [ ] A: Zapojit uloženou učitelskou verzi do editoru i projektoru.
-- [ ] A: Zachovat ruční obsah, pořadí, smazání a zámek snímku.
-- [ ] B: Zachovat h3/h4, blokové typy, lokální barvy a kontrast.
-- [ ] B: Rozdělit přeplněné skupiny bez tichého ořezu.
-- [ ] Sjednotit editor, projektor a PDF a ověřit regresní testy.
+- [x] A: Zapojit uloženou učitelskou verzi do editoru i projektoru.
+- [x] A: Zachovat ruční obsah, pořadí, smazání a zámek snímku.
+- [x] B: Zachovat h3/h4, blokové typy, lokální barvy a kontrast.
+- [x] B: Rozdělit přeplněné skupiny bez tichého ořezu.
+- [x] Sjednotit editor, projektor a PDF a ověřit regresní testy.
 
 - [x] FÁZE 1: Sjednotit styly bloků prezentace s lekcí.
 - [x] FÁZE 2: Zachovat lokální nadpisová pozadí, hero, oddělovače a výšky skupin.
