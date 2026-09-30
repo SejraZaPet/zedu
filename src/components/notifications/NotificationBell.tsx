@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, MessageSquare } from "lucide-react";
+import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, MessageSquare, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +18,8 @@ const TYPE_META: Record<string, { Icon: any; color: string }> = {
   class_teacher_invited: { Icon: UserPlus, color: "#0d9488" },
   admin_message: { Icon: Megaphone, color: "#6b7280" },
   assignment_feedback: { Icon: MessageSquare, color: "#7c3aed" },
+  new_message: { Icon: MessageSquare, color: "#0891b2" },
+  message_reported: { Icon: Flag, color: "#dc2626" },
 };
 
 const NotificationBell = () => {

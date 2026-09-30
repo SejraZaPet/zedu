@@ -66,6 +66,7 @@ import StudentSchedule from "./pages/StudentSchedule";
 import TeacherCalendar from "./pages/TeacherCalendar";
 import SchoolMeetings from "./pages/SchoolMeetings";
 import NotificationsPage from "./pages/NotificationsPage";
+import MessagesPage from "./pages/MessagesPage";
 import TeacherWorksheets from "./pages/TeacherWorksheets";
 import WorksheetEditor from "./pages/WorksheetEditor";
 import StudentWorksheetView from "./pages/StudentWorksheetView";
@@ -191,6 +192,8 @@ const App = () => (
             <Route path="/ucitel/porady" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><SchoolMeetings /></ProtectedRoute>} />
             <Route path="/ucitel/kalendar" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherCalendar /></ProtectedRoute>} />
             <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/zpravy" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+            <Route path="/zpravy/nahlaseni/:reportId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
             <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherWorksheets /></ProtectedRoute>} />
             <Route path="/ucitel/pracovni-listy/:id" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><WorksheetEditor /></ProtectedRoute>} />
             <Route path="/student/pracovni-list/:id" element={<ProtectedRoute><StudentWorksheetView /></ProtectedRoute>} />

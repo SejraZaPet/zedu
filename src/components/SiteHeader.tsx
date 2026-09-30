@@ -14,6 +14,7 @@ import {
 import { useMySchool } from "@/hooks/useMySchool";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { MessagesSquare } from "lucide-react";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
@@ -264,6 +265,9 @@ const SiteHeader = () => {
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4 shrink-0">
               <SchoolViewSwitcher />
+              <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-primary" aria-label="Zprávy" onClick={() => navigate("/zpravy")}>
+                <MessagesSquare size={18} />
+              </Button>
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

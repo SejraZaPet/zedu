@@ -218,6 +218,27 @@
       "when": 1790250262991,
       "tag": "0030_game_results_to_activity_results",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790791559277,
+      "tag": "0031_messenger",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790791583112,
+      "tag": "0032_message_attachments_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790791604980,
+      "tag": "0033_messenger_contacts",
+      "breakpoints": true
     }
   ]
 }
