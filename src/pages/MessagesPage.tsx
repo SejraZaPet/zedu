@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Paperclip, Send, Flag, Users, Plus, FileText } from "lucide-react";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 type Contact = { id: string; name: string; is_teacher: boolean; class_id: string | null; class_name: string | null };
 type Conv = { id: string; type: string; title: string | null; created_at: string };
@@ -19,6 +20,13 @@ type Att = { id: string; message_id: string; file_path: string; file_name: strin
 const db = supabase as any;
 const ALLOWED = ["application/pdf", "image/jpeg", "image/png"];
 const safeName = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+// "Tyna Herinkova" → "Tyna H." (křestní jméno + první písmeno příjmení)
+const shortName = (n: string | undefined) => {
+  const full = (n ?? "").trim();
+  if (!full) return "Uživatel";
+  const parts = full.split(/\s+/);
+  return parts.length >= 2 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : full;
+};
 
 const MessagesPage = () => {
   const { user, roles } = useAuth() as any;
@@ -213,9 +221,12 @@ const MessagesPage = () => {
                   {msgs.map((m) => {
                     const mine = m.sender_id === uid;
                     return (
-                      <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                      <div key={m.id} className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+                        {!mine && (
+                          <ProfileAvatarBubble userId={m.sender_id} size={28} className="shrink-0" editable={false} crop="head" showEditButton={false} showStreakBadge={false} />
+                        )}
                         <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
-                          {!mine && <div className="text-xs font-semibold mb-0.5">{names[m.sender_id] ?? "Uživatel"}</div>}
+                          {!mine && <div className="text-xs font-semibold mb-0.5">{shortName(names[m.sender_id])}</div>}
                           {m.content && <div className="text-sm whitespace-pre-wrap break-words">{m.content}</div>}
                           {atts.filter((a) => a.message_id === m.id).map((a) => (
                             <button key={a.id} onClick={() => openAtt(a)} className="mt-1 flex items-center gap-1 text-xs underline">
