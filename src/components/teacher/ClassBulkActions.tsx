@@ -15,6 +15,7 @@ import { ClipboardList, MessageSquare, Download, X, Loader2 } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csv-export";
+import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDescriptionEditor";
 
 export interface BulkMember {
   user_id: string;
@@ -236,14 +237,8 @@ export function ClassBulkActions({ classId, className, selected, onClear }: Prop
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="bulk-a-desc">Popis</Label>
-              <Textarea
-                id="bulk-a-desc"
-                value={aDesc}
-                onChange={(e) => setADesc(e.target.value)}
-                rows={3}
-                disabled={busy}
-              />
+              <Label>Popis</Label>
+              <AssignmentDescriptionEditor content={aDesc} onChange={setADesc} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

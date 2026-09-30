@@ -490,7 +490,7 @@ const StudentAssignmentPlayer = () => {
             <div className="flex items-center gap-1.5 flex-wrap">
               <h1 className="text-lg font-bold">{assignment.title}</h1>
               <ReadAloudButton
-                text={`${assignment.title}. ${assignment.description || ""}`}
+                text={`${assignment.title}. ${assignment.description ? assignmentDescriptionToText(assignment.description) : ""}`}
                 size="icon"
               />
             </div>

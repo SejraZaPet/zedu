@@ -32,7 +32,6 @@ import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDescriptionEditor";
-import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
