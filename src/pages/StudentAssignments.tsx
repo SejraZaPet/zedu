@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
+import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 interface AssignmentWithAttempt {
   id: string;
@@ -130,7 +131,11 @@ const StudentAssignments = () => {
                             <Badge variant="destructive" className="text-xs">Vypršelo</Badge>
                           )}
                         </div>
-                        {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
+                        {a.description && (
+                          <p className="line-clamp-2 text-sm text-muted-foreground">
+                            {assignmentDescriptionToText(a.description)}
+                          </p>
+                        )}
                         <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                           {a.deadline && (
                             <span className={`flex items-center gap-1 ${deadlinePassed ? "text-destructive" : ""}`}>
