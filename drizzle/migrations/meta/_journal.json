@@ -232,6 +232,13 @@
       "when": 1790791583112,
       "tag": "0032_message_attachments_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790791604980,
+      "tag": "0033_messenger_contacts",
+      "breakpoints": true
     }
   ]
 }

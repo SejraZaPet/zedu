@@ -8315,6 +8315,16 @@ export type Database = {
           task_id: string
         }[]
       }
+      messenger_contacts: {
+        Args: never
+        Returns: {
+          class_id: string
+          class_name: string
+          id: string
+          is_teacher: boolean
+          name: string
+        }[]
+      }
       messenger_conversation_creator: {
         Args: { _conv: string }
         Returns: string
