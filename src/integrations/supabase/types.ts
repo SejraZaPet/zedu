@@ -1894,6 +1894,59 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          title: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       creator_earnings: {
         Row: {
           amount: number
@@ -3675,6 +3728,117 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "marketplace_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_attachments: {
+        Row: {
+          content_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          message_id: string
+        }
+        Insert: {
+          content_type: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          message_id: string
+        }
+        Update: {
+          content_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          reason: string | null
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          reason?: string | null
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          reason?: string | null
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -7800,6 +7964,10 @@ export type Database = {
         Returns: boolean
       }
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
+      can_resolve_message_report: {
+        Args: { _report: string; _user: string }
+        Returns: boolean
+      }
       can_student_view_lesson_plan: {
         Args: { _class_id: string; _group_id: string }
         Returns: boolean
@@ -8030,6 +8198,10 @@ export type Database = {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
       }
+      is_conversation_participant: {
+        Args: { _conv: string; _user: string }
+        Returns: boolean
+      }
       is_direct_shared_textbook: {
         Args: { _textbook_id: string; _user_id: string }
         Returns: boolean
@@ -8143,6 +8315,18 @@ export type Database = {
           task_id: string
         }[]
       }
+      messenger_conversation_creator: {
+        Args: { _conv: string }
+        Returns: string
+      }
+      messenger_conversation_type: { Args: { _conv: string }; Returns: string }
+      messenger_is_member: { Args: { _user: string }; Returns: boolean }
+      messenger_is_teacher: { Args: { _user: string }; Returns: boolean }
+      messenger_message_conversation: {
+        Args: { _msg: string }
+        Returns: string
+      }
+      messenger_participant_count: { Args: { _conv: string }; Returns: number }
       my_school_sale_settings: {
         Args: never
         Returns: {
