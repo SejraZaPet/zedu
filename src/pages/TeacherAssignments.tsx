@@ -597,6 +597,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId(prefillClassId);
     setSelectedGroupId(prefillGroupId);
+    setNewTargets(prefillTargets());
 
     setSelectedWorksheetId("");
     setSelectedLessonTextbookId("");
@@ -1096,6 +1097,26 @@ const TeacherAssignments = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Class or subject group */}
+                {!editingId ? (
+                <div className="col-span-2">
+                  <AssignmentTargetsPicker
+                    targets={newTargets}
+                    onChange={setNewTargets}
+                    onSelectKey={async (key) => {
+                      const id = key.slice(6);
+                      if (key.startsWith("class:") && classes.find((c) => c.id === id)?.source === "school") {
+                        await claimSchoolClass(id);
+                        refetchClasses();
+                      }
+                    }}
+                    sections={[
+                      { title: "Moje třídy", options: myClasses.map((c) => ({ key: `class:${c.id}`, label: c.name })) },
+                      { title: "Třídy školy", options: schoolClasses.map((c) => ({ key: `class:${c.id}`, label: `${c.name}${c.year ? ` · ${c.year}. ročník` : ""}` })) },
+                      { title: "Skupiny předmětu", options: groups.map((g) => ({ key: `group:${g.id}`, label: `${g.name}${g.subjectName ? ` · ${g.subjectName}` : ""}` })) },
+                    ]}
+                  />
+                </div>
+                ) : (
                 <div>
                   <Label>Třída nebo skupina (volitelné)</Label>
                   <Select
@@ -1156,6 +1177,7 @@ const TeacherAssignments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
 
 
                 {/* Exam type */}
