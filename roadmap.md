@@ -41,7 +41,7 @@
 - [x] Ověřit sestavení a regresní testy obou výstupů.
 
 ## Formátovaný popis úkolu (2026-09-30)
-- [ ] Přidat jednoduchý editor: tučně, kurzíva, podtržení a barva textu.
-- [ ] Bezpečně zobrazit HTML žákovi a zachovat staré prosté texty.
-- [ ] Ověřit vytvoření, úpravu, zobrazení a regresní testy.
+- [x] Přidat jednoduchý editor: tučně, kurzíva, podtržení a barva textu.
+- [x] Bezpečně zobrazit HTML žákovi a zachovat staré prosté texty.
+- [x] Ověřit vytvoření, úpravu, zobrazení a regresní testy.
 
