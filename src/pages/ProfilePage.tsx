@@ -72,6 +72,8 @@ const ProfilePage = () => {
   const [parentEmail, setParentEmail] = useState("");
   const [savingParentEmail, setSavingParentEmail] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
+  const [appEmailNotif, setAppEmailNotif] = useState(true);
+  const [savingAppEmailNotif, setSavingAppEmailNotif] = useState(false);
   const [savingEmailNotif, setSavingEmailNotif] = useState(false);
 
   // Password change
@@ -144,7 +146,7 @@ const ProfilePage = () => {
       const profileRes = await supabase
         .from("profiles")
         .select(
-          "first_name, last_name, academic_title, email, school, field_of_study, year, status, created_at, parent_email, parent_email_notifications, username"
+          "first_name, last_name, academic_title, email, school, field_of_study, year, status, created_at, parent_email, parent_email_notifications, email_notifications_enabled, username"
         )
         .eq("id", user.id)
         .single();
@@ -180,6 +182,7 @@ const ProfilePage = () => {
       setAcademicTitle(data.academic_title || "");
       setParentEmail((data as any).parent_email || "");
       setEmailNotifications((data as any).parent_email_notifications !== false);
+      setAppEmailNotif((data as any).email_notifications_enabled !== false);
       setLoading(false);
 
     };
@@ -354,6 +357,23 @@ const ProfilePage = () => {
       return;
     }
     toast({ title: "Uloženo", description: checked ? "Budete dostávat emaily." : "Emaily byly vypnuty." });
+  };
+
+  const handleToggleAppEmailNotif = async (checked: boolean) => {
+    if (!user) return;
+    setAppEmailNotif(checked);
+    setSavingAppEmailNotif(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ email_notifications_enabled: checked } as any)
+      .eq("id", user.id);
+    setSavingAppEmailNotif(false);
+    if (error) {
+      setAppEmailNotif(!checked);
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Uloženo", description: checked ? "E-mailové notifikace jsou zapnuté." : "E-mailové notifikace jsou vypnuté." });
   };
 
   const handleChangePassword = async () => {
@@ -660,6 +680,33 @@ const ProfilePage = () => {
 
 
         {/* Editable fields (students only) */}
+        {role !== "rodic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" />
+                Notifikace
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label htmlFor="app-email-notif" className="font-medium text-sm">Zasílat e-mailové notifikace</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Upozornění na úkoly, zprávy a další novinky dostanete i na e-mail.
+                  </p>
+                </div>
+                <Switch
+                  id="app-email-notif"
+                  checked={appEmailNotif}
+                  onCheckedChange={handleToggleAppEmailNotif}
+                  disabled={savingAppEmailNotif}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {role === "user" && (
           <Card>
             <CardHeader>
