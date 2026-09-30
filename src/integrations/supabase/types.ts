@@ -4217,6 +4217,7 @@ export type Database = {
           accessibility_settings: Json
           created_at: string
           email: string
+          email_notifications_enabled: boolean
           field_of_study: string
           first_name: string
           id: string
@@ -4238,6 +4239,7 @@ export type Database = {
           accessibility_settings?: Json
           created_at?: string
           email?: string
+          email_notifications_enabled?: boolean
           field_of_study?: string
           first_name?: string
           id: string
@@ -4259,6 +4261,7 @@ export type Database = {
           accessibility_settings?: Json
           created_at?: string
           email?: string
+          email_notifications_enabled?: boolean
           field_of_study?: string
           first_name?: string
           id?: string

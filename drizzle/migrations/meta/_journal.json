@@ -253,6 +253,13 @@
       "when": 1790802619193,
       "tag": "0035_subject_group_textbooks_subject_id",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790803707578,
+      "tag": "0036_notification_emails",
+      "breakpoints": true
     }
   ]
 }
