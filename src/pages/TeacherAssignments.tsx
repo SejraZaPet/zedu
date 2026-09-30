@@ -35,6 +35,7 @@ import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDesc
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 
 
 
@@ -109,6 +110,11 @@ const TeacherAssignments = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>(prefillClassId);
   // Zadání lze nově směrovat i na skupinu předmětu (vedle třídy, nikdy obojí).
   const [selectedGroupId, setSelectedGroupId] = useState<string>(prefillGroupId);
+  // Nový úkol lze zadat více cílům najednou; každý cíl = samostatný řádek.
+  const prefillTargets = (): AssignmentTarget[] =>
+    prefillGroupId ? [{ key: `group:${prefillGroupId}`, publishAt: "", deadlineAt: "" }]
+    : prefillClassId ? [{ key: `class:${prefillClassId}`, publishAt: "", deadlineAt: "" }] : [];
+  const [newTargets, setNewTargets] = useState<AssignmentTarget[]>(prefillTargets);
 
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
@@ -386,7 +392,7 @@ const TeacherAssignments = () => {
       return;
     }
     // Úkol musí mít adresáta – bez třídy nebo skupiny by ho nešlo komu zobrazit.
-    if (!selectedClassId && !selectedGroupId) {
+    if (editingId ? !selectedClassId && !selectedGroupId : newTargets.length === 0) {
       toast({
         title: "Vyberte třídu nebo skupinu",
         description: "Úkol lze zadat jen třídě nebo skupině, kterou učíte.",
@@ -493,42 +499,62 @@ const TeacherAssignments = () => {
           mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
         toast({ title: toastTitle });
       } else {
-        const status = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
-        const { data: created, error } = await supabase.from("assignments" as any).insert({
-          teacher_id: user.id,
-          title: title.trim(),
-          description: description.trim(),
-          deadline: deadlineIso,
-          materials: materials as any,
-          max_attempts: maxAttempts,
-          randomize_choices: randomizeChoices,
-          randomize_order: randomizeOrder,
-          class_id: selectedGroupId ? null : (selectedClassId || null),
-          group_id: selectedGroupId || null,
-          subject_id: subjectIdForAssignment,
-          status,
-          scheduled_publish_at: scheduledPublishAt,
-          activity_data: [] as any,
-          worksheet_id: selectedWorksheetId || null,
-          lesson_id: linkedLessonId || null,
-          lesson_source: linkedLessonId ? linkedLessonSource : null,
-          lockdown_mode: lockdownMode,
-          is_portfolio_task: isPortfolioTask,
-          exam_type: examType === "ukol" ? null : examType,
-          group_mode: groupMode,
-          group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
-        } as any).select("id").single();
+        // Každý vybraný cíl = samostatný nezávislý řádek s vlastními termíny.
+        const baseStatus = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
+        const rows = newTargets.map((t) => {
+          const [kind, id] = t.key.split(":");
+          let status = baseStatus;
+          let publishAt = scheduledPublishAt;
+          if (t.publishAt && mode !== "draft") {
+            const when = new Date(t.publishAt);
+            if (isNaN(when.getTime()) || when.getTime() <= Date.now()) {
+              throw new Error("Čas zveřejnění u každého cíle musí být v budoucnosti.");
+            }
+            publishAt = when.toISOString();
+            status = "scheduled";
+          }
+          if (mode === "draft") publishAt = null;
+          const ownDeadline = t.deadlineAt ? new Date(t.deadlineAt) : null;
+          return {
+            teacher_id: user.id,
+            title: title.trim(),
+            description: description.trim(),
+            deadline: ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso,
+            materials: materials as any,
+            max_attempts: maxAttempts,
+            randomize_choices: randomizeChoices,
+            randomize_order: randomizeOrder,
+            class_id: kind === "class" ? id : null,
+            group_id: kind === "group" ? id : null,
+            subject_id: subjectIdForAssignment,
+            status,
+            scheduled_publish_at: publishAt,
+            activity_data: [] as any,
+            worksheet_id: selectedWorksheetId || null,
+            lesson_id: linkedLessonId || null,
+            lesson_source: linkedLessonId ? linkedLessonSource : null,
+            lockdown_mode: lockdownMode,
+            is_portfolio_task: isPortfolioTask,
+            exam_type: examType === "ukol" ? null : examType,
+            group_mode: groupMode,
+            group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
+          };
+        });
+        const { data: created, error } = await supabase.from("assignments" as any).insert(rows as any).select("id");
 
         if (error) throw error;
         toast({
-          title: mode === "published" ? "Úloha publikována" : mode === "scheduled" ? "Úloha naplánována" : "Úloha vytvořena",
-          description: mode === "scheduled" && scheduledPublishAt
-            ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
-            : undefined,
+          title: rows.length > 1
+            ? `Vytvořeno úloh: ${rows.length}`
+            : mode === "published" ? "Úloha publikována" : mode === "scheduled" ? "Úloha naplánována" : "Úloha vytvořena",
         });
-        // U skupinových úkolů necháme formulář otevřený, aby šlo hned rozdělit skupiny.
-        if (groupMode !== "individual" && (created as any)?.id) {
-          setEditingId((created as any).id as string);
+        // U skupinového úkolu s jedním cílem necháme formulář otevřený, aby šlo hned rozdělit skupiny.
+        const createdRows = (created as any[]) ?? [];
+        if (groupMode !== "individual" && createdRows.length === 1) {
+          const [kind, id] = newTargets[0].key.split(":");
+          setSelectedClassId(kind === "class" ? id : "");
+          setSelectedGroupId(kind === "group" ? id : "");
+          setEditingId(createdRows[0].id as string);
           await loadData();
           setCreating(false);
           return;
@@ -571,6 +597,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId(prefillClassId);
     setSelectedGroupId(prefillGroupId);
+    setNewTargets(prefillTargets());
 
     setSelectedWorksheetId("");
     setSelectedLessonTextbookId("");
@@ -1070,6 +1097,26 @@ const TeacherAssignments = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Class or subject group */}
+                {!editingId ? (
+                <div className="col-span-2">
+                  <AssignmentTargetsPicker
+                    targets={newTargets}
+                    onChange={setNewTargets}
+                    onSelectKey={async (key) => {
+                      const id = key.slice(6);
+                      if (key.startsWith("class:") && classes.find((c) => c.id === id)?.source === "school") {
+                        await claimSchoolClass(id);
+                        refetchClasses();
+                      }
+                    }}
+                    sections={[
+                      { title: "Moje třídy", options: myClasses.map((c) => ({ key: `class:${c.id}`, label: c.name })) },
+                      { title: "Třídy školy", options: schoolClasses.map((c) => ({ key: `class:${c.id}`, label: `${c.name}${c.year ? ` · ${c.year}. ročník` : ""}` })) },
+                      { title: "Skupiny předmětu", options: groups.map((g) => ({ key: `group:${g.id}`, label: `${g.name}${g.subjectName ? ` · ${g.subjectName}` : ""}` })) },
+                    ]}
+                  />
+                </div>
+                ) : (
                 <div>
                   <Label>Třída nebo skupina (volitelné)</Label>
                   <Select
@@ -1130,6 +1177,7 @@ const TeacherAssignments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
 
 
                 {/* Exam type */}
