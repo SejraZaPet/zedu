@@ -341,10 +341,12 @@ export default function TeacherSubjectClass() {
             : null,
         );
         setClassSubjectId(null);
-        const { data: links } = await supabase
+        let linksQ: any = supabase
           .from("subject_group_textbooks" as any)
           .select("id, textbook_id, textbook_type, is_primary")
           .eq("subject_group_id", groupId);
+        if (resolvedSubjectId) linksQ = linksQ.or(`subject_id.eq.${resolvedSubjectId},subject_id.is.null`);
+        const { data: links } = await linksQ;
         if (!cancelled) setUnitTextbooks(((links as any[]) ?? []) as UnitTextbookLink[]);
       } else if (resolvedSubjectId) {
         const { data: csRow } = await supabase
@@ -935,10 +937,12 @@ export default function TeacherSubjectClass() {
   }
 
   async function reloadUnitTextbooks(parentId: string) {
-    const { data } = await supabase
+    let q: any = supabase
       .from(linkTable as any)
       .select("id, textbook_id, textbook_type, is_primary")
       .eq(linkParentCol, parentId);
+    if (isGroup && resolvedSubjectId) q = q.or(`subject_id.eq.${resolvedSubjectId},subject_id.is.null`);
+    const { data } = await q;
     const rows = ((data as any[]) ?? []) as UnitTextbookLink[];
     setUnitTextbooks(rows);
     return rows;
@@ -982,6 +986,7 @@ export default function TeacherSubjectClass() {
         textbook_id: textbookId,
         textbook_type: "teacher",
         is_primary: isFirst,
+        ...(isGroup ? { subject_id: resolvedSubjectId } : {}),
       } as any);
     if (error && !/duplicate|unique/i.test(error.message)) {
       setLinking(false);

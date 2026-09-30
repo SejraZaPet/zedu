@@ -6344,6 +6344,7 @@ export type Database = {
           id: string
           is_primary: boolean
           subject_group_id: string
+          subject_id: string | null
           textbook_id: string
           textbook_type: string
         }
@@ -6352,6 +6353,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           subject_group_id: string
+          subject_id?: string | null
           textbook_id: string
           textbook_type?: string
         }
@@ -6360,6 +6362,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           subject_group_id?: string
+          subject_id?: string | null
           textbook_id?: string
           textbook_type?: string
         }
@@ -6369,6 +6372,13 @@ export type Database = {
             columns: ["subject_group_id"]
             isOneToOne: false
             referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_group_textbooks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]

@@ -126,7 +126,7 @@ export async function fetchStudentClassTextbookLinks(
   if (groupIds.length > 0) {
     const { data: sgt } = await supabase
       .from("subject_group_textbooks")
-      .select("textbook_id, textbook_type, subject_group_id")
+      .select("textbook_id, textbook_type, subject_group_id, subject_id")
       .in("subject_group_id", groupIds);
     for (const row of (sgt ?? []) as any[]) {
       if (!row.textbook_id) continue;
@@ -134,7 +134,7 @@ export async function fetchStudentClassTextbookLinks(
         textbook_id: row.textbook_id,
         textbook_type: asType(row.textbook_type),
         class_id: null,
-        subject_id: subjectIdByGroup.get(row.subject_group_id) ?? null,
+        subject_id: row.subject_id ?? subjectIdByGroup.get(row.subject_group_id) ?? null,
         source: "group",
       });
     }

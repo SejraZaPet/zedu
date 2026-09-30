@@ -102,12 +102,21 @@ const TeacherSubjectGroups = () => {
     }
   };
 
+  /** Skupiny sdílené s předmětem přes vazbu učebnice (skupina je nezávislá na předmětu). */
+  const linkedGroupIds = async (sid: string): Promise<string[]> => {
+    const { data } = await supabase
+      .from("subject_group_textbooks")
+      .select("subject_group_id")
+      .eq("subject_id", sid);
+    return Array.from(new Set(((data as any[]) ?? []).map((r) => r.subject_group_id)));
+  };
+
   const loadGroups = async () => {
     if (!subjectId) { setGroups([]); setMembers([]); return; }
     const { data: g, error } = await supabase
       .from("subject_groups")
       .select("id, subject_id, name, school_year, archived")
-      .eq("subject_id", subjectId)
+      .or(`subject_id.eq.${subjectId},id.in.(${(await linkedGroupIds(subjectId)).join(",") || "00000000-0000-0000-0000-000000000000"})`)
       .order("school_year", { ascending: false })
       .order("name");
     if (error) {
@@ -199,6 +208,58 @@ const TeacherSubjectGroups = () => {
         await claimSchoolClass(classId);
       }
     }
+    // Nejdřív zjistit žáky ze zvolených tříd, abychom mohli znovu použít existující skupinu.
+    let seedStudentIds: string[] = [];
+    if (seedClassIds.length) {
+      const { data: cm } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .in("class_id", seedClassIds);
+      seedStudentIds = Array.from(new Set(((cm as any[]) ?? []).map((r) => r.user_id).filter(Boolean)));
+    }
+    const { data: sameName } = await supabase
+      .from("subject_groups")
+      .select("id, subject_id")
+      .eq("created_by", user.id)
+      .eq("name", newName.trim())
+      .eq("archived", false);
+    if (sameName?.length) {
+      const { data: sm } = await supabase
+        .from("subject_group_members")
+        .select("group_id, student_id")
+        .in("group_id", sameName.map((g) => g.id));
+      const want = [...seedStudentIds].sort().join(",");
+      const match = sameName.find((g) =>
+        ((sm as any[]) ?? []).filter((r) => r.group_id === g.id).map((r) => r.student_id).sort().join(",") === want,
+      );
+      if (match) {
+        // Stejná skupina už existuje — použijeme ji a jen ji propojíme s předmětem přes její učebnice.
+        const { data: links } = await supabase
+          .from("subject_group_textbooks")
+          .select("textbook_id, textbook_type")
+          .eq("subject_group_id", match.id);
+        const rows = ((links as any[]) ?? []);
+        const uniq = new Map(rows.map((r) => [`${r.textbook_type}-${r.textbook_id}`, r]));
+        if (match.subject_id !== subjectId && uniq.size) {
+          await supabase.from("subject_group_textbooks").upsert(
+            [...uniq.values()].map((r) => ({
+              subject_group_id: match.id,
+              subject_id: subjectId,
+              textbook_id: r.textbook_id,
+              textbook_type: r.textbook_type,
+            })) as any,
+            { onConflict: "subject_group_id,subject_id,textbook_id,textbook_type", ignoreDuplicates: true },
+          );
+        }
+        setSaving(false);
+        toast({ title: "Použita existující skupina", description: "Skupina se stejným názvem a žáky už existuje, nová se nezaložila." });
+        setCreateOpen(false);
+        setNewName("");
+        setSeedClassIds([]);
+        void loadGroups();
+        return;
+      }
+    }
     const { data: createdGroup, error } = await supabase
       .from("subject_groups")
       .insert({
@@ -217,11 +278,7 @@ const TeacherSubjectGroups = () => {
 
     let seeded = 0;
     if (seedClassIds.length) {
-      const { data: cm } = await supabase
-        .from("class_members")
-        .select("user_id")
-        .in("class_id", seedClassIds);
-      const studentIds = Array.from(new Set(((cm as any[]) ?? []).map((r) => r.user_id).filter(Boolean)));
+      const studentIds = seedStudentIds;
       if (studentIds.length) {
         const { error: memberError } = await supabase
           .from("subject_group_members")
