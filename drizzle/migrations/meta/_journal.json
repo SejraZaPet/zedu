@@ -239,6 +239,13 @@
       "when": 1790791604980,
       "tag": "0033_messenger_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790793093919,
+      "tag": "0034_extend_notifications_type_check",
+      "breakpoints": true
     }
   ]
 }

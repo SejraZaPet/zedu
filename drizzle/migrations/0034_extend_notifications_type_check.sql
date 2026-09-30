@@ -1,0 +1,3 @@
+ALTER TABLE public.notifications DROP CONSTRAINT notifications_type_check;
+
+ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK ((type = ANY (ARRAY['assignment_new'::text, 'assignment_submitted'::text, 'assignment_deadline_soon'::text, 'assignment_feedback'::text, 'class_textbook_added'::text, 'class_teacher_invited'::text, 'admin_message'::text, 'reminder'::text, 'message'::text, 'warning'::text, 'info'::text, 'update'::text, 'hand_raised'::text, 'inactive_student'::text, 'struggling_topic'::text, 'content_shared'::text, 'creator_follow'::text, 'class_story_new'::text, 'todo_assigned'::text, 'todo_deadline_soon'::text, 'new_message'::text, 'message_reported'::text])));
