@@ -20,6 +20,8 @@ import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
 import { BookOpen } from "lucide-react";
+import AssignmentDescription from "@/components/assignments/AssignmentDescription";
+import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 interface AssignmentData {
   id: string;
@@ -648,14 +650,12 @@ const StudentAssignmentPlayer = () => {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold">Zadání</h2>
                 <ReadAloudButton
-                  text={assignment.description}
+                  text={assignmentDescriptionToText(assignment.description)}
                   label="Přečíst zadání"
                   size="icon"
                 />
               </div>
-              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-                {assignment.description}
-              </p>
+              <AssignmentDescription description={assignment.description} />
             </CardContent>
           </Card>
         )}
@@ -1002,7 +1002,7 @@ const StudentAssignmentPlayer = () => {
       </main>
       {assignment && !isReadOnly && (
         <BezlaiTutorChat
-          question={`${assignment.title}${assignment.description ? `\n\n${assignment.description}` : ""}`}
+          question={`${assignment.title}${assignment.description ? `\n\n${assignmentDescriptionToText(assignment.description)}` : ""}`}
           contextKey={assignment.id}
         />
       )}

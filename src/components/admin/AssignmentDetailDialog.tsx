@@ -34,6 +34,7 @@ import { BookOpen, BarChart3 } from "lucide-react";
 import { fetchLessonActivities } from "@/lib/lesson-activity-index";
 import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultyStats";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted";
 
@@ -413,9 +414,10 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         {assignment && (
           <div className="space-y-4">
             {assignment.description && (
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-sm">
-                {assignment.description}
-              </p>
+              <AssignmentDescription
+                description={assignment.description}
+                className="rounded-md border border-border bg-muted/30 p-3"
+              />
             )}
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

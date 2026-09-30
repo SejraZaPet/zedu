@@ -31,8 +31,11 @@ import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDescriptionEditor";
+import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
+import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 
 
@@ -934,7 +937,7 @@ const TeacherAssignments = () => {
               </div>
               <div>
                 <Label>Popis (volitelný)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Instrukce pro žáky…" className="mt-1" rows={2} />
+                <AssignmentDescriptionEditor content={description} onChange={setDescription} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1679,7 +1682,11 @@ const TeacherAssignments = () => {
                                       </Badge>
                                     )}
                                   </div>
-                                  {a.description && <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>}
+                                  {a.description && (
+                                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                                      {assignmentDescriptionToText(a.description)}
+                                    </p>
+                                  )}
 
                                   {a.status === "published" && (
                                     <div className="space-y-1 pt-1 max-w-xs">
