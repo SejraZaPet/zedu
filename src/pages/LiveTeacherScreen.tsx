@@ -142,12 +142,9 @@ const LiveTeacherScreen = () => {
   }, [sessionId, settings]);
 
   // Reset scroll position when slide changes
+  // (reset v DB se posílá rovnou se změnou snímku — viz slideResetPatch)
   useEffect(() => {
     if (!sessionId) return;
-    supabase.from("game_sessions").update({
-      settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
-      zoom_state: null,
-    }).eq("id", sessionId);
     setDrawZoomMode(false);
     if (projectorPreviewRef.current) {
       projectorPreviewRef.current.scrollTop = 0;
@@ -155,28 +152,35 @@ const LiveTeacherScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
+  /** Reset posunu/odhalení/přiblížení, posílaný ve stejném zápisu jako změna snímku. */
+  const slideResetPatch = useCallback(() => ({
+    settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
+    zoom_state: null,
+  }), [settings]);
+
   const handleNext = useCallback(() => {
     if (!session) return;
     if (currentIndex >= slides.length - 1) {
       endGame();
     } else {
-      nextQuestion(currentIndex);
+      nextQuestion(currentIndex, slideResetPatch());
     }
-  }, [session, currentIndex, slides.length, nextQuestion, endGame]);
+  }, [session, currentIndex, slides.length, nextQuestion, endGame, slideResetPatch]);
 
   const goToIndex = useCallback(async (target: number) => {
     if (!sessionId) return;
     if (target < 0 || target >= slides.length) return;
     await supabase.from("game_sessions").update({
+      ...slideResetPatch(),
       current_question_index: target,
       question_started_at: new Date().toISOString(),
       status: "playing",
     }).eq("id", sessionId);
-  }, [sessionId, slides.length]);
+  }, [sessionId, slides.length, slideResetPatch]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: () => { if (currentIndex < slides.length - 1) handleNext(); },
-    onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2); },
+    onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch()); },
   });
 
   // Race mode auto-end: finish the session when either every player has crossed
@@ -217,7 +221,7 @@ const LiveTeacherScreen = () => {
       const cmd = payload?.cmd as string;
       if (cmd === "next") handleNext();
       else if (cmd === "prev") {
-        if (currentIndex > 0) nextQuestion(currentIndex - 2);
+        if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch());
       } else if (cmd === "end") {
         endGame();
       } else if (cmd === "goto" && typeof payload?.index === "number") {
@@ -230,7 +234,7 @@ const LiveTeacherScreen = () => {
     });
     ch.subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [sessionId, handleNext, nextQuestion, endGame, currentIndex, goToIndex, settings]);
+  }, [sessionId, handleNext, nextQuestion, endGame, currentIndex, goToIndex, settings, slideResetPatch]);
 
   // Refetch session data if slides arrive empty (race with DB write)
   useEffect(() => {
@@ -1369,7 +1373,7 @@ const LiveTeacherScreen = () => {
               onClick={() => {
                 if (currentIndex > 0) {
                   // Go back by setting index manually
-                  nextQuestion(currentIndex - 2);
+                  nextQuestion(currentIndex - 2, slideResetPatch());
                 }
               }}
             >
