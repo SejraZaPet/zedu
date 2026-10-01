@@ -28,6 +28,9 @@ interface Props {
 const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: Props) => {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // Poslední neprázdný výběr — nativní <select>/<input type=color> ukradnou fokus
+  // a zruší DOM výběr, takže si ho pamatujeme a před formátováním obnovíme.
+  const selRef = useRef<{ from: number; to: number } | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
