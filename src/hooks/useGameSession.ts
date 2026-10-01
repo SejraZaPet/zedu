@@ -201,14 +201,15 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
     channelRef.current = channel;
 
-    // Záložní obnovování: bez živého spojení každé 2 s, se spojením jen
-    // pojistně každých 15 s. Záložka na pozadí neobnovuje vůbec.
+    // Záložní obnovování jen bez živého spojení (každé 2 s); po obnovení
+    // spojení se data jednou dočtou. Záložka na pozadí neobnovuje vůbec.
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(() => {
       if (!mountedRef.current) return;
       if (typeof document !== "undefined" && document.hidden) return;
-      const interval = connectedRef.current ? 15000 : 2000;
-      if (Date.now() - lastPollRef.current < interval - 100) return;
+      // Při živém spojení se neobnovuje vůbec — jen záloha při výpadku (2 s).
+      if (connectedRef.current) return;
+      if (Date.now() - lastPollRef.current < 1900) return;
       fetchData();
     }, 2000);
   }, [sessionId, fetchData]);
@@ -274,9 +275,11 @@ export function useTeacherGameControls(sessionId: string | undefined) {
     }).eq("id", sessionId);
   }, [sessionId]);
 
-  const nextQuestion = useCallback(async (currentIndex: number) => {
+  // `extra` umožní v jednom zápisu poslat i reset posunu/odhalení/přiblížení.
+  const nextQuestion = useCallback(async (currentIndex: number, extra: Record<string, any> = {}) => {
     if (!sessionId) return;
     await supabase.from("game_sessions").update({
+      ...extra,
       current_question_index: currentIndex + 1,
       question_started_at: new Date().toISOString(),
       status: "playing",
