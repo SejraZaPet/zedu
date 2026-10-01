@@ -55,8 +55,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
 
   const [saving, setSaving] = useState(false);
 
-  const [topics, setTopics] = useState<{ id: string; title: string; origin: "own" | "catalog" }[]>([]);
-  const [lessons, setLessons] = useState<{ id: string; title: string }[]>([]);
+  const [topics, setTopics] = useState<{ id: string; title: string }[]>([]);
+  const [lessons, setLessons] = useState<{ id: string; title: string; origin: "own" | "catalog" }[]>([]);
   /** Zabrání vynulování uložených hodnot při prvním otevření dialogu. */
   const subjectInitRef = useRef<string | null>(null);
 
