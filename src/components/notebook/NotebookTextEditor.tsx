@@ -28,6 +28,9 @@ interface Props {
 const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: Props) => {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // Poslední neprázdný výběr — nativní <select>/<input type=color> ukradnou fokus
+  // a zruší DOM výběr, takže si ho pamatujeme a před formátováním obnovíme.
+  const selRef = useRef<{ from: number; to: number } | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -46,6 +49,10 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
     onUpdate: ({ editor: e }) => {
       onChangeRef.current(sanitizeNotebookHtml(e.getHTML()), e.getText({ blockSeparator: "\n" }));
     },
+    onSelectionUpdate: ({ editor: e }) => {
+      const { from, to } = e.state.selection;
+      if (from !== to) selRef.current = { from, to };
+    },
     editorProps: {
       attributes: {
         class: "notebook-rich-text block min-h-[1em] w-full min-w-0 max-w-none outline-none [&_p]:m-0 [&_p]:w-full [&_p]:max-w-none [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-muted-foreground [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
@@ -61,6 +68,12 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
   const currentColor = (editor.getAttributes("textStyle").color as string) || box.color;
   const currentBg = (editor.getAttributes("highlight").color as string) || "#FEF08A";
   const keep = (e: React.MouseEvent) => e.preventDefault(); // nezrušit výběr textu
+  /** Aplikuje formátování na výběr; když ho nativní ovládací prvek zrušil, obnoví poslední známý. */
+  const applyToSelection = (fn: (chain: ReturnType<typeof editor.chain>) => ReturnType<typeof editor.chain>) => {
+    const chain = editor.chain().focus();
+    if (editor.state.selection.empty && selRef.current) chain.setTextSelection(selRef.current);
+    fn(chain).run();
+  };
 
   const toolbar = (
     <div
@@ -78,7 +91,7 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
       <select
         className="h-9 rounded-md border bg-background px-2 text-sm"
         value={NB_FONT_SIZES.includes(currentSize as any) ? currentSize : ""}
-        onChange={(e) => editor.chain().focus().setNotebookFontSize(Number(e.target.value)).run()}
+        onChange={(e) => applyToSelection((c) => c.setNotebookFontSize(Number(e.target.value)))}
         aria-label="Velikost písma označeného textu"
         title="Velikost písma"
       >
@@ -88,13 +101,13 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
       <label className="flex h-9 items-center gap-1 rounded-md border bg-background px-2" title="Barva textu">
         <Palette className="h-4 w-4 text-muted-foreground" />
         <input type="color" value={/^#/.test(currentColor) ? currentColor : "#000000"}
-          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+          onChange={(e) => applyToSelection((c) => c.setColor(e.target.value))}
           aria-label="Barva označeného textu" className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0" />
       </label>
       <label className={cn("flex h-9 items-center gap-1 rounded-md border bg-background px-2", editor.isActive("highlight") && "ring-2 ring-primary")} title="Podbarvení">
         <Highlighter className="h-4 w-4 text-muted-foreground" />
         <input type="color" value={/^#/.test(currentBg) ? currentBg : "#FEF08A"}
-          onChange={(e) => editor.chain().focus().setHighlight({ color: e.target.value }).run()}
+          onChange={(e) => applyToSelection((c) => c.setHighlight({ color: e.target.value }))}
           aria-label="Podbarvení označeného textu" className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0" />
       </label>
       <Button type="button" size="icon" variant="outline" title="Zrušit formátování výběru"
