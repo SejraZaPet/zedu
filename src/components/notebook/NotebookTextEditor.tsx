@@ -49,6 +49,10 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
     onUpdate: ({ editor: e }) => {
       onChangeRef.current(sanitizeNotebookHtml(e.getHTML()), e.getText({ blockSeparator: "\n" }));
     },
+    onSelectionUpdate: ({ editor: e }) => {
+      const { from, to } = e.state.selection;
+      if (from !== to) selRef.current = { from, to };
+    },
     editorProps: {
       attributes: {
         class: "notebook-rich-text block min-h-[1em] w-full min-w-0 max-w-none outline-none [&_p]:m-0 [&_p]:w-full [&_p]:max-w-none [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-muted-foreground [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
