@@ -484,7 +484,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
             <div
               key={img.id}
               className={cn(
-                "absolute",
+                "absolute min-w-0 max-w-none",
                 mode === "select" ? "cursor-move" : "pointer-events-none",
                 selectedId === img.id && "ring-2 ring-primary",
               )}
@@ -549,7 +549,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
                 />
               ) : (
                 <div
-                  className="notebook-rich-text break-words [&_p]:m-0 [&_p]:min-h-[1em]"
+                  className="notebook-rich-text block w-full min-w-0 max-w-none break-words [&_p]:m-0 [&_p]:min-h-[1em] [&_p]:w-full [&_p]:max-w-none"
                   style={{
                     color: tb.color,
                     fontSize: sizeToCqw(tb.fontSize),

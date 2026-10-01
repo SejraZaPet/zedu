@@ -48,7 +48,7 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
     },
     editorProps: {
       attributes: {
-        class: "notebook-rich-text min-h-[1em] outline-none [&_p]:m-0 [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-muted-foreground [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
+        class: "notebook-rich-text block min-h-[1em] w-full min-w-0 max-w-none outline-none [&_p]:m-0 [&_p]:w-full [&_p]:max-w-none [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-muted-foreground [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
         "aria-label": "Text na stránce sešitu",
       },
     },
@@ -110,7 +110,7 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
     <>
       {toolbarTarget && createPortal(toolbar, toolbarTarget)}
       <div
-        className="break-words"
+        className="block w-full min-w-0 max-w-none break-words"
         style={{
           color: box.color,
           fontSize: sizeToCqw(box.fontSize),
@@ -121,7 +121,7 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
         }}
         onKeyDown={(e) => { if (e.key === "Escape") onDone(); e.stopPropagation(); }}
       >
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="block w-full min-w-0 max-w-none" />
       </div>
     </>
   );
