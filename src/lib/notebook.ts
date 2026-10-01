@@ -1,3 +1,4 @@
+import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
 // Digitální sešit — typy, vykreslování a datová vrstva.
 // Kreslicí formát (Stroke) je záměrně shodný s živou tabulí (LiveWhiteboard),
 // aby se dala znovupoužít vykreslovací logika. Živá tabule se tímto NEMĚNÍ.
@@ -26,6 +27,8 @@ export interface NotebookTextBox {
   id: string;
   x: number; y: number; w: number; h: number; // 0..1
   text: string;
+  /** Formátovaný obsah (sanitizované HTML). Chybí u starých bloků — pak platí `text`. */
+  html?: string;
   color: string;
   fontSize: number; // px v prostoru stránky (NB_W x NB_H)
   bold?: boolean;
@@ -402,32 +405,8 @@ export async function renderPageToCanvas(
   // kresba
   for (const s of content.strokes) renderStroke(ctx, s, w, h);
 
-  // textboxy
-  for (const tb of content.textBoxes) {
-    const size = tb.fontSize * scale;
-    ctx.save();
-    ctx.fillStyle = tb.color;
-    ctx.font = `${tb.italic ? "italic " : ""}${tb.bold ? "700 " : "400 "}${size}px system-ui, sans-serif`;
-    ctx.textBaseline = "top";
-    const maxW = tb.w * w;
-    let y = tb.y * h;
-    for (const paragraph of (tb.text || "").split(/\r?\n/)) {
-      let line = "";
-      for (const word of paragraph.split(/\s+/)) {
-        const test = line ? `${line} ${word}` : word;
-        if (ctx.measureText(test).width > maxW && line) {
-          ctx.fillText(line, tb.x * w, y);
-          y += size * 1.25;
-          line = word;
-        } else {
-          line = test;
-        }
-      }
-      ctx.fillText(line, tb.x * w, y);
-      y += size * 1.25;
-    }
-    ctx.restore();
-  }
+  // textboxy (včetně úseků s vlastní barvou/velikostí/podbarvením)
+  for (const tb of content.textBoxes) drawNotebookTextBox(ctx, tb, w, h, scale);
 
   return canvas;
 }

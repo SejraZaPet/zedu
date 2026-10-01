@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { BackgroundStyle, NB_H, NB_W, NotebookPageContent, backgroundCss, renderStroke } from "@/lib/notebook";
 import { cn } from "@/lib/utils";
+import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
 
 interface Props {
   content: NotebookPageContent;
@@ -25,13 +26,7 @@ const NotebookPageThumb = ({ content, backgroundStyle, className }: Props) => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     for (const s of content.strokes) renderStroke(ctx, s, w, h);
-    for (const tb of content.textBoxes) {
-      ctx.save();
-      ctx.fillStyle = tb.color;
-      ctx.globalAlpha = 0.8;
-      ctx.fillRect(tb.x * w, tb.y * h, Math.max(2, tb.w * w), Math.max(2, (tb.fontSize / NB_H) * h));
-      ctx.restore();
-    }
+    for (const tb of content.textBoxes) drawNotebookTextBox(ctx, tb, w, h, w / NB_W);
   }, [content]);
 
   return (
