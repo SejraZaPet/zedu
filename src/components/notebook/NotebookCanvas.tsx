@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
-  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, Bold, Italic, X,
+  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
+import { NB_FONT_FAMILY, NB_LINE_HEIGHT, sizeToCqw, textBoxHtml } from "@/lib/notebook-rich-text";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -53,6 +53,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const [width, setWidth] = useState(NOTEBOOK_WIDTHS[1]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
 
@@ -145,7 +147,14 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   /* --- kreslení --- */
   const onPointerDown = (e: React.PointerEvent) => {
-    if (readOnly || mode === "select") return;
+    if (readOnly) return;
+    if (mode === "select") {
+      // klik na prázdné místo papíru ukončí psaní / zruší výběr
+      if (editingId) finishEditing();
+      setSelectedId(null);
+      return;
+    }
+    if (editingId) finishEditing();
     if (shouldIgnorePointer(e)) return;
     e.preventDefault();
     (e.target as Element).setPointerCapture(e.pointerId);
@@ -154,14 +163,16 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     if (mode === "text") {
       const box: NotebookTextBox = {
         id: uid(),
-        x: Math.min(p[0], 0.8), y: Math.min(p[1], 0.92),
-        w: 0.3, h: 0.08,
-        text: "Nový text",
+        x: Math.min(p[0], 0.4), y: Math.min(p[1], 0.92),
+        w: Math.max(0.3, Math.min(0.6, 0.97 - Math.min(p[0], 0.4))), h: 0.05,
+        text: "",
+        html: "",
         color,
         fontSize: 32,
       };
       patch({ textBoxes: [...textBoxes, box] });
       setSelectedId(box.id);
+      setEditingId(box.id);
       setMode("select");
       return;
     }
@@ -233,7 +244,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     if (readOnly) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (t && ["INPUT", "TEXTAREA"].includes(t.tagName)) return;
+      if (t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable)) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
     };
@@ -248,9 +259,18 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     id: string,
     action: "move" | "resize",
   ) => {
-    if (readOnly || mode !== "select") return;
+    if (readOnly) return;
+    if (kind === "text" && editingId === id) { e.stopPropagation(); return; } // psaní — žádný posun
+    if (kind === "text" && mode === "text") {
+      e.preventDefault(); e.stopPropagation();
+      if (editingId) finishEditing();
+      setSelectedId(id); setEditingId(id); setMode("select");
+      return;
+    }
+    if (mode !== "select") return;
     e.preventDefault();
     e.stopPropagation();
+    if (editingId && editingId !== id) finishEditing();
     setSelectedId(id);
     const stage = stageRef.current;
     if (!stage) return;
@@ -289,6 +309,16 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const updateTextBox = (id: string, p: Partial<NotebookTextBox>) =>
     patch({ textBoxes: textBoxes.map((t) => (t.id === id ? { ...t, ...p } : t)) });
+
+  /** Ukončí psaní; prázdný blok se odebere. */
+  const finishEditing = () => {
+    const tb = textBoxes.find((t) => t.id === editingId);
+    setEditingId(null);
+    if (tb && !(tb.text || "").trim()) {
+      patch({ textBoxes: textBoxes.filter((t) => t.id !== tb.id) });
+      setSelectedId(null);
+    }
+  };
 
   const removeSelected = () => {
     if (!selectedId) return;
@@ -428,46 +458,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         </div>
       )}
 
-      {!readOnly && selectedTextBox && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 p-2">
-          <Textarea
-            rows={2}
-            className="min-w-[200px] flex-1 bg-background"
-            value={selectedTextBox.text}
-            onChange={(e) => updateTextBox(selectedTextBox.id, { text: e.target.value })}
-            aria-label="Text vybraného boxu"
-          />
-          <Button
-            type="button" size="icon"
-            variant={selectedTextBox.bold ? "default" : "outline"}
-            title="Tučně"
-            onClick={() => updateTextBox(selectedTextBox.id, { bold: !selectedTextBox.bold })}
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button" size="icon"
-            variant={selectedTextBox.italic ? "default" : "outline"}
-            title="Kurzíva"
-            onClick={() => updateTextBox(selectedTextBox.id, { italic: !selectedTextBox.italic })}
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Input
-            type="number" min={12} max={120}
-            className="w-20 bg-background"
-            value={selectedTextBox.fontSize}
-            onChange={(e) => updateTextBox(selectedTextBox.id, { fontSize: Number(e.target.value) || 32 })}
-            aria-label="Velikost písma"
-          />
-          <input
-            type="color"
-            value={selectedTextBox.color}
-            onChange={(e) => updateTextBox(selectedTextBox.id, { color: e.target.value })}
-            title="Barva textu"
-            aria-label="Barva textu"
-            className="h-8 w-10 cursor-pointer rounded border bg-transparent p-0.5"
-          />
+      {!readOnly && editingId && <div ref={setToolbarEl} />}
+      {!readOnly && !editingId && selectedTextBox && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 p-2 text-sm text-muted-foreground">
+          <span className="flex-1">Dvojklikem na text (nebo nástrojem „Text“) začneš psát a formátovat označenou část.</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => setEditingId(selectedTextBox.id)}>Upravit text</Button>
           <Button type="button" size="icon" variant="outline" title="Odebrat prvek" onClick={removeSelected}>
             <X className="h-4 w-4" />
           </Button>
@@ -530,27 +525,43 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               key={tb.id}
               className={cn(
                 "absolute",
-                mode === "select" ? "cursor-move" : "pointer-events-none",
-                selectedId === tb.id && "ring-2 ring-primary",
+                editingId === tb.id ? "cursor-text"
+                  : mode === "select" ? "cursor-move"
+                  : mode === "text" ? "cursor-text" : "pointer-events-none",
+                selectedId === tb.id && editingId !== tb.id && "ring-2 ring-primary",
+                editingId === tb.id && "outline-dashed outline-1 outline-primary/40",
               )}
               style={{
                 left: `${tb.x * 100}%`, top: `${tb.y * 100}%`,
                 width: `${tb.w * 100}%`, minHeight: `${tb.h * 100}%`,
               }}
               onPointerDown={(e) => startElementDrag(e, "text", tb.id, "move")}
+              onDoubleClick={() => { if (!readOnly && mode === "select") { setSelectedId(tb.id); setEditingId(tb.id); } }}
             >
-              <p
-                className="m-0 whitespace-pre-wrap break-words leading-snug"
-                style={{
-                  color: tb.color,
-                  fontSize: `${(tb.fontSize / NB_W) * 100}cqw`,
-                  fontWeight: tb.bold ? 700 : 400,
-                  fontStyle: tb.italic ? "italic" : "normal",
-                }}
-              >
-                {tb.text}
-              </p>
-              {mode === "select" && selectedId === tb.id && !readOnly && (
+              {editingId === tb.id && !readOnly ? (
+                <NotebookTextEditor
+                  key={tb.id}
+                  box={tb}
+                  toolbarTarget={toolbarEl}
+                  onChange={(html, text) => updateTextBox(tb.id, { html, text })}
+                  onDone={finishEditing}
+                  onRemove={() => { setEditingId(null); removeSelected(); }}
+                />
+              ) : (
+                <div
+                  className="notebook-rich-text break-words [&_p]:m-0 [&_p]:min-h-[1em]"
+                  style={{
+                    color: tb.color,
+                    fontSize: sizeToCqw(tb.fontSize),
+                    fontWeight: tb.bold ? 700 : 400,
+                    fontStyle: tb.italic ? "italic" : "normal",
+                    lineHeight: NB_LINE_HEIGHT,
+                    fontFamily: NB_FONT_FAMILY,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: textBoxHtml(tb) }}
+                />
+              )}
+              {mode === "select" && selectedId === tb.id && editingId !== tb.id && !readOnly && (
                 <span
                   role="presentation"
                   className="absolute -bottom-1 -right-1 h-4 w-4 cursor-se-resize rounded-sm bg-primary"
