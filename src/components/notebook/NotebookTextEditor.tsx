@@ -68,6 +68,12 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
   const currentColor = (editor.getAttributes("textStyle").color as string) || box.color;
   const currentBg = (editor.getAttributes("highlight").color as string) || "#FEF08A";
   const keep = (e: React.MouseEvent) => e.preventDefault(); // nezrušit výběr textu
+  /** Aplikuje formátování na výběr; když ho nativní ovládací prvek zrušil, obnoví poslední známý. */
+  const applyToSelection = (fn: (chain: ReturnType<typeof editor.chain>) => ReturnType<typeof editor.chain>) => {
+    const chain = editor.chain().focus();
+    if (editor.state.selection.empty && selRef.current) chain.setTextSelection(selRef.current);
+    fn(chain).run();
+  };
 
   const toolbar = (
     <div
