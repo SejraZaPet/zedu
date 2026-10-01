@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_game_templates ADD COLUMN IF NOT EXISTS catalog_lesson_id uuid REFERENCES public.textbook_lessons(id) ON DELETE SET NULL;
