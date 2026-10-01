@@ -55,7 +55,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
 
   const [saving, setSaving] = useState(false);
 
-  const [topics, setTopics] = useState<{ id: string; title: string }[]>([]);
+  const [topics, setTopics] = useState<{ id: string; title: string; origin: "own" | "catalog" }[]>([]);
   const [lessons, setLessons] = useState<{ id: string; title: string }[]>([]);
   /** Zabrání vynulování uložených hodnot při prvním otevření dialogu. */
   const subjectInitRef = useRef<string | null>(null);
@@ -74,7 +74,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     setSlides(Array.isArray(template?.activity_data) ? template!.activity_data : []);
     setSubject(template?.subject ?? NONE);
     setTopicId(template?.curriculum_topic_id ?? NONE);
-    setLessonId(template?.textbook_lesson_id ?? NONE);
+    setLessonId(template?.textbook_lesson_id ?? template?.catalog_lesson_id ?? NONE);
     setBackgroundUrl(template?.background_url ?? "");
     subjectInitRef.current = template?.subject ?? NONE;
   }, [open, template]);
@@ -153,9 +153,13 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
 
       if (cancelled) return;
       setTopics(((topicRows as any[]) || []).map((t) => ({ id: t.id, title: t.title })));
-      const merged = [...own, ...catalog]
+      // Původ lekce rozhoduje, do kterého sloupce se vazba uloží.
+      const merged = [
+        ...own.map((l) => ({ ...l, origin: "own" as const })),
+        ...catalog.map((l) => ({ ...l, origin: "catalog" as const })),
+      ]
         .filter((l, i, arr) => arr.findIndex((x) => x.id === l.id) === i)
-        .map((l) => ({ id: l.id, title: l.title || "Bez názvu" }));
+        .map((l) => ({ id: l.id, title: l.title || "Bez názvu", origin: l.origin }));
       setLessons(merged);
     })();
     return () => {
@@ -195,6 +199,12 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Nejste přihlášeni.");
+      const lessonVal = lessonId === NONE ? null : lessonId;
+      const picked = lessons.find((l) => l.id === lessonVal);
+      // Bez nalezení v seznamu zachováme původní typ vazby uložené hry.
+      const isCatalogLesson = picked
+        ? picked.origin === "catalog"
+        : !!template?.catalog_lesson_id && template.catalog_lesson_id === lessonVal;
       const payload = {
         teacher_id: session.user.id,
         title: title.trim(),
@@ -206,7 +216,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
         default_team_count: teamCount,
         subject: subject === NONE ? null : subject,
         curriculum_topic_id: topicId === NONE ? null : topicId,
-        textbook_lesson_id: lessonId === NONE ? null : lessonId,
+        textbook_lesson_id: lessonVal && !isCatalogLesson ? lessonVal : null,
+        catalog_lesson_id: lessonVal && isCatalogLesson ? lessonVal : null,
         background_url: backgroundUrl.trim() || null,
 
       };

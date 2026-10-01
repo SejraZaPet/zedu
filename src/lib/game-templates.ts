@@ -15,6 +15,8 @@ export interface GameTemplate {
   subject: string | null;
   curriculum_topic_id: string | null;
   textbook_lesson_id: string | null;
+  /** Vazba na knihovní lekci (textbook_lessons); vlastní lekce jsou v textbook_lesson_id. */
+  catalog_lesson_id?: string | null;
   /** Pozadí pro celou hru (URL z game_backgrounds nebo vlastní obrázek). */
   background_url?: string | null;
   default_team_count?: number | null;
@@ -80,7 +82,7 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamCount: Math.max(2, Math.min(6, Number(template.default_team_count) || 2)),
         subjectKey: subjectKeyFromLabel(template.subject),
         backgroundUrl: template.background_url ?? null,
-        sourceLessonId: template.textbook_lesson_id ?? null,
+        sourceLessonId: template.textbook_lesson_id ?? template.catalog_lesson_id ?? null,
         sourceTemplateId: template.id,
       } as any,
 
