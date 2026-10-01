@@ -1,26 +1,37 @@
-# Jednoduché formátování popisu úkolu
+# Oprava: uložení hry navázané na knihovní lekci
 
-## Rozsah
-- Nahradit pole „Popis (volitelný)“ ve formuláři nové i upravované úlohy kompaktním editorem se stejnou Tiptap knihovnou, kterou už aplikace používá.
-- Lištu omezit přesně na tučné písmo, kurzívu, podtržení a několik předvolených barev textu.
-- Výsledné HTML ukládat beze změny datového modelu do `assignments.description`.
-- Formátovaný popis bezpečně zobrazit na žákovském detailu a v dalších stávajících náhledech popisu tak, aby se HTML tagy nikde neukazovaly jako text.
+## 1. Diagnóza (potvrzeno)
 
-## Zpětná kompatibilita a bezpečnost
-- Prostý text ze starších úkolů převést pouze při vykreslení na odstavce a zachovat zalomení řádků.
-- HTML před zobrazením filtrovat; povolit jen značky a styl barvy potřebné pro tento editor.
-- Pro hlasové čtení a textový kontext převést HTML na čistý text, aby se značky nepředčítaly ani neposílaly jako součást zadání.
+- Dialog „Uložit hru" nabízí v poli „Lekce" sloučený seznam ze dvou tabulek:
+  - vlastní lekce učitele (`teacher_textbook_lessons`),
+  - knihovní/katalogové lekce ke stejnému předmětu (`textbook_lessons`).
+- Seznam si nepamatuje, odkud která lekce je; při uložení se ID vždy zapíše do `teacher_game_templates.textbook_lesson_id`.
+- Tento sloupec má cizí klíč jen na `teacher_textbook_lessons`. Lekce o přípravě těst je knihovní (`textbook_lessons`), proto databáze uložení odmítne.
+- Stejný typ chyby jako u duplicitní učebnice v H3.A: jedno ID, dvě možné tabulky.
 
-## Technické provedení
-- Přidat malý samostatný editor popisu postavený na stávajících Tiptap rozšířeních `StarterKit`, `Underline`, `TextStyle` a `Color`.
-- Přidat sdílený bezpečný renderer a převod popisu na čistý text.
-- Zapojit editor do `TeacherAssignments.tsx`; zapojit renderer do `StudentAssignmentPlayer.tsx`, `StudentAssignments.tsx` a stávajících učitelských náhledů popisu.
-- Doplnit cílené testy pro starý prostý text, povolené formátování a odstranění nepovoleného HTML.
+## 2. Návrh opravy
+
+Vzor, který už v projektu existuje u `lesson_method_links` (dva samostatné sloupce s vlastní vazbou):
+
+1. **Databáze (bez ztráty dat, nic se nemaže):** přidat do `teacher_game_templates` nepovinný sloupec `catalog_lesson_id` s vazbou na `textbook_lessons(id) ON DELETE SET NULL`. Stávající `textbook_lesson_id` zůstane pro vlastní lekce.
+2. **Dialog „Uložit hru":** každá lekce v seznamu nese svůj původ (vlastní / knihovní). Při uložení:
+   - vlastní lekce -> `textbook_lesson_id`, `catalog_lesson_id = null`,
+   - knihovní lekce -> `catalog_lesson_id`, `textbook_lesson_id = null`.
+   Při otevření uložené hry se předvybere ta, která je vyplněná.
+3. **Spuštění hry:** `sourceLessonId` v nastavení živé relace bere kteroukoli z obou vazeb, takže hra dál ví, ke které lekci patří.
+4. Rychlá hra (QuickGameDialog) vazbu na lekci neukládá, zůstává beze změny.
+
+## 3. Další místa se stejným rizikem
+
+Tabulky s vazbou jen na `teacher_textbook_lessons`, kam se může dostat ID knihovní lekce:
+
+- `teacher_presentations.lesson_id` – prezentace z lekce. Ověřím, zda se dá spustit z knihovní lekce; pokud ano, stejná oprava (doplnit `catalog_lesson_id`).
+- `lesson_curriculum_coverage.lesson_id` – párování lekce s tématy ŠVP. Ověřím, zda výběr nabízí i knihovní lekce.
+- `lesson_placements`, `teacher_lesson_completions` – podle kódu pracují jen s vlastními lekcemi; jen kontrola.
+- `lesson_method_links` už má obě vazby, je v pořádku.
+
+U těchto tří bodů nejdřív zkontroluji, odkud se ID bere. Opravím jen místa, kde knihovní lekce opravdu může přijít, stejným způsobem a s vaším souhlasem pro každé z nich, pokud by to měnilo chování.
 
 ## Ověření
-- Ověřit vytvoření i úpravu úkolu, načtení uloženého HTML a zobrazení žákovi.
-- Spustit relevantní testy a zkontrolovat sestavení aplikace.
 
-## Rizika
-- Tiptap převádí starý prostý text při první úpravě na HTML odstavce; vizuální obsah zůstane stejný.
-- Barva se ukládá ve `style` atributu, proto renderer povolí jen bezpečně filtrovaný styl barvy, nikoli libovolné HTML.
+Uložit hru navázanou na knihovní lekci (test přípravy těst) i na vlastní lekci, znovu otevřít a zkontrolovat předvyplněnou lekci, spustit hru. Testovací hry pak smažu.
