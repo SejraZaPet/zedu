@@ -91,7 +91,7 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
       <select
         className="h-9 rounded-md border bg-background px-2 text-sm"
         value={NB_FONT_SIZES.includes(currentSize as any) ? currentSize : ""}
-        onChange={(e) => editor.chain().focus().setNotebookFontSize(Number(e.target.value)).run()}
+        onChange={(e) => applyToSelection((c) => c.setNotebookFontSize(Number(e.target.value)))}
         aria-label="Velikost písma označeného textu"
         title="Velikost písma"
       >
@@ -101,13 +101,13 @@ const NotebookTextEditor = ({ box, toolbarTarget, onChange, onDone, onRemove }: 
       <label className="flex h-9 items-center gap-1 rounded-md border bg-background px-2" title="Barva textu">
         <Palette className="h-4 w-4 text-muted-foreground" />
         <input type="color" value={/^#/.test(currentColor) ? currentColor : "#000000"}
-          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+          onChange={(e) => applyToSelection((c) => c.setColor(e.target.value))}
           aria-label="Barva označeného textu" className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0" />
       </label>
       <label className={cn("flex h-9 items-center gap-1 rounded-md border bg-background px-2", editor.isActive("highlight") && "ring-2 ring-primary")} title="Podbarvení">
         <Highlighter className="h-4 w-4 text-muted-foreground" />
         <input type="color" value={/^#/.test(currentBg) ? currentBg : "#FEF08A"}
-          onChange={(e) => editor.chain().focus().setHighlight({ color: e.target.value }).run()}
+          onChange={(e) => applyToSelection((c) => c.setHighlight({ color: e.target.value }))}
           aria-label="Podbarvení označeného textu" className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0" />
       </label>
       <Button type="button" size="icon" variant="outline" title="Zrušit formátování výběru"
