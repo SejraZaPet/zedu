@@ -7,8 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/** Jediný povolený odesílatel – ověřená doména send.bezli.cz. */
-export const FROM_ADDRESS = "Bezli <noreply@send.bezli.cz>";
+/** Jediný povolený odesílatel – ověřená doména bezli.cz. */
+export const FROM_ADDRESS = "Bezli <noreply@bezli.cz>";
 
 const admin = () =>
   createClient(
