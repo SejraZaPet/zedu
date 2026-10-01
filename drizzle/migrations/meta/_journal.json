@@ -260,6 +260,13 @@
       "when": 1790803707578,
       "tag": "0036_notification_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790853302077,
+      "tag": "0037_game_templates_catalog_lesson",
+      "breakpoints": true
     }
   ]
 }

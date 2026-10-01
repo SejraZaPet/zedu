@@ -6586,6 +6586,7 @@ export type Database = {
         Row: {
           activity_data: Json
           background_url: string | null
+          catalog_lesson_id: string | null
           created_at: string
           curriculum_topic_id: string | null
           default_game_mode: string
@@ -6604,6 +6605,7 @@ export type Database = {
         Insert: {
           activity_data?: Json
           background_url?: string | null
+          catalog_lesson_id?: string | null
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
@@ -6622,6 +6624,7 @@ export type Database = {
         Update: {
           activity_data?: Json
           background_url?: string | null
+          catalog_lesson_id?: string | null
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
@@ -6638,6 +6641,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_game_templates_catalog_lesson_id_fkey"
+            columns: ["catalog_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teacher_game_templates_curriculum_topic_id_fkey"
             columns: ["curriculum_topic_id"]
