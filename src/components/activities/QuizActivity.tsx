@@ -64,7 +64,7 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
               <button
                 key={i}
                 onClick={() => toggle(i)}
-                disabled={submitted}
+                disabled={submitted || live.revealed}
                 className={`w-full text-left rounded-lg border p-3 transition-colors ${cls}`}
               >
                 <span className="text-foreground text-sm">{a.text}</span>
@@ -72,7 +72,7 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
             );
           })}
         </div>
-        {!submitted && selected.size > 0 && (
+        {!submitted && !live.revealed && selected.size > 0 && (
           <button
             onClick={check}
             className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
