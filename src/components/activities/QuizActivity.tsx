@@ -76,7 +76,9 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
                 aria-pressed={selected.has(i)}
                 className={`h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
-                <McqOptionIcon index={i} className="h-12 w-12" />
+                <span className="[&>svg]:h-12 [&>svg]:w-12">
+                  <McqOptionIcon index={i} />
+                </span>
                 <span className="sr-only">{optionName}</span>
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>

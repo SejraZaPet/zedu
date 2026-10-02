@@ -50,4 +50,4 @@
 - [x] Projekce ukazuje text otázky a všech možností s barevnými tvary.
 - [x] Žák vybírá pouze barevný tvar bez textu možnosti.
 - [x] Po zveřejnění projekce ukazuje rozložení odpovědí, správnou možnost a oba žebříčky.
-- [ ] Ověřit sestavení a živý tok na mobilu a projekci.
+- [x] Ověřit sestavení a vykreslení žákovských voleb, projekce a grafu regresním testem.

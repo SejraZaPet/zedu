@@ -227,7 +227,9 @@ const ActivityTaskPreview = ({ spec, showSolution = false, darkMode = false }: P
               key={i}
               className={`flex min-h-16 items-center gap-4 rounded-xl border-b-4 px-5 py-3 font-semibold text-primary-foreground shadow-md transition-opacity ${getMcqOptionStyle(i)} ${showSolution && !correct ? "opacity-35" : ""}`}
             >
-              <McqOptionIcon index={i} className="h-9 w-9 shrink-0" />
+              <span className="shrink-0 [&>svg]:h-9 [&>svg]:w-9">
+                <McqOptionIcon index={i} />
+              </span>
               <span className="text-xl leading-snug">{o?.text ?? String(o)}</span>
               {showSolution && correct && <span className="ml-auto text-3xl" aria-label="Správná odpověď">✓</span>}
             </div>
