@@ -13,7 +13,14 @@ function backoffDelay(attempt: number): number {
   return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 128_000);
 }
 
-export function useGameSession(sessionId: string | undefined, refetchTrigger?: number, joinToken?: string) {
+export function useGameSession(
+  sessionId: string | undefined,
+  refetchTrigger?: number,
+  joinToken?: string,
+  options: { playersSafetyPollMs?: number } = {},
+) {
+  const playersSafetyPollMs = options.playersSafetyPollMs ?? 0;
+  const lastPlayersPollRef = useRef(0);
   const [session, setSession] = useState<GameSession | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
@@ -208,11 +215,20 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       if (!mountedRef.current) return;
       if (typeof document !== "undefined" && document.hidden) return;
       // Při živém spojení se neobnovuje vůbec — jen záloha při výpadku (2 s).
-      if (connectedRef.current) return;
+      if (connectedRef.current) {
+        // Lehká pojistka jen pro seznam žáků (např. projekce): realtime události
+        // o připojení se mohou ztratit, dotaz na hráče je malý.
+        if (playersSafetyPollMs > 0 && Date.now() - lastPlayersPollRef.current >= playersSafetyPollMs) {
+          lastPlayersPollRef.current = Date.now();
+          supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false })
+            .then(({ data }) => { if (mountedRef.current && data) setPlayers(data as GamePlayer[]); });
+        }
+        return;
+      }
       if (Date.now() - lastPollRef.current < 1900) return;
       fetchData();
     }, 2000);
-  }, [sessionId, fetchData]);
+  }, [sessionId, fetchData, playersSafetyPollMs]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);

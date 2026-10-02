@@ -12,6 +12,7 @@ import { TeamsSlideProjector } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideProjector } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameProjector } from "@/components/game/EscapeGameSlide";
 import RaceTrack from "@/components/game/RaceTrack";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
 import { isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
@@ -25,6 +26,8 @@ const LiveProjectorScreen = () => {
     else navigate(-1);
   };
   const CloseButton = () => (
+    <>
+    <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <Button
       onClick={handleClose}
       variant="ghost"
@@ -33,8 +36,9 @@ const LiveProjectorScreen = () => {
     >
       <X className="w-4 h-4" /> Zavřít
     </Button>
+    </>
   );
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, undefined, undefined, { playersSafetyPollMs: 3000 });
 
   // Tik jen při závodu — jinak se celý projektor (snímek, obrázky) překresloval 2× za sekundu.
   const [now, setNow] = useState(() => Date.now());
