@@ -13,6 +13,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
+import { McqCountdown } from "@/components/live/LiveMcqWidgets";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import WallResponsesList from "@/components/activities/WallResponsesList";
@@ -615,6 +616,8 @@ const StudentGamePlay = () => {
                   try { initialSelected = JSON.parse(sessionStorage.getItem(selKey) || "null"); } catch { /* ignore */ }
                   const revealed = isMcqRevealed(liveSettings, qIdx) || isMcqRevealed(session?.settings, qIdx);
                   return (
+                    <div className="space-y-4">
+                    {!revealed && <McqCountdown session={session} active={session?.status === "playing"} />}
                     <QuizActivity
                       key={`live-mcq-${qIdx}`}
                       quiz={quiz}
@@ -647,6 +650,7 @@ const StudentGamePlay = () => {
                         },
                       }}
                     />
+                    </div>
                   );
                 })()
               ) : (

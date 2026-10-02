@@ -230,6 +230,7 @@ const LiveProjectorScreen = () => {
         scrollTop={scrollTop}
         zoom={zoom}
         backgroundUrl={backgroundUrl}
+        responses={responses}
         overlayContent={sessionId && getSlideStrokes(whiteboard, currentIndex).length > 0 ? (
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} slideIndex={currentIndex} readOnly className="pointer-events-none" />
         ) : null}

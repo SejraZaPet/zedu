@@ -3,6 +3,8 @@ import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+import { McqCountdown, McqResultsBoard } from "@/components/live/LiveMcqWidgets";
+import { isLiveMcqSlide, isMcqRevealed } from "@/lib/live-mcq";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
@@ -87,6 +89,8 @@ interface Props {
   zoom?: ZoomRect | null;
   /** Volitelné herní pozadí (obrázek pod obsahem slidu). */
   backgroundUrl?: string | null;
+  /** Odpovědi žáků – když jsou předané, projekce po zveřejnění MCQ ukáže pořadí. */
+  responses?: any[];
 }
 
 /**
@@ -94,7 +98,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl, responses }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -244,9 +248,26 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                     darkMode
                   />
                 ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
+                  isLiveMcqSlide(currentSlide) ? (() => {
+                    const revealed = isMcqRevealed(session?.settings, currentIndex);
+                    return (
+                      <div className="flex w-full max-w-5xl shrink-0 flex-col items-center gap-5">
+                        {!revealed && session?.status === "playing" && (
+                          <div className="w-full max-w-md"><McqCountdown session={session} active size="lg" /></div>
+                        )}
+                        <div className="w-full rounded-2xl border border-white/20 bg-white/5 px-8 py-6 text-2xl">
+                          <ActivityTaskPreview spec={currentSlide.activitySpec} showSolution={revealed} darkMode />
+                        </div>
+                        {revealed && responses && (
+                          <McqResultsBoard players={players} responses={responses} questionIndex={currentIndex} slides={slides} />
+                        )}
+                      </div>
+                    );
+                  })() : (
                   <div className="w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
                     <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
                   </div>
+                  )
                 ) : currentSlide.type === "activity" ? (
                   <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
                     <div className="flex items-center gap-4 text-primary text-2xl font-medium">
