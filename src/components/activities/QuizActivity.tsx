@@ -70,15 +70,14 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
             return (
               <Button
                 key={i}
+                variant="ghost"
                 onClick={() => toggle(i)}
                 disabled={submitted || live.revealed}
                 aria-label={`Možnost ${i + 1}: ${optionName}`}
                 aria-pressed={selected.has(i)}
-                className={`h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
+                className={`relative h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
-                <span className="[&>svg]:h-12 [&>svg]:w-12">
-                  <McqOptionIcon index={i} />
-                </span>
+                <McqOptionIcon index={i} className="!h-12 !w-12" />
                 <span className="sr-only">{optionName}</span>
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>

@@ -12,14 +12,14 @@ import {
 } from "lucide-react";
 
 const OPTION_STYLES = [
-  "bg-answer-red border-answer-red-strong",
-  "bg-answer-blue border-answer-blue-strong",
-  "bg-answer-yellow border-answer-yellow-strong",
-  "bg-answer-green border-answer-green-strong",
-  "bg-answer-purple border-answer-purple-strong",
-  "bg-answer-orange border-answer-orange-strong",
-  "bg-answer-teal border-answer-teal-strong",
-  "bg-answer-pink border-answer-pink-strong",
+  "bg-answer-red hover:bg-answer-red border-answer-red-strong",
+  "bg-answer-blue hover:bg-answer-blue border-answer-blue-strong",
+  "bg-answer-yellow hover:bg-answer-yellow border-answer-yellow-strong",
+  "bg-answer-green hover:bg-answer-green border-answer-green-strong",
+  "bg-answer-purple hover:bg-answer-purple border-answer-purple-strong",
+  "bg-answer-orange hover:bg-answer-orange border-answer-orange-strong",
+  "bg-answer-teal hover:bg-answer-teal border-answer-teal-strong",
+  "bg-answer-pink hover:bg-answer-pink border-answer-pink-strong",
 ];
 
 const OPTION_ICONS: ComponentType<LucideProps>[] = [
