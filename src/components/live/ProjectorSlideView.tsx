@@ -3,7 +3,7 @@ import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
-import { McqCountdown, McqResultsBoard } from "@/components/live/LiveMcqWidgets";
+import { McqAnswerDistribution, McqCountdown, McqResultsBoard } from "@/components/live/LiveMcqWidgets";
 import { isLiveMcqSlide, isMcqRevealed } from "@/lib/live-mcq";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
@@ -259,7 +259,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                           <ActivityTaskPreview spec={currentSlide.activitySpec} showSolution={revealed} darkMode />
                         </div>
                         {revealed && responses && (
-                          <McqResultsBoard players={players} responses={responses} questionIndex={currentIndex} slides={slides} />
+                          <div className="grid w-full max-w-5xl grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-4">
+                            <McqAnswerDistribution
+                              responses={responses}
+                              questionIndex={currentIndex}
+                              options={Array.isArray(currentSlide.activitySpec?.options) ? currentSlide.activitySpec.options : []}
+                            />
+                            <McqResultsBoard players={players} responses={responses} questionIndex={currentIndex} slides={slides} />
+                          </div>
                         )}
                       </div>
                     );

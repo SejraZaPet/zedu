@@ -7,6 +7,7 @@
  */
 
 import { generateCrosswordGrid } from "@/lib/crossword-engine";
+import { getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
 interface Props {
   spec: any;
@@ -217,23 +218,20 @@ const ActivityTaskPreview = ({ spec, showSolution = false, darkMode = false }: P
   if (type === "mcq") {
     const options: any[] = Array.isArray(spec?.options) ? spec.options : [];
     if (!options.length) return null;
-    const letters = "ABCDEFGH";
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {options.map((o, i) => {
           const correct = !!(o?.correct ?? o?.isCorrect);
-          const tone = !showSolution
-            ? chip
-            : correct
-            ? "bg-primary border-primary text-primary-foreground"
-            : darkMode
-            ? "bg-white/5 border-white/15 text-white/40"
-            : "bg-muted border-border text-muted-foreground";
           return (
-            <div key={i} className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 font-semibold transition-colors ${tone}`}>
-              <span className="shrink-0 font-bold">{letters[i] || i + 1}</span>
-              <span>{o?.text ?? String(o)}</span>
-              {showSolution && correct && <span className="ml-auto" aria-label="Správná odpověď">✓</span>}
+            <div
+              key={i}
+              className={`flex min-h-16 items-center gap-4 rounded-xl border-b-4 px-5 py-3 font-semibold text-primary-foreground shadow-md transition-opacity ${getMcqOptionStyle(i)} ${showSolution && !correct ? "opacity-35" : ""}`}
+            >
+              <span className="shrink-0 [&>svg]:h-9 [&>svg]:w-9">
+                <McqOptionIcon index={i} />
+              </span>
+              <span className="text-xl leading-snug">{o?.text ?? String(o)}</span>
+              {showSolution && correct && <span className="ml-auto text-3xl" aria-label="Správná odpověď">✓</span>}
             </div>
           );
         })}

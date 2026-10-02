@@ -55,6 +55,24 @@
     --brand-blue: 199 52% 66%;
     --brand-turquoise: 184 52% 60%;
 
+    /* Live MCQ answer colors; each is paired with a distinct shape. */
+    --answer-red: 0 73% 52%;
+    --answer-red-strong: 0 76% 38%;
+    --answer-blue: 214 75% 48%;
+    --answer-blue-strong: 214 82% 34%;
+    --answer-yellow: 43 92% 48%;
+    --answer-yellow-strong: 35 91% 33%;
+    --answer-green: 142 61% 38%;
+    --answer-green-strong: 143 65% 26%;
+    --answer-purple: 276 63% 49%;
+    --answer-purple-strong: 276 70% 34%;
+    --answer-orange: 24 91% 50%;
+    --answer-orange-strong: 20 89% 35%;
+    --answer-teal: 174 72% 36%;
+    --answer-teal-strong: 175 78% 25%;
+    --answer-pink: 330 72% 50%;
+    --answer-pink-strong: 330 75% 35%;
+
     /* Light brand tokens (safe on light bg w/ dark text ~ #1A1F2C) */
     --primary-light: 185 51% 60%;      /* #63C7CF */
     --primary-pastel: 176 55% 88%;     /* ~#CFF0EE */
