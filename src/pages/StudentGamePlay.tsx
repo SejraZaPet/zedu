@@ -12,6 +12,7 @@ import { EscapeGameStudent } from "@/components/game/EscapeGameSlide";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
+import { isMcqRevealed } from "@/lib/live-mcq";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import WallResponsesList from "@/components/activities/WallResponsesList";
@@ -608,26 +609,42 @@ const StudentGamePlay = () => {
                       correct: !!(o.correct ?? o.isCorrect),
                     })),
                   };
+                  const qIdx = session?.current_question_index ?? 0;
+                  const selKey = `live_mcq_${sessionId}_${qIdx}`;
+                  let initialSelected: number[] | null = null;
+                  try { initialSelected = JSON.parse(sessionStorage.getItem(selKey) || "null"); } catch { /* ignore */ }
+                  const revealed = isMcqRevealed(liveSettings, qIdx) || isMcqRevealed(session?.settings, qIdx);
                   return (
                     <QuizActivity
+                      key={`live-mcq-${qIdx}`}
                       quiz={quiz}
-                      onComplete={async (score, maxScore) => {
-                        if (!sessionId || !playerId) return;
-                        try {
-                          await supabase.functions.invoke("submit-activity-response", {
-                            body: {
-                              joinToken,
-                              playerId,
-                              sessionId,
-                              questionIndex: session?.current_question_index ?? 0,
-                              isCorrect: score > 0,
-                              score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-                              responseTimeMs: 0,
-                            },
-                          });
-                        } catch (e) {
-                          console.error("Failed to save mcq result:", e);
-                        }
+                      live={{
+                        revealed,
+                        initialSelected,
+                        onSubmit: async (isCorrect, selected) => {
+                          if (!sessionId || !playerId) return;
+                          try { sessionStorage.setItem(selKey, JSON.stringify(selected)); } catch { /* ignore */ }
+                          const startedAt = session?.question_started_at
+                            ? serverTsToClientMs(session.question_started_at)
+                            : null;
+                          const responseTimeMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
+                          try {
+                            await supabase.functions.invoke("submit-activity-response", {
+                              body: {
+                                joinToken,
+                                playerId,
+                                sessionId,
+                                questionIndex: qIdx,
+                                isCorrect,
+                                score: isCorrect ? 100 : 0,
+                                responseTimeMs,
+                                answerData: { selected },
+                              },
+                            });
+                          } catch (e) {
+                            console.error("Failed to save mcq result:", e);
+                          }
+                        },
                       }}
                     />
                   );

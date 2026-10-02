@@ -5,6 +5,8 @@ import { GameLobby } from "@/components/game/GameLobby";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
+import { serverTsToClientMs } from "@/lib/clock-sync";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair } from "lucide-react";
@@ -96,6 +98,27 @@ const LiveTeacherScreen = () => {
     if (!sessionId) return;
     await supabase.from("game_sessions").update({ zoom_state: rect as any }).eq("id", sessionId);
   }, [sessionId]);
+
+  // ---- MCQ: zveřejnění výsledků otázky (ručně / všichni odpověděli / vypršel čas) ----
+  const mcqActive = isLiveMcqSlide(currentSlide) && session?.status === "playing";
+  const mcqRevealed = isMcqRevealed(settings, currentIndex);
+  const revealMcq = useCallback(async () => {
+    if (!sessionId || currentIndex < 0) return;
+    await supabase.from("game_sessions").update(mcqRevealPatch(settings, currentIndex) as any).eq("id", sessionId);
+  }, [sessionId, settings, currentIndex]);
+  const mcqAnswered = responses.filter(r => r.question_index === currentIndex).length;
+  useEffect(() => {
+    if (!mcqActive || mcqRevealed) return;
+    if (players.length > 0 && mcqAnswered >= players.length) void revealMcq();
+  }, [mcqActive, mcqRevealed, mcqAnswered, players.length, revealMcq]);
+  useEffect(() => {
+    if (!mcqActive || mcqRevealed || !session?.question_started_at) return;
+    const limit = liveQuestionTimeLimitMs(settings);
+    if (!limit) return;
+    const wait = serverTsToClientMs(session.question_started_at) + limit - Date.now();
+    const id = setTimeout(() => void revealMcq(), Math.max(0, wait));
+    return () => clearTimeout(id);
+  }, [mcqActive, mcqRevealed, session?.question_started_at, settings?.timePerQuestion, revealMcq]);
 
   // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
   const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
@@ -1148,6 +1171,31 @@ const LiveTeacherScreen = () => {
                   )}
                 </div>
               )}
+
+              {isLiveMcqSlide(currentSlide) && (() => {
+                const revealed = isMcqRevealed(settings, currentIndex);
+                const answered = responses.filter(r => r.question_index === currentIndex).length;
+                return (
+                  <div className="mt-3 p-3 border border-border rounded-lg flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Výsledky otázky</p>
+                      <p className="text-xs text-muted-foreground">
+                        {revealed
+                          ? "Žáci vidí správnou odpověď."
+                          : `Odpovědělo ${answered}/${players.length}. Zveřejní se samo, až odpoví všichni nebo vyprší čas.`}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={revealed ? "default" : "outline"}
+                      disabled={revealed}
+                      onClick={revealMcq}
+                    >
+                      {revealed ? "✓ Výsledky zveřejněny" : "Zveřejnit výsledky"}
+                    </Button>
+                  </div>
+                );
+              })()}
 
               {(currentSlide as any).activitySpec?.activityType === "wall" && (() => {
                 const wallPublished =
