@@ -108,6 +108,7 @@ const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isLoggedIn, role: userRole, roles, signOut } = useAuth();
+  const unreadMessages = useUnreadMessages();
   const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
   const { hasSchool } = useMySchool();
