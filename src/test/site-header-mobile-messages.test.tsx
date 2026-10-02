@@ -77,7 +77,7 @@ describe.each(["user", "teacher", "rodic"] as const)(
     it("zobrazí položku Zprávy a vede na /zpravy", () => {
       renderHeader();
       openMobileMenu();
-      const messages = screen.getByRole("button", { name: /Zprávy/ });
+      const messages = getMobileMessagesButton();
       expect(messages).toBeVisible();
       fireEvent.click(messages);
       expect(screen.getByTestId("location")).toHaveTextContent("/zpravy");
