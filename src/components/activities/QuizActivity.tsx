@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getQuizQuestions } from "@/lib/quiz-questions";
+import { Button } from "@/components/ui/button";
+import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
 /**
  * Kvíz s jednou nebo více otázkami – žák prochází otázky postupně,
@@ -30,6 +32,14 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
 
   const toggle = (i: number) => {
     if (submitted) return;
+    if (live && !isMulti) {
+      const next = new Set([i]);
+      setSelected(next);
+      setSubmitted(true);
+      const correct = current.answers.every((a, answerIndex) => (a.correct ? next.has(answerIndex) : !next.has(answerIndex)));
+      live.onSubmit(correct, [i]);
+      return;
+    }
     setSelected((s) => {
       const next = new Set(s);
       if (isMulti) next.has(i) ? next.delete(i) : next.add(i);
@@ -52,33 +62,33 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
     const show = submitted && live.revealed;
     return (
       <div className="space-y-4">
-        <p className="text-foreground font-medium text-lg">{current.question}</p>
-        {isMulti && <p className="text-xs text-muted-foreground">Vyber všechny správné odpovědi</p>}
-        <div className="space-y-2">
+        <p className="sr-only">Odpověz podle možností zobrazených na společné obrazovce.</p>
+        {isMulti && <p className="text-sm text-muted-foreground">Vyber všechny odpovídající tvary a potom odpověď odešli.</p>}
+        <div className="grid grid-cols-2 gap-3" aria-label="Možnosti odpovědi">
           {current.answers.map((a, i) => {
-            let cls = "border-border bg-card hover:border-primary/50";
-            if (show && a.correct) cls = "border-green-500/60 bg-green-500/10";
-            else if (show && selected.has(i) && !a.correct) cls = "border-destructive/60 bg-destructive/10";
-            else if (selected.has(i)) cls = "border-primary bg-primary/10";
+            const optionName = getMcqOptionName(i);
             return (
-              <button
+              <Button
                 key={i}
                 onClick={() => toggle(i)}
                 disabled={submitted || live.revealed}
-                className={`w-full text-left rounded-lg border p-3 transition-colors ${cls}`}
+                aria-label={`Možnost ${i + 1}: ${optionName}`}
+                aria-pressed={selected.has(i)}
+                className={`h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
-                <span className="text-foreground text-sm">{a.text}</span>
-              </button>
+                <McqOptionIcon index={i} className="h-12 w-12" />
+                <span className="sr-only">{optionName}</span>
+                {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
+              </Button>
             );
           })}
         </div>
-        {!submitted && !live.revealed && selected.size > 0 && (
-          <button
+        {isMulti && !submitted && !live.revealed && selected.size > 0 && (
+          <Button
             onClick={check}
-            className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             Odeslat odpověď
-          </button>
+          </Button>
         )}
         {submitted && !live.revealed && (
           <div className="rounded-lg p-3 text-sm bg-muted text-muted-foreground" role="status" aria-live="polite">

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Timer, Trophy } from "lucide-react";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { liveQuestionTimeLimitMs } from "@/lib/live-mcq";
+import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
 export const useMcqCountdown = (session: any, active: boolean) => {
   const limit = liveQuestionTimeLimitMs(session?.settings);
@@ -57,6 +58,51 @@ interface BoardProps {
   questionIndex: number;
   slides: any[];
 }
+
+interface DistributionProps {
+  responses: any[];
+  questionIndex: number;
+  options: any[];
+}
+
+const selectedIndexes = (response: any): number[] => {
+  const value = response?.answer?.selected ?? response?.answer?.selectedIndices;
+  if (Array.isArray(value)) return value.filter((item): item is number => Number.isInteger(item));
+  if (Number.isInteger(response?.answer?.index)) return [response.answer.index];
+  return [];
+};
+
+/** Rozložení odpovědí pro aktuální otázku; barvu vždy doplňuje tvar a textový popis. */
+export const McqAnswerDistribution = ({ responses, questionIndex, options }: DistributionProps) => {
+  const round = responses.filter((response) => response.question_index === questionIndex);
+  const counts = options.map((_, index) => round.reduce(
+    (total, response) => total + (selectedIndexes(response).includes(index) ? 1 : 0),
+    0,
+  ));
+  const max = Math.max(1, ...counts);
+
+  return (
+    <section className="w-full rounded-xl border border-border bg-card/90 px-5 py-4 text-card-foreground" aria-labelledby="mcq-distribution-heading">
+      <h3 id="mcq-distribution-heading" className="mb-3 text-center text-lg font-bold">Rozložení odpovědí</h3>
+      <div className="grid h-36 gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(options.length, 1)}, minmax(0, 1fr))` }}>
+        {options.map((_, index) => (
+          <div key={index} className="flex min-w-0 flex-col items-center justify-end gap-1">
+            <span className="font-bold tabular-nums" aria-hidden>{counts[index]}</span>
+            <div className="flex h-20 w-full items-end overflow-hidden rounded-t-md bg-muted">
+              <div
+                className={`flex w-full items-start justify-center pt-2 text-primary-foreground transition-[height] duration-500 ${getMcqOptionStyle(index)}`}
+                style={{ height: `${Math.max(counts[index] > 0 ? 18 : 0, (counts[index] / max) * 100)}%` }}
+              >
+                <McqOptionIcon index={index} className="h-5 w-5 shrink-0" />
+              </div>
+            </div>
+            <span className="sr-only">{getMcqOptionName(index)}: {counts[index]} odpovědí</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 /** Pořadí za aktuální otázku + průběžný žebříček napříč MCQ otázkami. */
 export const McqResultsBoard = ({ players, responses, questionIndex, slides }: BoardProps) => {
