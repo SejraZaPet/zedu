@@ -49,7 +49,7 @@ const blanksFromText = (text: string, reveal: boolean) => {
 
 const ActivityTaskPreview = ({ spec, showSolution = false, darkMode = false }: Props) => {
   const type = spec?.activityType;
-  const base = darkMode ? "text-white" : "text-foreground";
+  const base = darkMode ? "text-white text-scrim-shadow" : "text-foreground";
   const muted = darkMode ? "text-white/70" : "text-muted-foreground";
   const chip = darkMode
     ? "bg-white/15 border-white/30 text-white"

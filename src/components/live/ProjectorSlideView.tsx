@@ -1,3 +1,4 @@
+import TextScrim from "@/components/ui/text-scrim";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
@@ -255,9 +256,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                         {!revealed && session?.status === "playing" && (
                           <div className="w-full max-w-md"><McqCountdown session={session} active size="lg" /></div>
                         )}
-                        <div className="w-full rounded-2xl border border-white/20 bg-white/5 px-8 py-6 text-2xl">
+                        <TextScrim className="w-full border border-white/20 px-8 py-6 text-2xl">
                           <ActivityTaskPreview spec={currentSlide.activitySpec} showSolution={revealed} darkMode />
-                        </div>
+                        </TextScrim>
                         {revealed && responses && (
                           <div className="grid w-full max-w-5xl grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-4">
                             <McqAnswerDistribution
@@ -271,9 +272,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       </div>
                     );
                   })() : (
-                  <div className="w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
+                  <TextScrim className="w-full max-w-5xl border border-white/20 px-8 py-6 shrink-0 text-xl">
                     <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
-                  </div>
+                  </TextScrim>
                   )
                 ) : currentSlide.type === "activity" ? (
                   <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
