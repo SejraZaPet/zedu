@@ -1,3 +1,4 @@
+import { MESSAGES_READ_EVENT } from "@/hooks/useUnreadMessages";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
@@ -80,6 +81,7 @@ const MessagesPage = () => {
       setAtts(a ?? []);
     } else setAtts([]);
     if (uid) await db.from("conversation_participants").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", id).eq("user_id", uid);
+    window.dispatchEvent(new Event(MESSAGES_READ_EVENT));
   }, [uid]);
 
   useEffect(() => { if (activeId) loadConv(activeId); }, [activeId, loadConv]);

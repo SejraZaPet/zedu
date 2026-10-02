@@ -15,6 +15,7 @@ import { useMySchool } from "@/hooks/useMySchool";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { MessagesSquare } from "lucide-react";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
@@ -265,8 +266,15 @@ const SiteHeader = () => {
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4 shrink-0">
               <SchoolViewSwitcher />
-              <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-primary" aria-label="Zprávy" onClick={() => navigate("/zpravy")}>
-                <MessagesSquare size={18} />
+              <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-primary" aria-label={unreadMessages ? `Zprávy, ${unreadMessages} nepřečtených` : "Zprávy"} onClick={() => navigate("/zpravy")}>
+                <span className="relative inline-flex">
+                  <MessagesSquare size={18} />
+                  {unreadMessages > 0 && (
+                    <span aria-hidden="true" className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-[18px] text-center">
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </span>
+                  )}
+                </span>
               </Button>
               <NotificationBell />
               <DropdownMenu>
@@ -439,7 +447,12 @@ const SiteHeader = () => {
               {isLoggedIn ? (
                 <>
                   <button onClick={() => { setMenuOpen(false); navigate("/zpravy"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/zpravy" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
-                    <MessagesSquare size={18} /> Zprávy
+                    <MessagesSquare size={18} /> <span className="font-semibold text-foreground">Zprávy</span>
+                    {unreadMessages > 0 && (
+                      <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold leading-[22px] text-center" aria-label={`${unreadMessages} nepřečtených`}>
+                        {unreadMessages > 99 ? "99+" : unreadMessages}
+                      </span>
+                    )}
                   </button>
                   <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
                     <User size={18} /> Profil
