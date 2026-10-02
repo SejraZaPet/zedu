@@ -1,3 +1,4 @@
+import TextScrim from "@/components/ui/text-scrim";
 import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -143,9 +144,15 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
         )}
 
         {/* Question */}
-        <h2 className={cn("text-3xl md:text-5xl font-heading font-bold text-center max-w-4xl leading-tight", hasBackdrop ? "text-white drop-shadow-lg" : "text-foreground")}>
-          {question.question}
-        </h2>
+        {hasBackdrop ? (
+          <TextScrim as="h2" className="text-3xl md:text-5xl font-heading font-bold text-center max-w-4xl leading-tight px-8 py-5">
+            {question.question}
+          </TextScrim>
+        ) : (
+          <h2 className="text-3xl md:text-5xl font-heading font-bold text-center max-w-4xl leading-tight text-foreground">
+            {question.question}
+          </h2>
+        )}
 
         {/* Answers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
