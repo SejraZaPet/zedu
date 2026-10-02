@@ -42,7 +42,21 @@ const renderHeader = () =>
   );
 
 const openMobileMenu = () => {
-  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  // Hamburger má aria-label "Menu", desktopový dropdown má jen text "Menu".
+  const hamburger = document.querySelector<HTMLButtonElement>(
+    'button[aria-label="Menu"]',
+  );
+  expect(hamburger).not.toBeNull();
+  fireEvent.click(hamburger!);
+};
+
+// Desktop má ikonku s aria-label "Zprávy", mobilní položka je tlačítko s textem.
+const getMobileMessagesButton = () => {
+  const candidates = screen
+    .getAllByRole("button", { name: /Zprávy/ })
+    .filter((b) => b.className.includes("w-full"));
+  expect(candidates).toHaveLength(1);
+  return candidates[0];
 };
 
 describe.each(["user", "teacher", "rodic"] as const)(
