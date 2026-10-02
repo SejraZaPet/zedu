@@ -438,6 +438,9 @@ const SiteHeader = () => {
             <div className="border-t border-border mt-2 pt-2">
               {isLoggedIn ? (
                 <>
+                  <button onClick={() => { setMenuOpen(false); navigate("/zpravy"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/zpravy" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                    <MessagesSquare size={18} /> Zprávy
+                  </button>
                   <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
                     <User size={18} /> Profil
                   </button>
