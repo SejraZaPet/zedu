@@ -118,10 +118,26 @@ export function useGameSession(
   };
 
   // Subscribe to realtime with reconnect logic
-  const subscribe = useCallback(() => {
+  const subscribe = useCallback(async () => {
     if (!sessionId || !mountedRef.current) return;
 
     // Clean up previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Kanál se musí připojit až s tokenem přihlášeného uživatele. Při otevření
+    // stránky (např. projekce v novém okně) se jinak připojil jako anonym a
+    // RLS mu tiše zahazovalo změny snímku i připojení žáků — pomohl jen F5.
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (token) await supabase.realtime.setAuth(token);
+    } catch {
+      // bez tokenu pokračujeme (anonymní hráč s join tokenem)
+    }
+    if (!mountedRef.current) return;
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
