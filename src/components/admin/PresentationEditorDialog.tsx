@@ -155,19 +155,22 @@ interface SlideThumbnailProps {
   dragging: boolean;
   onSelect: (index: number) => void;
   onMove: (from: number, to: number) => void;
+  onDragStateChange: (index: number | null) => void;
 }
 
 /** Těžký obsah náhledu se překreslí jen při změně daného slidu, ne při psaní do jiného. */
 const SlideThumbnail = memo(function SlideThumbnail({
-  slide, index, themeId, active, dragging, onSelect, onMove,
+  slide, index, themeId, active, dragging, onSelect, onMove, onDragStateChange,
 }: SlideThumbnailProps) {
   return (
     <div
       draggable
       onDragStart={(e) => {
+        onDragStateChange(index);
         e.dataTransfer.setData("text/x-bezli-slide-index", String(index));
         e.dataTransfer.effectAllowed = "move";
       }}
+      onDragEnd={() => onDragStateChange(null)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -666,6 +669,11 @@ export const PresentationEditorDialog = ({
     setSelectedBlockId(null);
   }, [setEditingSlideIndex]);
 
+  const setSlideDragState = useCallback((index: number | null) => {
+    setDragSlideIndex(index);
+    if (index === null) setDropSlideIndex(null);
+  }, []);
+
   /** Vložení snímků na konkrétní pozici (index = kam se vloží první z nich). */
   const insertSlidesAt = (index: number, newSlides: any[]) => {
     if (!newSlides.length) return;
@@ -984,6 +992,7 @@ export const PresentationEditorDialog = ({
                       dragging={dragSlideIndex === i}
                       onSelect={selectSlide}
                       onMove={moveSlide}
+                      onDragStateChange={setSlideDragState}
                     />
                     {/* Šipky pro přesun (záloha k drag & drop) */}
                     {pendingSlides.length > 1 && (
