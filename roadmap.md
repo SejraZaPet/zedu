@@ -53,5 +53,5 @@
 - [x] Ověřit sestavení a vykreslení žákovských voleb, projekce a grafu regresním testem.
 
 ## Oprava úkolu Výživa (2026-10-04)
-- [ ] write_lines -> short_answer ve worksheetu 3a416b2a
-- [ ] WorksheetPlayer: živý lock + hláška Termín vypršel
+- [x] write_lines -> short_answer ve worksheetu 3a416b2a
+- [x] WorksheetPlayer: živý lock + hláška Termín vypršel
