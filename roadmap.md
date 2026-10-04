@@ -60,4 +60,4 @@
 - [x] Obrázková pozadí zobrazit ve fullscreen celá, vystředěná a bez ořezu.
 - [x] Přesouvání slidů promítnout okamžitě do editoru a bezpečně uložit.
 - [x] Omezit zbytečné překreslování náhledů s velkými PNG.
-- [ ] Ověřit regresní testy a fullscreen náhled.
+- [x] Ověřit regresní testy a fullscreen náhled.
