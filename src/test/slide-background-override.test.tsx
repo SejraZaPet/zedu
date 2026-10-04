@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 
@@ -58,5 +58,22 @@ describe("SlideCanvas pozadí slidu", () => {
     const el = stageOf(container);
     expect(el.style.backgroundColor).toBe("rgb(224, 242, 254)");
     expect(el.style.backgroundImage).toBe("none");
+  });
+
+  it("nad hotovým obrázkovým slidem nezobrazuje prázdné editorové placeholdery", () => {
+    render(
+      <SlideCanvas
+        editable
+        slide={{
+          projector: { headline: "", body: "" },
+          blocks: [],
+          backgroundOverride: { image: "https://cdn.test/composed-slide.jpg" },
+          hideEmptyEditorPlaceholders: true,
+        }}
+      />,
+    );
+
+    expect(screen.queryByPlaceholderText("Nadpis slidu")).toBeNull();
+    expect(screen.queryByText("Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.")).toBeNull();
   });
 });
