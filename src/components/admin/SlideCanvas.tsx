@@ -1675,8 +1675,7 @@ export function SlideBody({
   const fontScale = slide?.projector?.fontScale || 1;
   const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
-  const hasImageBackground = Boolean(slide?.backgroundOverride?.image);
-  const hideEmptyEditorPlaceholders = hasImageBackground && rawBlocks.length === 0;
+  const hideEmptyEditorPlaceholders = slide?.hideEmptyEditorPlaceholders === true && rawBlocks.length === 0;
 
   // Apply progressive-reveal transformation when not editing.
   const allBlocks: Block[] = !editable && typeof revealStep === "number"

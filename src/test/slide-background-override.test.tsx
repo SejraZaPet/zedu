@@ -68,6 +68,7 @@ describe("SlideCanvas pozadí slidu", () => {
           projector: { headline: "", body: "" },
           blocks: [],
           backgroundOverride: { image: "https://cdn.test/composed-slide.jpg" },
+          hideEmptyEditorPlaceholders: true,
         }}
       />,
     );
