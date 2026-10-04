@@ -370,7 +370,13 @@ const StudentAssignmentPlayer = () => {
     }
   };
 
-  const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline) < new Date() : false;
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (!assignment?.deadline) return;
+    const id = setInterval(() => setNowTick(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, [assignment?.deadline]);
+  const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline).getTime() < nowTick : false;
   const isReadOnly = attempt?.status !== "in_progress" || isDeadlinePassed;
   /** Prohlížení už uzavřeného odevzdání (po termínu nebo po vyčerpání pokusů). */
   const isReviewMode = isReadOnly && !!attempt;
@@ -805,6 +811,11 @@ const StudentAssignmentPlayer = () => {
             variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
             attemptId={attempt?.id ?? null}
             locked={isReadOnly}
+            lockedMessage={
+              isDeadlinePassed && attempt?.status === "in_progress"
+                ? "Termín vypršel – odpovědi už nelze měnit ani odevzdat. Pokud potřebuješ víc času, napiš učiteli."
+                : null
+            }
             showResults={isReviewMode && revealCorrectAnswers}
             initialAnswers={(attempt?.answers as any) || {}}
 
