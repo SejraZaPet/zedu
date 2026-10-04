@@ -57,7 +57,7 @@
 - [x] WorksheetPlayer: živý lock + hláška Termín vypršel
 
 ## Prezentace — fullscreen a rychlost editoru (2026-10-04)
-- [ ] Obrázková pozadí zobrazit ve fullscreen celá, vystředěná a bez ořezu.
-- [ ] Přesouvání slidů promítnout okamžitě do editoru a bezpečně uložit.
-- [ ] Omezit zbytečné překreslování náhledů s velkými PNG.
+- [x] Obrázková pozadí zobrazit ve fullscreen celá, vystředěná a bez ořezu.
+- [x] Přesouvání slidů promítnout okamžitě do editoru a bezpečně uložit.
+- [x] Omezit zbytečné překreslování náhledů s velkými PNG.
 - [ ] Ověřit regresní testy a fullscreen náhled.

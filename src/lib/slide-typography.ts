@@ -141,7 +141,7 @@ export function slideAnimationClass(animation?: string | null): string {
 export function slideBackgroundOverride(slide: any): string | null {
   const image = slide?.backgroundOverride?.image;
   if (typeof image === "string" && image) {
-    return `#000 url("${image.replace(/"/g, "%22")}") center / cover no-repeat`;
+    return `#000 url("${image.replace(/"/g, "%22")}") center / contain no-repeat`;
   }
   const gradient = gradientCss(slide?.backgroundOverride?.gradient);
   if (gradient) return gradient;
@@ -159,7 +159,9 @@ export function slideBackgroundOverrideStyle(slide: any): Record<string, string>
   if (typeof image === "string" && image) {
     return {
       backgroundImage: `url("${image.replace(/"/g, "%22")}")`,
-      backgroundSize: "cover",
+      // Obrázky vložené jako pozadí často představují celý hotový slide
+      // (např. export z Canvy). Proto se nesmí oříznout ani na jiném poměru obrazovky.
+      backgroundSize: "contain",
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
       backgroundColor: "transparent",

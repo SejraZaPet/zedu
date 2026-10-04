@@ -6,3 +6,4 @@
 - Keep assignment descriptions as sanitized limited HTML, with one shared renderer and plain-text conversion for speech or AI context, so legacy text and formatted instructions stay consistent.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Keep live MCQ option colors, shapes, and accessible names in one shared mapping so projector, student controls, and result charts always match.
+- Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
