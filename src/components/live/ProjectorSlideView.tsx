@@ -172,9 +172,13 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   // Snímky bez bloků dostanou dopočítané bloky, aby měly stejnou sazbu
   // i „scale-to-fit“ chování jako blokové snímky.
   const canvasSlide = useMemo(() => slideWithFallbackBlocks(currentSlide), [currentSlide]);
+  // Obrázkový snímek (např. PNG z Canvy) bez bloků musí jít také přes SlideCanvas —
+  // pozadí scény se kvůli ořezu nepřenáší, takže jinak by zůstala prázdná plocha.
   const hasCanvasContent = !!(
     canvasSlide &&
-    ((canvasSlide.blocks && canvasSlide.blocks.length > 0) || canvasSlide.projector?.headline)
+    ((canvasSlide.blocks && canvasSlide.blocks.length > 0) ||
+      canvasSlide.projector?.headline ||
+      projectorBgOverride)
   );
 
   const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
