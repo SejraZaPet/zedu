@@ -269,6 +269,12 @@ export const PresentationEditorDialog = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const reorderSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSlidesRef = useRef(pendingSlides);
+  const onSaveRef = useRef(onSave);
+  const toastRef = useRef(toast);
+  pendingSlidesRef.current = pendingSlides;
+  onSaveRef.current = onSave;
+  toastRef.current = toast;
 
 
   const currentSlide = pendingSlides[editingSlideIndex];
@@ -637,32 +643,33 @@ export const PresentationEditorDialog = ({
 
   /** Přesun snímku na jinou pozici (drag & drop i šipky). */
   const moveSlide = useCallback((from: number, to: number) => {
-    setPendingSlides((previous) => {
-      if (from === to || from < 0 || to < 0 || from >= previous.length || to >= previous.length) return previous;
-      const updated = [...previous];
-      const [moved] = updated.splice(from, 1);
-      if (!moved) return previous;
-      updated.splice(to, 0, moved);
+    const previous = pendingSlidesRef.current;
+    if (from === to || from < 0 || to < 0 || from >= previous.length || to >= previous.length) return;
+    const updated = [...previous];
+    const [moved] = updated.splice(from, 1);
+    if (!moved) return;
+    updated.splice(to, 0, moved);
+    pendingSlidesRef.current = updated;
+    setPendingSlides(updated);
 
-      // Pořadí je v UI změněné okamžitě. Uložení běží sériově na pozadí,
-      // aby rychlé přesuny nemohla starší odpověď přepsat novějším pořadím.
-      if (onSave) {
-        reorderSaveQueueRef.current = reorderSaveQueueRef.current
-          .catch(() => undefined)
-          .then(() => onSave(updated))
-          .catch((error: unknown) => {
-            toast({
-              title: "Pořadí snímků se nepodařilo uložit",
-              description: error instanceof Error ? error.message : "Zkuste přesun zopakovat.",
-              variant: "destructive",
-            });
+    // Pořadí je v UI změněné okamžitě. Uložení běží sériově na pozadí,
+    // aby rychlé přesuny nemohla starší odpověď přepsat novějším pořadím.
+    const save = onSaveRef.current;
+    if (save) {
+      reorderSaveQueueRef.current = reorderSaveQueueRef.current
+        .catch(() => undefined)
+        .then(() => save(updated))
+        .catch((error: unknown) => {
+          toastRef.current({
+            title: "Pořadí snímků se nepodařilo uložit",
+            description: error instanceof Error ? error.message : "Zkuste přesun zopakovat.",
+            variant: "destructive",
           });
-      }
-      return updated;
-    });
+        });
+    }
     setEditingSlideIndex(to);
     setSelectedBlockId(null);
-  }, [onSave, setEditingSlideIndex, setPendingSlides, toast]);
+  }, [setEditingSlideIndex, setPendingSlides]);
 
   const selectSlide = useCallback((index: number) => {
     setEditingSlideIndex(index);
