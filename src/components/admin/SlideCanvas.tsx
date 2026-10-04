@@ -1675,6 +1675,8 @@ export function SlideBody({
   const fontScale = slide?.projector?.fontScale || 1;
   const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
+  const hasImageBackground = Boolean(slide?.backgroundOverride?.image);
+  const hideEmptyEditorPlaceholders = hasImageBackground && rawBlocks.length === 0;
 
   // Apply progressive-reveal transformation when not editing.
   const allBlocks: Block[] = !editable && typeof revealStep === "number"
@@ -1868,7 +1870,7 @@ export function SlideBody({
       onCommit={(v) => onChangeHeadline?.(v)}
     />
   );
-  const headlineEl = !editable && !headline
+  const headlineEl = (!editable && !headline) || (editable && !headline && hideEmptyEditorPlaceholders)
     ? null
     : headlineBackground
       ? <div data-headline-background="true" className="w-full" style={headlineBackground}>{headlineText}</div>
@@ -2113,7 +2115,7 @@ export function SlideBody({
       <>
         {headlineEl}
         <div data-slide-group="full" className={`w-full space-y-6 ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
-          {blocks.length === 0 && framedBlocks.length === 0 && editable ? (
+          {blocks.length === 0 && framedBlocks.length === 0 && editable && !hideEmptyEditorPlaceholders ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.
             </div>
