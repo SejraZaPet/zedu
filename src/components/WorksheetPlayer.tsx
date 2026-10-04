@@ -55,6 +55,8 @@ export interface WorksheetPlayerProps {
   showResults?: boolean;
   /** Pre-loaded answers (e.g. from server restore) */
   initialAnswers?: WorksheetAnswers;
+  /** Visible explanation shown while locked (e.g. deadline passed) */
+  lockedMessage?: string | null;
 }
 
 // ────────────────── Scoring ──────────────────
@@ -152,6 +154,7 @@ export default function WorksheetPlayer({
   locked = false,
   showResults = false,
   initialAnswers,
+  lockedMessage = null,
 }: WorksheetPlayerProps) {
   const variant = useMemo(
     () => spec.variants.find((v) => v.variantId === variantId),
@@ -178,6 +181,10 @@ export default function WorksheetPlayer({
   });
 
   const [submitted, setSubmitted] = useState(locked);
+  // Keep the visual lock in sync with the parent (e.g. deadline passes mid-attempt)
+  useEffect(() => {
+    if (locked) setSubmitted(true);
+  }, [locked]);
   const [results, setResults] = useState<ReturnType<typeof scoreWorksheet> | null>(null);
 
   // Restore on mount
@@ -310,6 +317,12 @@ export default function WorksheetPlayer({
           </Badge>
         </div>
       </div>
+
+      {locked && lockedMessage && (
+        <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+          {lockedMessage}
+        </div>
+      )}
 
       {/* Instructions */}
       {spec.header.instructions && !submitted && (
