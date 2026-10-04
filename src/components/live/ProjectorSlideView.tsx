@@ -155,7 +155,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   // Pořadí: pozadí snímku → pozadí celé hry → výchozí vzhled (lekce / téma).
   const useGameBg = !projectorBgOverride && !!backgroundUrl;
   const projectorStageStyle: CSSProperties = projectorBgOverride
-    ? { ...(({ background, ...rest }) => rest)(themeStageStyle(projectorTheme) as any), ...projectorBgOverride }
+    ? {
+        // Vlastní obrázek vykresluje pouze vnitřní 16:9 SlideCanvas. Jeho opakování
+        // přes celý viewport by na 16:10/21:9 obrazovkách vytvořilo oříznutou kopii.
+        ...(({ background, backgroundImage, backgroundSize, backgroundPosition, backgroundRepeat, ...rest }) => rest)(
+          themeStageStyle(projectorTheme) as any,
+        ),
+        backgroundColor: "hsl(var(--background))",
+      }
     : useGameBg
       ? gameBackgroundStyle(backgroundUrl)
     : isLessonPresentation

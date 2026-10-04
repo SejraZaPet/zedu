@@ -1,5 +1,5 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
-import { useState, useEffect, useRef } from "react";
+import { memo, useCallback, useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -147,6 +147,67 @@ const blockLabel = (block: Block, index: number) => {
 
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
+interface SlideThumbnailProps {
+  slide: any;
+  index: number;
+  themeId: string;
+  active: boolean;
+  dragging: boolean;
+  onSelect: (index: number) => void;
+  onMove: (from: number, to: number) => void;
+  onDragStateChange: (index: number | null) => void;
+}
+
+/** Těžký obsah náhledu se překreslí jen při změně daného slidu, ne při psaní do jiného. */
+const SlideThumbnail = memo(function SlideThumbnail({
+  slide, index, themeId, active, dragging, onSelect, onMove, onDragStateChange,
+}: SlideThumbnailProps) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        onDragStateChange(index);
+        e.dataTransfer.setData("text/x-bezli-slide-index", String(index));
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => onDragStateChange(null)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData("text/x-bezli-slide-index"));
+        if (Number.isInteger(from)) onMove(from, index);
+      }}
+      className={`relative flex-shrink-0 ${dragging ? "opacity-50" : ""}`}
+    >
+      <button
+        onClick={() => onSelect(index)}
+        title={slide.projector?.headline || `Slide ${index + 1}`}
+        className={`relative aspect-video w-20 flex-shrink-0 cursor-grab overflow-hidden rounded-md border-2 transition-colors xl:w-28 ${
+          active ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
+        }`}
+        style={themeStageStyle(getPresentationTheme(themeId))}
+      >
+        <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
+          <div
+            className="absolute left-0 top-0 origin-top-left"
+            style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
+          >
+            <SlideBody slide={slide} themeId={themeId} />
+          </div>
+        </div>
+        <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
+          {index + 1}
+        </span>
+        {slide?.lockedFromLesson ? (
+          <span className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground" title="Uzamčený snímek – neaktualizuje se z lekce">
+            <Lock className="h-3 w-3" />
+          </span>
+        ) : null}
+      </button>
+    </div>
+  );
+});
+
 export const PresentationEditorDialog = ({
   presentationLesson, source, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
@@ -207,6 +268,13 @@ export const PresentationEditorDialog = ({
   const [zoom, setZoom] = useState<number | "fit">("fit");
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
+  const reorderSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSlidesRef = useRef(pendingSlides);
+  const onSaveRef = useRef(onSave);
+  const toastRef = useRef(toast);
+  pendingSlidesRef.current = pendingSlides;
+  onSaveRef.current = onSave;
+  toastRef.current = toast;
 
 
   const currentSlide = pendingSlides[editingSlideIndex];
@@ -574,15 +642,44 @@ export const PresentationEditorDialog = ({
 
 
   /** Přesun snímku na jinou pozici (drag & drop i šipky). */
-  const moveSlide = (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0 || from >= pendingSlides.length || to >= pendingSlides.length) return;
-    const updated = [...pendingSlides];
+  const moveSlide = useCallback((from: number, to: number) => {
+    const previous = pendingSlidesRef.current;
+    if (from === to || from < 0 || to < 0 || from >= previous.length || to >= previous.length) return;
+    const updated = [...previous];
     const [moved] = updated.splice(from, 1);
+    if (!moved) return;
     updated.splice(to, 0, moved);
+    pendingSlidesRef.current = updated;
     setPendingSlides(updated);
+
+    // Pořadí je v UI změněné okamžitě. Uložení běží sériově na pozadí,
+    // aby rychlé přesuny nemohla starší odpověď přepsat novějším pořadím.
+    const save = onSaveRef.current;
+    if (save) {
+      reorderSaveQueueRef.current = reorderSaveQueueRef.current
+        .catch(() => undefined)
+        .then(() => save(updated))
+        .catch((error: unknown) => {
+          toastRef.current({
+            title: "Pořadí snímků se nepodařilo uložit",
+            description: error instanceof Error ? error.message : "Zkuste přesun zopakovat.",
+            variant: "destructive",
+          });
+        });
+    }
     setEditingSlideIndex(to);
     setSelectedBlockId(null);
-  };
+  }, [setEditingSlideIndex, setPendingSlides]);
+
+  const selectSlide = useCallback((index: number) => {
+    setEditingSlideIndex(index);
+    setSelectedBlockId(null);
+  }, [setEditingSlideIndex]);
+
+  const setSlideDragState = useCallback((index: number | null) => {
+    setDragSlideIndex(index);
+    if (index === null) setDropSlideIndex(null);
+  }, []);
 
   /** Vložení snímků na konkrétní pozici (index = kam se vloží první z nich). */
   const insertSlidesAt = (index: number, newSlides: any[]) => {
@@ -893,47 +990,17 @@ export const PresentationEditorDialog = ({
                       </span>
                     </div>
                   ) : null}
-                  <div
-                    draggable
-                    onDragStart={(e) => { setDragSlideIndex(i); e.dataTransfer.effectAllowed = "move"; }}
-                    onDragEnd={() => { setDragSlideIndex(null); setDropSlideIndex(null); }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (dragSlideIndex !== null) moveSlide(dragSlideIndex, i);
-                      setDragSlideIndex(null);
-                      setDropSlideIndex(null);
-                    }}
-                    className={`relative flex-shrink-0 ${dragSlideIndex === i ? "opacity-50" : ""}`}
-                  >
-                    <button
-                      onClick={() => { setEditingSlideIndex(i); setSelectedBlockId(null); }}
-                      title={slide.projector?.headline || `Slide ${i + 1}`}
-                      className={`relative aspect-video w-20 flex-shrink-0 xl:w-28 cursor-grab overflow-hidden rounded-md border-2 transition-colors ${
-                        i === editingSlideIndex ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
-                      }`}
-                      style={themeStageStyle(theme)}
-                    >
-                      <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
-                      <div
-                        className="absolute left-0 top-0 origin-top-left"
-                        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
-                      >
-                        <SlideBody slide={slide} themeId={themeId} />
-                      </div>
-                      </div>
-                      <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
-                        {i + 1}
-                      </span>
-                      {slide?.lockedFromLesson ? (
-                        <span
-                          className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground"
-                          title="Uzamčený snímek – neaktualizuje se z lekce"
-                        >
-                          <Lock className="h-3 w-3" />
-                        </span>
-                      ) : null}
-                    </button>
+                  <div className="relative flex-shrink-0">
+                    <SlideThumbnail
+                      slide={slide}
+                      index={i}
+                      themeId={themeId}
+                      active={i === editingSlideIndex}
+                      dragging={dragSlideIndex === i}
+                      onSelect={selectSlide}
+                      onMove={moveSlide}
+                      onDragStateChange={setSlideDragState}
+                    />
                     {/* Šipky pro přesun (záloha k drag & drop) */}
                     {pendingSlides.length > 1 && (
                       <div className="absolute right-0.5 top-0.5 flex gap-0.5">

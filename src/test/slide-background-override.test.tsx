@@ -10,12 +10,12 @@ describe("slideBackgroundOverrideStyle", () => {
     expect(style && "background" in style).toBe(false);
   });
 
-  it("vrací explicitní obrázek s cover/center", () => {
+  it("vrací explicitní obrázek s contain/center bez ořezu", () => {
     const style = slideBackgroundOverrideStyle({
       backgroundOverride: { image: "https://cdn.test/bg.jpg" },
     })!;
     expect(style.backgroundImage).toBe('url("https://cdn.test/bg.jpg")');
-    expect(style.backgroundSize).toBe("cover");
+    expect(style.backgroundSize).toBe("contain");
     expect(style.backgroundPosition).toBe("center");
     expect(style.backgroundColor).toBe("transparent");
     expect("background" in style).toBe(false);
@@ -41,7 +41,7 @@ describe("SlideCanvas pozadí slidu", () => {
     );
     const el = stageOf(container);
     expect(el.style.backgroundImage).toContain("https://cdn.test/bg.jpg");
-    expect(el.style.backgroundSize).toBe("cover");
+    expect(el.style.backgroundSize).toBe("contain");
     expect(el.style.background).not.toContain("linear-gradient");
   });
 
