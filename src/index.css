@@ -318,6 +318,7 @@ body.a11y-line-height main .whitespace-pre-wrap {
 
 /* Čitelnost textu na fotografickém pozadí (TextScrim) */
 :root { --scrim: 0 0% 0%; }
+:root { --demo-banner: 25 95% 50%; --demo-banner-foreground: 0 0% 100%; }
 .text-scrim-shadow {
   text-shadow: 0 2px 4px hsl(var(--scrim) / 0.85), 0 0 18px hsl(var(--scrim) / 0.6);
 }

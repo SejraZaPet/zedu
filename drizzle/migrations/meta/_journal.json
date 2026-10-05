@@ -288,6 +288,13 @@
       "when": 1791193007887,
       "tag": "0040_demo_mode_protection",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791195993161,
+      "tag": "0041_demo_pairs_and_rate",
+      "breakpoints": true
     }
   ]
 }

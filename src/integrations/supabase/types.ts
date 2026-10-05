@@ -2323,6 +2323,71 @@ export type Database = {
           },
         ]
       }
+      demo_pairs: {
+        Row: {
+          created_at: string
+          event_tag: string | null
+          group_id: string | null
+          id: string
+          ip_hash: string
+          last_active_at: string
+          return_code: string
+          student_user_id: string
+          teacher_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_tag?: string | null
+          group_id?: string | null
+          id?: string
+          ip_hash: string
+          last_active_at?: string
+          return_code: string
+          student_user_id: string
+          teacher_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_tag?: string | null
+          group_id?: string | null
+          id?: string
+          ip_hash?: string
+          last_active_at?: string
+          return_code?: string
+          student_user_id?: string
+          teacher_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_pairs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_rate_events: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          kind: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          ip_hash: string
+          kind: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          ip_hash?: string
+          kind?: string
+        }
+        Relationships: []
+      }
       email_log: {
         Row: {
           body_text: string | null
@@ -8173,6 +8238,14 @@ export type Database = {
       get_follower_count: { Args: { _creator_id: string }; Returns: number }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
+      get_my_demo_pair: {
+        Args: never
+        Returns: {
+          event_tag: string
+          my_side: string
+          return_code: string
+        }[]
+      }
       get_player_session: {
         Args: { _join_token?: string; _session_id: string }
         Returns: {
