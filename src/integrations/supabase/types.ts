@@ -2388,6 +2388,24 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_shared_users: {
+        Row: {
+          created_at: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_log: {
         Row: {
           body_text: string | null
@@ -8205,6 +8223,14 @@ export type Database = {
           weight_total: number
         }[]
       }
+      demo_can_see_assignment: { Args: { _aid: string }; Returns: boolean }
+      demo_can_see_class: { Args: { _class_id: string }; Returns: boolean }
+      demo_can_see_group: { Args: { _group_id: string }; Returns: boolean }
+      demo_can_see_owned: { Args: { _owner: string }; Returns: boolean }
+      demo_can_see_portfolio_item: { Args: { _iid: string }; Returns: boolean }
+      demo_can_see_session: { Args: { _sid: string }; Returns: boolean }
+      demo_can_see_user: { Args: { _target: string }; Returns: boolean }
+      demo_visible_user_ids: { Args: { _uid: string }; Returns: string[] }
       dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }

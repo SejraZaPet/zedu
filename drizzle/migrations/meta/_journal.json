@@ -295,6 +295,13 @@
       "when": 1791195993161,
       "tag": "0041_demo_pairs_and_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791197910557,
+      "tag": "0042_demo_isolation",
+      "breakpoints": true
     }
   ]
 }
