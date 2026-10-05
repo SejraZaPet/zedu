@@ -381,6 +381,7 @@ const SiteHeader = () => {
       {menuOpen && (
         <div className="md:hidden bg-background border-t border-border animate-fade-in">
           <nav className="flex flex-col px-6 py-4 gap-1">
+            {isLoggedIn && <DemoRoleSwitch className="mb-2 self-start" />}
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
