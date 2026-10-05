@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Paperclip, Send, Flag, Users, Plus, FileText } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import { useDemoPair } from "@/lib/demo";
 
 type Contact = { id: string; name: string; is_teacher: boolean; class_id: string | null; class_name: string | null };
 type Conv = { id: string; type: string; title: string | null; created_at: string };
@@ -302,4 +303,43 @@ const MessagesPage = () => {
   );
 };
 
-export default MessagesPage;
+const DemoMessages = ({ side }: { side: "teacher" | "student" }) => {
+  const sample = side === "teacher"
+    ? [
+        { me: false, who: "Tereza N.", text: "Dobrý den, můžu odevzdat úkol z výživy ještě dnes večer?" },
+        { me: true, who: "Vy", text: "Dobrý den, Terezo, ano, termín je až za dva týdny." },
+        { me: false, who: "Tereza N.", text: "Děkuji!" },
+      ]
+    : [
+        { me: false, who: "Demo učitel", text: "Ahoj, nezapomeň na ukázkový úkol z výživy." },
+        { me: true, who: "Ty", text: "Dobře, vyplním ho dnes." },
+      ];
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="container mx-auto max-w-3xl px-4 pt-24 pb-8">
+        <h1 className="text-3xl font-bold mb-4">Zprávy</h1>
+        <p role="note" className="mb-4 rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+          Ukázka. Zprávy fungují, jakmile jsou žáci ve vaší škole přihlášeni.
+        </p>
+        <section aria-label="Ukázková konverzace" className="border border-border rounded-xl bg-card p-4 space-y-3">
+          {sample.map((m, i) => (
+            <div key={i} className={`flex ${m.me ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.me ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                <div className="text-xs opacity-80 mb-0.5">{m.who}</div>
+                {m.text}
+              </div>
+            </div>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
+};
+
+const MessagesRoute = () => {
+  const pair = useDemoPair();
+  return pair ? <DemoMessages side={pair.side} /> : <MessagesPage />;
+};
+
+export default MessagesRoute;
