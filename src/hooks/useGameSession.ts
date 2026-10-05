@@ -151,8 +151,24 @@ export function useGameSession(
           // IMPORTANT: NEVER copy activity_data from the realtime payload — it contains
           // the unsanitized quiz data (with correct-answer flags). activity_data is sourced
           // exclusively from game_sessions_player_view via fetchData() polling.
+          const incomingRaw = payload.new as any;
+          // Změnil se počet snímků (např. zveřejněný koncept): obsah snímků
+          // znovu načteme bezpečnou cestou a teprve s ním použijeme nový index,
+          // aby projektor na okamžik neukázal špatný snímek.
+          if (Array.isArray(incomingRaw.activity_data)) {
+            let lengthChanged = false;
+            setSession((prev) => {
+              const prevLen = Array.isArray((prev as any)?.activity_data) ? (prev as any).activity_data.length : -1;
+              lengthChanged = prevLen !== incomingRaw.activity_data.length;
+              return prev;
+            });
+            if (lengthChanged) {
+              fetchData();
+              return;
+            }
+          }
           setSession((prev) => {
-            const incoming = { ...(payload.new as any) };
+            const incoming = { ...incomingRaw };
             delete incoming.activity_data;
             const merged = { ...(prev as any), ...incoming };
             if (incoming.settings == null && (prev as any)?.settings) merged.settings = (prev as any).settings;
