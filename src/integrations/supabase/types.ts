@@ -652,6 +652,7 @@ export type Database = {
           group_mode: string | null
           group_size: number | null
           id: string
+          is_demo_seed: boolean
           is_portfolio_task: boolean
           lesson_id: string | null
           lesson_plan_id: string | null
@@ -681,6 +682,7 @@ export type Database = {
           group_mode?: string | null
           group_size?: number | null
           id?: string
+          is_demo_seed?: boolean
           is_portfolio_task?: boolean
           lesson_id?: string | null
           lesson_plan_id?: string | null
@@ -710,6 +712,7 @@ export type Database = {
           group_mode?: string | null
           group_size?: number | null
           id?: string
+          is_demo_seed?: boolean
           is_portfolio_task?: boolean
           lesson_id?: string | null
           lesson_plan_id?: string | null
@@ -1684,6 +1687,7 @@ export type Database = {
           description: string
           field_of_study: string
           id: string
+          is_demo_seed: boolean
           leaderboard_anonymous: boolean
           leaderboard_enabled: boolean
           leaderboard_reset_at: string | null
@@ -1705,6 +1709,7 @@ export type Database = {
           description?: string
           field_of_study?: string
           id?: string
+          is_demo_seed?: boolean
           leaderboard_anonymous?: boolean
           leaderboard_enabled?: boolean
           leaderboard_reset_at?: string | null
@@ -1726,6 +1731,7 @@ export type Database = {
           description?: string
           field_of_study?: string
           id?: string
+          is_demo_seed?: boolean
           leaderboard_anonymous?: boolean
           leaderboard_enabled?: boolean
           leaderboard_reset_at?: string | null
@@ -4378,6 +4384,7 @@ export type Database = {
           created_at: string
           curriculum_topic_id: string | null
           id: string
+          is_demo_seed: boolean
           is_true: boolean | null
           question_text: string
           question_type: string
@@ -4393,6 +4400,7 @@ export type Database = {
           created_at?: string
           curriculum_topic_id?: string | null
           id?: string
+          is_demo_seed?: boolean
           is_true?: boolean | null
           question_text: string
           question_type: string
@@ -4408,6 +4416,7 @@ export type Database = {
           created_at?: string
           curriculum_topic_id?: string | null
           id?: string
+          is_demo_seed?: boolean
           is_true?: boolean | null
           question_text?: string
           question_type?: string
@@ -5287,6 +5296,7 @@ export type Database = {
           custom_primary_color: string | null
           custom_welcome_text: string | null
           id: string
+          is_demo: boolean
           name: string
           registration_code: string
           subdomain: string | null
@@ -5301,6 +5311,7 @@ export type Database = {
           custom_primary_color?: string | null
           custom_welcome_text?: string | null
           id?: string
+          is_demo?: boolean
           name: string
           registration_code?: string
           subdomain?: string | null
@@ -5315,6 +5326,7 @@ export type Database = {
           custom_primary_color?: string | null
           custom_welcome_text?: string | null
           id?: string
+          is_demo?: boolean
           name?: string
           registration_code?: string
           subdomain?: string | null
@@ -6434,6 +6446,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          is_demo_seed: boolean
           name: string
           school_year: string
           subject_id: string
@@ -6445,6 +6458,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          is_demo_seed?: boolean
           name: string
           school_year?: string
           subject_id: string
@@ -6456,6 +6470,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          is_demo_seed?: boolean
           name?: string
           school_year?: string
           subject_id?: string
@@ -6782,6 +6797,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_demo_seed: boolean
           lesson_id: string | null
           slides: Json
           source_lesson_id: string | null
@@ -6793,6 +6809,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_demo_seed?: boolean
           lesson_id?: string | null
           slides?: Json
           source_lesson_id?: string | null
@@ -6804,6 +6821,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_demo_seed?: boolean
           lesson_id?: string | null
           slides?: Json
           source_lesson_id?: string | null
@@ -6989,6 +7007,7 @@ export type Database = {
           difficulty_level: string | null
           grade_level: string[] | null
           id: string
+          is_demo_seed: boolean
           is_for_sale: boolean
           language: string
           order_index: number
@@ -7013,6 +7032,7 @@ export type Database = {
           difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          is_demo_seed?: boolean
           is_for_sale?: boolean
           language?: string
           order_index?: number
@@ -7037,6 +7057,7 @@ export type Database = {
           difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          is_demo_seed?: boolean
           is_for_sale?: boolean
           language?: string
           order_index?: number
@@ -7222,6 +7243,7 @@ export type Database = {
           created_at: string
           hero_image_url: string | null
           id: string
+          is_demo_seed: boolean
           presentation_slides: Json | null
           require_activities: boolean
           scheduled_publish_at: string | null
@@ -7237,6 +7259,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          is_demo_seed?: boolean
           presentation_slides?: Json | null
           require_activities?: boolean
           scheduled_publish_at?: string | null
@@ -7252,6 +7275,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          is_demo_seed?: boolean
           presentation_slides?: Json | null
           require_activities?: boolean
           scheduled_publish_at?: string | null
@@ -7662,6 +7686,7 @@ export type Database = {
           created_at: string
           grade_band: string
           id: string
+          is_demo_seed: boolean
           is_for_sale: boolean
           price: number | null
           scheduled_publish_at: string | null
@@ -7685,6 +7710,7 @@ export type Database = {
           created_at?: string
           grade_band?: string
           id?: string
+          is_demo_seed?: boolean
           is_for_sale?: boolean
           price?: number | null
           scheduled_publish_at?: string | null
@@ -7708,6 +7734,7 @@ export type Database = {
           created_at?: string
           grade_band?: string
           id?: string
+          is_demo_seed?: boolean
           is_for_sale?: boolean
           price?: number | null
           scheduled_publish_at?: string | null
@@ -8267,6 +8294,7 @@ export type Database = {
         Args: { _conv: string; _user: string }
         Returns: boolean
       }
+      is_demo_user: { Args: { _user_id: string }; Returns: boolean }
       is_direct_shared_textbook: {
         Args: { _textbook_id: string; _user_id: string }
         Returns: boolean
