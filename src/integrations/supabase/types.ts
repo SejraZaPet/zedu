@@ -3595,6 +3595,48 @@ export type Database = {
         }
         Relationships: []
       }
+      live_session_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          slide: Json
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          slide?: Json
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          slide?: Json
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_drafts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_session_drafts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_attempts: {
         Row: {
           attempted_at: string
@@ -8382,6 +8424,10 @@ export type Database = {
       publish_due_assignments: { Args: never; Returns: number }
       publish_due_lessons: { Args: never; Returns: number }
       publish_due_worksheets: { Args: never; Returns: number }
+      publish_live_draft: {
+        Args: { _draft_id: string; _go_to: boolean; _position: number }
+        Returns: number
+      }
       purge_deleted_textbooks: {
         Args: { _older_than_days?: number }
         Returns: number
