@@ -2323,6 +2323,78 @@ export type Database = {
           },
         ]
       }
+      demo_ai_usage: {
+        Row: {
+          created_at: string
+          function_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      demo_cleanup_log: {
+        Row: {
+          details: Json
+          id: string
+          pairs_deleted: number
+          run_at: string
+        }
+        Insert: {
+          details?: Json
+          id?: string
+          pairs_deleted?: number
+          run_at?: string
+        }
+        Update: {
+          details?: Json
+          id?: string
+          pairs_deleted?: number
+          run_at?: string
+        }
+        Relationships: []
+      }
+      demo_config: {
+        Row: {
+          ai_daily_global: number
+          ai_per_account: number
+          cleanup_batch: number
+          id: boolean
+          inactive_days: number
+          upload_max_bytes: number
+          upload_max_files: number
+        }
+        Insert: {
+          ai_daily_global?: number
+          ai_per_account?: number
+          cleanup_batch?: number
+          id?: boolean
+          inactive_days?: number
+          upload_max_bytes?: number
+          upload_max_files?: number
+        }
+        Update: {
+          ai_daily_global?: number
+          ai_per_account?: number
+          cleanup_batch?: number
+          id?: boolean
+          inactive_days?: number
+          upload_max_bytes?: number
+          upload_max_files?: number
+        }
+        Relationships: []
+      }
       demo_pairs: {
         Row: {
           created_at: string
@@ -2385,6 +2457,27 @@ export type Database = {
           id?: number
           ip_hash?: string
           kind?: string
+        }
+        Relationships: []
+      }
+      demo_seed_snapshot: {
+        Row: {
+          data: Json
+          row_id: string
+          table_name: string
+          taken_at: string
+        }
+        Insert: {
+          data: Json
+          row_id: string
+          table_name: string
+          taken_at?: string
+        }
+        Update: {
+          data?: Json
+          row_id?: string
+          table_name?: string
+          taken_at?: string
         }
         Relationships: []
       }
@@ -8223,6 +8316,10 @@ export type Database = {
           weight_total: number
         }[]
       }
+      demo_ai_reserve: {
+        Args: { _fn: string; _user_id: string }
+        Returns: boolean
+      }
       demo_can_see_assignment: { Args: { _aid: string }; Returns: boolean }
       demo_can_see_class: { Args: { _class_id: string }; Returns: boolean }
       demo_can_see_group: { Args: { _group_id: string }; Returns: boolean }
@@ -8230,7 +8327,29 @@ export type Database = {
       demo_can_see_portfolio_item: { Args: { _iid: string }; Returns: boolean }
       demo_can_see_session: { Args: { _sid: string }; Returns: boolean }
       demo_can_see_user: { Args: { _target: string }; Returns: boolean }
+      demo_cleanup_candidates: {
+        Args: never
+        Returns: {
+          last_active: string
+          pair_id: string
+          student_user_id: string
+          teacher_user_id: string
+        }[]
+      }
+      demo_pair_storage_objects: {
+        Args: { _pair_id: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
+      demo_purge_pair: { Args: { _pair_id: string }; Returns: Json }
+      demo_reset_seed: { Args: never; Returns: number }
       demo_seed_pair: { Args: { _pair_id: string }; Returns: string }
+      demo_storage_upload_ok: {
+        Args: { _metadata: Json; _name: string }
+        Returns: boolean
+      }
       demo_visible_user_ids: { Args: { _uid: string }; Returns: string[] }
       dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
