@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDemoPair } from "@/lib/demo";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoggedIn, role, loading: authLoading } = useAuth();
+  const demoPair = useDemoPair();
   const { isStaff } = useStaffPermissions();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -415,6 +417,27 @@ const ProfilePage = () => {
   }
 
   if (!profile) return null;
+
+  if (demoPair) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Testovací účet
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            <p>V testovacím režimu nelze měnit e-mail, heslo, školu ani další nastavení účtu.</p>
+            <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Zpět
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
