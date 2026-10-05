@@ -61,3 +61,9 @@
 - [x] Přesouvání slidů promítnout okamžitě do editoru a bezpečně uložit.
 - [x] Omezit zbytečné překreslování náhledů s velkými PNG.
 - [x] Ověřit regresní testy a fullscreen náhled.
+
+## Demo režim (2026-10-05)
+- [x] 1a ochrana dat
+- [x] 1b vstup bez registrace, dvojice účtů, přepínač, banner, návratový kód
+- [ ] 1c ukázkový obsah (čeká na pokyn)
+- [ ] 1d kvóty, serverové zablokování nastavení účtu, úklid po 14 dnech (čeká na pokyn)
