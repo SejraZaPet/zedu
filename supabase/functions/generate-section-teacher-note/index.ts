@@ -97,6 +97,11 @@ Bez nadpisu, bez úvodu a závěru, bez markdownu kromě odrážek.`;
     if (!note) return json({ error: "AI nevrátila poznámku" }, 500);
     return json({ note, ai_generated: true });
   } catch (e) {
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-section-teacher-note");
+    if (demoBlock) return demoBlock;
+  }
     console.error(e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

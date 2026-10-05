@@ -52,6 +52,11 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "ai-practice-rag");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
     const { lesson_id, student_id, method } = await req.json();

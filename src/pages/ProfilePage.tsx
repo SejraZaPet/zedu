@@ -429,7 +429,8 @@ const ProfilePage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>V testovacím režimu nelze měnit e-mail, heslo, školu ani další nastavení účtu.</p>
+            <p className="font-medium text-foreground">V testovacím účtu nelze měnit.</p>
+            <p>E-mail, heslo, školu, roli ani další nastavení účtu v testovacím režimu upravit nejde.</p>
             <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
               <ArrowLeft className="w-4 h-4" /> Zpět
             </Button>

@@ -205,6 +205,11 @@ Pravidla:
       filledSections,
     });
   } catch (e) {
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "parse-curriculum-document");
+    if (demoBlock) return demoBlock;
+  }
     console.error("parse-curriculum-document error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

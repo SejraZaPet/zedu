@@ -323,6 +323,20 @@
       "when": 1791198548759,
       "tag": "0045_demo_seed_pair_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791227065604,
+      "tag": "0046_demo_limits_and_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791227274208,
+      "tag": "0047_demo_reset_seed_admin_check",
+      "breakpoints": true
     }
   ]
 }

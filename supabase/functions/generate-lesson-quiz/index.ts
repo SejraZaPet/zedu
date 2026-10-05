@@ -146,6 +146,11 @@ ${shape}`;
     if (questions.length === 0) return json({ error: "AI nevytvořila žádnou použitelnou otázku." }, 500, runHdr);
     return json({ questions }, 200, runHdr);
   } catch (e) {
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-lesson-quiz");
+    if (demoBlock) return demoBlock;
+  }
     console.error("generate-lesson-quiz error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

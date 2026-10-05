@@ -197,6 +197,11 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
 
     return json({ props: { ...parsed, activityType } });
   } catch (e) {
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-activity-content");
+    if (demoBlock) return demoBlock;
+  }
     console.error("generate-activity-content error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

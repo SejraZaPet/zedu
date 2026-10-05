@@ -50,6 +50,11 @@ Deno.serve(async (req) => {
       status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-notification-text");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
     if (!LOVABLE_API_KEY) {
