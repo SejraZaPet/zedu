@@ -66,6 +66,11 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "cluster-open-responses");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
     if (!LOVABLE_API_KEY) {

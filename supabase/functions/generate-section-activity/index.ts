@@ -172,6 +172,11 @@ ${hint ? `Pokyn učitele: ${hint}` : ""}`;
 
     return json({ items, item: items[0] });
   } catch (e) {
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-section-activity");
+    if (demoBlock) return demoBlock;
+  }
     console.error("generate-section-activity error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

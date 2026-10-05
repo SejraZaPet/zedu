@@ -104,6 +104,11 @@ Deno.serve(async (req) => {
       status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-block-suggestions");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
 
