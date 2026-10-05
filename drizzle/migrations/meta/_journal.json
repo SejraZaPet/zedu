@@ -295,6 +295,34 @@
       "when": 1791195993161,
       "tag": "0041_demo_pairs_and_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791197910557,
+      "tag": "0042_demo_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791197966073,
+      "tag": "0043_demo_isolation_initplan",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791198217092,
+      "tag": "0044_demo_seed_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1791198548759,
+      "tag": "0045_demo_seed_pair_letters",
+      "breakpoints": true
     }
   ]
 }

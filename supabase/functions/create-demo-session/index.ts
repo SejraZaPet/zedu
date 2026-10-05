@@ -70,15 +70,20 @@ Deno.serve(async (req) => {
     if (mErr) throw new Error("member_failed");
 
     let code = "";
+    let pairId = "";
     for (let i = 0; i < 5; i++) {
       code = generateReturnCode();
-      const { error } = await db.from("demo_pairs").insert({
+      const { data: pr, error } = await db.from("demo_pairs").insert({
         teacher_user_id: teacher.id, student_user_id: student.id, group_id: cls.id,
         return_code: code, event_tag: eventTag, ip_hash: hash,
-      });
-      if (!error) break;
+      }).select("id").single();
+      if (!error && pr) { pairId = pr.id; break; }
       if (i === 4) throw new Error("pair_failed");
     }
+
+    // Spolužáci + ukázkový úkol s odevzdanými pracemi (jedna serverová funkce).
+    const { error: sErr } = await db.rpc("demo_seed_pair", { _pair_id: pairId });
+    if (sErr) console.error("demo_seed_pair failed", sErr.message);
 
     const session = await issueSession(db, role === "teacher" ? teacher.email : student.email);
     return json({ session, role, return_code: code });
