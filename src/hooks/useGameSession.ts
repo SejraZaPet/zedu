@@ -22,6 +22,11 @@ export function useGameSession(
   const playersSafetyPollMs = options.playersSafetyPollMs ?? 0;
   const lastPlayersPollRef = useRef(0);
   const [session, setSession] = useState<GameSession | null>(null);
+  const slidesLenRef = useRef(-1);
+  useEffect(() => {
+    const d = (session as any)?.activity_data;
+    slidesLenRef.current = Array.isArray(d) ? d.length : -1;
+  }, [session]);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,13 +161,7 @@ export function useGameSession(
           // znovu načteme bezpečnou cestou a teprve s ním použijeme nový index,
           // aby projektor na okamžik neukázal špatný snímek.
           if (Array.isArray(incomingRaw.activity_data)) {
-            let lengthChanged = false;
-            setSession((prev) => {
-              const prevLen = Array.isArray((prev as any)?.activity_data) ? (prev as any).activity_data.length : -1;
-              lengthChanged = prevLen !== incomingRaw.activity_data.length;
-              return prev;
-            });
-            if (lengthChanged) {
+            if (slidesLenRef.current !== incomingRaw.activity_data.length) {
               fetchData();
               return;
             }
