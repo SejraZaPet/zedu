@@ -144,6 +144,7 @@ export default function LiveDraftsPanel({ sessionId, currentIndex, slidesCount }
     setDrafts((ds) => ds.filter((d) => d.id !== active.id));
     setActiveId(null);
     setPosition("next");
+    setOpen(false);
   };
 
   const headline = active?.slide?.projector?.headline || "";
