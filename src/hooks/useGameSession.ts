@@ -22,6 +22,11 @@ export function useGameSession(
   const playersSafetyPollMs = options.playersSafetyPollMs ?? 0;
   const lastPlayersPollRef = useRef(0);
   const [session, setSession] = useState<GameSession | null>(null);
+  const slidesLenRef = useRef(-1);
+  useEffect(() => {
+    const d = (session as any)?.activity_data;
+    slidesLenRef.current = Array.isArray(d) ? d.length : -1;
+  }, [session]);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,8 +156,18 @@ export function useGameSession(
           // IMPORTANT: NEVER copy activity_data from the realtime payload — it contains
           // the unsanitized quiz data (with correct-answer flags). activity_data is sourced
           // exclusively from game_sessions_player_view via fetchData() polling.
+          const incomingRaw = payload.new as any;
+          // Změnil se počet snímků (např. zveřejněný koncept): obsah snímků
+          // znovu načteme bezpečnou cestou a teprve s ním použijeme nový index,
+          // aby projektor na okamžik neukázal špatný snímek.
+          if (Array.isArray(incomingRaw.activity_data)) {
+            if (slidesLenRef.current !== incomingRaw.activity_data.length) {
+              fetchData();
+              return;
+            }
+          }
           setSession((prev) => {
-            const incoming = { ...(payload.new as any) };
+            const incoming = { ...incomingRaw };
             delete incoming.activity_data;
             const merged = { ...(prev as any), ...incoming };
             if (incoming.settings == null && (prev as any)?.settings) merged.settings = (prev as any).settings;

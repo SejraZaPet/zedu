@@ -267,6 +267,20 @@
       "when": 1790853302077,
       "tag": "0037_game_templates_catalog_lesson",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791159162787,
+      "tag": "0038_live_session_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791159190599,
+      "tag": "0039_publish_live_draft_reset",
+      "breakpoints": true
     }
   ]
 }

@@ -43,6 +43,7 @@ import AiClusterButton from "@/components/live/AiClusterButton";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
+import LiveDraftsPanel from "@/components/live/LiveDraftsPanel";
 import LessonPlanPacing from "@/components/live/LessonPlanPacing";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
@@ -536,6 +537,7 @@ const LiveTeacherScreen = () => {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Badge variant="outline">Slide {currentIndex + 1} / {slides.length}</Badge>
+          {sessionId && <LiveDraftsPanel sessionId={sessionId} currentIndex={currentIndex} slidesCount={slides.length} />}
 
           {/* Zobrazení */}
           <TooltipProvider delayDuration={200}>
