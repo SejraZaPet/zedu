@@ -67,6 +67,10 @@ export default {
           blue: "hsl(var(--brand-blue))",
           turquoise: "hsl(var(--brand-turquoise))",
         },
+        demo: {
+          DEFAULT: "hsl(var(--demo-banner))",
+          foreground: "hsl(var(--demo-banner-foreground))",
+        },
         answer: {
           red: "hsl(var(--answer-red))",
           "red-strong": "hsl(var(--answer-red-strong))",

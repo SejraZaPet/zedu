@@ -99,6 +99,8 @@ import ParentAcademy from "./pages/ParentAcademy";
 import TeacherFromMaterial from "./pages/TeacherFromMaterial";
 import StudentFromMaterial from "./pages/StudentFromMaterial";
 import ViewAsBanner from "./components/ViewAsBanner";
+import DemoBanner from "./components/demo/DemoBanner";
+import DemoPage from "./pages/DemoPage";
 import PublicSiteAssistant from "./components/PublicSiteAssistant";
 
 
@@ -115,6 +117,7 @@ const App = () => (
         <AuthProvider>
           <AccessibilitySettingsSync />
           <ViewAsBanner />
+          <DemoBanner />
           <PublicSiteAssistant />
           <Routes>
             <Route path="/" element={<Index />} />
@@ -124,6 +127,7 @@ const App = () => (
 
 
            <Route path="/auth" element={<Auth />} />
+            <Route path="/demo" element={<DemoPage />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/zapomenute-heslo" element={<ForgotPassword />} />

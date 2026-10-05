@@ -19,6 +19,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
+import DemoRoleSwitch from "@/components/demo/DemoRoleSwitch";
 
 interface NavItem {
   label: string;
@@ -219,12 +220,13 @@ const SiteHeader = () => {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-border/50"
+      className="fixed left-0 right-0 z-50 transition-all duration-300 border-b border-border/50"
       style={{
         background: "rgba(255,255,255,0.95)",
         backdropFilter: "blur(6px)",
         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
         height: "70px",
+        top: "var(--demo-banner-h, 0px)",
       }}
     >
       <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
@@ -267,6 +269,7 @@ const SiteHeader = () => {
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4 shrink-0">
               <SchoolViewSwitcher />
+              <DemoRoleSwitch />
               <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-primary" aria-label={unreadMessages ? `Zprávy, ${unreadMessages} nepřečtených` : "Zprávy"} onClick={() => navigate("/zpravy")}>
                 <span className="relative inline-flex">
                   <MessagesSquare size={18} />
@@ -378,6 +381,7 @@ const SiteHeader = () => {
       {menuOpen && (
         <div className="md:hidden bg-background border-t border-border animate-fade-in">
           <nav className="flex flex-col px-6 py-4 gap-1">
+            {isLoggedIn && <DemoRoleSwitch className="mb-2 self-start" />}
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
