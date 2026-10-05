@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     for (const b of books) {
       const { data: tb, error: tbErr } = await db.from("teacher_textbooks").insert({
         title: b.title, subject: b.subject, teacher_id: seedId, visibility: "private", is_for_sale: false, is_demo_seed: true,
-        description: "Ukázkový obsah pro demo režim.",
+        description: "Ukázkový obsah pro demo režim.", access_code: randomToken(4).toUpperCase(),
       }).select("id").single();
       if (tbErr) throw tbErr;
       const l = lessons!.find((x) => x.id === b.lesson)!;
