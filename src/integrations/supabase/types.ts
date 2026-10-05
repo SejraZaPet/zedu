@@ -8230,6 +8230,7 @@ export type Database = {
       demo_can_see_portfolio_item: { Args: { _iid: string }; Returns: boolean }
       demo_can_see_session: { Args: { _sid: string }; Returns: boolean }
       demo_can_see_user: { Args: { _target: string }; Returns: boolean }
+      demo_seed_pair: { Args: { _pair_id: string }; Returns: string }
       demo_visible_user_ids: { Args: { _uid: string }; Returns: string[] }
       dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
