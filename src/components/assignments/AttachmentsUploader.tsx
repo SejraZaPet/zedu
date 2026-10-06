@@ -19,13 +19,37 @@ interface Props {
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED_EXT = ["pdf", "jpg", "jpeg", "png", "docx"];
+export const ATTACHMENT_MIME_BY_EXT: Record<string, string> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  xls: "application/vnd.ms-excel",
+  csv: "text/csv",
+};
+const ALLOWED_EXT = Object.keys(ATTACHMENT_MIME_BY_EXT);
 const ALLOWED_MIME = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ...new Set(Object.values(ATTACHMENT_MIME_BY_EXT)),
 ];
+
+const fileExtension = (name: string) => name.split(".").pop()?.toLowerCase() || "";
+
+export const attachmentContentType = (file: Pick<File, "name" | "type">) => {
+  const expected = ATTACHMENT_MIME_BY_EXT[fileExtension(file.name)];
+  return expected && ALLOWED_MIME.includes(file.type) && file.type === expected
+    ? file.type
+    : expected || file.type || "application/octet-stream";
+};
+
+export const validateAssignmentAttachment = (file: Pick<File, "name" | "type" | "size">): string | null => {
+  if (file.size > MAX_BYTES) return "Soubor je větší než 10 MB.";
+  if (!ALLOWED_EXT.includes(fileExtension(file.name))) {
+    return "Nepovolený typ souboru. Povolené: PDF, JPG, PNG, DOCX, XLSX, XLS, CSV.";
+  }
+  return null;
+};
 
 const formatBytes = (b: number) => {
   if (b < 1024) return `${b} B`;
@@ -54,12 +78,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
   };
 
   const validateFile = (file: File): string | null => {
-    if (file.size > MAX_BYTES) return "Soubor je větší než 10 MB.";
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    if (!ALLOWED_EXT.includes(ext) && !ALLOWED_MIME.includes(file.type)) {
-      return "Nepovolený typ souboru. Povolené: PDF, JPG, PNG, DOCX.";
-    }
-    return null;
+    return validateAssignmentAttachment(file);
   };
 
   const handleUpload = async (file: File) => {
@@ -74,7 +93,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
       const path = `${assignmentId}/${studentId}/${crypto.randomUUID()}-${safeName}`;
       const { error: upErr } = await supabase.storage
         .from("student-attachments")
-        .upload(path, file, { contentType: file.type, upsert: false });
+        .upload(path, file, { contentType: attachmentContentType(file), upsert: false });
       if (upErr) throw upErr;
       const { error: insErr } = await supabase.from("assignment_attachments" as any).insert({
         assignment_id: assignmentId,
@@ -130,7 +149,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
         >
           <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-xs text-muted-foreground mb-2">
-            Přetáhni soubor sem nebo klikni níže. Max 10 MB · PDF, JPG, PNG, DOCX
+            Přetáhni soubor sem nebo klikni níže. Max 10 MB · PDF, JPG, PNG, DOCX, XLSX, XLS, CSV
           </p>
           <Button
             type="button"
@@ -146,7 +165,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
             ref={inputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.jpg,.jpeg,.png,.docx"
+            accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.xls,.csv"
             multiple
             onChange={(e) => {
               handleFiles(e.target.files);
