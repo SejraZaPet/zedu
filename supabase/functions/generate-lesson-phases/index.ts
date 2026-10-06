@@ -49,7 +49,9 @@ serve(async (req) => {
       availableLessonBlocks, // array of { type, title } from selected lesson (optional)
     } = await req.json();
 
-    const target = Number.isFinite(totalMin) && totalMin > 0 ? totalMin : 45;
+    const target = Number.isFinite(Number(totalMin)) && Number(totalMin) > 0
+      ? Math.min(180, Math.max(10, Math.round(Number(totalMin))))
+      : 45;
 
     const blocksList = Array.isArray(availableLessonBlocks) && availableLessonBlocks.length
       ? availableLessonBlocks
@@ -162,6 +164,20 @@ Vše česky.`;
     const tc = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!tc) return new Response(JSON.stringify({ error: "AI nevrátila strukturovaný výstup" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const parsed = JSON.parse(tc.function.arguments);
+    // Součet minut fází musí přesně odpovídat délce hodiny.
+    if (parsed?.phases && typeof parsed.phases === "object") {
+      const vals = PHASE_KEYS.map((k) => Math.max(0, Math.round(Number(parsed.phases[k]?.timeMin) || 0)));
+      const sum = vals.reduce((a, b) => a + b, 0);
+      const scaled = sum > 0
+        ? vals.map((v) => Math.floor((v * target) / sum))
+        : PHASE_KEYS.map(() => Math.floor(target / PHASE_KEYS.length));
+      let rest = target - scaled.reduce((a, b) => a + b, 0);
+      const order = [2, 3, 1, 4, 0, 5]; // zbytek přednostně do hlavní části a procvičení
+      for (let i = 0; rest > 0; i++, rest--) scaled[order[i % order.length]]++;
+      PHASE_KEYS.forEach((k, i) => {
+        if (parsed.phases[k]) parsed.phases[k].timeMin = scaled[i];
+      });
+    }
     return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-lesson-phases error:", e);
