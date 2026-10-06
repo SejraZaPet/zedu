@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
     const replyTo = typeof body?.replyTo === "string" ? body.replyTo : undefined;
 
     // Demo režim: na smyšlené adresy @demo.bezli.cz se nikdy nic neposílá.
-    const recipients = (Array.isArray(to) ? to : [to]).map((x: unknown) => String(x ?? "").toLowerCase());
-    if (recipients.some((r: string) => r.endsWith("@demo.bezli.cz"))) {
+    const demoRecipients = (Array.isArray(to) ? to : [to]).map((x: unknown) => String(x ?? "").toLowerCase());
+    if (demoRecipients.some((r: string) => r.endsWith("@demo.bezli.cz"))) {
       return new Response(JSON.stringify({ skipped: "demo_recipient" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

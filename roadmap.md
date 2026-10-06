@@ -65,5 +65,8 @@
 ## Demo režim (2026-10-05)
 - [x] 1a ochrana dat
 - [x] 1b vstup bez registrace, dvojice účtů, přepínač, banner, návratový kód
-- [ ] 1c ukázkový obsah (čeká na pokyn)
-- [ ] 1d kvóty, serverové zablokování nastavení účtu, úklid po 14 dnech (čeká na pokyn)
+- [x] 1c ukázkový obsah
+- [x] 1d kvóty, serverové zablokování nastavení účtu, úklid po 14 dnech
+
+## Oprava regrese send-email (2026-10-06)
+- [x] Duplicitní const recipients -> demoRecipients; deploy; ověřeno 401/400 místo 503; všech 85 funkcí bootuje
