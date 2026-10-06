@@ -208,7 +208,10 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
 
         const scores = submitted.filter((a: any) => a.score !== null).map((a: any) => a.score as number);
         const dates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean) as string[];
-        const latest = atts[0];
+        // Odpovědi, skóre i zpětná vazba patří k nejnovějšímu ODEVZDANÉMU pokusu;
+        // bez odevzdání se použije poslední pokus jako dřív.
+        const latest = submitted[0] ?? atts[0];
+        const reopenedDraft = !!submitted[0] && atts[0]?.status === "in_progress" && atts[0].id !== submitted[0].id;
 
         return {
           studentId: sid,
@@ -220,6 +223,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           bestScore: scores.length > 0 ? Math.max(...scores) : null,
           maxScore: submitted.find((a: any) => a.max_score !== null)?.max_score ?? null,
           lastActivity: dates.length > 0 ? dates.sort().reverse()[0] : null,
+          reopenedDraft,
           latestAttempt: latest
             ? {
                 id: latest.id,
