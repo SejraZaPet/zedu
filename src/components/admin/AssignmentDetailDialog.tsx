@@ -552,7 +552,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                           {s.lessonProgress && (
                             <Badge variant="outline" className="text-[10px]" title="Povinné aktivity lekce">
                               <BookOpen className="mr-1 h-3 w-3" />
-                              {s.lessonProgress.done}/{s.lessonProgress.total}
+                              Lekce {s.lessonProgress.done}/{s.lessonProgress.total}
                               {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct}%` : ""}
                             </Badge>
                           )}
@@ -583,7 +583,20 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                         {isOpen && (
                           <div className="space-y-3 border-t border-border p-3">
                             {!attempt ? (
-                              <p className="text-sm text-muted-foreground">Žák úlohu ještě nezahájil.</p>
+                              s.lessonProgress && s.lessonProgress.done > 0 ? (
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                  <p>
+                                    Žák pracoval jen v aktivitách lekce: {s.lessonProgress.done}
+                                    {s.lessonProgress.total > 0 ? ` z ${s.lessonProgress.total} povinných` : ""}
+                                    {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct} %` : ""}.
+                                  </p>
+                                  <p className="text-xs">
+                                    Emoji a slovní hodnocení půjde zapsat, jakmile žák úlohu otevře.
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">Žák úlohu ještě nezahájil.</p>
+                              )
                             ) : (
                               <>
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -597,6 +610,11 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                     </>
                                   )}
                                 </div>
+                                {s.reopenedDraft && (
+                                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Žák otevřel list znovu (rozpracováno). Zobrazen je poslední odevzdaný pokus.
+                                  </p>
+                                )}
 
                                 <div>
                                   <h5 className="mb-1 text-xs font-semibold">Poznámka žáka</h5>
