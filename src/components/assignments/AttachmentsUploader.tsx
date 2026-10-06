@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Upload, FileIcon, X, Loader2, Paperclip } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ASSIGNMENT_UPLOADS_BUCKET, removeStudentAttachmentFile } from "@/lib/portfolio";
 
 interface Attachment {
   id: string;

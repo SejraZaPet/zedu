@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Paperclip, Download, Loader2, FileIcon, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 
 interface Attachment {
   id: string;
