@@ -48,7 +48,8 @@ export interface WorksheetPlayerProps {
   /** Autosave interval in seconds */
   autosaveIntervalSec?: number;
   /** Called when student submits */
-  onSubmit?: (answers: WorksheetAnswers, score: number, maxScore: number) => void;
+  /** Vrácením `false` rodič odevzdání odmítne a list zůstane otevřený. */
+  onSubmit?: (answers: WorksheetAnswers, score: number, maxScore: number) => void | boolean | Promise<void | boolean>;
   /** If true, answers are locked (already submitted) */
   locked?: boolean;
   /** Show correct answers after submit */
@@ -238,9 +239,11 @@ export default function WorksheetPlayer({
     if (submitted) return;
     await flushNow();
     const res = scoreWorksheet(items, answers, answerKey);
+    // Rodič může odevzdání odmítnout (např. nedokončené povinné aktivity lekce).
+    const ok = await onSubmit?.(answers, res.score, res.maxScore);
+    if (ok === false) return;
     setResults(res);
     setSubmitted(true);
-    onSubmit?.(answers, res.score, res.maxScore);
     toast({
       title: t("student.toasts.submitted.title"),
       description: t("student.states.scoreResult", res.score, res.maxScore),

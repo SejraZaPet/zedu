@@ -37,12 +37,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
 
-type StudentStatus = "not_started" | "in_progress" | "submitted";
+type StudentStatus = "not_started" | "in_progress" | "submitted" | "lesson_in_progress" | "lesson_done";
 
 const STATUS_CONFIG: Record<StudentStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
   not_started: { label: "Nezahájeno", icon: Minus, className: "bg-muted text-muted-foreground" },
   in_progress: { label: "Rozpracováno", icon: AlertCircle, className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
-  submitted: { label: "Dokončeno", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  submitted: { label: "Odevzdáno", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  lesson_in_progress: { label: "Lekce zahájena", icon: AlertCircle, className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  lesson_done: { label: "Lekce splněna", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
 };
 
 /** Rychlé reakce učitele – jedna z nich se ukládá do teacher_feedback_emoji. */
@@ -87,7 +89,10 @@ interface StudentRow {
   bestScore: number | null;
   maxScore: number | null;
   lastActivity: string | null;
+  /** Zobrazený pokus: nejnovější odevzdaný, jinak poslední. */
   latestAttempt: AttemptInfo | null;
+  /** Žák po odevzdání otevřel list znovu a má nový rozpracovaný pokus. */
+  reopenedDraft?: boolean;
   attachments: Array<{ id: string; file_name: string; file_path: string }>;
   /** Splnění povinných aktivit propojené lekce (jen když je lekce nastavená). */
   lessonProgress?: { done: number; total: number; avgPct: number | null };
@@ -208,7 +213,10 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
 
         const scores = submitted.filter((a: any) => a.score !== null).map((a: any) => a.score as number);
         const dates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean) as string[];
-        const latest = atts[0];
+        // Odpovědi, skóre i zpětná vazba patří k nejnovějšímu ODEVZDANÉMU pokusu;
+        // bez odevzdání se použije poslední pokus jako dřív.
+        const latest = submitted[0] ?? atts[0];
+        const reopenedDraft = !!submitted[0] && atts[0]?.status === "in_progress" && atts[0].id !== submitted[0].id;
 
         return {
           studentId: sid,
@@ -220,6 +228,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           bestScore: scores.length > 0 ? Math.max(...scores) : null,
           maxScore: submitted.find((a: any) => a.max_score !== null)?.max_score ?? null,
           lastActivity: dates.length > 0 ? dates.sort().reverse()[0] : null,
+          reopenedDraft,
           latestAttempt: latest
             ? {
                 id: latest.id,
@@ -264,17 +273,6 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           byStudent[r.user_id] = entry;
         });
 
-        // Úloha má vlastní obsah k odevzdání, pokud má pracovní list, portfolio
-        // nebo pokud vůbec existuje nějaký pokus s odpověďmi/odevzdáním.
-        const hasOwnSubmission =
-          !!assignment.worksheet_id ||
-          !!assignment.is_portfolio_task ||
-          rows.some((r) => {
-            const a = r.latestAttempt;
-            if (!a) return false;
-            const hasAnswers = a.answers && Object.keys(a.answers as Record<string, unknown>).length > 0;
-            return !!a.submitted_at || a.status === "submitted" || a.status === "in_progress" || !!hasAnswers;
-          });
         rows.forEach((row) => {
           const entry = byStudent[row.studentId];
           const total = requiredIdx.length;
@@ -284,9 +282,10 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
             total,
             avgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
           };
-          // Stav z lekce jen u úloh bez vlastního obsahu k odevzdání a u žáků bez pokusu.
-          if (!hasOwnSubmission && row.attemptCount === 0) {
-            row.status = total > 0 && done >= total ? "submitted" : done > 0 ? "in_progress" : "not_started";
+          // Stav se rozhoduje po žácích: žák bez jakéhokoli pokusu dostane stav podle
+          // aktivit lekce (pokusy jiných žáků na to nemají vliv).
+          if (row.attemptCount === 0 && done > 0) {
+            row.status = total > 0 && done >= total ? "lesson_done" : "lesson_in_progress";
           }
         });
 
@@ -553,7 +552,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                           {s.lessonProgress && (
                             <Badge variant="outline" className="text-[10px]" title="Povinné aktivity lekce">
                               <BookOpen className="mr-1 h-3 w-3" />
-                              {s.lessonProgress.done}/{s.lessonProgress.total}
+                              Lekce {s.lessonProgress.done}/{s.lessonProgress.total}
                               {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct}%` : ""}
                             </Badge>
                           )}
@@ -584,7 +583,20 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                         {isOpen && (
                           <div className="space-y-3 border-t border-border p-3">
                             {!attempt ? (
-                              <p className="text-sm text-muted-foreground">Žák úlohu ještě nezahájil.</p>
+                              s.lessonProgress && s.lessonProgress.done > 0 ? (
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                  <p>
+                                    Žák pracoval jen v aktivitách lekce: {s.lessonProgress.done}
+                                    {s.lessonProgress.total > 0 ? ` z ${s.lessonProgress.total} povinných` : ""}
+                                    {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct} %` : ""}.
+                                  </p>
+                                  <p className="text-xs">
+                                    Emoji a slovní hodnocení půjde zapsat, jakmile žák úlohu otevře.
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">Žák úlohu ještě nezahájil.</p>
+                              )
                             ) : (
                               <>
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -598,6 +610,11 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                     </>
                                   )}
                                 </div>
+                                {s.reopenedDraft && (
+                                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Žák otevřel list znovu (rozpracováno). Zobrazen je poslední odevzdaný pokus.
+                                  </p>
+                                )}
 
                                 <div>
                                   <h5 className="mb-1 text-xs font-semibold">Poznámka žáka</h5>
