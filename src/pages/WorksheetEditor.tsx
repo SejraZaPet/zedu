@@ -3639,6 +3639,54 @@ function PropertiesPanel({
           />
         </div>
       )}
+      {(item.type === "image" || item.type === "image_text") && (
+        <WorksheetImageField
+          url={item.imageUrl}
+          alt={item.imageAlt}
+          onChange={(p) => onUpdateItem({
+            ...(p.url !== undefined ? { imageUrl: p.url } : {}),
+            ...(p.alt !== undefined ? { imageAlt: p.alt } : {}),
+          })}
+        />
+      )}
+      {item.type === "image" && (
+        <div>
+          <Label className="text-xs">Popisek pod obrázkem</Label>
+          <Input value={item.imageCaption ?? ""} onChange={(e) => onUpdateItem({ imageCaption: e.target.value })} />
+        </div>
+      )}
+      {item.type === "image_text" && (
+        <div>
+          <Label className="text-xs">Text vedle obrázku</Label>
+          <Textarea value={item.imageText ?? ""} onChange={(e) => onUpdateItem({ imageText: e.target.value })} rows={4} />
+        </div>
+      )}
+      {item.type === "gallery" && (
+        <div className="space-y-3">
+          {(item.galleryImages ?? []).map((img, gi) => (
+            <div key={gi} className="rounded-md border border-border p-2">
+              <WorksheetImageField
+                label={`Obrázek ${gi + 1}`}
+                url={img.url}
+                alt={img.alt}
+                onChange={(p) => {
+                  const list = [...(item.galleryImages ?? [])];
+                  if (p.url === "" ) { list.splice(gi, 1); }
+                  else list[gi] = { ...list[gi], ...(p.url !== undefined ? { url: p.url } : {}), ...(p.alt !== undefined ? { alt: p.alt } : {}) };
+                  onUpdateItem({ galleryImages: list });
+                }}
+              />
+            </div>
+          ))}
+          <WorksheetImageField
+            label="Přidat obrázek do galerie"
+            url=""
+            onChange={(p) => {
+              if (p.url) onUpdateItem({ galleryImages: [...(item.galleryImages ?? []), { url: p.url }] });
+            }}
+          />
+        </div>
+      )}
       <div>
         <Label className="text-xs">Otázka</Label>
         <Textarea
@@ -4138,32 +4186,15 @@ function PropertiesPanel({
       <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
       {!LESSON_VISUAL_TYPES.includes(item.type) && <div className="pt-3 border-t border-border">
-        <Label className="text-xs">Obrázek (URL, volitelné)</Label>
-        <div className="flex gap-2 items-start">
-          <Input
-            value={item.imageUrl ?? ""}
-            onChange={(e) => onUpdateItem({ imageUrl: e.target.value || undefined })}
-            placeholder="https://…"
-            className="flex-1"
-          />
-          <MediaPickerDialog
-            imageOnly
-            onPick={(url) => onUpdateItem({ imageUrl: url })}
-            trigger={
-              <Button size="sm" variant="outline" type="button">
-                <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
-              </Button>
-            }
-          />
-        </div>
-        {item.imageUrl && (
-          <Input
-            className="mt-1"
-            value={item.imageAlt ?? ""}
-            onChange={(e) => onUpdateItem({ imageAlt: e.target.value })}
-            placeholder="Popisek obrázku"
-          />
-        )}
+        <WorksheetImageField
+          label="Obrázek (volitelné)"
+          url={item.imageUrl}
+          alt={item.imageAlt}
+          onChange={(p) => onUpdateItem({
+            ...(p.url !== undefined ? { imageUrl: p.url || undefined } : {}),
+            ...(p.alt !== undefined ? { imageAlt: p.alt } : {}),
+          })}
+        />
       </div>}
 
       {item.type !== "write_lines" && <div className="pt-3 border-t border-border">
