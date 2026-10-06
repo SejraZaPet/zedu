@@ -95,7 +95,12 @@ interface StudentRow {
   reopenedDraft?: boolean;
   attachments: Array<{ id: string; file_name: string; file_path: string }>;
   /** Splnění povinných aktivit propojené lekce (jen když je lekce nastavená). */
-  lessonProgress?: { done: number; total: number; avgPct: number | null };
+  lessonProgress?: {
+    done: number;
+    total: number;
+    completionPct: number;
+    completedAvgPct: number | null;
+  };
 }
 
 interface Props {
@@ -260,27 +265,28 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           .eq("lesson_id", assignment.lesson_id)
           .in("user_id", studentIds);
 
-        const byStudent: Record<string, { idx: Set<number>; sum: number; n: number }> = {};
+        const byStudent: Record<string, Map<number, number | null>> = {};
         ((results as any[]) || []).forEach((r) => {
           if (requiredIdx.length > 0 && !requiredIdx.includes(r.activity_index)) return;
-          const entry = byStudent[r.user_id] ?? { idx: new Set<number>(), sum: 0, n: 0 };
-          entry.idx.add(r.activity_index);
+          const entry = byStudent[r.user_id] ?? new Map<number, number | null>();
           const max = Number(r.max_score) || 0;
-          if (max > 0) {
-            entry.sum += (Number(r.score) || 0) / max;
-            entry.n += 1;
-          }
+          entry.set(r.activity_index, max > 0 ? (Number(r.score) || 0) / max : null);
           byStudent[r.user_id] = entry;
         });
 
         rows.forEach((row) => {
           const entry = byStudent[row.studentId];
           const total = requiredIdx.length;
-          const done = entry ? entry.idx.size : 0;
+          const done = entry?.size ?? 0;
+          const scored = entry ? [...entry.values()].filter((value): value is number => value !== null) : [];
+          const sum = scored.reduce((acc, value) => acc + value, 0);
           row.lessonProgress = {
             done,
             total,
-            avgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
+            // Nehotové povinné aktivity přispívají do celku nulou.
+            completionPct: total > 0 ? Math.round((sum / total) * 100) : 0,
+            // Tento průměr naopak popisuje jen skutečně hotové a bodované aktivity.
+            completedAvgPct: scored.length > 0 ? Math.round((sum / scored.length) * 100) : null,
           };
           // Stav se rozhoduje po žácích: žák bez jakéhokoli pokusu dostane stav podle
           // aktivit lekce (pokusy jiných žáků na to nemají vliv).
@@ -550,10 +556,20 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                             </span>
                           )}
                           {s.lessonProgress && (
-                            <Badge variant="outline" className="text-[10px]" title="Povinné aktivity lekce">
+                             <Badge
+                               variant="outline"
+                               className={cn(
+                                 "text-[10px]",
+                                 s.lessonProgress.done === 0
+                                   ? "bg-muted text-muted-foreground"
+                                   : s.lessonProgress.total > 0 && s.lessonProgress.done >= s.lessonProgress.total
+                                     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+                                     : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+                               )}
+                               title="Povinné aktivity lekce"
+                             >
                               <BookOpen className="mr-1 h-3 w-3" />
-                              Lekce {s.lessonProgress.done}/{s.lessonProgress.total}
-                              {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct}%` : ""}
+                               Lekce {s.lessonProgress.done}/{s.lessonProgress.total} hotovo · {s.lessonProgress.completionPct} %
                             </Badge>
                           )}
                           {s.bestScore !== null && (
@@ -582,13 +598,18 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
 
                         {isOpen && (
                           <div className="space-y-3 border-t border-border p-3">
+                             {s.lessonProgress?.completedAvgPct !== null && s.lessonProgress?.completedAvgPct !== undefined && (
+                               <p className="text-xs text-muted-foreground">
+                                 Průměr hotových aktivit: {s.lessonProgress.completedAvgPct} %
+                               </p>
+                             )}
                             {!attempt ? (
                               s.lessonProgress && s.lessonProgress.done > 0 ? (
                                 <div className="space-y-1 text-sm text-muted-foreground">
                                   <p>
                                     Žák pracoval jen v aktivitách lekce: {s.lessonProgress.done}
                                     {s.lessonProgress.total > 0 ? ` z ${s.lessonProgress.total} povinných` : ""}
-                                    {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct} %` : ""}.
+                                     .
                                   </p>
                                   <p className="text-xs">
                                     Emoji a slovní hodnocení půjde zapsat, jakmile žák úlohu otevře.

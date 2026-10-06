@@ -337,6 +337,13 @@
       "when": 1791227274208,
       "tag": "0047_demo_reset_seed_admin_check",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1791270024844,
+      "tag": "0048_allow_demo_excel_assignment_attachments",
+      "breakpoints": true
     }
   ]
 }
