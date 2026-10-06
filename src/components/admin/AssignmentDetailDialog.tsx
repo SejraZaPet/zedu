@@ -35,6 +35,7 @@ import { fetchLessonActivities } from "@/lib/lesson-activity-index";
 import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultyStats";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
+import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted";
 
@@ -69,6 +70,7 @@ interface AttemptInfo {
   submitted_at: string | null;
   last_saved_at: string | null;
   answers: Record<string, unknown> | null;
+  progress?: Record<string, unknown> | null;
   submission_note: string | null;
   teacher_feedback_text: string | null;
   teacher_feedback_emoji: string | null;
@@ -227,6 +229,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                 submitted_at: latest.submitted_at ?? null,
                 last_saved_at: latest.last_saved_at ?? null,
                 answers: latest.answers ?? null,
+                progress: latest.progress ?? null,
                 submission_note: latest.submission_note ?? null,
                 teacher_feedback_text: latest.teacher_feedback_text ?? null,
                 teacher_feedback_emoji: latest.teacher_feedback_emoji ?? null,
@@ -398,6 +401,78 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
     }
   };
 
+  /**
+   * Uloží body po položkách do `progress._teacher_grading` (odpovědi žáka se nemění)
+   * a součet do score/max_score; žák dostane notifikaci assignment_feedback.
+   */
+  const saveGrading = async (
+    row: StudentRow,
+    g: Omit<TeacherGrading, "graded_at" | "graded_by">,
+  ) => {
+    const attempt = row.latestAttempt;
+    if (!attempt || !assignment) return;
+    setSavingId(attempt.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const now = new Date().toISOString();
+      // Aktuální progress načteme těsně před zápisem, abychom nic nepřepsali.
+      const { data: cur, error: readErr } = await supabase
+        .from("assignment_attempts" as any)
+        .select("progress")
+        .eq("id", attempt.id)
+        .maybeSingle();
+      if (readErr) throw readErr;
+      const prevProgress = ((cur as any)?.progress && typeof (cur as any).progress === "object")
+        ? (cur as any).progress
+        : {};
+      const grading: TeacherGrading = { ...g, graded_at: now, graded_by: user?.id ?? null };
+      const patch = {
+        score: g.total,
+        max_score: g.max,
+        progress: { ...prevProgress, _teacher_grading: grading },
+        teacher_feedback_at: now,
+        teacher_feedback_by: user?.id ?? null,
+      };
+      const { error } = await supabase.from("assignment_attempts" as any).update(patch as any).eq("id", attempt.id);
+      if (error) throw error;
+
+      if (user) {
+        const { error: notifyError } = await supabase.from("notifications").insert({
+          recipient_id: row.studentId,
+          sender_id: user.id,
+          sender_role: "teacher",
+          type: "assignment_feedback",
+          title: "Nová zpětná vazba k úkolu",
+          body: `Učitel ohodnotil tvůj úkol „${assignment.title}“: ${g.total} / ${g.max} bodů.`,
+          link: `/n/${assignment.id}`,
+          status: "sent",
+          sent_at: now,
+          payload: { assignment_id: assignment.id, attempt_id: attempt.id },
+        } as any);
+        if (notifyError) {
+          toast({ title: "Hodnocení uloženo, ale upozornění se neodeslalo", description: notifyError.message, variant: "destructive" });
+        }
+      }
+
+      setStudents((prev) =>
+        prev.map((r) => {
+          if (r.studentId !== row.studentId || !r.latestAttempt) return r;
+          return {
+            ...r,
+            bestScore: r.bestScore === null ? g.total : Math.max(r.bestScore, g.total),
+            maxScore: g.max,
+            latestAttempt: { ...r.latestAttempt, ...patch } as AttemptInfo,
+          };
+        }),
+      );
+      toast({ title: "Hodnocení uloženo", description: `${g.total} / ${g.max} bodů` });
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const toggleRow = (row: StudentRow) => {
     const next = expanded === row.studentId ? null : row.studentId;
     setExpanded(next);
@@ -560,6 +635,16 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                     </ul>
                                   )}
                                 </div>
+
+                                {assignment.worksheet_id && (
+                                  <WorksheetAttemptGrading
+                                    worksheetId={assignment.worksheet_id}
+                                    answers={attempt.answers}
+                                    existing={(attempt.progress as any)?._teacher_grading ?? null}
+                                    saving={savingId === attempt.id}
+                                    onSave={(g) => saveGrading(s, g)}
+                                  />
+                                )}
 
                                 {/* Zpětná vazba učitele */}
                                 <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
