@@ -70,3 +70,14 @@
 
 ## Oprava regrese send-email (2026-10-06)
 - [x] Duplicitní const recipients -> demoRecipients; deploy; ověřeno 401/400 místo 503; všech 85 funkcí bootuje
+
+## Detail úkolu — postup lekce (2026-10-06)
+- [ ] Počítat procento ze všech povinných aktivit a oddělit průměr hotových aktivit.
+- [ ] Rozlišit šedý, žlutý a zelený stav štítku podle dokončení.
+- [ ] Ověřit cílenými testy a sestavením.
+
+## Excel přílohy úkolu (2026-10-06)
+- [ ] Povolit XLSX, XLS a CSV v žákovském nahrávání při zachování dosavadních typů.
+- [ ] Rozšířit typy bucketu student-attachments bez změny souborů, RLS a limitu 10 MB.
+- [ ] Zachovat demo limity a ověřit odmítnutí XLSM a souboru nad 10 MB.
+- [ ] Prověřit další místa pro nahrávání příloh bez změn mimo tuto dávku.
