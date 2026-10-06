@@ -7,6 +7,8 @@ import AiContentBadge from "@/components/ai/AiContentBadge";
 import SiteHeader from "@/components/SiteHeader";
 import { FolderOpen } from "lucide-react";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import WorksheetImageField from "@/components/worksheet/WorksheetImageField";
+import { fillLessonVisualImages } from "@/lib/worksheet-images";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -139,6 +141,7 @@ import {
   extractTextFromBlocks,
   extractActivitiesFromBlocks,
   extractTablesFromBlocks,
+  extractVisualBlocksFromBlocks,
   splitLessonIntoSections,
   type LessonBlock,
   type LessonActivity,
@@ -425,6 +428,7 @@ export default function WorksheetEditor() {
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
   const [activeLessonActivities, setActiveLessonActivities] = useState<LessonActivity[]>([]);
   const [activeLessonTables, setActiveLessonTables] = useState<LessonTable[]>([]);
+  const [activeLessonVisuals, setActiveLessonVisuals] = useState<ReturnType<typeof extractVisualBlocksFromBlocks>>([]);
   /** Sekce lekce v chronologickém pořadí (stavba listu sekce po sekci). */
   const [activeLessonSections, setActiveLessonSections] = useState<LessonSection[]>([]);
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(false);
@@ -562,6 +566,7 @@ export default function WorksheetEditor() {
       setActiveLessonContent("");
       setActiveLessonActivities([]);
       setActiveLessonTables([]);
+      setActiveLessonVisuals([]);
       return;
     }
     const opt = allLessons.find((l) => l.id === activeLessonId);
@@ -582,6 +587,7 @@ export default function WorksheetEditor() {
       setActiveLessonContent(extractTextFromBlocks(row.blocks));
       setActiveLessonActivities(extractActivitiesFromBlocks(row.blocks));
       setActiveLessonTables(extractTablesFromBlocks(row.blocks));
+      setActiveLessonVisuals(extractVisualBlocksFromBlocks(row.blocks));
       setActiveLessonSections(splitLessonIntoSections(row.blocks));
     })();
   }, [activeLessonId, allLessons]);
@@ -1759,7 +1765,7 @@ export default function WorksheetEditor() {
       }
 
       const baseNumber = aiReplaceMode === "replace" ? 0 : items.length;
-      const newItems: WorksheetItem[] = data.items.map((aiItem: any, i: number) => {
+      const rawNewItems: WorksheetItem[] = data.items.map((aiItem: any, i: number) => {
         const type = (aiItem.type ?? "short_answer") as ItemType;
         const defaults = createDefaultItem(type, baseNumber + i + 1);
         const { id: _ignoreId, ...rest } = aiItem;
@@ -1771,6 +1777,8 @@ export default function WorksheetEditor() {
           itemNumber: baseNumber + i + 1,
         } as WorksheetItem;
       });
+      // Obrazové položky bez adresy doplníme obrázky z lekce (stejné pořadí jako v lekci).
+      const newItems = fillLessonVisualImages(rawNewItems, activeLessonVisuals);
 
       // Aktivity označené „převést“ vložíme deterministicky – zadání 1:1 z lekce.
       const convertedItems: WorksheetItem[] = [];
