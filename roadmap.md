@@ -77,7 +77,7 @@
 - [ ] Ověřit cílenými testy a sestavením.
 
 ## Excel přílohy úkolu (2026-10-06)
-- [ ] Povolit XLSX, XLS a CSV v žákovském nahrávání při zachování dosavadních typů.
-- [ ] Rozšířit typy bucketu student-attachments bez změny souborů, RLS a limitu 10 MB.
-- [ ] Zachovat demo limity a ověřit odmítnutí XLSM a souboru nad 10 MB.
-- [ ] Prověřit další místa pro nahrávání příloh bez změn mimo tuto dávku.
+- [x] Povolit XLSX, XLS a CSV v žákovském nahrávání při zachování dosavadních typů.
+- [x] Nové přílohy do bucketu assignment-uploads (starý bucket nelze změnit), čtení s fallbackem na student-attachments.
+- [x] Zachovat demo limity a ověřit odmítnutí XLSM a souboru nad 10 MB.
+- [x] Prověřit další místa pro nahrávání příloh bez změn mimo tuto dávku.

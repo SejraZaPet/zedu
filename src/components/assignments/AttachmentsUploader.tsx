@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Upload, FileIcon, X, Loader2, Paperclip } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ASSIGNMENT_UPLOADS_BUCKET, removeStudentAttachmentFile } from "@/lib/portfolio";
 
 interface Attachment {
   id: string;
@@ -92,7 +93,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
       const safeName = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${assignmentId}/${studentId}/${crypto.randomUUID()}-${safeName}`;
       const { error: upErr } = await supabase.storage
-        .from("student-attachments")
+        .from(ASSIGNMENT_UPLOADS_BUCKET)
         .upload(path, file, { contentType: attachmentContentType(file), upsert: false });
       if (upErr) throw upErr;
       const { error: insErr } = await supabase.from("assignment_attachments" as any).insert({
@@ -103,7 +104,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
         file_size: file.size,
       } as any);
       if (insErr) {
-        await supabase.storage.from("student-attachments").remove([path]);
+        await supabase.storage.from(ASSIGNMENT_UPLOADS_BUCKET).remove([path]);
         throw insErr;
       }
       toast({ title: "Příloha nahrána" });
@@ -121,7 +122,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
   };
 
   const handleDelete = async (att: Attachment) => {
-    await supabase.storage.from("student-attachments").remove([att.file_path]);
+    await removeStudentAttachmentFile(att.file_path);
     await supabase.from("assignment_attachments" as any).delete().eq("id", att.id);
     setFiles((prev) => prev.filter((f) => f.id !== att.id));
     toast({ title: "Příloha smazána" });

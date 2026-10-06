@@ -210,11 +210,32 @@ export async function getAttachmentSignedUrl(path: string): Promise<string | nul
   return data?.signedUrl ?? null;
 }
 
-/** Signed URL for a file uploaded via assignment_attachments (student-attachments bucket). */
-export async function getStudentAttachmentSignedUrl(path: string): Promise<string | null> {
+/** New assignment attachment uploads go here (allows Excel/CSV). */
+export const ASSIGNMENT_UPLOADS_BUCKET = "assignment-uploads";
+/** Older assignment attachments stay in this bucket. */
+export const LEGACY_STUDENT_ATTACHMENTS_BUCKET = "student-attachments";
+
+/** Signed URL for a file uploaded via assignment_attachments (new bucket first, then legacy). */
+export async function getStudentAttachmentSignedUrl(
+  path: string,
+  opts?: { download?: string; expiresIn?: number },
+): Promise<string | null> {
   if (!path) return null;
-  const { data } = await supabase.storage
-    .from("student-attachments")
-    .createSignedUrl(path, 3600);
-  return data?.signedUrl ?? null;
+  const expires = opts?.expiresIn ?? 3600;
+  const options = opts?.download ? { download: opts.download } : undefined;
+  for (const bucket of [ASSIGNMENT_UPLOADS_BUCKET, LEGACY_STUDENT_ATTACHMENTS_BUCKET]) {
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, expires, options);
+    if (data?.signedUrl) return data.signedUrl;
+  }
+  return null;
+}
+
+/** Removes an assignment attachment file from whichever bucket holds it. */
+export async function removeStudentAttachmentFile(path: string): Promise<void> {
+  if (!path) return;
+  await Promise.all(
+    [ASSIGNMENT_UPLOADS_BUCKET, LEGACY_STUDENT_ATTACHMENTS_BUCKET].map((b) =>
+      supabase.storage.from(b).remove([path]),
+    ),
+  );
 }

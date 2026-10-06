@@ -12,3 +12,4 @@
 - Issue demo sessions only server-side (create-demo-session, demo-switch, demo-restore via generateLink + verifyOtp); demo_pairs is service-role only and clients read just their own code via `get_my_demo_pair()`, so no password or pair data ever leaves the server.
 - Isolate demo visitors only via RESTRICTIVE `demo_iso` policies backed by SECURITY DEFINER `demo_can_see_*` helpers over `demo_pairs` + `demo_shared_users`, so non-demo users' access never changes.
 - Gate every AI edge function for demo users only via `_shared/demo-ai-guard.ts` (atomic `demo_ai_reserve` with limits in `demo_config`), so regular users are never metered and limits change in one place.
+- Store new assignment attachments in private bucket `assignment-uploads` (type allowlist via RESTRICTIVE storage policy) and read via `getStudentAttachmentSignedUrl` with fallback to legacy `student-attachments`, because the legacy bucket MIME list cannot be changed on this platform.
