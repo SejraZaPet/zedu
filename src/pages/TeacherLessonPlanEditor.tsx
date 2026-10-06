@@ -81,6 +81,13 @@ import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterial
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
+import {
+  buildLessonUnits,
+  clampLessonMinutes,
+  DEFAULT_LESSON_MINUTES,
+  LESSON_MINUTES_PRESETS,
+  type LessonUnit,
+} from "@/lib/lesson-plan-units";
 
 
 interface Phase {
@@ -186,6 +193,9 @@ export default function TeacherLessonPlanEditor() {
   const [textbookId, setTextbookId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
+  const [selectedBlockIds, setSelectedBlockIds] = useState<string[] | null>(null);
+  const [lessonMinutes, setLessonMinutes] = useState<number>(DEFAULT_LESSON_MINUTES);
+  const [customMinutes, setCustomMinutes] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
@@ -236,6 +246,12 @@ export default function TeacherLessonPlanEditor() {
       if (input.textbookType === "global" || input.textbookType === "teacher")
         setTextbookType(input.textbookType);
       if (input.lessonId) setLessonId(input.lessonId);
+      if (Array.isArray(input.selectedBlockIds)) setSelectedBlockIds(input.selectedBlockIds.map(String));
+      if (input.lessonMinutes != null) {
+        const m = clampLessonMinutes(input.lessonMinutes);
+        setLessonMinutes(m);
+        setCustomMinutes(!(LESSON_MINUTES_PRESETS as readonly number[]).includes(m));
+      }
 
       // Cíl plánu může být třída nebo skupina (stejné rozlišení jako v rozvrhu).
       const savedTarget = input.classId || input.groupId || input.targetId;
@@ -416,6 +432,23 @@ export default function TeacherLessonPlanEditor() {
     () => lessons.find((l) => l.id === lessonId),
     [lessons, lessonId],
   );
+
+  /** Celky vybrané lekce; `selectedBlockIds === null` = celá lekce (výchozí / staré plány). */
+  const lessonUnits = useMemo(
+    () => (selectedLesson ? buildLessonUnits(selectedLesson.blocks) : []),
+    [selectedLesson],
+  );
+  const isUnitSelected = (u: LessonUnit) =>
+    selectedBlockIds === null || u.blockIds.some((b) => selectedBlockIds.includes(b));
+  const toggleUnit = (u: LessonUnit, on: boolean) => {
+    const all = lessonUnits.flatMap((x) => x.blockIds);
+    const current = new Set(selectedBlockIds ?? all);
+    u.blockIds.forEach((b) => (on ? current.add(b) : current.delete(b)));
+    const next = all.filter((b) => current.has(b));
+    setSelectedBlockIds(next.length === all.length ? null : next);
+  };
+  const noUnitSelected =
+    !!selectedLesson && lessonUnits.length > 0 && !lessonUnits.some(isUnitSelected);
 
 
   /** Classes the teacher belongs to (for filtering schedule occurrences) */
@@ -707,10 +740,14 @@ export default function TeacherLessonPlanEditor() {
     }
     setAiLoading(true);
     try {
-      const lessonContent = selectedLesson ? extractText(selectedLesson.blocks) : "";
-      const availableLessonBlocks = selectedLesson
-        ? extractBlockSummaries(selectedLesson.blocks)
+      const sourceBlocks = selectedLesson
+        ? selectedBlockIds === null || !lessonUnits.length
+          ? selectedLesson.blocks
+          : lessonUnits.filter(isUnitSelected).flatMap((u) => u.blocks)
         : [];
+      const lessonContent = selectedLesson ? extractText(sourceBlocks) : "";
+      const availableLessonBlocks = selectedLesson ? extractBlockSummaries(sourceBlocks) : [];
+      const minutes = clampLessonMinutes(lessonMinutes);
       const { data, error } = await supabase.functions.invoke("generate-lesson-phases", {
         body: {
           subject,
@@ -718,7 +755,7 @@ export default function TeacherLessonPlanEditor() {
           lessonContent,
           availableLessonBlocks,
           customInstructions: fromLessonOnly ? "" : aiInstructions,
-          totalMin: 45,
+          totalMin: minutes,
         },
       });
       if (error) throw error;
@@ -1096,6 +1133,8 @@ export default function TeacherLessonPlanEditor() {
           textbookId,
           textbookType: activeTextbookType,
           lessonId,
+          ...(selectedBlockIds ? { selectedBlockIds } : {}),
+          lessonMinutes: clampLessonMinutes(lessonMinutes),
 
           // Cíl plánu: třída i skupina. `classId` zůstává pro zpětnou
           // kompatibilitu jen u tříd, skupina se ukládá do `groupId`.
@@ -1477,7 +1516,10 @@ export default function TeacherLessonPlanEditor() {
               <Label htmlFor="plan-lesson">Lekce z učebnice</Label>
               <Select
                 value={lessonId || undefined}
-                onValueChange={setLessonId}
+                onValueChange={(v) => {
+                  setLessonId(v);
+                  setSelectedBlockIds(null);
+                }}
                 disabled={!textbookId}
               >
                 <SelectTrigger id="plan-lesson">
@@ -1513,6 +1555,85 @@ export default function TeacherLessonPlanEditor() {
               u plánu proklik na lekci.</>
             )}
           </p>
+
+          {/* Délka hodiny a výběr celků lekce */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="plan-minutes">Délka hodiny</Label>
+                <Select
+                  value={
+                    (LESSON_MINUTES_PRESETS as readonly number[]).includes(lessonMinutes) && !customMinutes
+                      ? String(lessonMinutes)
+                      : "custom"
+                  }
+                  onValueChange={(v) => {
+                    if (v === "custom") setCustomMinutes(true);
+                    else {
+                      setCustomMinutes(false);
+                      setLessonMinutes(Number(v));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="plan-minutes" className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LESSON_MINUTES_PRESETS.map((m) => (
+                      <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
+                    ))}
+                    <SelectItem value="custom">Vlastní…</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(customMinutes || !(LESSON_MINUTES_PRESETS as readonly number[]).includes(lessonMinutes)) && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-minutes-custom">Minut (10–180)</Label>
+                  <Input
+                    id="plan-minutes-custom"
+                    type="number"
+                    min={10}
+                    max={180}
+                    className="w-28"
+                    value={lessonMinutes}
+                    onChange={(e) => setLessonMinutes(Number(e.target.value) || 0)}
+                    onBlur={() => setLessonMinutes((m) => clampLessonMinutes(m))}
+                  />
+                </div>
+              )}
+            </div>
+
+            {selectedLesson && lessonUnits.length > 0 && (
+              <fieldset className="space-y-2 rounded-lg border border-border p-3">
+                <legend className="px-1 text-sm font-medium">Celky lekce pro tuto hodinu</legend>
+                <div className="flex gap-2 text-xs">
+                  <Button type="button" variant="ghost" size="sm" className="h-7"
+                    onClick={() => setSelectedBlockIds(null)}>Vybrat vše</Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-7"
+                    onClick={() => setSelectedBlockIds([])}>Zrušit výběr</Button>
+                </div>
+                <ul className="space-y-1.5">
+                  {lessonUnits.map((u) => {
+                    const checked = isUnitSelected(u);
+                    return (
+                      <li key={u.id} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`unit-${u.id}`}
+                          checked={checked}
+                          onCheckedChange={(c) => toggleUnit(u, c === true)}
+                        />
+                        <Label htmlFor={`unit-${u.id}`} className="text-sm font-normal leading-snug cursor-pointer">
+                          {u.title}
+                          <span className="text-muted-foreground"> · {u.blockIds.length} bl.</span>
+                        </Label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </fieldset>
+            )}
+          </div>
+
 
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
@@ -1865,11 +1986,16 @@ export default function TeacherLessonPlanEditor() {
             <h2 className="text-base font-semibold">AI asistent</h2>
           </div>
           <p className="text-xs text-muted-foreground">
-            AI navrhne časové rozvržení a aktivity pro každou fázi.
+            AI navrhne časové rozvržení a aktivity pro každou fázi ({lessonMinutes} min).
             {selectedLesson
-              ? " Vychází z vybrané lekce."
+              ? " Vychází z vybraných celků lekce."
               : " Vyber lekci nebo napiš vlastní pokyny."}
           </p>
+          {noUnitSelected && (
+            <p className="text-xs text-destructive" role="alert">
+              Vyber alespoň jeden celek lekce.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-2 items-stretch">
             <Textarea
               value={aiInstructions}
@@ -1881,20 +2007,22 @@ export default function TeacherLessonPlanEditor() {
             <div className="flex sm:flex-col gap-2">
               <Button
                 onClick={() => generateWithAI({ fromLessonOnly: true })}
-                disabled={aiLoading}
+                disabled={aiLoading || noUnitSelected}
                 size="sm"
                 variant="outline"
                 title={
                   !selectedLesson
                     ? "Nejprve vyber učebnici a lekci výše"
-                    : "Rychlý návrh přímo z obsahu vybrané lekce"
+                    : noUnitSelected
+                      ? "Vyber alespoň jeden celek lekce."
+                      : "Rychlý návrh přímo z obsahu vybrané lekce"
                 }
               >
 
                 <Sparkles className="w-4 h-4 mr-2" />
                 Navrhnout z lekce
               </Button>
-              <Button onClick={() => generateWithAI()} disabled={aiLoading} size="sm">
+              <Button onClick={() => generateWithAI()} disabled={aiLoading || noUnitSelected} size="sm">
                 {aiLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
