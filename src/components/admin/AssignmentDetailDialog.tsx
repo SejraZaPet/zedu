@@ -37,12 +37,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
 
-type StudentStatus = "not_started" | "in_progress" | "submitted";
+type StudentStatus = "not_started" | "in_progress" | "submitted" | "lesson_in_progress" | "lesson_done";
 
 const STATUS_CONFIG: Record<StudentStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
   not_started: { label: "Nezahájeno", icon: Minus, className: "bg-muted text-muted-foreground" },
   in_progress: { label: "Rozpracováno", icon: AlertCircle, className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
-  submitted: { label: "Dokončeno", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  submitted: { label: "Odevzdáno", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  lesson_in_progress: { label: "Lekce zahájena", icon: AlertCircle, className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  lesson_done: { label: "Lekce splněna", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
 };
 
 /** Rychlé reakce učitele – jedna z nich se ukládá do teacher_feedback_emoji. */
@@ -87,7 +89,10 @@ interface StudentRow {
   bestScore: number | null;
   maxScore: number | null;
   lastActivity: string | null;
+  /** Zobrazený pokus: nejnovější odevzdaný, jinak poslední. */
   latestAttempt: AttemptInfo | null;
+  /** Žák po odevzdání otevřel list znovu a má nový rozpracovaný pokus. */
+  reopenedDraft?: boolean;
   attachments: Array<{ id: string; file_name: string; file_path: string }>;
   /** Splnění povinných aktivit propojené lekce (jen když je lekce nastavená). */
   lessonProgress?: { done: number; total: number; avgPct: number | null };
@@ -268,17 +273,6 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           byStudent[r.user_id] = entry;
         });
 
-        // Úloha má vlastní obsah k odevzdání, pokud má pracovní list, portfolio
-        // nebo pokud vůbec existuje nějaký pokus s odpověďmi/odevzdáním.
-        const hasOwnSubmission =
-          !!assignment.worksheet_id ||
-          !!assignment.is_portfolio_task ||
-          rows.some((r) => {
-            const a = r.latestAttempt;
-            if (!a) return false;
-            const hasAnswers = a.answers && Object.keys(a.answers as Record<string, unknown>).length > 0;
-            return !!a.submitted_at || a.status === "submitted" || a.status === "in_progress" || !!hasAnswers;
-          });
         rows.forEach((row) => {
           const entry = byStudent[row.studentId];
           const total = requiredIdx.length;
@@ -288,9 +282,10 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
             total,
             avgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
           };
-          // Stav z lekce jen u úloh bez vlastního obsahu k odevzdání a u žáků bez pokusu.
-          if (!hasOwnSubmission && row.attemptCount === 0) {
-            row.status = total > 0 && done >= total ? "submitted" : done > 0 ? "in_progress" : "not_started";
+          // Stav se rozhoduje po žácích: žák bez jakéhokoli pokusu dostane stav podle
+          // aktivit lekce (pokusy jiných žáků na to nemají vliv).
+          if (row.attemptCount === 0 && done > 0) {
+            row.status = total > 0 && done >= total ? "lesson_done" : "lesson_in_progress";
           }
         });
 
