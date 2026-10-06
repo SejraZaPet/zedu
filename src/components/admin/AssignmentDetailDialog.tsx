@@ -265,30 +265,28 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           .eq("lesson_id", assignment.lesson_id)
           .in("user_id", studentIds);
 
-        const byStudent: Record<string, { idx: Set<number>; sum: number; n: number }> = {};
+        const byStudent: Record<string, Map<number, number | null>> = {};
         ((results as any[]) || []).forEach((r) => {
           if (requiredIdx.length > 0 && !requiredIdx.includes(r.activity_index)) return;
-          const entry = byStudent[r.user_id] ?? { idx: new Set<number>(), sum: 0, n: 0 };
-          entry.idx.add(r.activity_index);
+          const entry = byStudent[r.user_id] ?? new Map<number, number | null>();
           const max = Number(r.max_score) || 0;
-          if (max > 0) {
-            entry.sum += (Number(r.score) || 0) / max;
-            entry.n += 1;
-          }
+          entry.set(r.activity_index, max > 0 ? (Number(r.score) || 0) / max : null);
           byStudent[r.user_id] = entry;
         });
 
         rows.forEach((row) => {
           const entry = byStudent[row.studentId];
           const total = requiredIdx.length;
-          const done = entry ? entry.idx.size : 0;
+          const done = entry?.size ?? 0;
+          const scored = entry ? [...entry.values()].filter((value): value is number => value !== null) : [];
+          const sum = scored.reduce((acc, value) => acc + value, 0);
           row.lessonProgress = {
             done,
             total,
             // Nehotové povinné aktivity přispívají do celku nulou.
-            completionPct: total > 0 ? Math.round(((entry?.sum ?? 0) / total) * 100) : 0,
+            completionPct: total > 0 ? Math.round((sum / total) * 100) : 0,
             // Tento průměr naopak popisuje jen skutečně hotové a bodované aktivity.
-            completedAvgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
+            completedAvgPct: scored.length > 0 ? Math.round((sum / scored.length) * 100) : null,
           };
           // Stav se rozhoduje po žácích: žák bez jakéhokoli pokusu dostane stav podle
           // aktivit lekce (pokusy jiných žáků na to nemají vliv).
