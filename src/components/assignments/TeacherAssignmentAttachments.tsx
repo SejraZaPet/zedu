@@ -72,11 +72,9 @@ const TeacherAssignmentAttachments = ({ assignmentId }: Props) => {
   const handleDownload = async (att: Attachment) => {
     setDownloading(att.id);
     try {
-      const { data, error } = await supabase.storage
-        .from("student-attachments")
-        .createSignedUrl(att.file_path, 60, { download: att.file_name });
-      if (error || !data?.signedUrl) throw error || new Error("URL se nepodařilo získat");
-      window.open(data.signedUrl, "_blank");
+      const url = await getStudentAttachmentSignedUrl(att.file_path, { download: att.file_name, expiresIn: 60 });
+      if (!url) throw new Error("URL se nepodařilo získat");
+      window.open(url, "_blank");
     } catch (e: any) {
       toast({ title: "Chyba stahování", description: e.message, variant: "destructive" });
     } finally {
