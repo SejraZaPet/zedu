@@ -22,6 +22,26 @@ import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson"
 import { BookOpen } from "lucide-react";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+
+/** Vrací splnění povinných aktivit lekce, nebo null když lekce povinné aktivity nemá. */
+async function checkLessonGate(
+  lessonId: string,
+  lessonSource: string | null,
+  userId: string,
+): Promise<{ done: number; total: number } | null> {
+  const activities = await fetchLessonActivities(lessonId, lessonSource);
+  const requiredIdx = activities.filter((a) => a.required).map((a) => a.index);
+  if (requiredIdx.length === 0) return null;
+  const { data, error } = await supabase
+    .from("student_activity_results")
+    .select("activity_index")
+    .eq("lesson_id", lessonId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  const doneSet = new Set(((data as any[]) || []).map((r) => r.activity_index).filter((i) => requiredIdx.includes(i)));
+  return { done: doneSet.size, total: requiredIdx.length };
+}
 
 interface AssignmentData {
   id: string;
@@ -332,8 +352,31 @@ const StudentAssignmentPlayer = () => {
     scheduleAutosave();
   };
 
+  /**
+   * Úloha s propojenou lekcí a povinnými aktivitami se smí odevzdat až po jejich
+   * dokončení. Kontrola probíhá vždy znovu těsně před odevzdáním.
+   */
+  const ensureLessonGate = async (): Promise<boolean> => {
+    if (!assignment?.lesson_id || !userId) return true;
+    try {
+      const gate = await checkLessonGate(assignment.lesson_id, assignment.lesson_source ?? null, userId);
+      if (gate && gate.done < gate.total) {
+        toast({
+          title: "Úlohu zatím nelze odevzdat",
+          description: `Nejdřív dokonči povinné aktivity lekce: ${gate.done} z ${gate.total}.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (e) {
+      console.warn("[lesson gate] check failed", e);
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
     if (!attempt || !assignment) return;
+    if (!(await ensureLessonGate())) return;
     setSubmitting(true);
     try {
       // Calculate score
@@ -758,6 +801,7 @@ const StudentAssignmentPlayer = () => {
                     disabled={submitting || isReadOnly || !attempt}
                     onClick={async () => {
                       if (!attempt) return;
+                      if (!(await ensureLessonGate())) return;
                       setSubmitting(true);
                       try {
                         // Poznámku uložíme ještě před odevzdáním, aby ji učitel viděl.
@@ -820,7 +864,8 @@ const StudentAssignmentPlayer = () => {
             initialAnswers={(attempt?.answers as any) || {}}
 
             onSubmit={async (wAnswers, score, maxScore) => {
-              if (!attempt) return;
+              if (!attempt) return false;
+              if (!(await ensureLessonGate())) return false;
               try {
                 await supabase
                   .from("assignment_attempts" as any)
