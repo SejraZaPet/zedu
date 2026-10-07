@@ -128,10 +128,14 @@ const TeacherResults = () => {
         ...groupOpts.map((group) => group.subjectId).filter(Boolean),
         ...((slots ?? []) as any[]).map((slot) => slot.subject_id).filter(Boolean),
       ])] as string[];
-      const { data: catalogRows } = courseSubjectIds.length
-        ? await supabase.from("subjects").select("id, name").in("id", courseSubjectIds)
-        : { data: [] as any[] };
-      setCourseSubjects(((catalogRows ?? []) as any[]).map((subject) => ({
+      const [{ data: linkedSubjects }, { data: ownedSubjects }] = await Promise.all([
+        courseSubjectIds.length
+          ? supabase.from("subjects").select("id, name").in("id", courseSubjectIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.from("subjects").select("id, name").eq("created_by", uid),
+      ]);
+      const catalogRows = [...new Map([...((linkedSubjects ?? []) as any[]), ...((ownedSubjects ?? []) as any[])].map((subject) => [subject.id, subject])).values()];
+      setCourseSubjects(catalogRows.map((subject) => ({
         id: subject.id,
         name: subject.name,
         classIds: ((slots ?? []) as any[]).filter((slot) => slot.subject_id === subject.id).map((slot) => slot.class_id),

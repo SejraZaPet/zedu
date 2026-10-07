@@ -364,8 +364,12 @@ const TeacherAssignments = () => {
         ...groups.map((group) => group.subject_id),
         ...assignments.map((assignment) => assignment.subject_id).filter(Boolean),
       ])] as string[];
-      const { data: catalog } = ids.length ? await supabase.from("subjects").select("id, name").in("id", ids) : { data: [] as any[] };
-      setCourseSubjects(((catalog ?? []) as any[]).map((subject) => ({
+      const [{ data: linkedSubjects }, { data: ownedSubjects }] = await Promise.all([
+        ids.length ? supabase.from("subjects").select("id, name").in("id", ids) : Promise.resolve({ data: [] as any[] }),
+        supabase.from("subjects").select("id, name").eq("created_by", userId),
+      ]);
+      const catalog = [...new Map([...((linkedSubjects ?? []) as any[]), ...((ownedSubjects ?? []) as any[])].map((subject) => [subject.id, subject])).values()];
+      setCourseSubjects(catalog.map((subject) => ({
         id: subject.id,
         name: subject.name,
         classIds: (slotsRes.data ?? []).filter((slot: any) => slot.subject_id === subject.id).map((slot: any) => slot.class_id),
