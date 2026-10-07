@@ -94,11 +94,15 @@ export function computeLessonActivityProgress(
   best: Map<number, BestActivityResult>,
 ): LessonActivityProgress {
   const required = activities.filter((a) => a.required).map((a) => ({ activity: a, best: best.get(a.index) ?? null }));
-  const other = activities
-    .filter((a) => !a.required && best.has(a.index))
-    .map((a) => ({ activity: a, best: best.get(a.index)! }));
-  const doneEntries = required.filter((e) => e.best);
-  const scored = doneEntries.map((e) => e.best!.ratio).filter((r): r is number => r !== null);
+  const other = activities.flatMap((activity) => {
+    if (activity.required) return [];
+    const activityBest = best.get(activity.index);
+    return activityBest ? [{ activity, best: activityBest }] : [];
+  });
+  const doneEntries = required.filter(
+    (entry): entry is ActivityProgressEntry & { best: BestActivityResult } => entry.best !== null,
+  );
+  const scored = doneEntries.map((entry) => entry.best.ratio).filter((ratio): ratio is number => ratio !== null);
   const sum = scored.reduce((s, v) => s + v, 0);
   const earnedPoints = doneEntries.reduce((sumPoints, entry) => sumPoints + (entry.best?.score ?? 0), 0);
   const availablePoints = doneEntries.reduce((sumPoints, entry) => sumPoints + (entry.best?.maxScore ?? 0), 0);
