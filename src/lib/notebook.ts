@@ -66,6 +66,8 @@ export interface Notebook {
   cover_color: string | null;
   related_lesson_id: string | null;
   related_class_id: string | null;
+  related_group_id?: string | null;
+  subject_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -252,6 +254,7 @@ export async function loadNotebooks(ownerId: string): Promise<Notebook[]> {
 export async function createNotebook(input: {
   ownerId: string; title: string; subject?: string | null;
   coverColor?: string | null; relatedLessonId?: string | null; relatedClassId?: string | null;
+  relatedGroupId?: string | null; subjectId?: string | null;
 }): Promise<Notebook> {
   const { data, error } = await supabase
     .from("notebooks")
@@ -262,6 +265,8 @@ export async function createNotebook(input: {
       cover_color: input.coverColor ?? COVER_COLORS[0],
       related_lesson_id: input.relatedLessonId ?? null,
       related_class_id: input.relatedClassId ?? null,
+      related_group_id: input.relatedGroupId ?? null,
+      subject_id: input.subjectId ?? null,
     })
     .select("*")
     .single();
@@ -474,4 +479,9 @@ export async function addPageToPortfolio(
     file_type: "image/png",
     sort_order: 0,
   });
+}
+
+/** Tiše založí chybějící sešity kurzů přihlášeného žáka (idempotentní, server ověřuje roli). */
+export async function ensureMyCourseNotebooks(): Promise<void> {
+  try { await (supabase.rpc as any)("ensure_my_course_notebooks"); } catch { /* tiše */ }
 }
