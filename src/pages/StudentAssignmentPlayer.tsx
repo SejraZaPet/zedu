@@ -23,6 +23,12 @@ import { BookOpen } from "lucide-react";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+import {
+  bestResultsByActivity,
+  computeLessonActivityProgress,
+  type LessonActivityProgress,
+} from "@/lib/lesson-activity-progress";
+import LessonActivityChecklist from "@/components/assignments/LessonActivityChecklist";
 
 /** Vrací splnění povinných aktivit lekce, nebo null když lekce povinné aktivity nemá. */
 async function checkLessonGate(
@@ -115,6 +121,40 @@ const StudentAssignmentPlayer = () => {
   const [lastEdited, setLastEdited] = useState<{ name: string; at: string } | null>(null);
   /** Lekce z učebnice propojená s úlohou (nepovinná). */
   const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
+  const [lessonActivityProgress, setLessonActivityProgress] = useState<LessonActivityProgress | null>(null);
+
+  // Přehled povinných aktivit propojené lekce – jen čtení, odevzdání hlídá dál ensureLessonGate.
+  useEffect(() => {
+    const lessonId = assignment?.lesson_id;
+    if (!lessonId || !userId) {
+      setLessonActivityProgress(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const activities = await fetchLessonActivities(lessonId, assignment?.lesson_source ?? null);
+        if (!activities.some((a) => a.required)) {
+          if (!cancelled) setLessonActivityProgress(null);
+          return;
+        }
+        const { data } = await supabase
+          .from("student_activity_results")
+          .select("activity_index, score, max_score, completed_at")
+          .eq("lesson_id", lessonId)
+          .eq("user_id", userId);
+        if (cancelled) return;
+        setLessonActivityProgress(
+          computeLessonActivityProgress(activities, bestResultsByActivity((data as any[]) ?? [])),
+        );
+      } catch {
+        /* přehled je jen informativní */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assignment?.lesson_id, assignment?.lesson_source, userId]);
 
   /** Všechny pokusy žáka (nejnovější první) – pro přepínač pokusů po termínu. */
   const [allAttempts, setAllAttempts] = useState<AttemptData[]>([]);
@@ -691,6 +731,29 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+
+        {lessonActivityProgress && lessonActivityProgress.total > 0 && (
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-2">
+              <h2 className="text-sm font-semibold">
+                Povinné aktivity lekce: {lessonActivityProgress.done} z {lessonActivityProgress.total} hotovo
+              </h2>
+              {lessonActivityProgress.completedAvgPct !== null && (
+                <p className="text-xs text-muted-foreground">
+                  Průměr hotových aktivit: {lessonActivityProgress.completedAvgPct} %
+                </p>
+              )}
+              <LessonActivityChecklist
+                entries={lessonActivityProgress.required}
+                openHref={
+                  linkedLesson
+                    ? (i) => `${linkedLesson.url}${linkedLesson.url.includes("?") ? "&" : "?"}aktivita=${i}`
+                    : undefined
+                }
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Celé zadání je společné pro všechny typy úkolů (pracovní list, aktivita i portfolio). */}
         {assignment.description && (
