@@ -87,3 +87,9 @@
 - [x] Ukládání bez úkolu, Dokončit / Začít znovu
 - [x] Zobrazení stránka A4 (steps zachováno)
 - [x] Žákovské PDF/tisk bez klíče
+
+## Filtry výsledků a úloh (2026-10-07)
+- [x] Sdílet filtr třídy/skupiny, předmětu a stavu mezi Výsledky a seznamem úloh.
+- [x] Nabízet předměty podle skupiny, rozvrhu třídy a existujících úloh.
+- [x] Zobrazit počty stavů a pamatovat volbu po dobu relace.
+- [x] Ověřit kombinace filtrů, reset předmětu a sestavení.
