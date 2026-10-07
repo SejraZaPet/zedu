@@ -11,7 +11,8 @@ import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorkshee
 export default function StudentWorksheetView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
+  const isStudent = roles.includes("user") && !roles.some((r) => ["teacher", "admin", "school_admin", "lektor"].includes(r));
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +63,7 @@ export default function StudentWorksheetView() {
               variantId={spec.variants[0]?.variantId ?? "A"}
               attemptId={null}
               work={
-                user && role === "user" && id
+                user && isStudent && id
                   ? { worksheetId: id, studentId: user.id, variantId: spec.variants[0]?.variantId ?? "A" }
                   : null
               }
