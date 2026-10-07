@@ -4112,8 +4112,10 @@ export type Database = {
           id: string
           owner_id: string
           related_class_id: string | null
+          related_group_id: string | null
           related_lesson_id: string | null
           subject: string | null
+          subject_id: string | null
           title: string
           updated_at: string
         }
@@ -4123,8 +4125,10 @@ export type Database = {
           id?: string
           owner_id: string
           related_class_id?: string | null
+          related_group_id?: string | null
           related_lesson_id?: string | null
           subject?: string | null
+          subject_id?: string | null
           title: string
           updated_at?: string
         }
@@ -4134,8 +4138,10 @@ export type Database = {
           id?: string
           owner_id?: string
           related_class_id?: string | null
+          related_group_id?: string | null
           related_lesson_id?: string | null
           subject?: string | null
+          subject_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -4155,10 +4161,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notebooks_related_group_id_fkey"
+            columns: ["related_group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notebooks_related_lesson_id_fkey"
             columns: ["related_lesson_id"]
             isOneToOne: false
             referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebooks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -8146,6 +8166,7 @@ export type Database = {
       }
     }
     Functions: {
+      _ensure_course_notebooks_for: { Args: { _uid: string }; Returns: number }
       _fanout_broadcast: { Args: { _broadcast_id: string }; Returns: number }
       _resolve_broadcast_recipients: {
         Args: {
@@ -8356,6 +8377,7 @@ export type Database = {
         Args: { _code: string; _student_id: string }
         Returns: string
       }
+      ensure_my_course_notebooks: { Args: never; Returns: number }
       find_student_by_code: {
         Args: { _code: string }
         Returns: {

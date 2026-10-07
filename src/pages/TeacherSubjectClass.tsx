@@ -1227,12 +1227,14 @@ export default function TeacherSubjectClass() {
                   Přiřadit učebnici
                 </Button>
               )}
-              {!isGroup && (
+              {(
                 <Button
                   variant="outline"
                   onClick={() =>
                     navigate(
-                      `/ucitel/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
+                      isGroup
+                        ? `/ucitel/sesit?skupina=${groupId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`
+                        : `/ucitel/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
                     )
                   }
                 >
