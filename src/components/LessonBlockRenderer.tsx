@@ -31,6 +31,12 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Check } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import {
+  baseActivityTitle,
+  formatActivityScore,
+  formatCompletedAt,
+  type BestActivityResult,
+} from "@/lib/lesson-activity-progress";
+import {
   activitySlideAppearanceStyle,
   type ActivitySlideAppearance,
 } from "@/lib/activity-slide-appearance";
@@ -45,12 +51,17 @@ const StudentActivityShell = ({
   children,
   appearance,
   isCompleted,
+  result,
+  title,
 }: {
   props: Record<string, any>;
   children: React.ReactNode;
   appearance?: ActivitySlideAppearance;
   isCompleted?: boolean;
+  result?: BestActivityResult | null;
+  title?: string;
 }) => {
+  const [retry, setRetry] = useState(false);
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
   const [open, setOpen] = useState(appearance?.expanded === true);
@@ -90,7 +101,7 @@ const StudentActivityShell = ({
         <span aria-hidden="true" className="text-lg leading-none">{meta.icon}</span>
         <span className="min-w-0 flex-1">
           <span className="block font-heading text-base text-primary uppercase tracking-wide truncate">
-            {p.title || "Aktivita"}
+            {title || baseActivityTitle(p.title, p.activityType)}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <span>{meta.label}</span>
@@ -113,7 +124,42 @@ const StudentActivityShell = ({
           </span>
         </span>
       </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
+      {open && (
+        <div className="px-4 pb-4">
+          {isCompleted && !retry ? (
+            <CompletedActivitySummary result={result} onRetry={() => setRetry(true)} />
+          ) : (
+            children
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Dokončená aktivita: místo prázdné aktivity ukáže výsledek a nabídne procvičení. */
+const CompletedActivitySummary = ({
+  result,
+  onRetry,
+}: {
+  result?: BestActivityResult | null;
+  onRetry: () => void;
+}) => {
+  const when = result ? formatCompletedAt(result.completedAt) : "";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/40 bg-green-500/5 p-3">
+      <p className="text-sm font-medium text-foreground">
+        <span aria-hidden="true">✓ </span>Hotovo
+        {result && result.maxScore > 0 && <> · {formatActivityScore(result)} bodů</>}
+        {when && <> · dokončeno {when}</>}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="min-h-[40px] rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
+      >
+        Zkusit znovu
+      </button>
     </div>
   );
 };
@@ -147,6 +193,10 @@ interface LessonBlockProps {
   isTeacher?: boolean;
   /** Aktivita je již dokončená (aktuální návštěva nebo dřívější uložený výsledek). */
   isCompleted?: boolean;
+  /** Nejlepší uložený výsledek dokončené aktivity (zobrazí se po rozbalení). */
+  completedResult?: BestActivityResult | null;
+  /** Jednotný název aktivity (bez vlastního názvu = typ, při shodě „(2)“). */
+  activityTitle?: string;
   /** Vzhled aktivity na snímku prezentace (mimo prezentaci se nepoužívá). */
   activityAppearance?: ActivitySlideAppearance;
 }
@@ -160,7 +210,7 @@ export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
   return <div style={bgStyle}>{inner}</div>;
 };
 
-const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, isCompleted, activityAppearance }: LessonBlockProps): JSX.Element | null => {
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, isCompleted, completedResult, activityTitle, activityAppearance }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
@@ -420,6 +470,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
                     blockIndex={blockIndex}
                     onActivityComplete={onActivityComplete}
                     isTeacher={isTeacher}
+                    isCompleted={isCompleted}
+                    completedResult={completedResult}
                   />
                 </div>
               ),
@@ -450,6 +502,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
                 blockIndex={blockIndex}
                 onActivityComplete={onActivityComplete}
                 isTeacher={isTeacher}
+                isCompleted={isCompleted}
+                completedResult={completedResult}
               />
             </div>
             );
@@ -636,7 +690,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
       );
 
       const shell = (
-        <StudentActivityShell props={p} appearance={activityAppearance} isCompleted={isCompleted}>
+        <StudentActivityShell props={p} appearance={activityAppearance} isCompleted={isCompleted} result={completedResult} title={activityTitle}>
           {activityInner}
         </StudentActivityShell>
       );

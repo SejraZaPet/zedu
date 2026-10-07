@@ -112,3 +112,19 @@ export function computeLessonActivityProgress(
 export function formatActivityScore(b: BestActivityResult): string {
   return b.maxScore > 0 ? `${b.score}/${b.maxScore}` : "splněno";
 }
+
+/** Názvy aktivit lekce podle indexu viditelných bloků (stejné jako v přehledech úkolu). */
+export function lessonActivityTitles(visibleBlocks: any[]): Map<number, string> {
+  const list = (visibleBlocks ?? [])
+    .map((b, index) => ({ b, index }))
+    .filter(({ b }) => b?.type === "activity")
+    .map(({ b, index }) => ({ index, title: baseActivityTitle(b?.props?.title || b?.title, b?.props?.activityType) }));
+  return new Map(uniqueActivityTitles(list).map((a) => [a.index, a.title]));
+}
+
+export function formatCompletedAt(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}

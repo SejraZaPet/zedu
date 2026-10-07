@@ -58,6 +58,7 @@ const StudentTextbookDetail = () => {
   const [selectedLesson, setSelectedLesson] = useState<LessonData | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
+  const [bestResults, setBestResults] = useState<Map<number, BestActivityResult>>(new Map());
   const { trackActivity } = useActivityTracking(selectedLesson?.id);
 
   // Po otevření lekce dotáhni dříve uložené výsledky aktivit, aby zůstalo "Hotovo".
@@ -69,7 +70,7 @@ const StudentTextbookDetail = () => {
       if (!session?.user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index")
+        .select("activity_index, score, max_score, completed_at")
         .eq("user_id", session.user.id)
         .eq("lesson_id", selectedLesson.id);
       if (cancelled || !data || data.length === 0) return;
@@ -78,6 +79,7 @@ const StudentTextbookDetail = () => {
         data.forEach((row: any) => next.add(row.activity_index));
         return next;
       });
+      setBestResults(bestResultsByActivity(data as any));
     };
     loadPrevious();
     return () => {
@@ -334,7 +336,7 @@ const StudentTextbookDetail = () => {
       if (!user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index")
+        .select("activity_index, score, max_score, completed_at")
         .eq("user_id", user.id)
         .eq("lesson_id", selectedLesson.id);
       if (data && data.length > 0) {
@@ -343,6 +345,7 @@ const StudentTextbookDetail = () => {
           data.forEach((row: any) => next.add(row.activity_index));
           return next;
         });
+        setBestResults(bestResultsByActivity(data as any));
       }
     };
     loadPrevious();

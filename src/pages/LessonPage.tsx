@@ -105,6 +105,7 @@ const LessonPage = () => {
   const blocks: Block[] = (lesson?.blocks as unknown as Block[]) ?? [];
   const { trackActivity, trackLessonComplete } = useActivityTracking(lesson?.id);
   const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
+  const [bestResults, setBestResults] = useState<Map<number, BestActivityResult>>(new Map());
 
   // Načti dříve dokončené aktivity, aby žák nemusel opakovat práci z minulé návštěvy
   useEffect(() => {
@@ -114,7 +115,7 @@ const LessonPage = () => {
       if (!session?.user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index")
+        .select("activity_index, score, max_score, completed_at")
         .eq("user_id", session.user.id)
         .eq("lesson_id", lesson.id);
       if (data && data.length > 0) {
@@ -123,6 +124,7 @@ const LessonPage = () => {
           data.forEach((row: any) => next.add(row.activity_index));
           return next;
         });
+        setBestResults(bestResultsByActivity(data as any));
       }
     };
     loadPrevious();
