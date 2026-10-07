@@ -1,4 +1,5 @@
 import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
+import { buildToc } from "@/lib/notebook-toc";
 // Digitální sešit — typy, vykreslování a datová vrstva.
 // Kreslicí formát (Stroke) je záměrně shodný s živou tabulí (LiveWhiteboard),
 // aby se dala znovupoužít vykreslovací logika. Živá tabule se tímto NEMĚNÍ.
@@ -454,19 +455,88 @@ export async function renderPageToCanvas(
   return canvas;
 }
 
-/** Export celého sešitu do PDF (jedna stránka sešitu = jedna A4). */
-export async function exportNotebookToPdf(notebook: Notebook, pages: NotebookPage[]): Promise<void> {
+/** Vykreslí stránky obsahu (název sešitu, oddíly, názvy a čísla stránek) do canvasů A4. */
+function renderTocCanvases(notebook: Notebook, pages: NotebookPage[], scale = 1.5): HTMLCanvasElement[] {
+  const w = Math.round(NB_W * scale);
+  const h = Math.round(NB_H * scale);
+  const margin = 80 * scale;
+  const lineH = 40 * scale;
+  type Line = { text: string; num?: string; kind: "title" | "section" | "entry" };
+  const lines: Line[] = [];
+  for (const g of buildToc(pages)) {
+    lines.push({ text: g.label, kind: "section" });
+    for (const e of g.entries) lines.push({ text: e.displayTitle, num: String(e.number), kind: "entry" });
+  }
+  const canvases: HTMLCanvasElement[] = [];
+  let ctx: CanvasRenderingContext2D | null = null;
+  let y = 0;
+  const newPage = (first: boolean) => {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#111111"; ctx.textBaseline = "top";
+    y = margin;
+    if (first) {
+      ctx.font = `bold ${44 * scale}px system-ui, sans-serif`;
+      ctx.fillText(notebook.title || "Sešit", margin, y, w - 2 * margin);
+      y += 64 * scale;
+      ctx.font = `bold ${32 * scale}px system-ui, sans-serif`;
+      ctx.fillText("Obsah", margin, y);
+      y += 60 * scale;
+    }
+    canvases.push(c);
+  };
+  newPage(true);
+  for (const l of lines) {
+    if (y + lineH > h - margin) newPage(false);
+    const c = ctx!;
+    if (l.kind === "section") {
+      y += 10 * scale;
+      c.fillStyle = "#2F6F75";
+      c.font = `bold ${26 * scale}px system-ui, sans-serif`;
+      c.fillText(l.text, margin, y, w - 2 * margin);
+    } else {
+      c.fillStyle = "#111111";
+      c.font = `${22 * scale}px system-ui, sans-serif`;
+      c.fillText(l.text, margin + 24 * scale, y, w - 2 * margin - 120 * scale);
+      if (l.num) {
+        const nw = c.measureText(l.num).width;
+        c.fillText(l.num, w - margin - nw, y);
+      }
+    }
+    y += lineH;
+  }
+  return canvases;
+}
+
+/** Export celého sešitu do PDF (jedna stránka sešitu = jedna A4), volitelně s obsahem na začátku. */
+export async function exportNotebookToPdf(
+  notebook: Notebook,
+  pages: NotebookPage[],
+  options: { includeToc?: boolean } = {},
+): Promise<void> {
   if (pages.length === 0) throw new Error("Sešit neobsahuje žádné stránky.");
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
+  let added = 0;
+
+  if (options.includeToc ?? true) {
+    for (const c of renderTocCanvases(notebook, pages)) {
+      if (added > 0) pdf.addPage();
+      pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageW, pageH);
+      added++;
+    }
+  }
 
   for (let i = 0; i < pages.length; i++) {
     const canvas = await renderPageToCanvas(pages[i], 1.5);
     const data = canvas.toDataURL("image/jpeg", 0.92);
-    if (i > 0) pdf.addPage();
+    if (added > 0) pdf.addPage();
     pdf.addImage(data, "JPEG", 0, 0, pageW, pageH);
+    added++;
   }
 
   const name = (notebook.title || "sesit")
