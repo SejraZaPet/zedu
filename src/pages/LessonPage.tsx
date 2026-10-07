@@ -21,8 +21,9 @@ import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
-import { bestResultsByActivity, betterResult, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
+import { bestResultsByActivity, betterResult, computeLessonActivityProgress, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
 import { buildReadAloudText } from "@/lib/lesson-content-splitter";
+import { LessonCompletionControl, LessonSuccessSummary } from "@/components/lesson/LessonSuccessSummary";
 
 
 const LessonPage = () => {
@@ -38,6 +39,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacherOrAdmin, setIsTeacherOrAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [offlineBusy, setOfflineBusy] = useState(false);
 
@@ -46,6 +48,7 @@ const LessonPage = () => {
     const check = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      setIsAuthenticated(true);
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -153,6 +156,18 @@ const LessonPage = () => {
     .map(({ idx }) => idx);
   const completedRequiredCount = requiredActivityIndices.filter((i) => completedActivityIndices.has(i)).length;
   const allRequiredDone = completedRequiredCount >= requiredActivityIndices.length;
+  const lessonActivityProgress = useMemo(() => {
+    const activities = visibleBlocks
+      .map((block, index) => ({ block, index }))
+      .filter(({ block }) => block.type === "activity")
+      .map(({ block, index }) => ({
+        index,
+        title: activityTitles.get(index) ?? "Aktivita",
+        activityType: String((block.props as any)?.activityType ?? "activity"),
+        required: (block.props as any)?.required === true,
+      }));
+    return computeLessonActivityProgress(activities, bestResults);
+  }, [activityTitles, bestResults, visibleBlocks]);
 
   // Deep-link ?aktivita=<index> — odscrolluje a zvýrazní aktivitu (QR kód z pracovního listu)
   const highlightedActivityIndex = useActivityDeepLink(visibleBlocks.length > 0, lesson?.id ?? null);
@@ -257,6 +272,12 @@ const LessonPage = () => {
                 </div>
               </div>
 
+              {isAuthenticated && lessonActivityProgress.total > 0 && (
+                <div className="mb-8">
+                  <LessonSuccessSummary progress={lessonActivityProgress} />
+                </div>
+              )}
+
 
               <LessonHighlightLayer
                 lessonId={lesson.id}
@@ -277,24 +298,19 @@ const LessonPage = () => {
                 </div>
               </LessonHighlightLayer>
 
-              {!isTeacherOrAdmin && blocks.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-2">
-                  <Button
-                    onClick={() => {
+              {isAuthenticated && blocks.length > 0 && (
+                <div className="mt-10 space-y-6 border-t border-border pt-8">
+                  {lessonActivityProgress.total > 0 && <LessonSuccessSummary progress={lessonActivityProgress} />}
+                  <LessonCompletionControl
+                    teacher={isTeacherOrAdmin}
+                    allRequiredDone={allRequiredDone}
+                    completedCount={completedRequiredCount}
+                    requiredCount={requiredActivityIndices.length}
+                    onComplete={() => {
                       trackLessonComplete();
                       window.history.back();
                     }}
-                    disabled={!allRequiredDone}
-                    variant="hero"
-                    className="gap-2"
-                  >
-                    ✓ Označit lekci jako dokončenou
-                  </Button>
-                  {!allRequiredDone && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Nejdřív dokonči povinné aktivity ({completedRequiredCount}/{requiredActivityIndices.length} hotovo)
-                    </p>
-                  )}
+                  />
                 </div>
               )}
 

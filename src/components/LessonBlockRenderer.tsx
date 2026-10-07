@@ -33,6 +33,7 @@ import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-m
 import {
   baseActivityTitle,
   formatActivityScore,
+  formatActivityPercent,
   formatCompletedAt,
   type BestActivityResult,
 } from "@/lib/lesson-activity-progress";
@@ -68,6 +69,7 @@ const StudentActivityShell = ({
   const minutes = activityMinutes(p);
   const summary = activitySummary(p);
   const showHeader = appearance ? appearance.showHeader : true;
+  const resultPercent = result ? formatActivityPercent(result) : null;
 
   if (!showHeader) {
     return (
@@ -111,8 +113,11 @@ const StudentActivityShell = ({
         </span>
         <span className="flex flex-shrink-0 items-center gap-1.5">
           {isCompleted && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-[11px] font-semibold text-white">
-              <Check className="h-3 w-3" aria-hidden="true" /> Hotovo
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
+                <Check className="h-3 w-3" aria-hidden="true" /> Hotovo
+              </span>
+              {result && <span className="text-xs font-semibold text-foreground">{formatActivityScore(result)}{resultPercent && ` · ${resultPercent}`}</span>}
             </span>
           )}
           <span
@@ -146,11 +151,12 @@ const CompletedActivitySummary = ({
   onRetry: () => void;
 }) => {
   const when = result ? formatCompletedAt(result.completedAt) : "";
+  const percent = result ? formatActivityPercent(result) : null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/40 bg-green-500/5 p-3">
       <p className="text-sm font-medium text-foreground">
         <span aria-hidden="true">✓ </span>Hotovo
-        {result && result.maxScore > 0 && <> · {formatActivityScore(result)} bodů</>}
+        {result && result.maxScore > 0 && <> · {formatActivityScore(result)} bodů{percent && <> · {percent}</>}</>}
         {when && <> · dokončeno {when}</>}
       </p>
       <button
