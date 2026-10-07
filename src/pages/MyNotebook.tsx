@@ -18,7 +18,7 @@ import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
 import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
   NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
-  loadNotebooks, loadPages, normalizeContent, savePageContent, upsertClassRosterTextBox,
+  loadNotebooks, loadPages, ensureMyCourseNotebooks, normalizeContent, savePageContent, upsertClassRosterTextBox,
 } from "@/lib/notebook";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ export default function MyNotebook() {
   const [params, setParams] = useSearchParams();
   const lessonId = params.get("lekce");
   const classId = params.get("trida");
+  const groupId = params.get("skupina");
   const lessonTitle = params.get("nazev");
   const subjectParam = params.get("predmet");
   const openId = params.get("otevrit");
@@ -108,15 +109,20 @@ export default function MyNotebook() {
   useEffect(() => {
     if (!user || !classId || loading || handledClass.current) return;
     handledClass.current = true;
-    const existing = subjectParam
-      ? notebooks.find((n) => n.related_class_id === classId && n.subject === subjectParam)
-      : notebooks.find((n) => n.related_class_id === classId);
-    if (existing) {
-      openNotebook(existing);
-      return;
-    }
+    const find = (list: Notebook[]) => subjectParam
+      ? list.find((n) => n.related_class_id === classId && !n.related_group_id && (n.subject ?? "").trim().toLowerCase() === subjectParam.trim().toLowerCase())
+      : list.find((n) => n.related_class_id === classId && !n.related_group_id);
     (async () => {
       try {
+        let existing = find(notebooks);
+        if (isStudent) {
+          // Doplní subject_id starým sešitům a založí chybějící sešity kurzů (bez duplicit).
+          await ensureMyCourseNotebooks();
+          const fresh = await loadNotebooks(user.id);
+          setNotebooks(fresh);
+          existing = find(fresh) ?? existing;
+        }
+        if (existing) { openNotebook(existing); return; }
         const nb = await createNotebook({
           ownerId: user.id,
           title: subjectParam
@@ -133,7 +139,40 @@ export default function MyNotebook() {
         toast.error(e.message || "Sešit se nepodařilo založit.");
       }
     })();
-  }, [user, classId, subjectParam, lessonTitle, loading, notebooks, openNotebook, refresh]);
+  }, [user, classId, subjectParam, lessonTitle, loading, notebooks, openNotebook, refresh, isStudent]);
+
+  /* Propojení se skupinou předmětu: ?skupina=<id> → sešit podle related_group_id */
+  const handledGroup = useRef(false);
+  useEffect(() => {
+    if (!user || !groupId || loading || handledGroup.current) return;
+    handledGroup.current = true;
+    (async () => {
+      try {
+        let existing = notebooks.find((n) => n.related_group_id === groupId);
+        if (!existing && isStudent) {
+          await ensureMyCourseNotebooks();
+          const fresh = await loadNotebooks(user.id);
+          setNotebooks(fresh);
+          existing = fresh.find((n) => n.related_group_id === groupId);
+        }
+        if (existing) { openNotebook(existing); return; }
+        const { data: g } = await supabase.from("subject_groups").select("name, subject_id").eq("id", groupId).maybeSingle();
+        const nb = await createNotebook({
+          ownerId: user.id,
+          title: `Sešit – ${lessonTitle || subjectParam || "předmět"}${g?.name ? ` (${g.name})` : ""}`,
+          subject: subjectParam || null,
+          subjectId: (g as any)?.subject_id ?? null,
+          coverColor: COVER_COLORS[2],
+          relatedGroupId: groupId,
+        });
+        toast.success("Nový sešit pro skupinu byl založen.");
+        await refresh();
+        openNotebook(nb);
+      } catch (e: any) {
+        toast.error(e.message || "Sešit se nepodařilo založit.");
+      }
+    })();
+  }, [user, groupId, subjectParam, lessonTitle, loading, notebooks, openNotebook, refresh, isStudent]);
 
   /* Otevření konkrétního sešitu: ?otevrit=<id> */
   const handledOpenId = useRef(false);

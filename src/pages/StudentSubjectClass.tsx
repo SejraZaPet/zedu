@@ -46,6 +46,7 @@ import {
   planSlotKey,
   type StudentLessonPlan,
 } from "@/lib/lesson-plan-student";
+import { ensureMyCourseNotebooks } from "@/lib/notebook";
 import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 
 
@@ -127,6 +128,7 @@ export default function StudentSubjectClass() {
   const { user, loading: authLoading } = useAuth();
 
   const rawSubjectParam = useMemo(() => decodeSubject(subjectId), [subjectId]);
+  useEffect(() => { if (user) void ensureMyCourseNotebooks(); }, [user]);
   // Parametr trasy může být název předmětu, ale i jeho UUID (starší odkazy).
   // UUID nejdřív přeložíme na název, aby se neukazovalo jako nadpis stránky.
   const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
@@ -571,7 +573,9 @@ export default function StudentSubjectClass() {
                 variant="outline"
                 onClick={() =>
                   navigate(
-                    `/student/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
+                    isGroup
+                      ? `/student/sesit?skupina=${groupId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`
+                      : `/student/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
                   )
                 }
               >
