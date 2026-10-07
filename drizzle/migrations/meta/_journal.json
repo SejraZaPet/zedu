@@ -351,6 +351,13 @@
       "when": 1791270587845,
       "tag": "0049_assignment_uploads_bucket_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791379587143,
+      "tag": "0050_course_notebooks",
+      "breakpoints": true
     }
   ]
 }
