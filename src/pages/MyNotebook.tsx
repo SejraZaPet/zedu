@@ -52,7 +52,7 @@ export default function MyNotebook() {
   const [renameTitle, setRenameTitle] = useState("");
 
   const saveTimer = useRef<number | null>(null);
-  const metaTimer = useRef<number | null>(null);
+  const metaTimers = useRef<Record<string, number>>({});
   const [tocOpen, setTocOpen] = useState(false);
   const [tocQuery, setTocQuery] = useState("");
   const [includeToc, setIncludeToc] = useState(true);
@@ -218,9 +218,10 @@ export default function MyNotebook() {
     const pageId = activePage.id;
     const merged = { title: activePage.title ?? "", section: activePage.section ?? "", ...patch };
     setPages((prev) => prev.map((p) => (p.id === pageId ? { ...p, ...patch } : p)));
-    if (metaTimer.current) window.clearTimeout(metaTimer.current);
+    if (metaTimers.current[pageId]) window.clearTimeout(metaTimers.current[pageId]);
     setSaving(true);
-    metaTimer.current = window.setTimeout(async () => {
+    metaTimers.current[pageId] = window.setTimeout(async () => {
+      delete metaTimers.current[pageId];
       try {
         await savePageMeta(pageId, merged);
       } catch (e: any) {
