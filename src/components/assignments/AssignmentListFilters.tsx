@@ -8,7 +8,11 @@ export interface AssignmentFilterTarget { id: string; name: string; subject?: st
 
 export function readAssignmentFilter(key: "scope" | "subject" | "status", fallback: string): string {
   if (typeof window === "undefined") return fallback;
-  return window.sessionStorage.getItem(`bezli:assignment-filter:${key}`) ?? fallback;
+  const stored = window.sessionStorage.getItem(`bezli:assignment-filter:${key}`);
+  if (!stored) return fallback;
+  if (key === "scope" && stored.startsWith("class:")) return `c:${stored.slice(6)}`;
+  if (key === "scope" && stored.startsWith("group:")) return `g:${stored.slice(6)}`;
+  return stored;
 }
 
 export function saveAssignmentFilter(key: "scope" | "subject" | "status", value: string) {

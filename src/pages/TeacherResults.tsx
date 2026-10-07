@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  ALL_SCOPE, classScope, groupScope, parseScope, groupsFullyInClass, filterAssignments,
+  ALL_SCOPE, parseScope, groupsFullyInClass, filterAssignments,
   assignmentInScope, courseSubjectOptions, keepSubject, statusCounts, ALL_STATUS, type CourseSubjectSource,
 } from "@/lib/results-filters";
 import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
@@ -202,10 +202,6 @@ const TeacherResults = () => {
 
   // Filtered datasets
   const groupToClass = useMemo(() => groupsFullyInClass(groupMembers, classMembers), [groupMembers, classMembers]);
-  const scopedAssignments = useMemo(
-    () => assignments.filter((a) => assignmentInScope(a, classFilter, groupToClass)),
-    [assignments, classFilter, groupToClass],
-  );
   const subjectOpts = useMemo(
     () => courseSubjectOptions(classFilter, assignments, courseSubjects, groupToClass),
     [assignments, classFilter, courseSubjects, groupToClass],
@@ -213,7 +209,10 @@ const TeacherResults = () => {
   // Po změně třídy/skupiny: neplatný předmět → Všechny předměty.
   useEffect(() => {
     const next = keepSubject(subjectFilter, subjectOpts);
-    if (next !== subjectFilter) setSubjectFilter(next);
+    if (next !== subjectFilter) {
+      setSubjectFilter(next);
+      saveAssignmentFilter("subject", next);
+    }
   }, [subjectOpts, subjectFilter]);
   const filteredAssignments = useMemo(
     () => filterAssignments(assignments, classFilter, subjectFilter, groupToClass, statusFilter),
