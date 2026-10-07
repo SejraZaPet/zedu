@@ -78,6 +78,10 @@ export interface NotebookPage {
   page_order: number;
   background_style: BackgroundStyle;
   content: NotebookPageContent;
+  /** Volitelný název stránky; prázdný = „Strana N“. */
+  title?: string | null;
+  /** Volitelný oddíl (např. „Maso“). */
+  section?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -292,6 +296,40 @@ export async function savePageContent(pageId: string, content: NotebookPageConte
     .update({ content: content as any })
     .eq("id", pageId);
   if (error) throw error;
+}
+
+/** Uloží název a oddíl stránky (obsah stránky se nemění). */
+export async function savePageMeta(pageId: string, meta: { title?: string | null; section?: string | null }) {
+  const patch: Record<string, string | null> = {};
+  if ("title" in meta) patch.title = meta.title?.trim() ? meta.title.trim() : null;
+  if ("section" in meta) patch.section = meta.section?.trim() ? meta.section.trim() : null;
+  const { error } = await supabase.from("notebook_pages").update(patch as any).eq("id", pageId);
+  if (error) throw error;
+}
+
+/** Vytvoří novou stránku sešitu s předvyplněným názvem/oddílem (např. pro vkládání pracovních listů). */
+export async function createNotebookPage(input: {
+  notebookId: string;
+  pageOrder: number;
+  title?: string | null;
+  section?: string | null;
+  backgroundStyle?: BackgroundStyle;
+  content?: NotebookPageContent;
+}): Promise<NotebookPage> {
+  const { data, error } = await supabase
+    .from("notebook_pages")
+    .insert({
+      notebook_id: input.notebookId,
+      page_order: input.pageOrder,
+      background_style: input.backgroundStyle ?? "blank",
+      content: (input.content ?? EMPTY_CONTENT) as any,
+      title: input.title?.trim() || null,
+      section: input.section?.trim() || null,
+    } as any)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return { ...(data as any), content: normalizeContent((data as any).content) } as NotebookPage;
 }
 
 /** Příznak textboxu se seznamem žáků třídy. */
