@@ -32,6 +32,12 @@ import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
 import { BookOpen, BarChart3 } from "lucide-react";
 import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+import {
+  bestResultsByActivity,
+  computeLessonActivityProgress,
+  type LessonActivityProgress,
+} from "@/lib/lesson-activity-progress";
+import LessonActivityChecklist from "@/components/assignments/LessonActivityChecklist";
 import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultyStats";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
@@ -101,6 +107,8 @@ interface StudentRow {
     completionPct: number;
     completedAvgPct: number | null;
   };
+  /** Rozpis aktivit lekce (povinné + další) s nejlepším výsledkem. */
+  activityProgress?: LessonActivityProgress;
 }
 
 interface Props {
@@ -261,33 +269,30 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         const requiredIdx = activities.filter((a) => a.required).map((a) => a.index);
         const { data: results } = await supabase
           .from("student_activity_results")
-          .select("user_id, activity_index, score, max_score")
+          .select("user_id, activity_index, score, max_score, completed_at")
           .eq("lesson_id", assignment.lesson_id)
           .in("user_id", studentIds);
 
-        const byStudent: Record<string, Map<number, number | null>> = {};
+        const rowsByStudent: Record<string, any[]> = {};
         ((results as any[]) || []).forEach((r) => {
-          if (requiredIdx.length > 0 && !requiredIdx.includes(r.activity_index)) return;
-          const entry = byStudent[r.user_id] ?? new Map<number, number | null>();
-          const max = Number(r.max_score) || 0;
-          entry.set(r.activity_index, max > 0 ? (Number(r.score) || 0) / max : null);
-          byStudent[r.user_id] = entry;
+          (rowsByStudent[r.user_id] ??= []).push(r);
         });
 
         rows.forEach((row) => {
-          const entry = byStudent[row.studentId];
-          const total = requiredIdx.length;
-          const done = entry?.size ?? 0;
-          const scored = entry ? [...entry.values()].filter((value): value is number => value !== null) : [];
-          const sum = scored.reduce((acc, value) => acc + value, 0);
-          row.lessonProgress = {
-            done,
-            total,
-            // Nehotové povinné aktivity přispívají do celku nulou.
-            completionPct: total > 0 ? Math.round((sum / total) * 100) : 0,
-            // Tento průměr naopak popisuje jen skutečně hotové a bodované aktivity.
-            completedAvgPct: scored.length > 0 ? Math.round((sum / scored.length) * 100) : null,
-          };
+          // Nejlepší výsledek na aktivitu – nezávisle na pořadí řádků.
+          const best = bestResultsByActivity(rowsByStudent[row.studentId] ?? []);
+          const progress = computeLessonActivityProgress(activities, best);
+          row.activityProgress = progress;
+          let done = progress.done;
+          const total = progress.total;
+          let completedAvgPct = progress.completedAvgPct;
+          if (requiredIdx.length === 0) {
+            // Lekce bez povinných aktivit: jako dosud se počítají všechny hotové aktivity.
+            const ratios = [...best.values()].map((b) => b.ratio).filter((v): v is number => v !== null);
+            done = best.size;
+            completedAvgPct = ratios.length > 0 ? Math.round((ratios.reduce((a, v) => a + v, 0) / ratios.length) * 100) : null;
+          }
+          row.lessonProgress = { done, total, completionPct: progress.completionPct, completedAvgPct };
           // Stav se rozhoduje po žácích: žák bez jakéhokoli pokusu dostane stav podle
           // aktivit lekce (pokusy jiných žáků na to nemají vliv).
           if (row.attemptCount === 0 && done > 0) {
@@ -566,7 +571,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
                                      : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
                                )}
-                               title="Povinné aktivity lekce"
+                               title={`${s.lessonProgress.completionPct} % je skóre z povinných aktivit, nehotové se počítají jako 0 %.`}
                              >
                               <BookOpen className="mr-1 h-3 w-3" />
                                Lekce {s.lessonProgress.done}/{s.lessonProgress.total} hotovo · {s.lessonProgress.completionPct} %
@@ -603,6 +608,18 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                  Průměr hotových aktivit: {s.lessonProgress.completedAvgPct} %
                                </p>
                              )}
+                            {s.activityProgress && s.activityProgress.required.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-foreground">Povinné aktivity lekce</p>
+                                <LessonActivityChecklist entries={s.activityProgress.required} teacher />
+                              </div>
+                            )}
+                            {s.activityProgress && s.activityProgress.other.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-foreground">Další aktivity</p>
+                                <LessonActivityChecklist entries={s.activityProgress.other} teacher />
+                              </div>
+                            )}
                             {!attempt ? (
                               s.lessonProgress && s.lessonProgress.done > 0 ? (
                                 <div className="space-y-1 text-sm text-muted-foreground">

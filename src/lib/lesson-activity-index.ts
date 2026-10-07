@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { activityMeta } from "@/lib/activity-meta";
+import { baseActivityTitle, uniqueActivityTitles } from "@/lib/lesson-activity-progress";
 
 export interface LessonActivityInfo {
   /** Index mezi VIDITELNÝMI bloky lekce – stejná konvence jako LessonPage.tsx. */
@@ -29,7 +29,7 @@ export const fetchLessonActivities = async (
   if (!Array.isArray(blocks)) return [];
   const visible = blocks.filter((b) => b?.visible !== false);
 
-  return visible
+  return uniqueActivityTitles(visible
     .map((b, index) => ({ b, index }))
     .filter(({ b }) => b?.type === "activity")
     .map(({ b, index }) => {
@@ -37,9 +37,9 @@ export const fetchLessonActivities = async (
       const type = String(props.activityType ?? "activity");
       return {
         index,
-        title: String(props.title || b?.title || activityMeta(type).label),
+        title: baseActivityTitle(props.title || b?.title, type),
         activityType: type,
         required: props.required === true,
       };
-    });
+    }));
 };

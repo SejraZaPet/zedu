@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
+import { bestResultsByActivity, betterResult, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
 import { buildReadAloudText } from "@/lib/lesson-content-splitter";
 
 
@@ -105,6 +106,7 @@ const LessonPage = () => {
   const blocks: Block[] = (lesson?.blocks as unknown as Block[]) ?? [];
   const { trackActivity, trackLessonComplete } = useActivityTracking(lesson?.id);
   const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
+  const [bestResults, setBestResults] = useState<Map<number, BestActivityResult>>(new Map());
 
   // Načti dříve dokončené aktivity, aby žák nemusel opakovat práci z minulé návštěvy
   useEffect(() => {
@@ -114,7 +116,7 @@ const LessonPage = () => {
       if (!session?.user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index")
+        .select("activity_index, score, max_score, completed_at")
         .eq("user_id", session.user.id)
         .eq("lesson_id", lesson.id);
       if (data && data.length > 0) {
@@ -123,6 +125,7 @@ const LessonPage = () => {
           data.forEach((row: any) => next.add(row.activity_index));
           return next;
         });
+        setBestResults(bestResultsByActivity(data as any));
       }
     };
     loadPrevious();
@@ -132,12 +135,18 @@ const LessonPage = () => {
   const handleActivityComplete = useCallback(
     (activityIndex: number, activityType: string, score: number, maxScore: number) => {
       setCompletedActivityIndices((prev) => new Set([...prev, activityIndex]));
+      setBestResults((prev) => {
+                    const next = new Map(prev);
+                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString() })));
+                    return next;
+                  });
       trackActivity(activityIndex, activityType, score, maxScore);
     },
     [trackActivity]
   );
 
   const visibleBlocks = filterReadingBlocks(blocks);
+  const activityTitles = useMemo(() => lessonActivityTitles(visibleBlocks), [visibleBlocks]);
   const requiredActivityIndices = visibleBlocks
     .map((b, idx) => ({ b, idx }))
     .filter(({ b }) => b.type === "activity" && (b.props as any)?.required === true)
@@ -262,7 +271,7 @@ const LessonPage = () => {
                       className={highlightedActivityIndex === index ? ACTIVITY_HIGHLIGHT_CLASS : undefined}
                       {...(HIGHLIGHTABLE_BLOCK_TYPES.has(block.type) ? { "data-highlight-block": block.id } : {})}
                     >
-                      <LessonBlock block={block} blockIndex={index} onActivityComplete={handleActivityComplete} isTeacher={isTeacherOrAdmin} isCompleted={completedActivityIndices.has(index)} />
+                      <LessonBlock block={block} blockIndex={index} onActivityComplete={handleActivityComplete} isTeacher={isTeacherOrAdmin} isCompleted={completedActivityIndices.has(index)} completedResult={bestResults.get(index) ?? null} activityTitle={activityTitles.get(index)} />
                     </div>
                   ))}
                 </div>
