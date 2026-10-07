@@ -4075,6 +4075,8 @@ export type Database = {
           id: string
           notebook_id: string
           page_order: number
+          section: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -4084,6 +4086,8 @@ export type Database = {
           id?: string
           notebook_id: string
           page_order?: number
+          section?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -4093,6 +4097,8 @@ export type Database = {
           id?: string
           notebook_id?: string
           page_order?: number
+          section?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
