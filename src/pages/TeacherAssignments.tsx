@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,11 @@ import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
+import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
+import {
+  ALL_SCOPE, ALL_STATUS, courseSubjectOptions, filterAssignments, groupsFullyInClass, keepSubject, statusCounts,
+  type CourseSubjectSource,
+} from "@/lib/results-filters";
 
 
 
@@ -64,6 +69,7 @@ interface Assignment {
   group_mode?: string | null;
   group_size?: number | null;
   subject_id?: string | null;
+  subject?: string | null;
 }
 
 
@@ -143,7 +149,12 @@ const TeacherAssignments = () => {
   const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
   const [filterExamType, setFilterExamType] = useState<string>("__all__");
   /** Filtr podle třídy/skupiny v seznamu úloh. */
-  const [filterTarget, setFilterTarget] = useState<string>("__all__");
+  const [filterTarget, setFilterTarget] = useState<string>(() => readAssignmentFilter("scope", ALL_SCOPE));
+  const [filterSubject, setFilterSubject] = useState<string>(() => readAssignmentFilter("subject", ALL_SCOPE));
+  const [filterStatus, setFilterStatus] = useState<string>(() => readAssignmentFilter("status", ALL_STATUS));
+  const [courseSubjects, setCourseSubjects] = useState<CourseSubjectSource[]>([]);
+  const [filterClassMembers, setFilterClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
+  const [filterGroupMembers, setFilterGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   /** Odevzdanost pro publikované úlohy: id úlohy → {odevzdáno, celkem}. */
   const [progress, setProgress] = useState<Record<string, { submitted: number; total: number }>>({});
   /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
@@ -324,11 +335,73 @@ const TeacherAssignments = () => {
         .order("updated_at", { ascending: false }),
     ]);
     const list = (assignmentsRes.data as any[]) || [];
-    if (assignmentsRes.data) setAssignments(list as any);
+    const subjectIds = [...new Set(list.map((assignment) => assignment.subject_id).filter(Boolean))] as string[];
+    const { data: subjectRows } = subjectIds.length
+      ? await supabase.from("subjects").select("id, name").in("id", subjectIds)
+      : { data: [] as any[] };
+    const subjectNames = new Map(((subjectRows ?? []) as any[]).map((subject) => [subject.id, subject.name]));
+    const enriched = list.map((assignment) => ({ ...assignment, subject: assignment.subject_id ? subjectNames.get(assignment.subject_id) ?? null : null }));
+    if (assignmentsRes.data) setAssignments(enriched as any);
     if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
-    await loadProgress(list);
+    await loadProgress(enriched);
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const classIds = classes.map((item) => item.id);
+      const groupIds = groups.map((item) => item.id);
+      const [slotsRes, classMembersRes, groupMembersRes] = await Promise.all([
+        supabase.from("class_schedule_slots").select("class_id, subject_id").eq("created_by", userId).is("group_id", null).not("subject_id", "is", null),
+        classIds.length ? supabase.from("class_members").select("class_id, user_id").in("class_id", classIds) : Promise.resolve({ data: [] as any[] }),
+        groupIds.length ? supabase.from("subject_group_members").select("group_id, student_id").in("group_id", groupIds) : Promise.resolve({ data: [] as any[] }),
+      ]);
+      setFilterClassMembers((classMembersRes.data ?? []) as any);
+      setFilterGroupMembers((groupMembersRes.data ?? []) as any);
+      const ids = [...new Set([
+        ...(slotsRes.data ?? []).map((slot: any) => slot.subject_id),
+        ...groups.map((group) => group.subject_id),
+        ...assignments.map((assignment) => assignment.subject_id).filter(Boolean),
+      ])] as string[];
+      const [{ data: linkedSubjects }, { data: ownedSubjects }] = await Promise.all([
+        ids.length ? supabase.from("subjects").select("id, name").in("id", ids) : Promise.resolve({ data: [] as any[] }),
+        supabase.from("subjects").select("id, name").eq("created_by", userId),
+      ]);
+      const catalog = [...new Map([...((linkedSubjects ?? []) as any[]), ...((ownedSubjects ?? []) as any[])].map((subject) => [subject.id, subject])).values()];
+      setCourseSubjects(catalog.map((subject) => ({
+        id: subject.id,
+        name: subject.name,
+        classIds: (slotsRes.data ?? []).filter((slot: any) => slot.subject_id === subject.id).map((slot: any) => slot.class_id),
+        groupIds: groups.filter((group) => group.subject_id === subject.id).map((group) => group.id),
+      })));
+    })();
+  }, [assignments, classes, groups, userId]);
+
+  const filterGroupToClass = useMemo(
+    () => groupsFullyInClass(filterGroupMembers, filterClassMembers),
+    [filterClassMembers, filterGroupMembers],
+  );
+  const filterSubjectOptions = useMemo(
+    () => courseSubjectOptions(filterTarget, assignments, courseSubjects, filterGroupToClass),
+    [assignments, courseSubjects, filterGroupToClass, filterTarget],
+  );
+  useEffect(() => {
+    const next = keepSubject(filterSubject, filterSubjectOptions);
+    if (next !== filterSubject) {
+      setFilterSubject(next);
+      saveAssignmentFilter("subject", next);
+    }
+  }, [filterSubject, filterSubjectOptions]);
+  const assignmentsInCurrentSelection = useMemo(
+    () => filterAssignments(assignments, filterTarget, filterSubject, filterGroupToClass),
+    [assignments, filterGroupToClass, filterSubject, filterTarget],
+  );
+  const assignmentStatusCounts = useMemo(() => statusCounts(assignmentsInCurrentSelection), [assignmentsInCurrentSelection]);
+  const filteredListAssignments = useMemo(
+    () => filterAssignments(assignments, filterTarget, filterSubject, filterGroupToClass, filterStatus),
+    [assignments, filterGroupToClass, filterStatus, filterSubject, filterTarget],
+  );
 
   /**
    * Spočítá „X/Y odevzdáno“ pro publikované úlohy – stejná logika jako
@@ -916,20 +989,6 @@ const TeacherAssignments = () => {
                   <SelectItem value="__all__">Všechny typy</SelectItem>
                   {EXAM_TYPE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterTarget} onValueChange={setFilterTarget}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filtrovat podle třídy" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">Všechny třídy a skupiny</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
-                  ))}
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={`group:${g.id}`}>{g.name} (skupina)</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1631,6 +1690,24 @@ const TeacherAssignments = () => {
           </Card>
         )}
 
+        <Card>
+          <CardContent className="pt-6">
+            <AssignmentListFilters
+              classes={classes}
+              groups={groups.map((group) => ({ id: group.id, name: group.name, subject: group.subjectName }))}
+              subjects={filterSubjectOptions}
+              scope={filterTarget}
+              subject={filterSubject}
+              status={filterStatus}
+              counts={assignmentStatusCounts}
+              loading={loading}
+              onScopeChange={(value) => { setFilterTarget(value); saveAssignmentFilter("scope", value); }}
+              onSubjectChange={(value) => { setFilterSubject(value); saveAssignmentFilter("subject", value); }}
+              onStatusChange={(value) => { setFilterStatus(value); saveAssignmentFilter("status", value); }}
+            />
+          </CardContent>
+        </Card>
+
         {/* Assignments list – seskupené podle stavu */}
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
@@ -1639,13 +1716,8 @@ const TeacherAssignments = () => {
             <p>Zatím žádné úlohy. Klikni na „Nová úloha".</p>
           </div>
         ) : (() => {
-          const visible = assignments
-            .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType))
-            .filter((a) => {
-              if (filterTarget === "__all__") return true;
-              const [kind, id] = filterTarget.split(":");
-              return kind === "class" ? a.class_id === id : a.group_id === id;
-            });
+          const visible = filteredListAssignments
+            .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType));
 
           const SECTIONS: { key: string; label: string; dot: string }[] = [
             { key: "published", label: "Publikováno", dot: "bg-emerald-500" },
