@@ -200,3 +200,37 @@ export async function buildWorksheetPdfBlobUrl(
   const blob = new Blob([html], { type: "text/html" });
   return URL.createObjectURL(blob);
 }
+
+/**
+ * Žákovská verze: vždy BEZ klíče odpovědí a BEZ poznámek pro učitele.
+ * Klíče se ze specifikace odstraní ještě před vykreslením, takže se do HTML
+ * nemohou dostat ani omylem.
+ */
+export function toStudentPrintSpec(spec: WorksheetSpec): WorksheetSpec {
+  return {
+    ...spec,
+    answerKeys: {},
+    renderConfig: { ...spec.renderConfig, includeAnswerKey: false },
+  };
+}
+
+export async function buildStudentWorksheetHtml(spec: WorksheetSpec, worksheetId: string): Promise<string> {
+  return buildPrintHtml(toStudentPrintSpec(spec), {
+    worksheetId,
+    includeAnswerKey: false,
+    includeNameField: true,
+    teacherVersion: false,
+    teacherNotes: undefined,
+  }, true);
+}
+
+/** Tisk / uložení do PDF pro žáka (prohlížeč nabídne „Uložit jako PDF"). */
+export async function printStudentWorksheet(spec: WorksheetSpec, worksheetId: string): Promise<void> {
+  return downloadWorksheetPdf(toStudentPrintSpec(spec), {
+    worksheetId,
+    includeAnswerKey: false,
+    includeNameField: true,
+    teacherVersion: false,
+    teacherNotes: undefined,
+  });
+}

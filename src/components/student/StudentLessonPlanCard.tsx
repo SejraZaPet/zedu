@@ -8,6 +8,7 @@ import type { StudentLessonPlan } from "@/lib/lesson-plan-student";
 import { resolveLinkedLesson } from "@/lib/linked-lesson";
 import { saveWorksheetToPortfolio } from "@/lib/portfolio";
 import { toast } from "sonner";
+import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
 
 interface Props {
   plan: StudentLessonPlan;
@@ -119,6 +120,7 @@ export default function StudentLessonPlanCard({ plan, studentId, subjectLabel }:
                   <FolderPlus className="h-3.5 w-3.5" />
                 )}
               </Button>
+              <StudentWorksheetPrintButtons worksheetId={w.id} compact />
             </div>
           ))}
         </div>

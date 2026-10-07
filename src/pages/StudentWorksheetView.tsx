@@ -6,11 +6,13 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
 
 export default function StudentWorksheetView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
+  const isStudent = roles.includes("user") && !roles.some((r) => ["teacher", "admin", "school_admin", "lektor"].includes(r));
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function StudentWorksheetView() {
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
       <main
-        className="flex-1 container mx-auto px-4 py-12 max-w-4xl"
+        className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         {loading || authLoading ? (
@@ -52,11 +54,21 @@ export default function StudentWorksheetView() {
             <p className="text-muted-foreground">{error ?? "Nepodařilo se načíst data."}</p>
           </div>
         ) : (
-          <WorksheetPlayer
-            spec={spec}
-            variantId={spec.variants[0]?.variantId ?? "A"}
-            attemptId={null}
-          />
+          <div className="space-y-3">
+            <div className="flex flex-wrap justify-end gap-1 print:hidden">
+              <StudentWorksheetPrintButtons worksheetId={id!} spec={spec} />
+            </div>
+            <WorksheetPlayer
+              spec={spec}
+              variantId={spec.variants[0]?.variantId ?? "A"}
+              attemptId={null}
+              work={
+                user && isStudent && id
+                  ? { worksheetId: id, studentId: user.id, variantId: spec.variants[0]?.variantId ?? "A" }
+                  : null
+              }
+            />
+          </div>
         )}
       </main>
       <SiteFooter />
