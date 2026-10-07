@@ -3418,6 +3418,7 @@ function SortableItemBlock({
         <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
           {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
         </div>
+        <EditorImageSlot item={item} expanded={expanded} onUpdateItem={onUpdateItem} />
         {item.type !== "write_lines" && item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
           <div className="worksheet-paper-answer" style={{ height: `${item.answerSpace.heightMm}mm` }} />
         )}
@@ -3615,6 +3616,40 @@ function AiBlockChat({
         )}
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+// Zástupný blok pro vložení obrázku — jen v papírovém editoru, nikdy u žáka/tisku/PDF.
+export function isEmptyEditorImageItem(item: WorksheetItem): boolean {
+  if (item.type === "image" || item.type === "image_text") return !item.imageUrl;
+  if (item.type === "gallery") return !(item.galleryImages ?? []).some((g) => g.url);
+  return false;
+}
+
+function EditorImageSlot({ item, expanded, onUpdateItem }: { item: WorksheetItem; expanded: boolean; onUpdateItem: (p: Partial<WorksheetItem>) => void }) {
+  if (item.type !== "image" && item.type !== "image_text" && item.type !== "gallery") return null;
+  const empty = isEmptyEditorImageItem(item);
+  if (!empty && !expanded) return null;
+  const gallery = item.type === "gallery";
+  return (
+    <div className="mt-2" data-editor-image-slot onClick={(e) => e.stopPropagation()}>
+      <WorksheetImageField
+        compact
+        url={gallery ? undefined : item.imageUrl}
+        alt={gallery ? undefined : item.imageAlt}
+        emptyText={gallery && !empty ? "Přidat další obrázek" : "Klikněte a vložte obrázek"}
+        onChange={(p) => {
+          if (gallery) {
+            if (p.url) onUpdateItem({ galleryImages: [...(item.galleryImages ?? []).filter((g) => g.url), { url: p.url, alt: p.alt }] });
+            return;
+          }
+          onUpdateItem({
+            ...(p.url !== undefined ? { imageUrl: p.url } : {}),
+            ...(p.alt !== undefined ? { imageAlt: p.alt } : {}),
+          });
+        }}
+      />
+    </div>
   );
 }
 
