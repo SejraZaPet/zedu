@@ -81,3 +81,9 @@
 - [x] Nové přílohy do bucketu assignment-uploads (starý bucket nelze změnit), čtení s fallbackem na student-attachments.
 - [x] Zachovat demo limity a ověřit odmítnutí XLSM a souboru nad 10 MB.
 - [x] Prověřit další místa pro nahrávání příloh bez změn mimo tuto dávku.
+
+## Pracovní list jako A4 a práce bez úkolu
+- [x] Tabulka student_worksheet_work + RLS + demo_iso
+- [x] Ukládání bez úkolu, Dokončit / Začít znovu
+- [x] Zobrazení stránka A4 (steps zachováno)
+- [x] Žákovské PDF/tisk bez klíče
