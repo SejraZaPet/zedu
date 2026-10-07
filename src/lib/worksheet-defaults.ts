@@ -306,9 +306,9 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
   image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
   table: { label: "Tabulka", description: "Tabulka s libovolným počtem řádků a sloupců" },
-  image: { label: "Obrázek z lekce", description: "Needitovatelný obrázek převzatý z lekce" },
-  image_text: { label: "Obrázek + text z lekce", description: "Needitovatelný obrazový blok převzatý z lekce" },
-  gallery: { label: "Galerie z lekce", description: "Needitovatelná galerie převzatá z lekce" },
+  image: { label: "Obrázek", description: "Vlastní obrázek (nahrání z počítače, knihovna) nebo obrázek z lekce" },
+  image_text: { label: "Obrázek + text", description: "Vlastní obrázek (nahrání z počítače, knihovna) nebo obrázek z lekce + text" },
+  gallery: { label: "Galerie", description: "Vlastní obrázky (nahrání z počítače, knihovna) nebo galerie z lekce" },
   callout: { label: "Zvýrazněný rámeček", description: "Needitovatelný rámeček převzatý z lekce" },
   lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
