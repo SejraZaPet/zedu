@@ -6504,6 +6504,66 @@ export type Database = {
           },
         ]
       }
+      student_worksheet_work: {
+        Row: {
+          answers: Json
+          assignment_id: string | null
+          created_at: string
+          id: string
+          max_score: number | null
+          score: number | null
+          status: string
+          student_id: string
+          submitted_at: string | null
+          updated_at: string
+          variant_id: string
+          worksheet_id: string
+        }
+        Insert: {
+          answers?: Json
+          assignment_id?: string | null
+          created_at?: string
+          id?: string
+          max_score?: number | null
+          score?: number | null
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          updated_at?: string
+          variant_id?: string
+          worksheet_id: string
+        }
+        Update: {
+          answers?: Json
+          assignment_id?: string | null
+          created_at?: string
+          id?: string
+          max_score?: number | null
+          score?: number | null
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          updated_at?: string
+          variant_id?: string
+          worksheet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_worksheet_work_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_worksheet_work_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_xp: {
         Row: {
           last_activity_date: string | null
