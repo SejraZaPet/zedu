@@ -10,7 +10,7 @@ describe("žákovské PDF", () => {
     expect(html).not.toContain(`class="ws-key-item"`);
     expect(html).not.toContain("Glukóza je jednoduchý sacharid");
     expect(html).not.toMatch(/class="ws-teacher/);
-    expect(html).toContain("/student/pracovni-list/ws1");
+    expect(html).toContain("QR online verze");
     expect(toStudentPrintSpec(spec).answerKeys).toEqual({});
   });
 });
