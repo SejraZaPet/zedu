@@ -30,6 +30,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
 import { t } from "@/lib/t";
+import type { WorkTarget } from "@/lib/worksheet-work";
+import { RotateCcw, Hourglass } from "lucide-react";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
 import type {
   WorksheetSpec,
@@ -58,11 +60,18 @@ export interface WorksheetPlayerProps {
   initialAnswers?: WorksheetAnswers;
   /** Visible explanation shown while locked (e.g. deadline passed) */
   lockedMessage?: string | null;
+  /**
+   * "paper" (výchozí) = všechny úlohy pod sebou jako stránka A4;
+   * "steps" = původní zobrazení po jedné úloze.
+   */
+  layout?: "paper" | "steps";
+  /** Vlastní práce žáka mimo úkol (použije se jen bez attemptId). */
+  work?: WorkTarget | null;
 }
 
 // ────────────────── Scoring ──────────────────
 
-function scoreWorksheet(
+export function scoreWorksheet(
   items: WorksheetItem[],
   answers: WorksheetAnswers,
   answerKey: AnswerKeyEntry[],
@@ -156,6 +165,8 @@ export default function WorksheetPlayer({
   showResults = false,
   initialAnswers,
   lockedMessage = null,
+  layout = "paper",
+  work = null,
 }: WorksheetPlayerProps) {
   const variant = useMemo(
     () => spec.variants.find((v) => v.variantId === variantId),
@@ -163,7 +174,10 @@ export default function WorksheetPlayer({
   );
   const answerKey = useMemo(() => spec.answerKeys[variantId] ?? [], [spec, variantId]);
 
-  const storageKey = `ws-${spec.metadata.lessonPlanId ?? "local"}-${variantId}-${attemptId ?? "draft"}`;
+  const ownWork = !attemptId && work ? work : null;
+  const storageKey = ownWork
+    ? `ws-work-${ownWork.worksheetId}-${ownWork.studentId}-${variantId}`
+    : `ws-${spec.metadata.lessonPlanId ?? "local"}-${variantId}-${attemptId ?? "draft"}`;
 
   const {
     answers,
@@ -174,11 +188,16 @@ export default function WorksheetPlayer({
     lastSavedAt,
     flushNow,
     restore,
+    workStatus,
+    workResult,
+    submitOwnWork,
+    startOver,
   } = useWorksheetAutosave({
     storageKey,
     attemptId,
     intervalSec: autosaveIntervalSec,
     editable: !locked,
+    work: ownWork,
   });
 
   const [submitted, setSubmitted] = useState(locked);
@@ -187,6 +206,16 @@ export default function WorksheetPlayer({
     if (locked) setSubmitted(true);
   }, [locked]);
   const [results, setResults] = useState<ReturnType<typeof scoreWorksheet> | null>(null);
+  // Vlastní práce: odevzdaná verze obnovená ze serveru → zamknout a ukázat výsledek.
+  useEffect(() => {
+    if (!ownWork) return;
+    if (workStatus === "submitted") setSubmitted(true);
+    if (workStatus === "draft" && !locked) {
+      setSubmitted(false);
+      setResults(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workStatus]);
 
   // Restore on mount
   useEffect(() => {
@@ -242,6 +271,13 @@ export default function WorksheetPlayer({
     // Rodič může odevzdání odmítnout (např. nedokončené povinné aktivity lekce).
     const ok = await onSubmit?.(answers, res.score, res.maxScore);
     if (ok === false) return;
+    if (ownWork) {
+      const saved = await submitOwnWork(res.score, res.maxScore);
+      if (!saved) {
+        toast({ title: "Uložení se nepovedlo", description: "Zkus to prosím znovu.", variant: "destructive" });
+        return;
+      }
+    }
     setResults(res);
     setSubmitted(true);
     toast({
@@ -272,7 +308,170 @@ export default function WorksheetPlayer({
     );
   };
 
-  // ── Layout ──
+  const MANUAL_TYPES = ["open_answer", "offline_activity"];
+  const pendingManual = items.filter((it) => MANUAL_TYPES.includes(it.type)).length;
+  const effectiveResults =
+    results ??
+    (submitted && ownWork && workStatus === "submitted"
+      ? scoreWorksheet(items, answers, answerKey)
+      : null);
+  const shownScore = results
+    ? { score: results.score, maxScore: results.maxScore }
+    : workResult ?? (effectiveResults ? { score: effectiveResults.score, maxScore: effectiveResults.maxScore } : null);
+
+  const handleStartOver = () => {
+    startOver();
+    setResults(null);
+    setSubmitted(false);
+  };
+
+  // ── Layout: papír A4 (výchozí) ──
+
+  if (layout === "paper") {
+    const fmtPts = (n: number) => `${n} ${n === 1 ? "bod" : n < 5 ? "body" : "bodů"}`;
+    return (
+      <div className="space-y-4">
+        {/* Postup — lepkavý pruh nad papírem */}
+        <div className="sticky top-[70px] z-10 mx-auto max-w-[210mm] rounded-lg border border-border bg-background/95 px-4 py-2 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <Progress value={progressPct} className="flex-1 h-2" aria-label="Postup" />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Vyplněno {answeredCount}/{totalItems}
+            </span>
+            {isSaving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+            {lastSavedAt && !isSaving && <Save className="h-3 w-3 text-muted-foreground" aria-label="Uloženo" />}
+          </div>
+        </div>
+
+        {locked && lockedMessage && (
+          <div role="alert" className="mx-auto max-w-[210mm] rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+            {lockedMessage}
+          </div>
+        )}
+
+        <article
+          className="mx-auto w-full max-w-[210mm] min-h-[297mm] rounded-sm border border-border bg-card text-card-foreground shadow-md px-6 py-8 sm:px-[18mm] sm:py-[16mm] text-[11pt] leading-relaxed"
+          aria-label={spec.header.title}
+        >
+          <header className="border-b-2 border-foreground/80 pb-3 mb-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold">{spec.header.title}</h2>
+                {spec.header.subtitle && <p className="text-sm text-muted-foreground">{spec.header.subtitle}</p>}
+              </div>
+              {spec.header.variantLabel && (
+                <Badge variant="outline" className="text-xs font-semibold">{spec.header.variantLabel}</Badge>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              {spec.header.subject && <span>{spec.header.subject}</span>}
+              <span>{fmtPts(spec.metadata.totalPoints)}</span>
+              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />~{spec.metadata.totalTimeMin} min</span>
+            </div>
+            {spec.header.instructions && (
+              <p className="mt-3 rounded-md bg-muted/50 p-3 text-sm">{spec.header.instructions}</p>
+            )}
+          </header>
+
+          <div className="space-y-6">
+            {allItems.map((it) => {
+              if (it.tags?.includes("section_heading")) {
+                return (
+                  <h3 key={it.id} className="pt-2 text-lg font-bold border-b border-border pb-1">{it.prompt}</h3>
+                );
+              }
+              if (it.tags?.includes("instruction")) {
+                return (
+                  <div key={it.id} className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{it.prompt}</span>
+                  </div>
+                );
+              }
+              if (isNonInteractive(it)) {
+                return <div key={it.id}>{renderItemBody(it)}</div>;
+              }
+              const r = effectiveResults?.perItem[it.id];
+              const manual = MANUAL_TYPES.includes(it.type);
+              return (
+                <section
+                  key={it.id}
+                  aria-labelledby={`ws-q-${it.id}`}
+                  className={`break-inside-avoid space-y-3 ${r && showResults && !manual ? (r.correct ? "border-l-4 border-green-500 pl-3" : "border-l-4 border-red-300 pl-3") : ""}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p id={`ws-q-${it.id}`} className="font-semibold">
+                      <span className="mr-1">{it.itemNumber}.</span>{it.prompt}
+                    </p>
+                    {spec.renderConfig.showPoints && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">[{fmtPts(it.points)}]</span>
+                    )}
+                  </div>
+                  {it.imageUrl && (
+                    <img src={it.imageUrl} alt={it.imageAlt || ""} className="rounded border border-border max-h-80 w-auto" />
+                  )}
+                  {it.linkUrl && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={it.linkUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-1" />{it.linkLabel || it.linkUrl}
+                      </a>
+                    </Button>
+                  )}
+                  {renderItemBody(it)}
+                  {submitted && manual && (
+                    <p className="text-xs flex items-center gap-1 text-muted-foreground">
+                      <Hourglass className="h-3.5 w-3.5" /> Čeká na ohodnocení
+                    </p>
+                  )}
+                  {showResults && r && !manual && (
+                    <div className={`text-sm p-2 rounded ${r.correct ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
+                      {r.correct ? (
+                        <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> Správně (+{r.points} b.)</span>
+                      ) : (
+                        <span>Špatně — správná odpověď: <strong>{String(answerKey.find((k) => k.itemId === it.id)?.correctAnswer ?? "")}</strong></span>
+                      )}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+
+          <footer className="mt-10 border-t border-border pt-5 space-y-3">
+            {submitted && shownScore ? (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-center space-y-1" role="status">
+                <p className="text-lg font-bold">{shownScore.score} / {shownScore.maxScore} bodů</p>
+                <p className="text-sm text-muted-foreground">
+                  {Math.round((shownScore.score / Math.max(shownScore.maxScore, 1)) * 100)} %
+                </p>
+                {pendingManual > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {pendingManual === 1 ? "1 úloha čeká" : `${pendingManual} úlohy čekají`} na ohodnocení učitelem.
+                  </p>
+                )}
+                {ownWork && !locked && (
+                  <Button variant="outline" size="sm" className="mt-2" onClick={handleStartOver}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Začít znovu
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Button variant="ghost" size="sm" onClick={handleSaveNow} disabled={submitted}>
+                  <Save className="h-4 w-4 mr-1" /> {t("student.toasts.saved.title")}
+                </Button>
+                <Button size="lg" disabled={submitted} onClick={handleSubmit}>
+                  <Send className="h-4 w-4 mr-1" /> Dokončit
+                </Button>
+              </div>
+            )}
+          </footer>
+        </article>
+      </div>
+    );
+  }
+
+  // ── Layout: po jedné úloze ("steps") ──
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
