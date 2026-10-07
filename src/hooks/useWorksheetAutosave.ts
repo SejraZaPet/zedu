@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { loadWork, saveDraft, submitWork, type WorkTarget } from "@/lib/worksheet-work";
 
 export interface WorksheetAnswers {
   [itemId: string]: any;
@@ -30,6 +31,11 @@ interface UseWorksheetAutosaveOptions {
   intervalSec: number;
   /** Is the worksheet still editable? */
   editable: boolean;
+  /**
+   * Vlastní práce žáka mimo úkol. Použije se JEN když attemptId je null;
+   * server vrstva pak ukládá do `student_worksheet_work`.
+   */
+  work?: WorkTarget | null;
 }
 
 interface UseWorksheetAutosaveReturn {
@@ -43,12 +49,22 @@ interface UseWorksheetAutosaveReturn {
   flushNow: () => Promise<void>;
   /** Restore answers from storage */
   restore: () => AutosaveState | null;
+  /** Stav vlastní práce (jen v režimu `work`). */
+  workStatus: "draft" | "submitted" | null;
+  /** Poslední odevzdané skóre obnovené ze serveru (režim `work`). */
+  workResult: { score: number; maxScore: number } | null;
+  /** Odevzdá vlastní práci (režim `work`). */
+  submitOwnWork: (score: number, maxScore: number) => Promise<boolean>;
+  /** Začne nový koncept; předchozí odevzdaná verze zůstává v DB. */
+  startOver: () => void;
 }
 
 export function useWorksheetAutosave(
   opts: UseWorksheetAutosaveOptions,
 ): UseWorksheetAutosaveReturn {
   const { storageKey, attemptId, intervalSec, editable } = opts;
+  const work = attemptId ? null : opts.work ?? null;
+  const workKey = work ? `${work.worksheetId}|${work.studentId}|${work.variantId}` : "";
 
   const [answers, setAnswers] = useState<WorksheetAnswers>({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -59,13 +75,20 @@ export function useWorksheetAutosave(
   const indexRef = useRef(currentIndex);
   const lastServerHash = useRef("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const workRef = useRef(work);
+  workRef.current = work;
+  const workIdRef = useRef<string | null>(null);
+  const [workStatus, setWorkStatus] = useState<"draft" | "submitted" | null>(work ? "draft" : null);
+  const workStatusRef = useRef(workStatus);
+  workStatusRef.current = workStatus;
+  const [workResult, setWorkResult] = useState<{ score: number; maxScore: number } | null>(null);
 
   answersRef.current = answers;
   indexRef.current = currentIndex;
 
   // ── localStorage helpers ──
   const saveLocal = useCallback(() => {
-    if (!editable) return;
+    if (!editable || workStatusRef.current === "submitted") return;
     const state: AutosaveState = {
       answers: answersRef.current,
       currentIndex: indexRef.current,
@@ -89,9 +112,28 @@ export function useWorksheetAutosave(
 
   // ── Server save ──
   const saveServer = useCallback(async () => {
-    if (!attemptId || !editable) return;
+    if (!editable) return;
     const hash = JSON.stringify(answersRef.current);
     if (hash === lastServerHash.current) return; // no change
+    const w = workRef.current;
+    if (!attemptId && w) {
+      if (workStatusRef.current !== "draft") return;
+      setIsSaving(true);
+      try {
+        const id = await saveDraft(w, answersRef.current, workIdRef.current);
+        if (id) {
+          workIdRef.current = id;
+          lastServerHash.current = hash;
+          setLastSavedAt(new Date().toISOString());
+        }
+      } catch {
+        /* silent — localStorage is the fallback */
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+    if (!attemptId) return;
 
     setIsSaving(true);
     try {
@@ -133,6 +175,64 @@ export function useWorksheetAutosave(
     return local;
   }, [loadLocal]);
 
+  // ── Work mode: reconcile local vs server on mount ──
+  useEffect(() => {
+    const w = workRef.current;
+    if (!w) return;
+    let cancelled = false;
+    (async () => {
+      const { draft, lastSubmitted } = await loadWork(w);
+      if (cancelled) return;
+      const local = loadLocal();
+      const localTs = local ? Date.parse(local.savedAt) : 0;
+      if (draft) {
+        workIdRef.current = draft.id;
+        if (Date.parse(draft.updated_at) > localTs) {
+          setAnswers(draft.answers ?? {});
+          lastServerHash.current = JSON.stringify(draft.answers ?? {});
+          setLastSavedAt(draft.updated_at);
+        }
+        setWorkStatus("draft");
+      } else if (lastSubmitted && Date.parse(lastSubmitted.submitted_at ?? lastSubmitted.updated_at) >= localTs) {
+        setAnswers(lastSubmitted.answers ?? {});
+        lastServerHash.current = JSON.stringify(lastSubmitted.answers ?? {});
+        setWorkStatus("submitted");
+        setWorkResult({ score: Number(lastSubmitted.score ?? 0), maxScore: Number(lastSubmitted.max_score ?? 0) });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workKey]);
+
+  const submitOwnWork = useCallback(
+    async (score: number, maxScore: number) => {
+      const w = workRef.current;
+      if (!w) return false;
+      const ok = await submitWork(w, answersRef.current, workIdRef.current, score, maxScore);
+      if (ok) {
+        workIdRef.current = null;
+        lastServerHash.current = JSON.stringify(answersRef.current);
+        setWorkStatus("submitted");
+        setWorkResult({ score, maxScore });
+        try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+      }
+      return ok;
+    },
+    [storageKey],
+  );
+
+  const startOver = useCallback(() => {
+    workIdRef.current = null;
+    lastServerHash.current = "";
+    setAnswers({});
+    setCurrentIndex(0);
+    setWorkResult(null);
+    setWorkStatus("draft");
+    try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+  }, [storageKey]);
+
   // ── Periodic server save ──
   useEffect(() => {
     if (!editable) return;
@@ -147,13 +247,17 @@ export function useWorksheetAutosave(
 
   // ── beforeunload — sync flush to localStorage ──
   useEffect(() => {
-    const handler = () => saveLocal();
+    const handler = () => {
+      saveLocal();
+      if (workRef.current) void saveServer();
+    };
     window.addEventListener("beforeunload", handler);
     return () => {
       window.removeEventListener("beforeunload", handler);
       saveLocal(); // also on unmount
+      if (workRef.current) void saveServer();
     };
-  }, [saveLocal]);
+  }, [saveLocal, saveServer]);
 
   // ── Public setAnswer ──
   const setAnswer = useCallback(
@@ -173,5 +277,9 @@ export function useWorksheetAutosave(
     lastSavedAt,
     flushNow,
     restore,
+    workStatus,
+    workResult,
+    submitOwnWork,
+    startOver,
   };
 }
