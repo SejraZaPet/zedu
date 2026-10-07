@@ -7,8 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  ALL_SCOPE, classScope, groupScope, parseScope, groupsFullyInClass, filterAssignments,
+  assignmentInScope, subjectOptions, keepSubject,
+} from "@/lib/results-filters";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -20,6 +24,7 @@ import { downloadCSV } from "@/lib/csv-export";
 import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type ClassOpt = { id: string; name: string };
+type GroupOpt = { id: string; name: string; subject: string | null };
 type Attempt = {
   id: string;
   assignment_id: string;
@@ -35,12 +40,14 @@ type Assignment = {
   id: string;
   title: string;
   class_id: string | null;
+  group_id?: string | null;
+  subject_id?: string | null;
   activity_data: any[];
   lesson_plan_id: string | null;
   subject?: string | null;
 };
 
-const ALL = "__all__";
+const ALL = ALL_SCOPE;
 
 const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -50,7 +57,8 @@ const TeacherResults = () => {
   const [loading, setLoading] = useState(true);
 
   const [classes, setClasses] = useState<ClassOpt[]>([]);
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [groups, setGroups] = useState<GroupOpt[]>([]);
+  const [groupMembers, setGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   const [classFilter, setClassFilter] = useState<string>(ALL);
   const [subjectFilter, setSubjectFilter] = useState<string>(ALL);
 
@@ -81,20 +89,55 @@ const TeacherResults = () => {
       // Teacher's assignments + lesson plan subject
       const { data: asg } = await supabase
         .from("assignments")
-        .select("id, title, class_id, activity_data, lesson_plan_id")
+        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id")
         .eq("teacher_id", uid);
+      const asgRows = (asg ?? []) as any[];
+
+      // Názvy předmětů z katalogu (assignments.subject_id), záloha lesson_plans.subject.
+      const subjIds = [...new Set(asgRows.map((a) => a.subject_id).filter(Boolean))];
+      const subjName: Record<string, string> = {};
+      if (subjIds.length > 0) {
+        const { data: sj } = await supabase.from("subjects").select("id, name").in("id", subjIds);
+        for (const r of (sj ?? []) as any[]) subjName[r.id] = r.name;
+      }
+
+      // Skupiny: vlastní nearchivované + skupiny, kterým učitelka zadala úkol.
+      const asgGroupIds = [...new Set(asgRows.map((a) => a.group_id).filter(Boolean))] as string[];
+      const { data: ownGroups } = await supabase
+        .from("subject_groups")
+        .select("id, name, archived, subjects(name)")
+        .eq("created_by", uid)
+        .eq("archived", false);
+      const missing = asgGroupIds.filter((id) => !((ownGroups ?? []) as any[]).some((g) => g.id === id));
+      const { data: extraGroups } = missing.length
+        ? await supabase.from("subject_groups").select("id, name, archived, subjects(name)").in("id", missing).eq("archived", false)
+        : { data: [] as any[] };
+      const groupOpts: GroupOpt[] = [...((ownGroups ?? []) as any[]), ...((extraGroups ?? []) as any[])]
+        .map((g) => ({ id: g.id, name: g.name, subject: g.subjects?.name ?? null }))
+        .sort((a, b) => a.name.localeCompare(b.name, "cs"));
+      setGroups(groupOpts);
+      let gmRows: any[] = [];
+      if (groupOpts.length > 0) {
+        const { data: gm } = await supabase
+          .from("subject_group_members")
+          .select("group_id, student_id")
+          .in("group_id", groupOpts.map((g) => g.id));
+        gmRows = (gm ?? []) as any[];
+        setGroupMembers(gmRows as any);
+      }
       let plans: Record<string, string> = {};
-      const planIds = [...new Set(((asg ?? []) as any[]).map((a) => a.lesson_plan_id).filter(Boolean))];
+      const planIds = [...new Set(asgRows.map((a) => a.lesson_plan_id).filter(Boolean))];
       if (planIds.length > 0) {
         const { data: lp } = await supabase.from("lesson_plans").select("id, subject").in("id", planIds);
         for (const p of (lp ?? []) as any[]) plans[p.id] = p.subject || "";
       }
-      const enriched: Assignment[] = ((asg ?? []) as any[]).map((a) => ({
+      const enriched: Assignment[] = asgRows.map((a) => ({
         ...a,
-        subject: a.lesson_plan_id ? (plans[a.lesson_plan_id] || null) : null,
+        subject:
+          (a.subject_id && subjName[a.subject_id]) ||
+          (a.lesson_plan_id ? (plans[a.lesson_plan_id] || null) : null),
       }));
       setAssignments(enriched);
-      setSubjects([...new Set(enriched.map((a) => a.subject).filter((s): s is string => !!s))].sort());
 
       // Class members for those classes
       const classIds = classOpts.map((c) => c.id);
@@ -119,7 +162,7 @@ const TeacherResults = () => {
       }
 
       // Profiles for student names
-      const studentIds = [...new Set(cmRows.map((m: any) => m.user_id))];
+      const studentIds = [...new Set([...cmRows.map((m: any) => m.user_id), ...gmRows.map((m: any) => m.student_id)])];
       if (studentIds.length > 0) {
         const { data: pf } = await supabase
           .from("profiles")
@@ -137,13 +180,37 @@ const TeacherResults = () => {
   }, [toast]);
 
   // Filtered datasets
-  const filteredAssignments = useMemo(() => {
-    return assignments.filter((a) => {
-      if (classFilter !== ALL && a.class_id !== classFilter) return false;
-      if (subjectFilter !== ALL && a.subject !== subjectFilter) return false;
-      return true;
-    });
-  }, [assignments, classFilter, subjectFilter]);
+  const groupToClass = useMemo(() => groupsFullyInClass(groupMembers, classMembers), [groupMembers, classMembers]);
+  const scopedAssignments = useMemo(
+    () => assignments.filter((a) => assignmentInScope(a, classFilter, groupToClass)),
+    [assignments, classFilter, groupToClass],
+  );
+  const subjectOpts = useMemo(() => subjectOptions(scopedAssignments), [scopedAssignments]);
+  // Po změně třídy/skupiny: neplatný předmět → Všechny předměty.
+  useEffect(() => {
+    const next = keepSubject(subjectFilter, subjectOpts);
+    if (next !== subjectFilter) setSubjectFilter(next);
+  }, [subjectOpts, subjectFilter]);
+  const filteredAssignments = useMemo(
+    () => filterAssignments(assignments, classFilter, subjectFilter, groupToClass),
+    [assignments, classFilter, subjectFilter, groupToClass],
+  );
+  /** Žáci, kterým je úkol určen (třída nebo skupina). */
+  const membersOfAssignment = useMemo(() => {
+    const byClass = new Map<string, string[]>();
+    classMembers.forEach((m) => byClass.set(m.class_id, [...(byClass.get(m.class_id) ?? []), m.user_id]));
+    const byGroup = new Map<string, string[]>();
+    groupMembers.forEach((m) => byGroup.set(m.group_id, [...(byGroup.get(m.group_id) ?? []), m.student_id]));
+    return (a: Assignment): string[] =>
+      a.class_id ? byClass.get(a.class_id) ?? [] : a.group_id ? byGroup.get(a.group_id) ?? [] : [];
+  }, [classMembers, groupMembers]);
+  /** Žáci ve vybraném rozsahu. */
+  const scopeStudentIds = useMemo(() => {
+    const p = parseScope(classFilter);
+    if (p.kind === "group") return new Set(groupMembers.filter((m) => m.group_id === p.id).map((m) => m.student_id));
+    if (p.kind === "class") return new Set(classMembers.filter((m) => m.class_id === p.id).map((m) => m.user_id));
+    return new Set([...classMembers.map((m) => m.user_id), ...groupMembers.map((m) => m.student_id)]);
+  }, [classFilter, classMembers, groupMembers]);
 
   const filteredAsgIds = useMemo(() => new Set(filteredAssignments.map((a) => a.id)), [filteredAssignments]);
   const filteredAttempts = useMemo(
@@ -165,11 +232,7 @@ const TeacherResults = () => {
       : 0;
 
     // Completion %: submitted distinct (student, assignment) / expected (class members × assignments)
-    const expected = filteredAssignments.reduce((sum, a) => {
-      if (!a.class_id) return sum;
-      const members = classMembers.filter((m) => m.class_id === a.class_id).length;
-      return sum + members;
-    }, 0);
+    const expected = filteredAssignments.reduce((sum, a) => sum + membersOfAssignment(a).length, 0);
     const doneSet = new Set(submitted.map((a) => `${a.assignment_id}:${a.student_id}`));
     const completionPct = expected > 0 ? Math.round((doneSet.size / expected) * 100) : 0;
 
@@ -180,12 +243,7 @@ const TeacherResults = () => {
         .filter((a) => new Date(a.started_at).getTime() >= since)
         .map((a) => a.student_id),
     );
-    const scopedClassIds = classFilter === ALL
-      ? new Set(classes.map((c) => c.id))
-      : new Set([classFilter]);
-    const totalStudents = new Set(
-      classMembers.filter((m) => scopedClassIds.has(m.class_id)).map((m) => m.user_id),
-    ).size;
+    const totalStudents = scopeStudentIds.size;
     const engagementPct = totalStudents > 0 ? Math.round((activeStudents.size / totalStudents) * 100) : 0;
 
     return {
@@ -196,7 +254,7 @@ const TeacherResults = () => {
       totalStudents,
       submittedCount: submitted.length,
     };
-  }, [filteredAttempts, filteredAssignments, classMembers, classes, classFilter]);
+  }, [filteredAttempts, filteredAssignments, membersOfAssignment, scopeStudentIds]);
 
   // 30-day chart
   const chartData = useMemo(() => {
@@ -264,14 +322,14 @@ const TeacherResults = () => {
       if (!p) return id.slice(0, 8);
       return `${p.first_name} ${p.last_name}`.trim() || id.slice(0, 8);
     };
-    const className = (id: string | null) => classes.find((c) => c.id === id)?.name ?? "";
+    const className = (a?: Assignment) =>
+      a?.class_id
+        ? classes.find((c) => c.id === a.class_id)?.name ?? ""
+        : a?.group_id ? groups.find((g) => g.id === a.group_id)?.name ?? "" : "";
     const asgById = new Map(filteredAssignments.map((a) => [a.id, a]));
 
     // Sheet 1: Class overview – per student
-    const scopedClassIds = classFilter === ALL ? new Set(classes.map((c) => c.id)) : new Set([classFilter]);
-    const studentIds = [...new Set(
-      classMembers.filter((m) => scopedClassIds.has(m.class_id)).map((m) => m.user_id),
-    )];
+    const studentIds = [...scopeStudentIds];
     const overviewRows = studentIds.map((sid) => {
       const studentAttempts = filteredAttempts.filter(
         (a) => a.student_id === sid && a.status === "submitted",
@@ -280,10 +338,7 @@ const TeacherResults = () => {
         .filter((a) => a.score !== null && a.max_score && a.max_score > 0)
         .map((a) => (a.score! / a.max_score!) * 100);
       const avg = scores.length ? Math.round(scores.reduce((s, x) => s + x, 0) / scores.length) : 0;
-      const expected = filteredAssignments.filter((a) => {
-        if (!a.class_id) return false;
-        return classMembers.some((m) => m.class_id === a.class_id && m.user_id === sid);
-      }).length;
+      const expected = filteredAssignments.filter((a) => membersOfAssignment(a).includes(sid)).length;
       const doneIds = new Set(studentAttempts.map((a) => a.assignment_id));
       const completionPct = expected > 0 ? Math.round((doneIds.size / expected) * 100) : 0;
       return {
@@ -304,7 +359,7 @@ const TeacherResults = () => {
         return {
           "Datum": a.submitted_at ? new Date(a.submitted_at).toLocaleString("cs-CZ") : "",
           "Žák": studentName(a.student_id),
-          "Třída": className(asg?.class_id ?? null),
+          "Třída": className(asg),
           "Úkol/Test": asg?.title ?? "",
           "Předmět": asg?.subject ?? "",
           "Skóre": a.score ?? "",
@@ -340,25 +395,43 @@ const TeacherResults = () => {
         <Card className="mb-6">
           <CardContent className="pt-6 grid gap-4 sm:grid-cols-2">
             <div>
-              <Label className="text-xs">Třída</Label>
-              <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Všechny třídy</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
+              <Label className="text-xs">Třída / skupina</Label>
+              <Select value={classFilter} onValueChange={setClassFilter} disabled={loading}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Všechny" /></SelectTrigger>
+                <SelectContent position="popper" className="max-h-72 overflow-y-auto overscroll-contain">
+                  <SelectItem value={ALL}>Všechny</SelectItem>
+                  {classes.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Třídy</SelectLabel>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={classScope(c.id)}>{c.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {groups.length > 0 && (
+                    <>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel>Skupiny</SelectLabel>
+                        {groups.map((g) => (
+                          <SelectItem key={g.id} value={groupScope(g.id)}>
+                            {g.subject ? `${g.name} · ${g.subject}` : g.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label className="text-xs">Předmět</Label>
-              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
+              <Select value={subjectFilter} onValueChange={setSubjectFilter} disabled={loading}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Všechny předměty" /></SelectTrigger>
+                <SelectContent position="popper" className="max-h-72 overflow-y-auto overscroll-contain">
                   <SelectItem value={ALL}>Všechny předměty</SelectItem>
-                  {subjects.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  {subjectOpts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
