@@ -69,4 +69,17 @@ describe("computeLessonActivityProgress", () => {
     expect(p.other.map((e) => e.activity.index)).toEqual([5]);
     expect(p.required.find((e) => e.activity.index === 3)!.best).toBeNull();
   });
+  it("počítá bodově váženou úspěšnost 21 z 25 jako 84 %", () => {
+    const best = bestResultsByActivity([
+      { activity_index: 1, score: 7, max_score: 8 },
+      { activity_index: 2, score: 4, max_score: 7 },
+      { activity_index: 3, score: 10, max_score: 10 },
+    ]);
+    expect(computeLessonActivityProgress(acts, best).successPct).toBe(84);
+  });
+  it("při nulové hotovosti nemá procento úspěšnosti", () => {
+    const progress = computeLessonActivityProgress(acts, new Map());
+    expect(progress.done).toBe(0);
+    expect(progress.successPct).toBeNull();
+  });
 });
