@@ -11,15 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Copy, FileDown, FolderPlus, GripVertical, NotebookPen, Pencil, Plus, Trash2, Users,
+  ArrowLeft, ChevronLeft, ChevronRight, Copy, FileDown, FolderPlus, GripVertical, ListTree, NotebookPen, Pencil, Plus, Search, Trash2, Users,
 } from "lucide-react";
 import NotebookCanvas from "@/components/notebook/NotebookCanvas";
 import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
 import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
   NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
-  loadNotebooks, loadPages, ensureMyCourseNotebooks, normalizeContent, savePageContent, upsertClassRosterTextBox,
+  loadNotebooks, loadPages, ensureMyCourseNotebooks, normalizeContent, savePageContent, savePageMeta, upsertClassRosterTextBox,
 } from "@/lib/notebook";
+import { buildToc, listSections, pageDisplayTitle } from "@/lib/notebook-toc";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 export default function MyNotebook() {
@@ -50,6 +52,11 @@ export default function MyNotebook() {
   const [renameTitle, setRenameTitle] = useState("");
 
   const saveTimer = useRef<number | null>(null);
+  const metaTimer = useRef<number | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [tocQuery, setTocQuery] = useState("");
+  const [includeToc, setIncludeToc] = useState(true);
+  const [jumpValue, setJumpValue] = useState("");
   const isStudent = role !== "teacher" && role !== "lektor" && role !== "admin" && role !== "school_admin";
 
   const refresh = useCallback(async () => {
@@ -205,6 +212,51 @@ export default function MyNotebook() {
     }, 800);
   };
 
+  /* --- název a oddíl stránky (autosave po 800 ms, obsah se nemění) --- */
+  const onMetaChange = (patch: { title?: string; section?: string }) => {
+    if (!activePage) return;
+    const pageId = activePage.id;
+    const merged = { title: activePage.title ?? "", section: activePage.section ?? "", ...patch };
+    setPages((prev) => prev.map((p) => (p.id === pageId ? { ...p, ...patch } : p)));
+    if (metaTimer.current) window.clearTimeout(metaTimer.current);
+    setSaving(true);
+    metaTimer.current = window.setTimeout(async () => {
+      try {
+        await savePageMeta(pageId, merged);
+      } catch (e: any) {
+        toast.error(e.message || "Uložení názvu se nepodařilo.");
+      } finally {
+        setSaving(false);
+      }
+    }, 800);
+  };
+
+  const goTo = useCallback((i: number) => {
+    setActiveIndex((cur) => {
+      const n = pages.length;
+      if (n === 0) return cur;
+      return Math.max(0, Math.min(n - 1, i));
+    });
+  }, [pages.length]);
+
+  /* Šipky ← → listují; ignoruje se při psaní do polí a textových bloků. */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable)) return;
+      if (document.querySelector("[role=dialog]")) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); setActiveIndex((i) => Math.max(0, i - 1)); }
+      if (e.key === "ArrowRight") { e.preventDefault(); setActiveIndex((i) => Math.min(pages.length - 1, i + 1)); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, pages.length]);
+
+  const sections = useMemo(() => listSections(pages), [pages]);
+  const tocGroups = useMemo(() => buildToc(pages, tocQuery), [pages, tocQuery]);
+
   const setBackground = async (style: BackgroundStyle) => {
     if (!activePage) return;
     setPages((prev) => prev.map((p, i) => (i === activeIndex ? { ...p, background_style: style } : p)));
@@ -302,7 +354,7 @@ export default function MyNotebook() {
     if (!open) return;
     setBusy(true);
     try {
-      await exportNotebookToPdf(open, pages);
+      await exportNotebookToPdf(open, pages, { includeToc });
       toast.success("PDF bylo vygenerováno.");
     } catch (e: any) {
       toast.error(e.message || "Export do PDF se nepodařil.");
@@ -439,10 +491,17 @@ export default function MyNotebook() {
                   {saving ? "Ukládám…" : "Uloženo"}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setTocQuery(""); setTocOpen(true); }}>
+                  <ListTree className="h-4 w-4" /> Obsah
+                </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={exportPdf}>
                   <FileDown className="h-4 w-4" /> Exportovat PDF
                 </Button>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Checkbox checked={includeToc} onCheckedChange={(v) => setIncludeToc(v === true)} />
+                  Zahrnout obsah
+                </label>
                 {open.related_class_id && (
                   <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={insertClassNames}>
                     <Users className="h-4 w-4" /> Vložit jména žáků třídy
@@ -482,9 +541,13 @@ export default function MyNotebook() {
                         type="button"
                         className="w-full text-left"
                         onClick={() => setActiveIndex(i)}
-                        aria-label={`Stránka ${i + 1}`}
+                        aria-label={`Stránka ${i + 1}: ${pageDisplayTitle(p, i)}`}
                       >
                         <NotebookPageThumb content={p.content} backgroundStyle={p.background_style} />
+                        <span className="mt-1 block truncate text-xs font-medium" title={pageDisplayTitle(p, i)}>
+                          {pageDisplayTitle(p, i)}
+                        </span>
+                        {p.section && <span className="block truncate text-[11px] text-muted-foreground">{p.section}</span>}
                       </button>
                       <div className="mt-1 flex items-center justify-between">
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -511,6 +574,69 @@ export default function MyNotebook() {
               </aside>
 
               <section className="space-y-3">
+                {activePage && (
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[200px] flex-1">
+                      <Label htmlFor="nb-page-title" className="text-xs">Název stránky {activeIndex + 1}</Label>
+                      <Input
+                        id="nb-page-title"
+                        value={activePage.title ?? ""}
+                        placeholder={`Strana ${activeIndex + 1}`}
+                        maxLength={120}
+                        onChange={(e) => onMetaChange({ title: e.target.value })}
+                      />
+                    </div>
+                    <div className="w-48">
+                      <Label htmlFor="nb-page-section" className="text-xs">Oddíl</Label>
+                      <Input
+                        id="nb-page-section"
+                        list="nb-sections"
+                        value={activePage.section ?? ""}
+                        placeholder="např. Maso"
+                        maxLength={80}
+                        onChange={(e) => onMetaChange({ section: e.target.value })}
+                      />
+                      <datalist id="nb-sections">
+                        {sections.map((s) => <option key={s} value={s} />)}
+                      </datalist>
+                    </div>
+                  </div>
+                )}
+
+                <nav aria-label="Listování stránkami" className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline" className="h-11 gap-1 px-4" disabled={activeIndex <= 0}
+                    onClick={() => goTo(activeIndex - 1)}
+                  >
+                    <ChevronLeft className="h-5 w-5" /> Předchozí
+                  </Button>
+                  <span className="px-1 text-sm font-medium" aria-live="polite">
+                    Strana {pages.length ? activeIndex + 1 : 0} z {pages.length}
+                  </span>
+                  <Button
+                    variant="outline" className="h-11 gap-1 px-4" disabled={activeIndex >= pages.length - 1}
+                    onClick={() => goTo(activeIndex + 1)}
+                  >
+                    Další <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <form
+                    className="flex items-center gap-1.5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const n = parseInt(jumpValue, 10);
+                      if (Number.isFinite(n)) goTo(n - 1);
+                      setJumpValue("");
+                    }}
+                  >
+                    <Label htmlFor="nb-jump" className="text-sm">Přejít na</Label>
+                    <Input
+                      id="nb-jump" type="number" inputMode="numeric" min={1} max={pages.length}
+                      className="h-11 w-20" value={jumpValue} onChange={(e) => setJumpValue(e.target.value)}
+                    />
+                    <Button type="submit" variant="secondary" className="h-11">Jít</Button>
+                  </form>
+                </nav>
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm">Podklad stránky</Label>
                   <Select
@@ -576,6 +702,50 @@ export default function MyNotebook() {
             <Button variant="outline" onClick={() => setNewOpen(false)}>Zrušit</Button>
             <Button onClick={create} disabled={busy}>{busy ? "Zakládám…" : "Založit"}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={tocOpen} onOpenChange={setTocOpen}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-hidden">
+          <DialogHeader><DialogTitle>Obsah sešitu</DialogTitle></DialogHeader>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9" placeholder="Hledat podle názvu nebo oddílu…" aria-label="Hledat v obsahu"
+              value={tocQuery} onChange={(e) => setTocQuery(e.target.value)}
+            />
+          </div>
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+            {tocGroups.length === 0 && <p className="text-sm text-muted-foreground">Nic nenalezeno.</p>}
+            {tocGroups.map((g) => (
+              <section key={g.label}>
+                <h3 className="mb-2 text-sm font-semibold">{g.label}</h3>
+                <ul className="space-y-1.5">
+                  {g.entries.map((e) => (
+                    <li key={e.page.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveIndex(e.index); setTocOpen(false); }}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          e.index === activeIndex && "border-primary bg-primary/5",
+                        )}
+                      >
+                        <div className="w-12 shrink-0">
+                          <NotebookPageThumb content={e.page.content} backgroundStyle={e.page.background_style} />
+                        </div>
+                        <span className="w-8 shrink-0 text-sm font-semibold text-muted-foreground">{e.number}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium">{e.displayTitle}</span>
+                          {e.page.section && <span className="block truncate text-xs text-muted-foreground">{e.page.section}</span>}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
 
