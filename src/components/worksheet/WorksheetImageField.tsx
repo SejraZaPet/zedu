@@ -14,6 +14,9 @@ interface Props {
   url?: string;
   alt?: string;
   onChange: (patch: { url?: string; alt?: string }) => void;
+  /** Kompaktní varianta přímo v bloku papírového editoru (bez pole URL/alt). */
+  compact?: boolean;
+  emptyText?: string;
 }
 
 /**
@@ -21,7 +24,7 @@ interface Props {
  * prezentací: nahrání z počítače, přetažení, vložení ze schránky, knihovna médií
  * a vyhledání fotek. Vždy ukládá trvalou veřejnou adresu.
  */
-export default function WorksheetImageField({ label = "Obrázek", url, alt, onChange }: Props) {
+export default function WorksheetImageField({ label = "Obrázek", url, alt, onChange, compact = false, emptyText }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -62,7 +65,7 @@ export default function WorksheetImageField({ label = "Obrázek", url, alt, onCh
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs">{label}</Label>
+      {!compact && <Label className="text-xs">{label}</Label>}
       <div
         tabIndex={0}
         role="group"
@@ -78,15 +81,15 @@ export default function WorksheetImageField({ label = "Obrázek", url, alt, onCh
           const file = Array.from(e.clipboardData.files ?? []).find((f) => f.type.startsWith("image/"));
           if (file) { e.preventDefault(); void handleFile(file); }
         }}
-        className={`rounded-lg border-2 border-dashed p-3 text-center outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded-lg border-2 border-dashed p-3 text-center ${compact ? "flex min-h-[120px] flex-col items-center justify-center gap-2" : ""} outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           dragOver ? "border-primary bg-primary/10" : "border-border bg-muted/20"
         }`}
       >
-        {url ? (
+        {url && !compact ? (
           <img src={url} alt={alt || ""} className="mx-auto max-h-40 rounded border border-border object-contain" />
         ) : (
-          <p className="text-xs text-muted-foreground">
-            Přetáhněte sem obrázek nebo klikněte a vložte ho ze schránky (Ctrl+V).
+          <p className={compact ? "text-sm font-medium text-muted-foreground" : "text-xs text-muted-foreground"}>
+            {compact ? (emptyText ?? "Klikněte a vložte obrázek") : <>Přetáhněte sem obrázek nebo klikněte a vložte ho ze schránky (Ctrl+V).</>}
           </p>
         )}
         {busy && (
@@ -124,7 +127,7 @@ export default function WorksheetImageField({ label = "Obrázek", url, alt, onCh
           onChange={(e) => { void handleFile(e.target.files?.[0]); e.target.value = ""; }}
         />
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
-          <ImagePlus className="mr-1 h-4 w-4" /> Nahrát z počítače
+          <ImagePlus className="mr-1 h-4 w-4" /> {compact && url ? "Změnit obrázek" : "Nahrát z počítače"}
         </Button>
         <MediaPickerDialog
           imageOnly
@@ -143,13 +146,13 @@ export default function WorksheetImageField({ label = "Obrázek", url, alt, onCh
         )}
       </div>
 
-      <Input
+      {!compact && <Input
         value={url ?? ""}
         onChange={(e) => onChange({ url: e.target.value })}
         placeholder="nebo vložte adresu https://…"
         className="text-xs"
-      />
-      {url && (
+      />}
+      {url && !compact && (
         <Input
           value={alt ?? ""}
           onChange={(e) => onChange({ alt: e.target.value })}
