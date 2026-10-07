@@ -93,3 +93,10 @@
 - [x] Nabízet předměty podle skupiny, rozvrhu třídy a existujících úloh.
 - [x] Zobrazit počty stavů a pamatovat volbu po dobu relace.
 - [x] Ověřit kombinace filtrů, reset předmětu a sestavení.
+
+## Nejlepší výsledky a silné/slabé stránky (2026-10-07)
+- [ ] Přidat sdílený výběr nejlepšího výsledku a nejlepšího odevzdaného pokusu.
+- [ ] Sjednotit čtení skóre v požadovaných přehledech bez změny uložených dat.
+- [ ] Přepracovat statistiku na první pokus vs. nejlepší výsledek.
+- [ ] Přidat souhrnný panel na Výsledky respektující filtry.
+- [ ] Ověřit testy, sestavení a chování XP triggeru.
