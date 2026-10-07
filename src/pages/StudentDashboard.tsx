@@ -26,6 +26,7 @@ interface Profile {
 }
 
 const StudentDashboard = () => {
+  useEffect(() => { void ensureMyCourseNotebooks(); }, []);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
