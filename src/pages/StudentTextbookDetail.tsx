@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { bestResultsByActivity, betterResult, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -387,6 +388,7 @@ const StudentTextbookDetail = () => {
     const activityBlockCount = (selectedLesson.blocks || []).filter((b: any) => b?.type === "activity").length;
     const hasActivities = activityBlockCount > 0;
     const visibleBlocks = filterReadingBlocks((selectedLesson.blocks || []) as any[]);
+    const activityTitles = lessonActivityTitles(visibleBlocks);
     const requiredActivityIndices = visibleBlocks
       .map((b: any, idx: number) => ({ b, idx }))
       .filter(({ b }) => b?.type === "activity" && b?.props?.required === true)
@@ -430,9 +432,16 @@ const StudentTextbookDetail = () => {
                 block={block}
                 blockIndex={idx}
                 isCompleted={completedActivityIndices.has(idx)}
+                completedResult={bestResults.get(idx) ?? null}
+                activityTitle={activityTitles.get(idx)}
                 onActivityComplete={(activityIndex, activityType, score, maxScore) => {
                   if (completedActivityIndices.has(activityIndex)) return;
                   setCompletedActivityIndices(prev => new Set([...prev, activityIndex]));
+                  setBestResults((prev) => {
+                    const next = new Map(prev);
+                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString() })));
+                    return next;
+                  });
                   trackActivity(activityIndex, activityType, score, maxScore);
                 }}
               />
