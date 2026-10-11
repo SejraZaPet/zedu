@@ -12,10 +12,12 @@ interface Props {
   spec?: WorksheetSpec | null;
   size?: "sm" | "default";
   compact?: boolean;
+  /** Klíč autosave v localStorage — napsaný text z linek se vytiskne. */
+  answersStorageKey?: string;
 }
 
 /** „Stáhnout PDF" a „Vytisknout" — vždy žákovská verze bez klíče a poznámek. */
-export default function StudentWorksheetPrintButtons({ worksheetId, spec, size = "sm", compact }: Props) {
+export default function StudentWorksheetPrintButtons({ worksheetId, spec, size = "sm", compact, answersStorageKey }: Props) {
   const [busy, setBusy] = useState<"pdf" | "print" | null>(null);
 
   const run = async (kind: "pdf" | "print") => {
@@ -32,7 +34,11 @@ export default function StudentWorksheetPrintButtons({ worksheetId, spec, size =
         s = (data as any).spec as WorksheetSpec;
       }
       if (kind === "pdf") toast.info("V okně tisku zvol „Uložit jako PDF“.");
-      await printStudentWorksheet(s, worksheetId);
+      let answers: Record<string, unknown> | null = null;
+      if (answersStorageKey) {
+        try { answers = JSON.parse(localStorage.getItem(answersStorageKey) ?? "null")?.answers ?? null; } catch { answers = null; }
+      }
+      await printStudentWorksheet(s, worksheetId, answers);
     } catch (e: any) {
       toast.error(e?.message || "Tisk se nepodařilo připravit.");
     } finally {
