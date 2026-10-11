@@ -62,12 +62,11 @@ export async function loadInsertableWorksheets(): Promise<InsertableWorksheet[]>
 export async function findInsertedPages(
   notebookId: string, worksheetId: string, mode: WorksheetInsertMode,
 ): Promise<NotebookPage[]> {
-  const { data } = await supabase
-    .from("notebook_pages")
+  const { data } = await (supabase.from("notebook_pages" as any) as any)
     .select("*")
     .eq("notebook_id", notebookId)
-    .eq("content->worksheet->>worksheetId" as any, worksheetId)
-    .eq("content->worksheet->>mode" as any, mode)
+    .eq("content->worksheet->>worksheetId", worksheetId)
+    .eq("content->worksheet->>mode", mode)
     .order("page_order", { ascending: true });
   return ((data ?? []) as any[]).map((p) => ({ ...p, content: normalizeContent(p.content) })) as NotebookPage[];
 }
@@ -180,11 +179,10 @@ export async function insertWorksheetIntoNotebook(input: {
 
 /** Všechny stránky „PDF pro pero“ daného listu ve vlastních sešitech žáka. */
 export async function loadMyPenPages(worksheetId: string): Promise<NotebookPage[]> {
-  const { data } = await supabase
-    .from("notebook_pages")
+  const { data } = await (supabase.from("notebook_pages" as any) as any)
     .select("*")
-    .eq("content->worksheet->>worksheetId" as any, worksheetId)
-    .eq("content->worksheet->>mode" as any, "pen")
+    .eq("content->worksheet->>worksheetId", worksheetId)
+    .eq("content->worksheet->>mode", "pen")
     .order("page_order", { ascending: true });
   return ((data ?? []) as any[]).map((p) => ({ ...p, content: normalizeContent(p.content) })) as NotebookPage[];
 }
