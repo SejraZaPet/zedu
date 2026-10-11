@@ -21,8 +21,10 @@ interface Props {
   worksheetId: string;
   worksheetTitle: string;
   subjectId?: string | null;
+  /** Lekce, ke které je list napojený; jen pak se nabízí „Zobrazit žákům u lekce“. */
+  sourceLessonId?: string | null;
   /** Called after successful publish (and optional assignment creation). */
-  onPublished?: (info: { assignmentCreated: boolean }) => void;
+  onPublished?: (info: { assignmentCreated: boolean; showInLesson?: boolean }) => void;
 }
 
 /**
@@ -30,7 +32,7 @@ interface Props {
  * aby žáci list uviděli — samotné publikování je pro ně neviditelné.
  */
 export default function PublishWorksheetDialog({
-  open, onOpenChange, worksheetId, worksheetTitle, subjectId, onPublished,
+  open, onOpenChange, worksheetId, worksheetTitle, subjectId, sourceLessonId, onPublished,
 }: Props) {
   const { myClasses: teacherClasses } = useTeacherClasses();
   const { groups } = useSubjectGroups();
@@ -39,6 +41,7 @@ export default function PublishWorksheetDialog({
   const [target, setTarget] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [showInLesson, setShowInLesson] = useState(true);
 
   const myClasses = useMemo(() => teacherClasses ?? [], [teacherClasses]);
 
@@ -55,7 +58,11 @@ export default function PublishWorksheetDialog({
 
       const { error: pubErr } = await supabase
         .from("worksheets" as any)
-        .update({ status: "published", scheduled_publish_at: null } as any)
+        .update({
+          status: "published",
+          scheduled_publish_at: null,
+          ...(sourceLessonId ? { show_in_lesson: showInLesson } : {}),
+        } as any)
         .eq("id", worksheetId);
       if (pubErr) throw pubErr;
 
@@ -81,10 +88,12 @@ export default function PublishWorksheetDialog({
         title: "Publikováno",
         description: assignmentCreated
           ? "Pracovní list je zadán a žáci ho vidí."
-          : "Pozor: list není nikomu zadán, žáci ho neuvidí.",
+          : sourceLessonId && showInLesson
+            ? "List uvidí žáci s přístupem k lekci."
+            : "Pozor: list není nikomu zadán, žáci ho neuvidí.",
       });
       onOpenChange(false);
-      onPublished?.({ assignmentCreated });
+      onPublished?.({ assignmentCreated, showInLesson: sourceLessonId ? showInLesson : undefined });
     } catch (e: any) {
       toast({ title: "Publikování selhalo", description: e.message, variant: "destructive" });
     } finally {
@@ -103,6 +112,17 @@ export default function PublishWorksheetDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {sourceLessonId && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <Checkbox
+                checked={showInLesson}
+                onCheckedChange={(v) => setShowInLesson(v === true)}
+                className="mt-0.5"
+                aria-label="Zobrazit žákům u lekce"
+              />
+              <span className="text-sm">Zobrazit žákům u lekce</span>
+            </label>
+          )}
           <label className="flex items-start gap-2 cursor-pointer">
             <Checkbox
               checked={assign}

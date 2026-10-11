@@ -423,6 +423,7 @@ export default function WorksheetEditor() {
   const [subjectSearch, setSubjectSearch] = useState("");
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
+  const [showInLesson, setShowInLesson] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
@@ -520,6 +521,7 @@ export default function WorksheetEditor() {
       setStatus(row.status);
       setScheduledAt(row.scheduled_publish_at ? new Date(row.scheduled_publish_at) : null);
       setSourceLessonId(row.source_lesson_id ?? null);
+      setShowInLesson(row.show_in_lesson === true);
       setActiveLessonId(row.source_lesson_id ?? null);
       setLoading(false);
       initialLoad.current = false;
@@ -2187,12 +2189,32 @@ export default function WorksheetEditor() {
     </>
   );
 
+  async function toggleShowInLesson(next: boolean) {
+    if (!id) return;
+    const prev = showInLesson;
+    setShowInLesson(next);
+    const { error } = await supabase.from("worksheets" as any).update({ show_in_lesson: next } as any).eq("id", id);
+    if (error) {
+      setShowInLesson(prev);
+      toast({ title: "Nastavení se neuložilo", description: error.message, variant: "destructive" });
+    }
+  }
+
   const worksheetSettingsContent = (
     <div className="space-y-5">
       <div>
         <h3 className="font-heading text-sm font-semibold text-foreground">Nastavení listu</h3>
         <p className="mt-1 text-xs text-muted-foreground">Údaje záhlaví a tiskové volby</p>
       </div>
+      {sourceLessonId && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+          <div>
+            <Label htmlFor="ws-show-in-lesson" className="text-sm">Zobrazit žákům u lekce</Label>
+            <p className="mt-1 text-xs text-muted-foreground">Publikovaný list uvidí žáci s přístupem k lekci přímo v učebnici.</p>
+          </div>
+          <Switch id="ws-show-in-lesson" checked={showInLesson} onCheckedChange={toggleShowInLesson} />
+        </div>
+      )}
       <div className="space-y-4 border-b border-border pb-5">
         <div>
           <Label className="text-xs">Předmět</Label>
@@ -2694,7 +2716,9 @@ export default function WorksheetEditor() {
           worksheetId={id}
           worksheetTitle={spec.header.title}
           subjectId={subjectId}
-          onPublished={() => {
+          sourceLessonId={sourceLessonId}
+          onPublished={(info) => {
+            if (typeof info?.showInLesson === "boolean") setShowInLesson(info.showInLesson);
             setStatus("published");
             setScheduledAt(null);
           }}
