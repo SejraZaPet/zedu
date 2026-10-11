@@ -71,7 +71,7 @@ export default function WorksheetPanel(props: WorksheetPanelProps) {
               assignment, attemptId: attempt.id, studentId, answers: wAnswers as any, score, maxScore, gate: props.gate,
             });
             if (res === "gated") return false;
-            if (!res.ok) {
+            if (res.ok === false) {
               toast({ title: res.title, description: res.message, variant: "destructive" });
               // Chyba uložení: chování jako dřív (bez návratu false).
               return res.title === "Chyba" ? undefined : false;
