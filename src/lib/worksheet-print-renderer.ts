@@ -922,6 +922,10 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
     case "write_lines": {
       const n = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
+      const written = printAnswers?.[item.id];
+      if (typeof written === "string" && written.trim()) {
+        return `<div style="margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${writtenLinesHtml(written, n, style)}</div>`;
+      }
       const lines = Array.from({ length: n })
         .map(() => `<div style="border-bottom:1px ${style} #999;height:24px;margin-bottom:2px;"></div>`)
         .join("");
@@ -942,8 +946,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
     }
 
     case "two_boxes": {
-      const boxContent = (c?: string) => {
+      const tbv = printAnswers?.[item.id];
+      const boxContent = (c?: string, side?: 0 | 1) => {
         const m = c?.match(/^lines:(\d+)$/);
+        const w = Array.isArray(tbv) && side !== undefined ? String(tbv[side] ?? "") : "";
+        if (m && w.trim()) return writtenLinesHtml(w, parseInt(m[1], 10), "dotted", 20);
         if (m) {
           const n = parseInt(m[1], 10);
           return Array.from({ length: n })
@@ -953,8 +960,8 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         return `<p style="font-size:10pt;margin:0;white-space:pre-wrap;">${esc(c ?? "")}</p>`;
       };
       return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;">
-        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.leftTitle ?? "")}</h4>${boxContent(item.leftContent)}</div>
-        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.rightTitle ?? "")}</h4>${boxContent(item.rightContent)}</div>
+        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.leftTitle ?? "")}</h4>${boxContent(item.leftContent, 0)}</div>
+        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.rightTitle ?? "")}</h4>${boxContent(item.rightContent, 1)}</div>
       </div>`;
     }
 
@@ -1274,7 +1281,21 @@ function renderFooter(spec: WorksheetSpec): string {
 }
 
 
+/** Odpovědi žáka pro psací bloky během jednoho vykreslení (jen žákovský tisk). */
+let printAnswers: Record<string, unknown> | null = null;
+
+/** Napsaný text na linkách; linky navíc se doplní prázdné. */
+function writtenLinesHtml(text: string, minLines: number, style: string, h = 24): string {
+  const rows = text.split(/\n/);
+  const n = Math.max(minLines, rows.length);
+  return Array.from({ length: n })
+    .map((_, i) => `<div style="border-bottom:1px ${style} #999;min-height:${h}px;margin-bottom:2px;font-size:11pt;white-space:pre-wrap;">${esc(rows[i] ?? "")}</div>`)
+    .join("");
+}
+
 export interface WorksheetPrintOptions {
+  /** Napsané odpovědi žáka (write_lines / two_boxes) — vytisknou se na linkách. */
+  answers?: Record<string, unknown> | null;
   paper?: "A4";
   includeNameField?: boolean;
   /** Verze pro učitele — poznámky + klíč v odlišeném bloku na konci. */
@@ -1356,9 +1377,15 @@ export function renderWorksheetVariantHtml(
   const header = renderHeader(specCopy, variant);
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
   const displayNumbers = computeDisplayNumbers(variant.items);
-  const items = variant.items
-    .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
-    .join("\n");
+  printAnswers = options?.answers ?? null;
+  let items: string;
+  try {
+    items = variant.items
+      .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
+      .join("\n");
+  } finally {
+    printAnswers = null;
+  }
   const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
     : "";
