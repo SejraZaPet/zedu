@@ -42,6 +42,7 @@ import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultySt
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
+import { bestAttempt, resultRatio } from "@/lib/best-results";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted" | "lesson_in_progress" | "lesson_done";
 
@@ -83,6 +84,7 @@ interface AttemptInfo {
   teacher_feedback_text: string | null;
   teacher_feedback_emoji: string | null;
   teacher_feedback_at: string | null;
+  attempt_number: number;
 }
 
 interface StudentRow {
@@ -95,8 +97,9 @@ interface StudentRow {
   bestScore: number | null;
   maxScore: number | null;
   lastActivity: string | null;
-  /** Zobrazený pokus: nejnovější odevzdaný, jinak poslední. */
+  /** Zobrazený pokus: výchozí je nejlepší odevzdaný, jinak poslední. */
   latestAttempt: AttemptInfo | null;
+  attempts: AttemptInfo[];
   /** Žák po odevzdání otevřel list znovu a má nový rozpracovaný pokus. */
   reopenedDraft?: boolean;
   attachments: Array<{ id: string; file_name: string; file_path: string }>;
@@ -224,11 +227,24 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         if (submitted.length > 0) status = "submitted";
         else if (inProg) status = "in_progress";
 
-        const scores = submitted.filter((a: any) => a.score !== null).map((a: any) => a.score as number);
         const dates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean) as string[];
-        // Odpovědi, skóre i zpětná vazba patří k nejnovějšímu ODEVZDANÉMU pokusu;
-        // bez odevzdání se použije poslední pokus jako dřív.
-        const latest = submitted[0] ?? atts[0];
+        const latest = bestAttempt(atts) ?? atts[0];
+        const mappedAttempts: AttemptInfo[] = atts.map((item: any) => ({
+          id: item.id,
+          status: item.status,
+          score: item.score ?? null,
+          max_score: item.max_score ?? null,
+          submitted_at: item.submitted_at ?? null,
+          last_saved_at: item.last_saved_at ?? null,
+          answers: item.answers ?? null,
+          progress: item.progress ?? null,
+          submission_note: item.submission_note ?? null,
+          teacher_feedback_text: item.teacher_feedback_text ?? null,
+          teacher_feedback_emoji: item.teacher_feedback_emoji ?? null,
+          teacher_feedback_at: item.teacher_feedback_at ?? null,
+          attempt_number: item.attempt_number ?? 0,
+        }));
+        const bestSubmitted = bestAttempt(mappedAttempts);
         const reopenedDraft = !!submitted[0] && atts[0]?.status === "in_progress" && atts[0].id !== submitted[0].id;
 
         return {
@@ -238,26 +254,12 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           email: profile.email || "",
           status,
           attemptCount: atts.length,
-          bestScore: scores.length > 0 ? Math.max(...scores) : null,
-          maxScore: submitted.find((a: any) => a.max_score !== null)?.max_score ?? null,
+          bestScore: bestSubmitted?.score ?? null,
+          maxScore: bestSubmitted?.max_score ?? null,
           lastActivity: dates.length > 0 ? dates.sort().reverse()[0] : null,
           reopenedDraft,
-          latestAttempt: latest
-            ? {
-                id: latest.id,
-                status: latest.status,
-                score: latest.score ?? null,
-                max_score: latest.max_score ?? null,
-                submitted_at: latest.submitted_at ?? null,
-                last_saved_at: latest.last_saved_at ?? null,
-                answers: latest.answers ?? null,
-                progress: latest.progress ?? null,
-                submission_note: latest.submission_note ?? null,
-                teacher_feedback_text: latest.teacher_feedback_text ?? null,
-                teacher_feedback_emoji: latest.teacher_feedback_emoji ?? null,
-                teacher_feedback_at: latest.teacher_feedback_at ?? null,
-              }
-            : null,
+          latestAttempt: latest ? mappedAttempts.find((item) => item.id === latest.id) ?? null : null,
+          attempts: mappedAttempts,
           attachments: filesByStudent[sid] || [],
         };
       });
@@ -307,7 +309,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
       setStudentIds(studentIds);
       setDrafts(
         Object.fromEntries(
-          rows.filter((r) => r.latestAttempt).map((r) => [r.latestAttempt!.id, r.latestAttempt!.teacher_feedback_text || ""]),
+          rows.flatMap((r) => r.attempts.map((attempt) => [attempt.id, attempt.teacher_feedback_text || ""])),
         ),
       );
     } catch (e: any) {
@@ -489,6 +491,13 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
     if (next) void ensureAttachmentUrls(row);
   };
 
+  const selectAttempt = (studentId: string, attemptId: string) => {
+    setStudents((current) => current.map((row) => {
+      if (row.studentId !== studentId) return row;
+      return { ...row, latestAttempt: row.attempts.find((attempt) => attempt.id === attemptId) ?? row.latestAttempt };
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -648,6 +657,23 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                     </>
                                   )}
                                 </div>
+                                 {s.attempts.length > 1 && (
+                                   <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pokusy žáka">
+                                     {[...s.attempts].sort((a, b) => a.attempt_number - b.attempt_number).map((item) => (
+                                       <Button
+                                         key={item.id}
+                                         size="sm"
+                                         variant={item.id === attempt.id ? "default" : "outline"}
+                                         role="tab"
+                                         aria-selected={item.id === attempt.id}
+                                         onClick={() => selectAttempt(s.studentId, item.id)}
+                                       >
+                                         Pokus {item.attempt_number}{item.id === bestAttempt(s.attempts)?.id ? " · nejlepší" : ""}
+                                         {resultRatio(item) !== null ? ` · ${Math.round((resultRatio(item) ?? 0) * 100)} %` : ""}
+                                       </Button>
+                                     ))}
+                                   </div>
+                                 )}
                                 {s.reopenedDraft && (
                                   <p className="text-xs text-amber-700 dark:text-amber-300">
                                     Žák otevřel list znovu (rozpracováno). Zobrazen je poslední odevzdaný pokus.
@@ -778,7 +804,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                   >
                     {statsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Statistika obtížnosti
+                    Silné a slabé stránky
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">

@@ -29,6 +29,7 @@ import {
   type LessonActivityProgress,
 } from "@/lib/lesson-activity-progress";
 import LessonActivityChecklist from "@/components/assignments/LessonActivityChecklist";
+import { bestAttempt } from "@/lib/best-results";
 
 /** Vrací splnění povinných aktivit lekce, nebo null když lekce povinné aktivity nemá. */
 async function checkLessonGate(
@@ -269,6 +270,7 @@ const StudentAssignmentPlayer = () => {
       const existingAttempts = (attempts as any[] || []);
       setAllAttempts(existingAttempts as any as AttemptData[]);
       const inProgress = existingAttempts.find((a: any) => a.status === "in_progress");
+      const bestSubmitted = bestAttempt(existingAttempts);
       const deadlinePassed = assignmentData.deadline
         ? new Date(assignmentData.deadline) < new Date()
         : false;
@@ -290,7 +292,7 @@ const StudentAssignmentPlayer = () => {
       if (deadlinePassed) {
         // Po termínu se NIKDY nezakládá nový pokus – žák si jen prohlíží,
         // co odevzdal (nebo rozpracoval) před termínem.
-        const lastAttempt = (inProgress ?? existingAttempts[0]) as any as AttemptData | undefined;
+        const lastAttempt = (bestSubmitted ?? inProgress ?? existingAttempts[0]) as any as AttemptData | undefined;
         if (lastAttempt) {
           selectAttempt(lastAttempt);
         } else {
@@ -332,7 +334,7 @@ const StudentAssignmentPlayer = () => {
         lastSavedAnswers.current = "{}";
       } else {
         // No more attempts
-        const lastAttempt = existingAttempts[0] as any as AttemptData;
+        const lastAttempt = (bestSubmitted ?? existingAttempts[0]) as any as AttemptData;
         selectAttempt(lastAttempt);
         toast({ title: "Vyčerpány pokusy", description: `Použito ${existingAttempts.length}/${assignmentData.max_attempts} pokusů.` });
       }
@@ -474,6 +476,7 @@ const StudentAssignmentPlayer = () => {
   const answeredCount = Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== null).length;
   const progressPercent = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
   const currentItem = items[currentIndex];
+  const bestSubmittedAttempt = bestAttempt(allAttempts);
 
   /** Čitelný text odpovědi žáka pro prohlížení. */
   const formatStudentAnswer = (item: any, value: any): string => {
@@ -594,12 +597,12 @@ const StudentAssignmentPlayer = () => {
               {saving && <span className="flex items-center gap-1 text-muted-foreground"><Save className="w-3 h-3 animate-pulse" /> Ukládám…</span>}
             </div>
           </div>
-          {attempt?.status === "submitted" && (
+          {bestSubmittedAttempt && (
             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
               <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
               {assignment.is_portfolio_task
                 ? "Odevzdáno"
-                : `${attempt.score}/${attempt.max_score}`}
+                : `${bestSubmittedAttempt.score}/${bestSubmittedAttempt.max_score}`}
             </Badge>
           )}
         </div>
