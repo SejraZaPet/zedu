@@ -19,8 +19,8 @@ type State =
 
 /** Digitální stránka sešitu: list vykreslený přímo na A4 se stejnými odpověďmi jako mimo sešit. */
 export default function NotebookWorksheetPage({
-  ref: wsRef, userId, isStudent,
-}: { ref: NotebookWorksheetRef; userId: string; isStudent: boolean }) {
+  worksheetRef: wsRef, userId, isStudent,
+}: { worksheetRef: NotebookWorksheetRef; userId: string; isStudent: boolean }) {
   const [state, setState] = useState<State>({ status: "loading" });
 
   const load = useCallback(async () => {

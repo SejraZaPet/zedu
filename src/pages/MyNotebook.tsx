@@ -671,9 +671,9 @@ export default function MyNotebook() {
                 {activePage?.content.worksheet?.mode === "digital" ? (
                   <NotebookWorksheetPage
                     key={activePage.id}
-                    ref={activePage.content.worksheet}
+                    worksheetRef={activePage.content.worksheet as any}
                     userId={user.id}
-                    isStudent={role === "user"}
+                    isStudent={isStudent}
                   />
                 ) : activePage && (
                   <NotebookCanvas
