@@ -21,8 +21,8 @@ const VARIANT_CLASS: Record<string, string> = {
 
 /**
  * Renderer pro layoutové bloky (section_header, write_lines, instruction_box,
- * two_boxes, qr_link, flow_steps). Slouží pouze pro zobrazení v online náhledu —
- * neukládá žádnou odpověď.
+ * two_boxes, qr_link, flow_steps). `write_lines` a `two_boxes` (pole s linkami) jsou psatelné —
+ * text se ukládá pod item.id (u two_boxes jako [levé, pravé]); neznámkuje se automaticky.
  */
 /** Hodnota pro `two_boxes` — dvě samostatná pole [levé, pravé]. */
 export function twoBoxesValue(v: unknown): [string, string] {
@@ -54,7 +54,6 @@ function LinedTextarea({
         minHeight: `${lines * LINE_PX}px`,
         backgroundImage: `linear-gradient(to bottom, transparent ${LINE_PX - 1}px, hsl(var(--border)) ${LINE_PX - 1}px)`,
         backgroundSize: `100% ${LINE_PX}px`,
-        borderStyle: lineStyle === "solid" ? undefined : undefined,
       }}
     />
   );
