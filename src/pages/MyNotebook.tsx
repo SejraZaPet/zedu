@@ -16,8 +16,7 @@ import {
 import NotebookCanvas from "@/components/notebook/NotebookCanvas";
 import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
 import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
-import { worksheetLinkHref } from "@/lib/worksheet-notebook";
-import { Link } from "react-router-dom";
+import NotebookWorksheetPage from "@/components/notebook/NotebookWorksheetPage";
 import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
   NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
@@ -669,23 +668,14 @@ export default function MyNotebook() {
                   </Select>
                 </div>
 
-                {activePage?.content.worksheet?.mode === "digital" && (
-                  <Card>
-                    <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                      <div>
-                        <p className="font-semibold">{activePage.content.worksheet.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Pracovní list digitálně{activePage.content.worksheet.assignmentId ? " · úkol, odevzdáš ho tam" : ""}. Odpovědi se ukládají u listu.
-                        </p>
-                      </div>
-                      <Button asChild className="h-11">
-                        <Link to={worksheetLinkHref(activePage.content.worksheet)}>Otevřít na A4</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {activePage && (
+                {activePage?.content.worksheet?.mode === "digital" ? (
+                  <NotebookWorksheetPage
+                    key={activePage.id}
+                    worksheetRef={activePage.content.worksheet as any}
+                    userId={user.id}
+                    isStudent={isStudent}
+                  />
+                ) : activePage && (
                   <NotebookCanvas
                     ownerId={user.id}
                     content={content}

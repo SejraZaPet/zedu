@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import WorksheetPlayer from "@/components/WorksheetPlayer";
+import WorksheetPanel from "@/components/worksheet/WorksheetPanel";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
 import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
@@ -64,15 +64,11 @@ export default function StudentWorksheetView() {
               />
               {isStudent && <InsertWorksheetButton worksheetId={id!} variant="ghost" />}
             </div>
-            <WorksheetPlayer
+            <WorksheetPanel
+              kind="own"
               spec={spec}
-              variantId={spec.variants[0]?.variantId ?? "A"}
-              attemptId={null}
-              work={
-                user && isStudent && id
-                  ? { worksheetId: id, studentId: user.id, variantId: spec.variants[0]?.variantId ?? "A" }
-                  : null
-              }
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
             />
           </div>
         )}

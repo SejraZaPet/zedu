@@ -9,9 +9,9 @@ import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, Ar
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import WorksheetPlayer from "@/components/WorksheetPlayer";
+import WorksheetPanel from "@/components/worksheet/WorksheetPanel";
+import { checkLessonGate } from "@/lib/worksheet-attempt";
 import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
-import { SNAPSHOT_KEY, snapshotPenPagesForAttempt } from "@/lib/worksheet-notebook";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import { Textarea } from "@/components/ui/textarea";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
@@ -32,25 +32,6 @@ import {
 } from "@/lib/lesson-activity-progress";
 import LessonActivityChecklist from "@/components/assignments/LessonActivityChecklist";
 import { bestAttempt } from "@/lib/best-results";
-
-/** Vrací splnění povinných aktivit lekce, nebo null když lekce povinné aktivity nemá. */
-async function checkLessonGate(
-  lessonId: string,
-  lessonSource: string | null,
-  userId: string,
-): Promise<{ done: number; total: number } | null> {
-  const activities = await fetchLessonActivities(lessonId, lessonSource);
-  const requiredIdx = activities.filter((a) => a.required).map((a) => a.index);
-  if (requiredIdx.length === 0) return null;
-  const { data, error } = await supabase
-    .from("student_activity_results")
-    .select("activity_index")
-    .eq("lesson_id", lessonId)
-    .eq("user_id", userId);
-  if (error) throw error;
-  const doneSet = new Set(((data as any[]) || []).map((r) => r.activity_index).filter((i) => requiredIdx.includes(i)));
-  return { done: doneSet.size, total: requiredIdx.length };
-}
 
 interface AssignmentData {
   id: string;
@@ -923,11 +904,12 @@ const StudentAssignmentPlayer = () => {
               <InsertWorksheetButton worksheetId={assignment.worksheet_id} assignmentId={assignment.id} />
             </div>
           )}
-          <WorksheetPlayer
-            key={attempt?.id ?? "no-attempt"}
+          <WorksheetPanel
+            kind="assignment"
             spec={worksheetSpec}
-            variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
-            attemptId={attempt?.id ?? null}
+            assignment={assignment}
+            attempt={attempt}
+            studentId={userId}
             locked={isReadOnly}
             lockedMessage={
               isDeadlinePassed && attempt?.status === "in_progress"
@@ -935,47 +917,9 @@ const StudentAssignmentPlayer = () => {
                 : null
             }
             showResults={isReviewMode && revealCorrectAnswers}
-            initialAnswers={(attempt?.answers as any) || {}}
-
-            onSubmit={async (wAnswers, score, maxScore) => {
-              if (!attempt) return false;
-              if (assignment.deadline && new Date(assignment.deadline).getTime() < Date.now()) {
-                toast({ title: "Termín vypršel", description: "Po termínu už úkol nejde odevzdat.", variant: "destructive" });
-                return false;
-              }
-              if (!(await ensureLessonGate())) return false;
-              try {
-                // Stránky „PDF pro pero“ ze sešitu → neměnná kopie k tomuto pokusu.
-                let finalAnswers: Record<string, any> = wAnswers;
-                if (assignment.worksheet_id && userId) {
-                  try {
-                    const snap = await snapshotPenPagesForAttempt({
-                      worksheetId: assignment.worksheet_id, assignmentId: assignment.id, studentId: userId, attemptId: attempt.id,
-                    });
-                    if (snap) finalAnswers = { ...wAnswers, [SNAPSHOT_KEY]: snap };
-                  } catch (e: any) {
-                    toast({ title: "Stránky ze sešitu se nepřiložily", description: e?.message || "Zkus odevzdat znovu později.", variant: "destructive" });
-                    return false;
-                  }
-                }
-                const { error: subErr } = await supabase
-                  .from("assignment_attempts" as any)
-                  .update({
-                    status: "submitted",
-                    answers: finalAnswers as any,
-                    score,
-                    max_score: maxScore,
-                    submitted_at: new Date().toISOString(),
-                    last_edited_by: userId,
-                    last_edited_at: new Date().toISOString(),
-                  } as any)
-                  .eq("id", attempt.id);
-                if (subErr) throw subErr;
-                setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
-                toast({ title: "Odevzdáno!", description: `Skóre: ${score}/${maxScore}` });
-              } catch (e: any) {
-                toast({ title: "Chyba", description: e.message, variant: "destructive" });
-              }
+            gate={ensureLessonGate}
+            onSubmitted={(score, maxScore) => {
+              if (attempt) setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
             }}
           />
           </>
