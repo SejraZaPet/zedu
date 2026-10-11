@@ -406,7 +406,7 @@ export default function WorksheetPlayer({
                 return <div key={it.id}>{renderItemBody(it)}</div>;
               }
               const r = effectiveResults?.perItem[it.id];
-              const manual = MANUAL_TYPES.includes(it.type);
+              const manual = MANUAL_ITEM_TYPES.includes(it.type);
               return (
                 <section
                   key={it.id}
@@ -650,7 +650,7 @@ export default function WorksheetPlayer({
               className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
                 i === currentIndex
                   ? "bg-primary text-primary-foreground"
-                  : answers[it.id] !== undefined && answers[it.id] !== "" && answers[it.id] !== null
+                  : isItemAnswered(it, answers[it.id])
                     ? "bg-primary/20 text-primary"
                     : "bg-muted text-muted-foreground"
               }`}
