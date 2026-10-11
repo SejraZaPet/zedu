@@ -23,7 +23,7 @@ interface Props {
   studentIds: string[];
 }
 
-interface DifficultyRow {
+interface DifficultyRow extends StrengthWeaknessRow {
   key: string;
   label: string;
   /** Úspěšnost 0–100, null = nelze vyhodnotit automaticky. */
@@ -31,12 +31,6 @@ interface DifficultyRow {
   sampleCount: number;
   /** Index aktivity v lekci (jen u řádků z lekce) – vstup pro trend. */
   activityIndex?: number;
-  firstPct: number | null;
-  bestPct: number | null;
-  repeaters: number;
-  averageAttempts: number;
-  failedLearners: string[];
-  category: "strong" | "weak" | "other";
 }
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
@@ -315,7 +309,14 @@ const AssignmentDifficultyStats = ({
     };
   }, [assignmentId, lessonId, lessonSource, worksheetId, studentIds.join(",")]);
 
-  const split = useMemo(() => splitStrengthsWeaknesses(rows), [rows]);
+  const split = useMemo(() => {
+    const grouped = splitStrengthsWeaknesses(rows);
+    return {
+      strong: grouped.strong as DifficultyRow[],
+      weak: grouped.weak as DifficultyRow[],
+      other: grouped.other as DifficultyRow[],
+    };
+  }, [rows]);
 
   if (loading) {
     return (
