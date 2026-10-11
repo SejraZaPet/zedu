@@ -44,11 +44,12 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+const myClass = { id: "class-1", name: "1.A" };
 vi.mock("@/hooks/useTeacherClasses", () => ({
   useTeacherClasses: () => ({
-    classes: [{ id: "class-1", name: "1.A" }],
-    myClasses: [{ id: "class-1", name: "1.A" }],
-    schoolClasses: [{ id: "class-1", name: "1.A" }],
+    classes: [myClass],
+    myClasses: [myClass],
+    schoolClasses: [myClass],
     refetch: vi.fn(),
   }),
   claimSchoolClass: vi.fn(),
