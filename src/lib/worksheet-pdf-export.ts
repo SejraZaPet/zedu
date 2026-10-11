@@ -26,6 +26,8 @@ export interface PdfExportOptions {
   teacherNotes?: string;
   /** Base URL for student link (default: window.location.origin). */
   baseUrl?: string;
+  /** Napsané odpovědi žáka (jen žákovská verze) — vytisknou se na linkách. */
+  answers?: Record<string, unknown> | null;
 }
 
 /**
@@ -54,6 +56,7 @@ async function buildPrintHtml(
     includeNameField: options.includeNameField,
     teacherVersion: !!options.teacherVersion,
     teacherNotes: options.teacherVersion ? options.teacherNotes : undefined,
+    answers: options.teacherVersion ? null : options.answers ?? null,
   });
 
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
@@ -214,9 +217,14 @@ export function toStudentPrintSpec(spec: WorksheetSpec): WorksheetSpec {
   };
 }
 
-export async function buildStudentWorksheetHtml(spec: WorksheetSpec, worksheetId: string): Promise<string> {
+export async function buildStudentWorksheetHtml(
+  spec: WorksheetSpec,
+  worksheetId: string,
+  answers?: Record<string, unknown> | null,
+): Promise<string> {
   return buildPrintHtml(toStudentPrintSpec(spec), {
     worksheetId,
+    answers: answers ?? null,
     includeAnswerKey: false,
     includeNameField: true,
     teacherVersion: false,
@@ -225,9 +233,14 @@ export async function buildStudentWorksheetHtml(spec: WorksheetSpec, worksheetId
 }
 
 /** Tisk / uložení do PDF pro žáka (prohlížeč nabídne „Uložit jako PDF"). */
-export async function printStudentWorksheet(spec: WorksheetSpec, worksheetId: string): Promise<void> {
+export async function printStudentWorksheet(
+  spec: WorksheetSpec,
+  worksheetId: string,
+  answers?: Record<string, unknown> | null,
+): Promise<void> {
   return downloadWorksheetPdf(toStudentPrintSpec(spec), {
     worksheetId,
+    answers: answers ?? null,
     includeAnswerKey: false,
     includeNameField: true,
     teacherVersion: false,
