@@ -3410,7 +3410,6 @@ function SortableItemBlock({
       <div className="worksheet-paper-body">
         {showQuestionHeader && (
           <div className="worksheet-paper-prompt">
-            <span className="worksheet-paper-number">{item.itemNumber}.</span>
             <span>{item.prompt || <em className="font-normal text-muted-foreground">Bez zadání</em>}</span>
             {pointsEnabled && item.points > 0 && <span className="worksheet-paper-points">{item.points} b</span>}
           </div>
