@@ -54,7 +54,8 @@ vi.mock("@/hooks/useTeacherClasses", () => ({
   }),
   claimSchoolClass: vi.fn(),
 }));
-vi.mock("@/hooks/useSubjectGroups", () => ({ useSubjectGroups: () => ({ groups: [] }) }));
+const noGroups: any[] = [];
+vi.mock("@/hooks/useSubjectGroups", () => ({ useSubjectGroups: () => ({ groups: noGroups }) }));
 
 vi.mock("@/components/SiteHeader", () => ({ default: () => <div /> }));
 vi.mock("@/components/SiteFooter", () => ({ default: () => <div /> }));
