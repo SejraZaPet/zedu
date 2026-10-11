@@ -267,7 +267,7 @@ const AssignmentDifficultyStats = ({
               if (!item) continue;
               const label = truncate(String(item.prompt || `Úloha ${item.itemNumber ?? ""}`));
               if (MANUAL_TYPES.has(item.type)) {
-                manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0, firstPct: null, bestPct: null, repeaters: 0, averageAttempts: 0, failedLearners: [], category: "other" });
+                manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0, learnerCount: 0, firstPct: null, bestPct: null, repeaters: 0, averageAttempts: 0, failedLearners: [], category: "other" });
                 continue;
               }
               // Layoutové bloky (zápis, nadpisy, boxy) nemají odpověď – vynecháme je.
