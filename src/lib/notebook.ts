@@ -42,12 +42,23 @@ export interface NotebookImage {
   id: string;
   path: string; // cesta v bucketu notebook-media
   x: number; y: number; w: number; h: number; // 0..1
+  /** Zamčené pozadí (např. stránka pracovního listu) — nelze posunout ani smazat. */
+  locked?: boolean;
 }
 
 export interface NotebookPageContent {
   strokes: Stroke[];
   textBoxes: NotebookTextBox[];
   images: NotebookImage[];
+  /** Vložený pracovní list (viz worksheet-notebook.ts). */
+  worksheet?: {
+    worksheetId: string;
+    mode: "digital" | "pen";
+    title: string;
+    assignmentId?: string | null;
+    pageIndex?: number;
+    pageCount?: number;
+  };
 }
 
 export type BackgroundStyle = "blank" | "lined" | "grid" | "dotted";
@@ -109,6 +120,7 @@ export function normalizeContent(raw: any): NotebookPageContent {
     strokes: Array.isArray(raw?.strokes) ? raw.strokes : [],
     textBoxes: Array.isArray(raw?.textBoxes) ? raw.textBoxes : [],
     images: Array.isArray(raw?.images) ? raw.images : [],
+    ...(raw?.worksheet && typeof raw.worksheet.worksheetId === "string" ? { worksheet: raw.worksheet } : {}),
   };
 }
 

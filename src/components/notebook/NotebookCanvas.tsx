@@ -279,7 +279,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     const startY = e.clientY;
     const list: any[] = kind === "text" ? textBoxes : images;
     const item = list.find((i) => i.id === id);
-    if (!item) return;
+    if (!item || item.locked) return;
     const base = { x: item.x, y: item.y, w: item.w, h: item.h };
 
     const apply = (dx: number, dy: number) => {
@@ -324,7 +324,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     if (!selectedId) return;
     patch({
       textBoxes: textBoxes.filter((t) => t.id !== selectedId),
-      images: images.filter((i) => i.id !== selectedId),
+      images: images.filter((i) => i.id !== selectedId || i.locked),
     });
     setSelectedId(null);
   };
@@ -351,7 +351,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const clearPage = () => {
     if (!window.confirm("Smazat celý obsah stránky?")) return;
-    onChange({ strokes: [], textBoxes: [], images: [] });
+    // Zamčené pozadí (stránka pracovního listu) i odkaz na list zůstávají.
+    onChange({ ...content, strokes: [], textBoxes: [], images: images.filter((i) => i.locked) });
     setSelectedId(null);
     setRedoStack([]);
   };
@@ -485,7 +486,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               key={img.id}
               className={cn(
                 "absolute min-w-0 max-w-none",
-                mode === "select" ? "cursor-move" : "pointer-events-none",
+                img.locked ? "pointer-events-none" : mode === "select" ? "cursor-move" : "pointer-events-none",
                 selectedId === img.id && "ring-2 ring-primary",
               )}
               style={{
@@ -497,7 +498,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               {imageUrls[img.path] ? (
                 <img
                   src={imageUrls[img.path]}
-                  alt="Vložený obrázek v sešitu"
+                  alt={img.locked ? "Stránka pracovního listu" : "Vložený obrázek v sešitu"}
                   className="h-full w-full select-none object-contain"
                   draggable={false}
                 />
