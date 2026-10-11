@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import { KeyRound, BookOpen, ArrowRight } from "lucide-react";
-import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+import { fetchStudentClassTextbookLinks, globalTextbooksCoveredByTeacher } from "@/lib/student-class-textbooks";
 
 
 type Source = { kind: "enrollment" } | { kind: "class"; className: string };
@@ -83,12 +83,18 @@ const StudentTextbooks = () => {
         ? supabase.from("textbook_subjects").select("id, slug, label, abbreviation, description").in("id", globalIds)
         : Promise.resolve({ data: [] as any[] }),
       teacherIdsFromClasses.length > 0
-        ? supabase.from("teacher_textbooks").select("id, title, subject, description").in("id", teacherIdsFromClasses).is("deleted_at", null)
+        ? supabase.from("teacher_textbooks").select("id, title, subject, subject_id, description").in("id", teacherIdsFromClasses).is("deleted_at", null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const globalById = new Map<string, any>(((globalRes.data ?? []) as any[]).map(g => [g.id, g]));
     const teacherById = new Map<string, any>(((teacherClassRes.data ?? []) as any[]).map(t => [t.id, t]));
+
+    // Předmět s přiřazenou učitelskou učebnicí nenabízí vedle ní i globální (ta zůstává v knihovně).
+    const hiddenGlobals = globalTextbooksCoveredByTeacher(
+      classBooks,
+      new Map<string, string | null>([...teacherById.values()].map((t: any) => [t.id, t.subject_id ?? null])),
+    );
 
     // Merge into a single map keyed by type+id
     const merged = new Map<string, DisplayTextbook>();
@@ -136,7 +142,7 @@ const StudentTextbooks = () => {
         }
       } else {
         const sub = globalById.get(cb.textbook_id);
-        if (!sub) continue;
+        if (!sub || hiddenGlobals.has(sub.id)) continue;
         const key = `global-${sub.id}`;
         const existing = merged.get(key);
         if (existing) {
