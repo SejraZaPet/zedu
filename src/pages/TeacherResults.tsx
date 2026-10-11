@@ -22,7 +22,9 @@ import { downloadCSV } from "@/lib/csv-export";
 import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 import { bestAttemptsBy } from "@/lib/best-results";
 import { splitStrengthsWeaknesses, summarizePerformance } from "@/lib/strengths-weaknesses";
-import { Link } from "react-router-dom";
+import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+import { resultRatio } from "@/lib/best-results";
+import { isWorksheetAnswerCorrect, SCORABLE_WORKSHEET_TYPES } from "@/components/admin/AssignmentDifficultyStats";
 
 type ClassOpt = { id: string; name: string };
 type GroupOpt = { id: string; name: string; subject: string | null; subjectId: string | null };
@@ -49,6 +51,9 @@ type Assignment = {
   subject?: string | null;
   status?: string | null;
   scheduled_publish_at?: string | null;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
+  worksheet_id?: string | null;
 };
 
 const ALL = ALL_SCOPE;
@@ -73,6 +78,7 @@ const TeacherResults = () => {
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
   const [detailAssignment, setDetailAssignment] = useState<AssignmentDetailAssignment | null>(null);
+  const [richStrengthRows, setRichStrengthRows] = useState<ReturnType<typeof summarizePerformance>[]>([]);
 
   // Initial load
   useEffect(() => {
@@ -96,7 +102,7 @@ const TeacherResults = () => {
       // Teacher's assignments + lesson plan subject
       const { data: asg } = await supabase
         .from("assignments")
-        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, status, scheduled_publish_at")
+        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, lesson_id, lesson_source, worksheet_id, status, scheduled_publish_at")
         .eq("teacher_id", uid);
       const asgRows = (asg ?? []) as any[];
 
@@ -259,6 +265,60 @@ const TeacherResults = () => {
     [filteredAttempts],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rows: ReturnType<typeof summarizePerformance>[] = [];
+      for (const assignment of filteredAssignments) {
+        const assignmentAttempts = filteredAttempts.filter((attempt) => attempt.assignment_id === assignment.id && attempt.status === "submitted");
+        if (assignment.lesson_id) {
+          const [activities, resultResponse] = await Promise.all([
+            fetchLessonActivities(assignment.lesson_id, assignment.lesson_source),
+            supabase.from("student_activity_results").select("user_id, activity_index, score, max_score, completed_at").eq("lesson_id", assignment.lesson_id).in("user_id", [...scopeStudentIds]),
+          ]);
+          const resultRows = (resultResponse.data ?? []) as any[];
+          activities.forEach((activity) => {
+            const activityRows = resultRows.filter((row) => row.activity_index === activity.index);
+            const learners = [...new Set(activityRows.map((row) => row.user_id))].map((studentId) => ({
+              learnerId: studentId,
+              learnerName: `${profiles[studentId]?.first_name ?? ""} ${profiles[studentId]?.last_name ?? ""}`.trim() || "Žák",
+              attempts: activityRows.filter((row) => row.user_id === studentId).map((row) => ({
+                correctRatio: resultRatio(row) ?? 0,
+                order: new Date(row.completed_at ?? 0).getTime(),
+              })),
+            }));
+            rows.push(summarizePerformance({ key: `${assignment.id}:lesson:${activity.index}`, label: activity.title, assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
+          });
+        }
+        if (assignment.worksheet_id) {
+          const { data } = await supabase.from("worksheets").select("spec").eq("id", assignment.worksheet_id).maybeSingle();
+          const spec = (data as any)?.spec;
+          for (const variant of Array.isArray(spec?.variants) ? spec.variants : []) {
+            const items = new Map<string, any>((variant.items ?? []).map((item: any) => [item.id, item]));
+            for (const key of spec?.answerKeys?.[variant.variantId] ?? []) {
+              const item = items.get(key.itemId);
+              if (!item || !SCORABLE_WORKSHEET_TYPES.has(item.type)) continue;
+              const learners = [...new Set(assignmentAttempts.map((attempt) => attempt.student_id))].flatMap((studentId) => {
+                const studentAttempts = assignmentAttempts.filter((attempt) => attempt.student_id === studentId && key.itemId in (attempt.answers ?? {}));
+                return studentAttempts.length ? [{
+                  learnerId: studentId,
+                  learnerName: `${profiles[studentId]?.first_name ?? ""} ${profiles[studentId]?.last_name ?? ""}`.trim() || "Žák",
+                  attempts: studentAttempts.map((attempt) => ({
+                    correctRatio: isWorksheetAnswerCorrect(item, attempt.answers[key.itemId], key.correctAnswer) ? 1 : 0,
+                    order: Number(attempt.attempt_number) || 0,
+                  })),
+                }] : [];
+              });
+              rows.push(summarizePerformance({ key: `${assignment.id}:worksheet:${variant.variantId}:${key.itemId}`, label: String(item.prompt || `Úloha ${item.itemNumber ?? ""}`), assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
+            }
+          }
+        }
+      }
+      if (!cancelled) setRichStrengthRows(rows);
+    })();
+    return () => { cancelled = true; };
+  }, [filteredAssignments, filteredAttempts, profiles, scopeStudentIds]);
+
   // KPIs
   const kpis = useMemo(() => {
     const submitted = filteredAttempts.filter((a) => a.status === "submitted");
@@ -343,8 +403,8 @@ const TeacherResults = () => {
         rows.push(summarizePerformance({ key: `${a.id}:${idx}`, label: qText, assignmentId: a.id, assignmentTitle: a.title }, learners));
       });
     }
-    return splitStrengthsWeaknesses(rows);
-  }, [filteredAssignments, filteredAttempts]);
+    return splitStrengthsWeaknesses([...rows, ...richStrengthRows]);
+  }, [filteredAssignments, filteredAttempts, richStrengthRows]);
 
   const handleExportXlsx = () => {
     const studentName = (id: string) => {

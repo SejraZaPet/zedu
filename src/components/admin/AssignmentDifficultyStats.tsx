@@ -44,7 +44,7 @@ const rightSide = (s: string) => {
 };
 
 /** Best-effort porovnání odpovědi žáka se správnou odpovědí podle typu položky. */
-const isAnswerCorrect = (item: any, answer: unknown, correct: string | string[]): boolean => {
+export const isWorksheetAnswerCorrect = (item: any, answer: unknown, correct: string | string[]): boolean => {
   const type = String(item?.type ?? "");
   if (answer === undefined || answer === null || answer === "") return false;
   switch (type) {
@@ -100,10 +100,10 @@ const isAnswerCorrect = (item: any, answer: unknown, correct: string | string[])
 };
 
 /** Typy, které nelze automaticky vyhodnotit. */
-const MANUAL_TYPES = new Set(["open_answer", "short_answer", "offline_activity"]);
+export const MANUAL_WORKSHEET_TYPES = new Set(["open_answer", "short_answer", "offline_activity"]);
 
 /** Typy s automaticky vyhodnotitelnou odpovědí – ostatní (layout) do statistiky nepatří. */
-const SCORABLE_TYPES = new Set([
+export const SCORABLE_WORKSHEET_TYPES = new Set([
   "mcq",
   "true_false",
   "fill_blank",
@@ -266,12 +266,12 @@ const AssignmentDifficultyStats = ({
               const item = itemMap.get(key.itemId);
               if (!item) continue;
               const label = truncate(String(item.prompt || `Úloha ${item.itemNumber ?? ""}`));
-              if (MANUAL_TYPES.has(item.type)) {
+               if (MANUAL_WORKSHEET_TYPES.has(item.type)) {
                 manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0, learnerCount: 0, firstPct: null, bestPct: null, repeaters: 0, averageAttempts: 0, failedLearners: [], category: "other" });
                 continue;
               }
               // Layoutové bloky (zápis, nadpisy, boxy) nemají odpověď – vynecháme je.
-              if (!SCORABLE_TYPES.has(item.type)) continue;
+               if (!SCORABLE_WORKSHEET_TYPES.has(item.type)) continue;
               const learners = [...new Set(attempts.map((attempt) => attempt.student_id))].flatMap((studentId) => {
                 const studentAttempts = attempts.filter((attempt) => attempt.student_id === studentId && key.itemId in (attempt.answers ?? {}));
                 if (!studentAttempts.length) return [];
@@ -279,7 +279,7 @@ const AssignmentDifficultyStats = ({
                   learnerId: studentId,
                   learnerName: attemptNames.get(studentId) || "Žák",
                   attempts: studentAttempts.map((attempt) => ({
-                    correctRatio: isAnswerCorrect(item, attempt.answers[key.itemId], key.correctAnswer) ? 1 : 0,
+                     correctRatio: isWorksheetAnswerCorrect(item, attempt.answers[key.itemId], key.correctAnswer) ? 1 : 0,
                     order: Number(attempt.attempt_number) || 0,
                     completedAt: attempt.submitted_at,
                   })),
