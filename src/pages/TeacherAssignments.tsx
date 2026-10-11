@@ -1653,51 +1653,15 @@ const TeacherAssignments = () => {
               )}
             </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {isEditingPublished ? (
-                  <Button onClick={handlePublishForm} disabled={creating}>
-                    {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                    Uložit změny
-                  </Button>
-                ) : (
-                  <>
-                    <Button onClick={handleSaveDraft} disabled={creating}>
-                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
-                      Uložit koncept
-                    </Button>
-                    {(() => {
-                      const canSchedule = !!scheduleDate && !!scheduleTime;
-                      const scheduleBtn = (
-                        <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
-                          {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
-                          Naplánovat
-                        </Button>
-                      );
-                      if (canSchedule) return scheduleBtn;
-                      return (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-block">{scheduleBtn}</span>
-                            </TooltipTrigger>
-                            <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      );
-                    })()}
-                    <Button onClick={handlePublishForm} disabled={creating}>
-                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                      Publikovat
-                    </Button>
-                  </>
-                )}
-                <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
-              </div>
-              {isEditingPublished && (
-                <p className="text-xs text-muted-foreground">
-                  Úkol je publikovaný, změny se projeví žákům hned po uložení.
-                </p>
-              )}
+              <AssignmentFormActions
+                isEditingPublished={isEditingPublished}
+                creating={creating}
+                canSchedule={!!scheduleDate && !!scheduleTime}
+                onSaveDraft={handleSaveDraft}
+                onSchedule={handleSchedule}
+                onPublish={handlePublishForm}
+                onCancel={() => { setShowForm(false); resetForm(); }}
+              />
             </CardContent>
           </Card>
         )}
