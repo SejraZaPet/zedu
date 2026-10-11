@@ -33,6 +33,7 @@ import { t } from "@/lib/t";
 import type { WorkTarget } from "@/lib/worksheet-work";
 import { RotateCcw, Hourglass } from "lucide-react";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
+import { hasWrittenText } from "@/components/worksheet-items/LayoutBlockItem";
 import type {
   WorksheetSpec,
   WorksheetVariant,
@@ -71,6 +72,16 @@ export interface WorksheetPlayerProps {
 
 // ────────────────── Scoring ──────────────────
 
+/** Ručně hodnocené úlohy — do automatického skóre se nepočítají. */
+export const MANUAL_ITEM_TYPES = ["open_answer", "offline_activity", "write_lines", "two_boxes"];
+const WRITING_TYPES = new Set(["write_lines", "two_boxes"]);
+
+/** Je položka zodpovězená? Psací bloky jen tehdy, když obsahují text. */
+export function isItemAnswered(item: WorksheetItem, value: unknown): boolean {
+  if (WRITING_TYPES.has(item.type)) return hasWrittenText(value);
+  return value !== undefined && value !== "" && value !== null;
+}
+
 export function scoreWorksheet(
   items: WorksheetItem[],
   answers: WorksheetAnswers,
@@ -85,6 +96,10 @@ export function scoreWorksheet(
   for (const item of items) {
     const key = keyMap.get(item.id);
     const answer = answers[item.id];
+    if (WRITING_TYPES.has(item.type)) {
+      perItem[item.id] = { correct: false, points: 0 };
+      continue;
+    }
     if (!key || answer === undefined || answer === null || answer === "") {
       perItem[item.id] = { correct: false, points: 0 };
       continue;
@@ -257,7 +272,7 @@ export default function WorksheetPlayer({
     return allItems.slice(start + 1, currentRealIdx);
   }, [allItems, item?.id]);
 
-  const answeredCount = items.filter((it) => answers[it.id] !== undefined && answers[it.id] !== "" && answers[it.id] !== null).length;
+  const answeredCount = items.filter((it) => isItemAnswered(it, answers[it.id])).length;
   const progressPct = totalItems > 0 ? (answeredCount / totalItems) * 100 : 0;
 
   const itemResult = results?.perItem[item?.id];
@@ -308,8 +323,7 @@ export default function WorksheetPlayer({
     );
   };
 
-  const MANUAL_TYPES = ["open_answer", "offline_activity"];
-  const pendingManual = items.filter((it) => MANUAL_TYPES.includes(it.type)).length;
+  const pendingManual = items.filter((it) => MANUAL_ITEM_TYPES.includes(it.type)).length;
   const effectiveResults =
     results ??
     (submitted && ownWork && workStatus === "submitted"
@@ -392,7 +406,7 @@ export default function WorksheetPlayer({
                 return <div key={it.id}>{renderItemBody(it)}</div>;
               }
               const r = effectiveResults?.perItem[it.id];
-              const manual = MANUAL_TYPES.includes(it.type);
+              const manual = MANUAL_ITEM_TYPES.includes(it.type);
               return (
                 <section
                   key={it.id}
@@ -636,7 +650,7 @@ export default function WorksheetPlayer({
               className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
                 i === currentIndex
                   ? "bg-primary text-primary-foreground"
-                  : answers[it.id] !== undefined && answers[it.id] !== "" && answers[it.id] !== null
+                  : isItemAnswered(it, answers[it.id])
                     ? "bg-primary/20 text-primary"
                     : "bg-muted text-muted-foreground"
               }`}

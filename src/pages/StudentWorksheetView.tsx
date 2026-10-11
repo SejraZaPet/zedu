@@ -7,6 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
+import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
 
 export default function StudentWorksheetView() {
   const { id } = useParams<{ id: string }>();
@@ -56,7 +57,12 @@ export default function StudentWorksheetView() {
         ) : (
           <div className="space-y-3">
             <div className="flex flex-wrap justify-end gap-1 print:hidden">
-              <StudentWorksheetPrintButtons worksheetId={id!} spec={spec} />
+              <StudentWorksheetPrintButtons
+                worksheetId={id!}
+                spec={spec}
+                answersStorageKey={user ? `ws-work-${id}-${user.id}-${spec.variants[0]?.variantId ?? "A"}` : undefined}
+              />
+              {isStudent && <InsertWorksheetButton worksheetId={id!} variant="ghost" />}
             </div>
             <WorksheetPlayer
               spec={spec}

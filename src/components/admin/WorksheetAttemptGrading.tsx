@@ -4,12 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Save } from "lucide-react";
+import { readSnapshot, SNAPSHOT_BUCKET } from "@/lib/worksheet-notebook";
+
+/** Odevzdané stránky ze sešitu (rukopis přes list) — jen ke čtení. */
+function NotebookSnapshotView({ answers }: { answers: Record<string, unknown> | null }) {
+  const snap = readSnapshot(answers);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!snap) return;
+    let c = false;
+    supabase.storage.from(SNAPSHOT_BUCKET).createSignedUrls(snap.pages.map((p) => p.path), 3600).then(({ data }) => {
+      if (c) return;
+      const m: Record<string, string> = {};
+      for (const r of data ?? []) if (r.path && r.signedUrl) m[r.path] = r.signedUrl;
+      setUrls(m);
+    });
+    return () => { c = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap?.created_at]);
+  if (!snap) return null;
+  return (
+    <div className="space-y-2">
+      <h5 className="text-xs font-semibold">Stránky ze sešitu (rukopis) · odevzdáno {new Date(snap.created_at).toLocaleString("cs")}</h5>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {snap.pages.map((p) => (
+          <figure key={p.path} className="space-y-1">
+            {urls[p.path] ? (
+              <a href={urls[p.path]} target="_blank" rel="noopener noreferrer">
+                <img src={urls[p.path]} alt={p.title} className="w-full rounded border border-border bg-background" />
+              </a>
+            ) : (
+              <div className="aspect-[1000/1414] w-full animate-pulse rounded bg-muted" />
+            )}
+            <figcaption className="text-xs text-muted-foreground">{p.title}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Typy bez odpovědi (layout) – v hodnocení se nezobrazují. */
 const LAYOUT_TYPES = new Set([
   "section_header", "heading", "text_block", "info_box", "divider", "image", "write_lines", "lesson_block",
 ]);
-const OPEN_TYPES = new Set(["open_answer", "offline_activity"]);
+const OPEN_TYPES = new Set(["open_answer", "offline_activity", "write_lines", "two_boxes"]);
 const LETTERS = "ABCDEFGHIJKLMNOP";
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
@@ -163,6 +202,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
 
   return (
     <div className="space-y-2 rounded-md border border-border p-3">
+      <NotebookSnapshotView answers={answers} />
       <h5 className="text-xs font-semibold">Odpovědi v pracovním listu</h5>
       <ol className="space-y-2">
         {rows.map((r, i) => {
