@@ -24,7 +24,45 @@ const VARIANT_CLASS: Record<string, string> = {
  * two_boxes, qr_link, flow_steps). Slouží pouze pro zobrazení v online náhledu —
  * neukládá žádnou odpověď.
  */
-export default function LayoutBlockItem({ item }: WorksheetItemProps) {
+/** Hodnota pro `two_boxes` — dvě samostatná pole [levé, pravé]. */
+export function twoBoxesValue(v: unknown): [string, string] {
+  if (Array.isArray(v)) return [String(v[0] ?? ""), String(v[1] ?? "")];
+  return ["", ""];
+}
+
+/** Obsahuje odpověď psacího bloku nějaký text? */
+export function hasWrittenText(v: unknown): boolean {
+  if (Array.isArray(v)) return v.some((x) => String(x ?? "").trim() !== "");
+  return typeof v === "string" && v.trim() !== "";
+}
+
+const LINE_PX = 28;
+
+function LinedTextarea({
+  lines, value, onChange, disabled, label, lineStyle = "dotted",
+}: { lines: number; value: string; onChange: (v: string) => void; disabled: boolean; label: string; lineStyle?: string }) {
+  return (
+    <textarea
+      aria-label={label}
+      value={value}
+      readOnly={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      rows={lines}
+      className="block w-full resize-none bg-transparent px-1 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+      style={{
+        lineHeight: `${LINE_PX}px`,
+        minHeight: `${lines * LINE_PX}px`,
+        backgroundImage: `linear-gradient(to bottom, transparent ${LINE_PX - 1}px, hsl(var(--border)) ${LINE_PX - 1}px)`,
+        backgroundSize: `100% ${LINE_PX}px`,
+        borderStyle: lineStyle === "solid" ? undefined : undefined,
+      }}
+    />
+  );
+}
+
+export default function LayoutBlockItem({ item, value, onChange, disabled }: WorksheetItemProps) {
+  // Editor / náhled bez odpovědi předává disabled bez hodnoty → statické linky jako dřív.
+  const writable = !disabled || hasWrittenText(value);
   switch (item.type) {
     case "section_header":
       return (
@@ -36,6 +74,21 @@ export default function LayoutBlockItem({ item }: WorksheetItemProps) {
     case "write_lines": {
       const count = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
+      if (writable) {
+        return (
+          <div className="space-y-1">
+            {item.prompt && <p className="text-sm text-muted-foreground">{item.prompt}</p>}
+            <LinedTextarea
+              lines={count}
+              lineStyle={style}
+              value={typeof value === "string" ? value : ""}
+              onChange={(v) => onChange(v)}
+              disabled={disabled}
+              label={item.prompt || "Linky pro psaní"}
+            />
+          </div>
+        );
+      }
       return (
         <div className="space-y-1">
           {item.prompt && <p className="text-sm text-muted-foreground">{item.prompt}</p>}
@@ -64,8 +117,25 @@ export default function LayoutBlockItem({ item }: WorksheetItemProps) {
     }
 
     case "two_boxes": {
-      const renderContent = (content?: string) => {
+      const vals = twoBoxesValue(value);
+      const renderContent = (content: string | undefined, side: 0 | 1, title?: string) => {
         const match = content?.match(/^lines:(\d+)$/);
+        if (match && writable) {
+          const n = parseInt(match[1], 10);
+          return (
+            <LinedTextarea
+              lines={n}
+              value={vals[side]}
+              onChange={(v) => {
+                const next: [string, string] = [...vals] as [string, string];
+                next[side] = v;
+                onChange(next);
+              }}
+              disabled={disabled}
+              label={title || (side === 0 ? "Levé pole" : "Pravé pole")}
+            />
+          );
+        }
         if (match) {
           const n = parseInt(match[1], 10);
           return (
@@ -84,11 +154,11 @@ export default function LayoutBlockItem({ item }: WorksheetItemProps) {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-border p-3">
               <h4 className="font-semibold text-sm mb-2">{item.leftTitle}</h4>
-              {renderContent(item.leftContent)}
+              {renderContent(item.leftContent, 0, item.leftTitle)}
             </div>
             <div className="rounded-lg border border-border p-3">
               <h4 className="font-semibold text-sm mb-2">{item.rightTitle}</h4>
-              {renderContent(item.rightContent)}
+              {renderContent(item.rightContent, 1, item.rightTitle)}
             </div>
           </div>
         </div>
