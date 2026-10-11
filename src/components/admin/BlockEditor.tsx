@@ -905,7 +905,7 @@ const SortableBlock = React.memo(({
 SortableBlock.displayName = "SortableBlock";
 
 /** Karta spojených bloků – v prezentaci z nich vznikne jeden snímek. */
-const SortableSlideGroup = React.memo(({
+export const SortableSlideGroup = React.memo(({
   block,
   onChildUpdate,
   onChildRemove,
@@ -954,6 +954,31 @@ const SortableSlideGroup = React.memo(({
   const groupRef = useRef<HTMLDivElement | null>(null);
   const [dragMinHeight, setDragMinHeight] = useState<number | null>(null);
   const minHeight = dragMinHeight ?? savedMinHeight;
+
+  // Měření prázdného místa pod obsahem, aby učitel viděl mezeru, kterou uvidí i žák.
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentBottom, setContentBottom] = useState(0);
+  const [emptySpace, setEmptySpace] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const group = groupRef.current;
+      const content = contentRef.current;
+      if (!group || !content) {
+        setContentBottom(0);
+        setEmptySpace(0);
+        return;
+      }
+      const bottom = content.offsetTop + content.offsetHeight;
+      setContentBottom(bottom);
+      setEmptySpace(Math.max(0, group.offsetHeight - bottom - 12));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    if (groupRef.current) ro.observe(groupRef.current);
+    if (contentRef.current) ro.observe(contentRef.current);
+    return () => ro.disconnect();
+  }, [minHeight, children.length]);
 
   const startGroupResize = (e: React.PointerEvent) => {
     e.preventDefault();
