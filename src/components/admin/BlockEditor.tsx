@@ -1037,6 +1037,7 @@ export const SortableSlideGroup = React.memo(({
       data-block-id={block.id}
       data-be-selectable="true"
       data-category="structure"
+      data-slide-group="true"
       style={wrapperStyle}
       className={`be-block group/beblock overflow-visible ${!block.visible ? "opacity-50" : ""}`}
 
@@ -1120,7 +1121,7 @@ export const SortableSlideGroup = React.memo(({
         </div>
       </div>
 
-      <div className="p-3" style={{ color: "#171717" }}>
+      <div ref={contentRef} data-slide-group-content="true" className="p-3" style={{ color: "#171717" }}>
         {children.length === 0 ? (
           <p className="text-sm text-muted-foreground">Snímek je prázdný – rozdělte ho zpět.</p>
         ) : mode === "free" ? (
@@ -1155,7 +1156,7 @@ export const SortableSlideGroup = React.memo(({
         ) : (
           <div className="space-y-2">
             <p className="text-[11px] text-muted-foreground">
-              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku.
+              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku. Pevná výška se projeví i žákům.
             </p>
             <div className={`${gridClass} items-start`}>
               {children.map((child) => (
