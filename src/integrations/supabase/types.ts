@@ -7952,6 +7952,7 @@ export type Database = {
           is_for_sale: boolean
           price: number | null
           scheduled_publish_at: string | null
+          show_in_lesson: boolean
           source_lesson_id: string | null
           source_lesson_type: string | null
           spec: Json
@@ -7976,6 +7977,7 @@ export type Database = {
           is_for_sale?: boolean
           price?: number | null
           scheduled_publish_at?: string | null
+          show_in_lesson?: boolean
           source_lesson_id?: string | null
           source_lesson_type?: string | null
           spec?: Json
@@ -8000,6 +8002,7 @@ export type Database = {
           is_for_sale?: boolean
           price?: number | null
           scheduled_publish_at?: string | null
+          show_in_lesson?: boolean
           source_lesson_id?: string | null
           source_lesson_type?: string | null
           spec?: Json
@@ -8325,6 +8328,10 @@ export type Database = {
       }
       can_student_view_lesson_plan: {
         Args: { _class_id: string; _group_id: string }
+        Returns: boolean
+      }
+      can_student_view_worksheet_in_lesson: {
+        Args: { _user_id: string; _worksheet_id: string }
         Returns: boolean
       }
       can_view_class_engagement: {

@@ -372,6 +372,13 @@
       "when": 1791401699251,
       "tag": "0052_student_worksheet_work",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1791760646984,
+      "tag": "0053_worksheets_show_in_lesson",
+      "breakpoints": true
     }
   ]
 }
