@@ -23,6 +23,7 @@ import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivi
 import { filterReadingBlocks } from "@/lib/reading-blocks";
 import { bestResultsByActivity, betterResult, computeLessonActivityProgress, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
 import { buildReadAloudText } from "@/lib/lesson-content-splitter";
+import LessonWorksheets from "@/components/lesson/LessonWorksheets";
 import { LessonCompletionControl, LessonSuccessSummary } from "@/components/lesson/LessonSuccessSummary";
 
 
@@ -297,6 +298,12 @@ const LessonPage = () => {
                   ))}
                 </div>
               </LessonHighlightLayer>
+
+              {isAuthenticated && !isTeacherOrAdmin && (
+                <div className="mt-8">
+                  <LessonWorksheets lessonId={lesson.id} />
+                </div>
+              )}
 
               {isAuthenticated && blocks.length > 0 && (
                 <div className="mt-10 space-y-6 border-t border-border pt-8">
