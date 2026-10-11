@@ -415,7 +415,7 @@ export default function WorksheetPlayer({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p id={`ws-q-${it.id}`} className="font-semibold">
-                      <span className="mr-1">{it.itemNumber}.</span>{it.prompt}
+                      {it.prompt}
                     </p>
                     {spec.renderConfig.showPoints && (
                       <span className="text-xs text-muted-foreground whitespace-nowrap">[{fmtPts(it.points)}]</span>
@@ -579,7 +579,6 @@ export default function WorksheetPlayer({
           <CardContent className="p-6 space-y-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-foreground">{item.itemNumber}.</span>
                 <Badge variant="outline" className="text-xs">
                   {TYPE_LABELS[item.type] ?? item.type}
                 </Badge>
@@ -654,8 +653,9 @@ export default function WorksheetPlayer({
                     ? "bg-primary/20 text-primary"
                     : "bg-muted text-muted-foreground"
               }`}
+              aria-label={`Úloha ${i + 1}`}
             >
-              {it.itemNumber}
+              {i + 1}
             </button>
           ))}
         </div>

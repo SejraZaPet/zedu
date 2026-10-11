@@ -1235,7 +1235,6 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-num">${displayNumber ?? item.itemNumber}.</span>
     ${showPrompt ? `<span class="ws-item-prompt prompt">${esc(item.prompt)}</span>` : ""}
     ${pointsHtml}
   </div>
@@ -1249,16 +1248,19 @@ function renderAnswerKey(
   variantId: string,
   keys: AnswerKeyEntry[],
   displayNumbers?: Map<number, number>,
+  prompts?: Map<string, string>,
 ): string {
   if (!keys?.length) return "";
 
   const rows = keys
     .map((k) => {
       const ans = Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : k.correctAnswer;
-      const num = displayNumbers?.get(k.itemNumber) ?? k.itemNumber;
+      void displayNumbers;
+      const raw = (prompts?.get(k.itemId) ?? "").trim();
+      const label = raw.length > 40 ? `${raw.slice(0, 40)}…` : raw;
       return `
 <div class="ws-key-item">
-  <span class="ws-key-num">${num}.</span>
+  ${label ? `<span class="ws-key-num">${esc(label)}:</span>` : ""}
   <div>
     <span class="ws-key-answer">${esc(ans)}</span>
     ${k.explanation ? `<div class="ws-key-explanation">${esc(k.explanation)}</div>` : ""}
@@ -1387,7 +1389,7 @@ export function renderWorksheetVariantHtml(
     printAnswers = null;
   }
   const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])))
     : "";
   const answerKey = options?.teacherVersion
     ? renderTeacherBlock(options.teacherNotes, rawKey)
@@ -1444,7 +1446,7 @@ export function renderWorksheetVariantFragment(
     .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
     .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])))
     : "";
 
   const bodyHtml = `
