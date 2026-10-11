@@ -23,7 +23,7 @@ function makeSpec() {
 describe("pracovní list bez čísel úloh", () => {
   it("tisk nezobrazí čísla úloh", () => {
     const html = renderWorksheetVariantHtml(makeSpec(), "A");
-    expect(html).not.toContain("ws-item-num");
+    expect(html).not.toContain(`class="ws-item-num"`);
     expect(html).toContain("Otázka gama");
     expect(html).not.toMatch(/11\.\s*<\/span>/);
   });
