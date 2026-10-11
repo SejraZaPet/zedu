@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 import { Eye, ExternalLink, FileText, Loader2, FolderOpen } from "lucide-react";
+import { bestAttempt } from "@/lib/best-results";
 
 interface Props {
   assignmentId: string;
@@ -50,12 +51,10 @@ export default function AttemptQuickPreviewDialog({
       const [attRes, filesRes] = await Promise.all([
         supabase
           .from("assignment_attempts" as any)
-          .select("id, status, score, max_score, submitted_at, answers, submission_note")
+          .select("id, status, score, max_score, submitted_at, attempt_number, answers, submission_note")
           .eq("assignment_id", assignmentId)
           .eq("student_id", studentId)
-          .order("attempt_number", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+          .order("attempt_number", { ascending: false }),
         supabase
           .from("assignment_attachments" as any)
           .select("id, file_name, file_path, file_size")
@@ -63,7 +62,8 @@ export default function AttemptQuickPreviewDialog({
           .eq("student_id", studentId),
       ]);
       if (cancelled) return;
-      setAttempt((attRes.data as any) ?? null);
+      const attemptRows = (attRes.data as any[]) ?? [];
+      setAttempt((bestAttempt(attemptRows) ?? attemptRows[0]) as AttemptRow | null);
       const rows = (filesRes.data as any[]) ?? [];
       const withUrls = await Promise.all(rows.map(async (r) => ({
         ...r,
