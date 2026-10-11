@@ -1,83 +1,19895 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
-import WorksheetPlayer from "@/components/WorksheetPlayer";
-import type { WorksheetSpec } from "@/lib/worksheet-spec";
-import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
-import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
-
-export default function StudentWorksheetView() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user, roles, loading: authLoading } = useAuth();
-  const isStudent = roles.includes("user") && !roles.some((r) => ["teacher", "admin", "school_admin", "lektor"].includes(r));
-  const [spec, setSpec] = useState<WorksheetSpec | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate(`/auth?redirect=/student/pracovni-list/${id}`);
-      return;
-    }
-    if (!id) return;
-    (async () => {
-      const { data, error } = await supabase
-        .from("worksheets" as any)
-        .select("spec, status, title")
-        .eq("id", id)
-        .maybeSingle();
-      if (error || !data) {
-        setError("Pracovní list není dostupný.");
-      } else {
-        setSpec((data as any).spec as WorksheetSpec);
-      }
-      setLoading(false);
-    })();
-  }, [id, user, authLoading, navigate]);
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <SiteHeader />
-      <main
-        className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
-        style={{ paddingTop: "calc(70px + 3rem)" }}
-      >
-        {loading || authLoading ? (
-          <div className="text-center py-16 text-muted-foreground">Načítání…</div>
-        ) : error || !spec ? (
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <h1 className="font-heading text-2xl font-semibold mb-2">Pracovní list není dostupný</h1>
-            <p className="text-muted-foreground">{error ?? "Nepodařilo se načíst data."}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap justify-end gap-1 print:hidden">
-              <StudentWorksheetPrintButtons
-                worksheetId={id!}
-                spec={spec}
-                answersStorageKey={user ? `ws-work-${id}-${user.id}-${spec.variants[0]?.variantId ?? "A"}` : undefined}
-              />
-              {isStudent && <InsertWorksheetButton worksheetId={id!} variant="ghost" />}
-            </div>
-            <WorksheetPlayer
+            <WorksheetPanel
+              kind="own"
               spec={spec}
-              variantId={spec.variants[0]?.variantId ?? "A"}
-              attemptId={null}
-              work={
-                user && isStudent && id
-                  ? { worksheetId: id, studentId: user.id, variantId: spec.variants[0]?.variantId ?? "A" }
-                  : null
-              }
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
             />
-          </div>
-        )}
-      </main>
-      <SiteFooter />
-    </div>
-  );
-}
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+E            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+C            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+H            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+H            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+F            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+F            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+@            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+V            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+_            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+E            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+E            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+`            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+$            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+`            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+q            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+E            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+ý            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+H            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+4            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+2            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+5            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+T            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+7            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+0            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
++            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+3            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+L            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+6            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+č            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+á            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+…            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+|            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+2            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+2            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+b            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+2            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+ý            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+ř            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+č            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+í            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+(            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+3            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+N            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+x            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+j            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+1            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+K            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+`            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+$            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+$            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+-            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+$            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+0            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+`            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+f            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+B            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+!            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+g            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+W            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+P            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+y            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+0            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+=            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+&            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+{            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+w            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+k            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+h            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+,            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+p            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+c            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+s            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+[            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+0            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+]            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+.            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+I            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+?            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+A            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+"            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+:            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+u            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+l            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+m            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+a            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+n            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+S            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+F            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+o            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+t            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+e            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+r            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+<            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+/            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+d            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+i            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+v            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+>            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+             <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+)            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+;            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+}            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />
+
+            <WorksheetPanel
+              kind="own"
+              spec={spec}
+              worksheetId={id!}
+              studentId={user && isStudent && id ? user.id : null}
+            />

@@ -12,7 +12,9 @@ export const NO_SECTION_LABEL = "Bez oddílu";
 /** Zobrazovaný název stránky; prázdný název = „Strana N“ (N od 1). */
 export function pageDisplayTitle(page: Pick<TocPageLike, "title">, index: number): string {
   const t = (page.title ?? "").trim();
-  return t || `Strana ${index + 1}`;
+  // Digitálně vložený list bez vlastního názvu → název listu.
+  const ws = ((page as any).content?.worksheet?.title ?? "").trim();
+  return t || ws || `Strana ${index + 1}`;
 }
 
 export interface TocEntry<P extends TocPageLike = TocPageLike> {

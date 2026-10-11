@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { BackgroundStyle, NB_H, NB_W, NotebookPageContent, backgroundCss, renderStroke } from "@/lib/notebook";
 import { cn } from "@/lib/utils";
+import { FileText } from "lucide-react";
 import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
 
 interface Props {
@@ -35,6 +36,12 @@ const NotebookPageThumb = ({ content, backgroundStyle, className }: Props) => {
       style={{ aspectRatio: `${NB_W} / ${NB_H}`, ...backgroundCss(backgroundStyle, 0.12) }}
     >
       <canvas ref={ref} className="absolute inset-0 h-full w-full" />
+      {content.worksheet?.mode === "digital" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-card/90 p-1 text-center">
+          <FileText className="h-5 w-5 text-primary" aria-hidden />
+          <span className="line-clamp-3 text-[9px] font-medium leading-tight text-foreground">{content.worksheet.title}</span>
+        </div>
+      )}
     </div>
   );
 };
