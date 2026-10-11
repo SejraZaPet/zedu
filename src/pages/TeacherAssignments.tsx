@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -567,9 +567,11 @@ const TeacherAssignments = () => {
           .update(patch as any)
           .eq("id", editingId);
         if (error) throw error;
+        // Už publikovaná úloha se jen upravuje – status se nemění, toast není "publikováno".
         const toastTitle =
-          mode === "published" ? "Úloha publikována" :
-          mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
+          mode === "published"
+            ? (original?.status === "published" ? "Změny uloženy" : "Úloha publikována")
+            : mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
         toast({ title: toastTitle });
       } else {
         // Každý vybraný cíl = samostatný nezávislý řádek s vlastními termíny.
@@ -647,6 +649,11 @@ const TeacherAssignments = () => {
   const handleSaveDraft = () => submitAssignment("draft");
   const handleSchedule = () => submitAssignment("scheduled");
   const handlePublishForm = () => submitAssignment("published");
+
+  // Už publikovaná úloha při editaci: místo tří tlačítek jen "Uložit změny",
+  // aby učitel omylem nestáhl publikovaný úkol do konceptu.
+  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
+  const isEditingPublished = editingOriginal?.status === "published";
 
   // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
   useEffect(() => {
@@ -1646,46 +1653,51 @@ const TeacherAssignments = () => {
               )}
             </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={handleSaveDraft} disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
-                  Uložit koncept
-                </Button>
-                {(() => {
-                  const canSchedule = !!scheduleDate && !!scheduleTime;
-                  const scheduleBtn = (
-                    <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
-                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
-                      Naplánovat
+              <div className="flex flex-wrap items-center gap-2">
+                {isEditingPublished ? (
+                  <Button onClick={handlePublishForm} disabled={creating}>
+                    {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                    Uložit změny
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={handleSaveDraft} disabled={creating}>
+                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
+                      Uložit koncept
                     </Button>
-                  );
-                  if (canSchedule) return scheduleBtn;
-                  return (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-block">{scheduleBtn}</span>
-                        </TooltipTrigger>
-                        <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })()}
-                {(() => {
-                  // U editace již publikované úlohy skryjeme "Publikovat",
-                  // aby nedošlo k republish a duplicitním notifikacím.
-                  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
-                  const isAlreadyPublished = editingOriginal?.status === "published";
-                  if (isAlreadyPublished) return null;
-                  return (
+                    {(() => {
+                      const canSchedule = !!scheduleDate && !!scheduleTime;
+                      const scheduleBtn = (
+                        <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
+                          {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
+                          Naplánovat
+                        </Button>
+                      );
+                      if (canSchedule) return scheduleBtn;
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-block">{scheduleBtn}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })()}
                     <Button onClick={handlePublishForm} disabled={creating}>
                       {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                       Publikovat
                     </Button>
-                  );
-                })()}
+                  </>
+                )}
                 <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
               </div>
+              {isEditingPublished && (
+                <p className="text-xs text-muted-foreground">
+                  Úkol je publikovaný, změny se projeví žákům hned po uložení.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
