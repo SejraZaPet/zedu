@@ -88,7 +88,9 @@ export default function PublishWorksheetDialog({
         title: "Publikováno",
         description: assignmentCreated
           ? "Pracovní list je zadán a žáci ho vidí."
-          : "Pozor: list není nikomu zadán, žáci ho neuvidí.",
+          : sourceLessonId && showInLesson
+            ? "List uvidí žáci s přístupem k lekci."
+            : "Pozor: list není nikomu zadán, žáci ho neuvidí.",
       });
       onOpenChange(false);
       onPublished?.({ assignmentCreated, showInLesson: sourceLessonId ? showInLesson : undefined });
