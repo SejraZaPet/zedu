@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
+import AssignmentDetailDialog, { type AssignmentDetailAssignment } from "@/components/admin/AssignmentDetailDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,7 @@ const TeacherResults = () => {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
+  const [detailAssignment, setDetailAssignment] = useState<AssignmentDetailAssignment | null>(null);
 
   // Initial load
   useEffect(() => {
@@ -535,7 +537,16 @@ const TeacherResults = () => {
                         {section.rows.length === 0 ? <p className="text-xs text-muted-foreground">Žádné položky.</p> : (
                           <ul className="space-y-2">{section.rows.map((row) => (
                             <li key={row.key} className="rounded-md border border-border p-3">
-                              <Link to={`/ucitel/ulohy?assignment=${row.assignmentId}`} className="text-xs text-primary hover:underline">{row.assignmentTitle}</Link>
+                              <Button
+                                variant="link"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => {
+                                  const selected = filteredAssignments.find((assignment) => assignment.id === row.assignmentId);
+                                  if (selected) setDetailAssignment(selected as AssignmentDetailAssignment);
+                                }}
+                              >
+                                {row.assignmentTitle}
+                              </Button>
                               <p className="truncate text-sm font-medium">{row.label}</p>
                               <p className="text-xs text-muted-foreground">První {row.firstPct}% · nejlepší {row.bestPct}% · opakovalo {row.repeaters}</p>
                             </li>
@@ -552,6 +563,11 @@ const TeacherResults = () => {
 
         {/* Existing class detail manager */}
         <ClassResultsManager />
+        <AssignmentDetailDialog
+          assignment={detailAssignment}
+          open={detailAssignment !== null}
+          onOpenChange={(open) => { if (!open) setDetailAssignment(null); }}
+        />
       </main>
       <SiteFooter />
     </div>
