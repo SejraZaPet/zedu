@@ -1,39 +1,94 @@
-import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
-import {
-  GROUP_MIN_HEIGHT,
-  getGroupMinHeight,
-  groupBlocksIntoSlide,
-  setGroupMinHeight,
-} from "@/lib/slide-groups";
-import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { SortableSlideGroup } from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 
-const b = (id: string): Block => ({ id, type: "paragraph", visible: true, props: { text: id } });
+vi.mock("@dnd-kit/sortable", () => ({
+  useSortable: () => ({
+    attributes: {},
+    listeners: {},
+    setNodeRef: () => {},
+    transform: null,
+    transition: undefined,
+    isDragging: false,
+  }),
+  SortableContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  sortableKeyboardCoordinates: () => {},
+  verticalListSortingStrategy: {},
+  arrayMove: (arr: unknown[]) => arr,
+}));
 
-describe("ruční výška celého snímku", () => {
-  const grouped = groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2);
-  const gid = grouped[0].id;
+// jsdom nepočítá layout – výšky napodobíme podle data atributů.
+const origHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+const origTop = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetTop");
 
-  it("uloží, omezí a umí zrušit výšku skupiny", () => {
-    const next = setGroupMinHeight(grouped, gid, 640);
-    expect(getGroupMinHeight(next[0])).toBe(640);
-    expect(getGroupMinHeight(setGroupMinHeight(grouped, gid, 10)[0])).toBe(GROUP_MIN_HEIGHT);
-    expect(getGroupMinHeight(setGroupMinHeight(next, gid, null)[0])).toBeNull();
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+    configurable: true,
+    get(this: HTMLElement) {
+      if (this.dataset?.slideGroup) return 600;
+      if (this.dataset?.slideGroupContent) return 100;
+      return 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, "offsetTop", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.dataset?.slideGroupContent ? 40 : 0;
+    },
+  });
+});
+
+afterAll(() => {
+  if (origHeight) Object.defineProperty(HTMLElement.prototype, "offsetHeight", origHeight);
+  if (origTop) Object.defineProperty(HTMLElement.prototype, "offsetTop", origTop);
+});
+
+const noop = () => {};
+
+const makeBlock = (minHeight?: number): Block => ({
+  id: "g1",
+  type: "slide_group",
+  visible: true,
+  props: {
+    layout: 1,
+    ...(minHeight != null ? { groupMinHeight: minHeight } : {}),
+    children: [{ id: "c1", type: "text", visible: true, props: { text: "Krátký text" } }],
+  },
+});
+
+const renderGroup = (block: Block, onMinHeightChange = noop) =>
+  render(
+    <SortableSlideGroup
+      block={block}
+      onChildUpdate={noop}
+      onChildRemove={noop}
+      onLayoutChange={noop}
+      onModeChange={noop}
+      onChildFrameChange={noop}
+      onChildHeightChange={noop}
+      onMinHeightChange={onMinHeightChange}
+      onUngroup={noop}
+      onToggle={noop}
+      onDelete={noop}
+    />,
+  );
+
+describe("SortableSlideGroup – pevná výška v editoru", () => {
+  it("karta s groupMinHeight a malým obsahem zobrazí štítek a klik výšku odstraní", async () => {
+    const onMinHeightChange = vi.fn();
+    renderGroup(makeBlock(600), onMinHeightChange);
+
+    const badge = await screen.findByText(/Pevná výška: 600 px/);
+    expect(badge.textContent).toContain("Obnovit automatickou výšku");
+
+    fireEvent.click(badge);
+    expect(onMinHeightChange).toHaveBeenCalledWith("g1", null);
   });
 
-  it("žákovské zobrazení použije min-height skupiny", () => {
-    const next = setGroupMinHeight(grouped, gid, 500);
-    const { container } = render(<LessonBlock block={next[0]} />);
-    expect(container.innerHTML).toContain("min-height: 500px");
-  });
-
-  it("editor má úchyt pro výšku celého snímku", async () => {
-    const { default: BlockEditor } = await import("@/components/admin/BlockEditor");
-    const next = setGroupMinHeight(grouped, gid, 480);
-    const { getByLabelText, container } = render(<BlockEditor blocks={next} onChange={() => {}} />);
-    expect(getByLabelText("Změnit výšku snímku")).toBeTruthy();
-    const group = container.querySelector(`[data-block-id="${gid}"]`) as HTMLElement;
-    expect(group.style.minHeight).toBe("480px");
+  it("karta bez groupMinHeight štítek nemá", async () => {
+    renderGroup(makeBlock());
+    await waitFor(() => expect(screen.getByText("Snímek")).toBeTruthy());
+    expect(screen.queryByText(/Pevná výška:/)).toBeNull();
   });
 });

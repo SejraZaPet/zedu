@@ -905,7 +905,7 @@ const SortableBlock = React.memo(({
 SortableBlock.displayName = "SortableBlock";
 
 /** Karta spojených bloků – v prezentaci z nich vznikne jeden snímek. */
-const SortableSlideGroup = React.memo(({
+export const SortableSlideGroup = React.memo(({
   block,
   onChildUpdate,
   onChildRemove,
@@ -954,6 +954,31 @@ const SortableSlideGroup = React.memo(({
   const groupRef = useRef<HTMLDivElement | null>(null);
   const [dragMinHeight, setDragMinHeight] = useState<number | null>(null);
   const minHeight = dragMinHeight ?? savedMinHeight;
+
+  // Měření prázdného místa pod obsahem, aby učitel viděl mezeru, kterou uvidí i žák.
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentBottom, setContentBottom] = useState(0);
+  const [emptySpace, setEmptySpace] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const group = groupRef.current;
+      const content = contentRef.current;
+      if (!group || !content) {
+        setContentBottom(0);
+        setEmptySpace(0);
+        return;
+      }
+      const bottom = content.offsetTop + content.offsetHeight;
+      setContentBottom(bottom);
+      setEmptySpace(Math.max(0, group.offsetHeight - bottom - 12));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    if (groupRef.current) ro.observe(groupRef.current);
+    if (contentRef.current) ro.observe(contentRef.current);
+    return () => ro.disconnect();
+  }, [minHeight, children.length]);
 
   const startGroupResize = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -1012,6 +1037,7 @@ const SortableSlideGroup = React.memo(({
       data-block-id={block.id}
       data-be-selectable="true"
       data-category="structure"
+      data-slide-group="true"
       style={wrapperStyle}
       className={`be-block group/beblock overflow-visible ${!block.visible ? "opacity-50" : ""}`}
 
@@ -1095,7 +1121,7 @@ const SortableSlideGroup = React.memo(({
         </div>
       </div>
 
-      <div className="p-3" style={{ color: "#171717" }}>
+      <div ref={contentRef} data-slide-group-content="true" className="p-3" style={{ color: "#171717" }}>
         {children.length === 0 ? (
           <p className="text-sm text-muted-foreground">Snímek je prázdný – rozdělte ho zpět.</p>
         ) : mode === "free" ? (
@@ -1130,7 +1156,7 @@ const SortableSlideGroup = React.memo(({
         ) : (
           <div className="space-y-2">
             <p className="text-[11px] text-muted-foreground">
-              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku.
+              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku. Pevná výška se projeví i žákům.
             </p>
             <div className={`${gridClass} items-start`}>
               {children.map((child) => (
@@ -1150,6 +1176,28 @@ const SortableSlideGroup = React.memo(({
         )}
       </div>
 
+      {minHeight != null && emptySpace > 0 && contentBottom > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-2 right-2 rounded-b-[10px] border border-dashed bg-[hsl(var(--secondary-pastel))]/40"
+          style={{ top: contentBottom, bottom: 12, borderColor: "hsl(var(--secondary-dark) / 0.3)" }}
+        />
+      )}
+      {minHeight != null && emptySpace > 120 && (
+        <button
+          type="button"
+          onClick={() => onMinHeightChange(block.id, null)}
+          className="absolute left-1/2 bottom-4 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-dashed px-3 py-1 text-[11px] font-medium hover:opacity-80"
+          style={{
+            borderColor: "hsl(var(--secondary-dark) / 0.5)",
+            background: "hsl(var(--secondary-pastel))",
+            color: "hsl(var(--secondary-dark))",
+          }}
+          title="Kliknutím vrátíte automatickou výšku podle obsahu"
+        >
+          Pevná výška: {Math.round(minHeight)} px · Obnovit automatickou výšku
+        </button>
+      )}
       <div
         role="separator"
         aria-label="Změnit výšku snímku"
