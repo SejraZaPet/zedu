@@ -1176,6 +1176,28 @@ export const SortableSlideGroup = React.memo(({
         )}
       </div>
 
+      {minHeight != null && emptySpace > 0 && contentBottom > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-2 right-2 rounded-b-[10px] border border-dashed bg-[hsl(var(--secondary-pastel))]/40"
+          style={{ top: contentBottom, bottom: 12, borderColor: "hsl(var(--secondary-dark) / 0.3)" }}
+        />
+      )}
+      {minHeight != null && emptySpace > 120 && (
+        <button
+          type="button"
+          onClick={() => onMinHeightChange(block.id, null)}
+          className="absolute left-1/2 bottom-4 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-dashed px-3 py-1 text-[11px] font-medium hover:opacity-80"
+          style={{
+            borderColor: "hsl(var(--secondary-dark) / 0.5)",
+            background: "hsl(var(--secondary-pastel))",
+            color: "hsl(var(--secondary-dark))",
+          }}
+          title="Kliknutím vrátíte automatickou výšku podle obsahu"
+        >
+          Pevná výška: {Math.round(minHeight)} px · Obnovit automatickou výšku
+        </button>
+      )}
       <div
         role="separator"
         aria-label="Změnit výšku snímku"
