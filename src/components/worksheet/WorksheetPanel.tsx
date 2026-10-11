@@ -73,7 +73,8 @@ export default function WorksheetPanel(props: WorksheetPanelProps) {
             if (res === "gated") return false;
             if (!res.ok) {
               toast({ title: res.title, description: res.message, variant: "destructive" });
-              return false;
+              // Chyba uložení: chování jako dřív (bez návratu false).
+              return res.title === "Chyba" ? undefined : false;
             }
             props.onSubmitted(score, maxScore);
             toast({ title: "Odevzdáno!", description: `Skóre: ${score}/${maxScore}` });
