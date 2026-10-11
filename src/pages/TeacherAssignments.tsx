@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import AssignmentFormActions from "@/components/assignments/AssignmentFormActions";
+import { showSaveChangesOnly, editSaveOutcome } from "@/lib/assignment-edit-save";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -549,28 +551,27 @@ const TeacherAssignments = () => {
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
+        const outcome = editSaveOutcome(original?.status, mode);
         if (mode === "scheduled") {
           patch.scheduled_publish_at = scheduledPublishAt;
-          if (original?.status !== "published") patch.status = "scheduled";
+          if (outcome.status) patch.status = outcome.status;
         } else if (mode === "published") {
           patch.scheduled_publish_at = null;
           // Už publikovanou úlohu nepřepublikujeme – pouze updatneme pole,
           // status zůstává "published" beze změny, trigger nespustí notifikace.
-          if (original?.status !== "published") patch.status = "published";
+          if (outcome.status) patch.status = outcome.status;
         } else {
           // draft
           patch.scheduled_publish_at = null;
-          patch.status = "draft";
+          patch.status = outcome.status;
         }
         const { error } = await supabase
           .from("assignments" as any)
           .update(patch as any)
           .eq("id", editingId);
         if (error) throw error;
-        const toastTitle =
-          mode === "published" ? "Úloha publikována" :
-          mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
-        toast({ title: toastTitle });
+        // Už publikovaná úloha se jen upravuje – status se nemění, toast není "publikováno".
+        toast({ title: outcome.toastTitle });
       } else {
         // Každý vybraný cíl = samostatný nezávislý řádek s vlastními termíny.
         const baseStatus = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
@@ -647,6 +648,11 @@ const TeacherAssignments = () => {
   const handleSaveDraft = () => submitAssignment("draft");
   const handleSchedule = () => submitAssignment("scheduled");
   const handlePublishForm = () => submitAssignment("published");
+
+  // Už publikovaná úloha při editaci: místo tří tlačítek jen "Uložit změny",
+  // aby učitel omylem nestáhl publikovaný úkol do konceptu.
+  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
+  const isEditingPublished = showSaveChangesOnly(editingOriginal?.status);
 
   // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
   useEffect(() => {
@@ -1646,46 +1652,15 @@ const TeacherAssignments = () => {
               )}
             </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={handleSaveDraft} disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
-                  Uložit koncept
-                </Button>
-                {(() => {
-                  const canSchedule = !!scheduleDate && !!scheduleTime;
-                  const scheduleBtn = (
-                    <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
-                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
-                      Naplánovat
-                    </Button>
-                  );
-                  if (canSchedule) return scheduleBtn;
-                  return (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-block">{scheduleBtn}</span>
-                        </TooltipTrigger>
-                        <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })()}
-                {(() => {
-                  // U editace již publikované úlohy skryjeme "Publikovat",
-                  // aby nedošlo k republish a duplicitním notifikacím.
-                  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
-                  const isAlreadyPublished = editingOriginal?.status === "published";
-                  if (isAlreadyPublished) return null;
-                  return (
-                    <Button onClick={handlePublishForm} disabled={creating}>
-                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                      Publikovat
-                    </Button>
-                  );
-                })()}
-                <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
-              </div>
+              <AssignmentFormActions
+                isEditingPublished={isEditingPublished}
+                creating={creating}
+                canSchedule={!!scheduleDate && !!scheduleTime}
+                onSaveDraft={handleSaveDraft}
+                onSchedule={handleSchedule}
+                onPublish={handlePublishForm}
+                onCancel={() => { setShowForm(false); resetForm(); }}
+              />
             </CardContent>
           </Card>
         )}
