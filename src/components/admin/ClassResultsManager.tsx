@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Search, ArrowLeft, Users, Activity, BookOpen, Clock, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { bestActivityResults } from "@/lib/best-results";
 
 interface ClassOverview {
   id: string;
@@ -163,7 +164,10 @@ const ClassResultsManager = () => {
     });
 
     const userActivities = new Map<string, { count: number; totalScore: number; totalMax: number; lastAt: string | null }>();
-    activityResults?.forEach((r: any) => {
+    const overviewRows = [...new Set((activityResults ?? []).map((row: any) => row.user_id))].flatMap((userId) =>
+      [...bestActivityResults((activityResults ?? []).filter((row: any) => row.user_id === userId) as any).values()].map((row: any) => ({ ...row, user_id: userId })),
+    );
+    overviewRows.forEach((r: any) => {
       const entry = userActivities.get(r.user_id) || { count: 0, totalScore: 0, totalMax: 0, lastAt: null };
       entry.count++;
       entry.totalScore += r.score;
@@ -335,7 +339,11 @@ const ClassResultsManager = () => {
       return !!s && mySubjects.has(s);
     };
 
-    const activityResults = (allActivityResults ?? []).filter((r: any) => lessonAllowed(r.lesson_id));
+    const rawActivityResults = (allActivityResults ?? []).filter((r: any) => lessonAllowed(r.lesson_id));
+    const activityResults = [...new Set(rawActivityResults.map((row: any) => `${row.user_id}:${row.lesson_id}`))].flatMap((key) => {
+      const [userId, lessonId] = String(key).split(":");
+      return [...bestActivityResults(rawActivityResults.filter((row: any) => row.user_id === userId && row.lesson_id === lessonId) as ActivityRow[]).values()];
+    });
     const lessonCompletions = (allLessonCompletions ?? []).filter((l: any) => lessonAllowed(l.lesson_id));
 
     setLessonActs(activityResults as ActivityRow[]);
