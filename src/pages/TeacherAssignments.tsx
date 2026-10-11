@@ -549,18 +549,19 @@ const TeacherAssignments = () => {
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
+        const outcome = editSaveOutcome(original?.status, mode);
         if (mode === "scheduled") {
           patch.scheduled_publish_at = scheduledPublishAt;
-          if (original?.status !== "published") patch.status = "scheduled";
+          if (outcome.status) patch.status = outcome.status;
         } else if (mode === "published") {
           patch.scheduled_publish_at = null;
           // Už publikovanou úlohu nepřepublikujeme – pouze updatneme pole,
           // status zůstává "published" beze změny, trigger nespustí notifikace.
-          if (original?.status !== "published") patch.status = "published";
+          if (outcome.status) patch.status = outcome.status;
         } else {
           // draft
           patch.scheduled_publish_at = null;
-          patch.status = "draft";
+          patch.status = outcome.status;
         }
         const { error } = await supabase
           .from("assignments" as any)
@@ -568,11 +569,7 @@ const TeacherAssignments = () => {
           .eq("id", editingId);
         if (error) throw error;
         // Už publikovaná úloha se jen upravuje – status se nemění, toast není "publikováno".
-        const toastTitle =
-          mode === "published"
-            ? (original?.status === "published" ? "Změny uloženy" : "Úloha publikována")
-            : mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
-        toast({ title: toastTitle });
+        toast({ title: outcome.toastTitle });
       } else {
         // Každý vybraný cíl = samostatný nezávislý řádek s vlastními termíny.
         const baseStatus = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
