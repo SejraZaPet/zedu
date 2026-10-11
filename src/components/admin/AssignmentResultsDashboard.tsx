@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { bestAttempt } from "@/lib/best-results";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -260,9 +261,9 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
         if (submitted.length > 0) status = "submitted";
         else if (inProg) status = "in_progress";
 
-        const scores = submitted.filter((a: any) => a.score !== null).map((a: any) => a.score as number);
-        const bestScore = scores.length > 0 ? Math.max(...scores) : null;
-        const maxScore = submitted.find((a: any) => a.max_score !== null)?.max_score ?? null;
+        const best = bestAttempt(submitted);
+        const bestScore = best?.score ?? null;
+        const maxScore = best?.max_score ?? null;
 
         const allDates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean);
         const lastActivity = allDates.length > 0 ? allDates.sort().reverse()[0] : null;

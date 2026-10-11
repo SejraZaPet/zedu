@@ -4,6 +4,7 @@ import { Activity, CheckCircle2, Target, Calendar as CalendarIcon } from "lucide
 import { Button } from "@/components/ui/button";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
+import { bestActivityResults, bestAttemptsBy } from "@/lib/best-results";
 
 interface Props {
   studentIds: string[];
@@ -68,9 +69,10 @@ const ChildProgressWidget = ({ studentIds, studentNames }: Props) => {
         .eq("student_id", activeId)
         .order("last_saved_at", { ascending: false });
 
-      const submitted = (attempts ?? []).filter(
+      const submittedRows = (attempts ?? []).filter(
         (a: any) => a.status === "submitted" || a.status === "graded",
       );
+      const submitted = [...bestAttemptsBy(submittedRows as any[], (attempt: any) => attempt.assignment_id).values()] as any[];
       const uniqueCompleted = new Set(submitted.map((a: any) => a.assignment_id)).size;
 
       let scoreSum = 0;
@@ -85,10 +87,13 @@ const ChildProgressWidget = ({ studentIds, studentNames }: Props) => {
       // Activity results (worksheet/activity submissions)
       const { data: activityResults } = await supabase
         .from("student_activity_results")
-        .select("score, max_score, completed_at")
+        .select("lesson_id, activity_index, score, max_score, completed_at")
         .eq("user_id", activeId);
 
-      (activityResults ?? []).forEach((r: any) => {
+      const bestActivities = [...new Set((activityResults ?? []).map((row: any) => row.lesson_id))].flatMap((lessonId) =>
+        [...bestActivityResults((activityResults ?? []).filter((row: any) => row.lesson_id === lessonId) as any).values()],
+      );
+      bestActivities.forEach((r: any) => {
         if (r.max_score && r.max_score > 0) {
           scoreSum += r.score ?? 0;
           maxSum += r.max_score;

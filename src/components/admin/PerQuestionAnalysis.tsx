@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Loader2, ChevronDown, AlertTriangle, Info } from "lucide-react";
+import { bestAttemptsBy } from "@/lib/best-results";
 
 interface Props {
   assignmentId: string;
@@ -50,7 +51,7 @@ const PerQuestionAnalysis = ({ assignmentId }: Props) => {
         supabase.from("assignments" as any).select("activity_data").eq("id", assignmentId).maybeSingle(),
         supabase
           .from("assignment_attempts" as any)
-          .select("student_id, status, answers, score, max_score")
+          .select("student_id, status, answers, score, max_score, submitted_at")
           .eq("assignment_id", assignmentId)
           .eq("status", "submitted"),
       ]);
@@ -67,17 +68,7 @@ const PerQuestionAnalysis = ({ assignmentId }: Props) => {
 
   // Best submitted attempt per student (avoids double-counting multiple attempts)
   const bestByStudent = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const a of attempts) {
-      const cur = map.get(a.student_id);
-      if (!cur) map.set(a.student_id, a);
-      else {
-        const curPct = cur.max_score ? (cur.score ?? 0) / cur.max_score : 0;
-        const newPct = a.max_score ? (a.score ?? 0) / a.max_score : 0;
-        if (newPct > curPct) map.set(a.student_id, a);
-      }
-    }
-    return [...map.values()];
+    return [...bestAttemptsBy(attempts, (attempt) => attempt.student_id).values()];
   }, [attempts]);
 
   const submissionCount = bestByStudent.length;
