@@ -5,6 +5,7 @@
  */
 import { activityMeta } from "@/lib/activity-meta";
 import type { LessonActivityInfo } from "@/lib/lesson-activity-index";
+import { bestActivityResults } from "@/lib/best-results";
 
 export interface ActivityResultRow {
   activity_index: number;
@@ -23,14 +24,13 @@ export interface BestActivityResult {
 
 const ratioOf = (score: number, max: number) => (max > 0 ? Math.min(1, Math.max(0, score / max)) : null);
 
-/** Lepší z dvou výsledků: vyšší poměr, při shodě vyšší skóre, při shodě dřívější dokončení. */
+/** Lepší z dvou výsledků: vyšší poměr, při shodě novější dokončení. */
 export function betterResult(a: BestActivityResult | undefined, b: BestActivityResult): BestActivityResult {
   if (!a) return b;
   const ra = a.ratio ?? -1;
   const rb = b.ratio ?? -1;
   if (rb !== ra) return rb > ra ? b : a;
-  if (b.score !== a.score) return b.score > a.score ? b : a;
-  if (a.completedAt && b.completedAt) return b.completedAt < a.completedAt ? b : a;
+  if (a.completedAt && b.completedAt) return b.completedAt >= a.completedAt ? b : a;
   return a;
 }
 
@@ -41,12 +41,7 @@ export function toBestResult(r: ActivityResultRow): BestActivityResult {
 }
 
 export function bestResultsByActivity(rows: ActivityResultRow[]): Map<number, BestActivityResult> {
-  const map = new Map<number, BestActivityResult>();
-  for (const r of rows ?? []) {
-    if (typeof r?.activity_index !== "number") continue;
-    map.set(r.activity_index, betterResult(map.get(r.activity_index), toBestResult(r)));
-  }
-  return map;
+  return new Map([...bestActivityResults(rows ?? [])].map(([index, row]) => [index, toBestResult(row)]));
 }
 
 const GENERIC_TITLES = new Set(["", "aktivita"]);

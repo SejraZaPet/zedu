@@ -11,6 +11,8 @@ import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import { createWorksheetForTopic } from "@/lib/assignment-difficulty";
 import AssignmentDifficultyTrend from "@/components/admin/AssignmentDifficultyTrend";
 import { fetchLessonActivities, type LessonActivityInfo } from "@/lib/lesson-activity-index";
+import { resultRatio } from "@/lib/best-results";
+import { splitStrengthsWeaknesses, summarizePerformance, type StrengthWeaknessRow } from "@/lib/strengths-weaknesses";
 
 interface Props {
   assignmentId: string;
@@ -21,7 +23,7 @@ interface Props {
   studentIds: string[];
 }
 
-interface DifficultyRow {
+interface DifficultyRow extends StrengthWeaknessRow {
   key: string;
   label: string;
   /** Úspěšnost 0–100, null = nelze vyhodnotit automaticky. */
@@ -42,7 +44,7 @@ const rightSide = (s: string) => {
 };
 
 /** Best-effort porovnání odpovědi žáka se správnou odpovědí podle typu položky. */
-const isAnswerCorrect = (item: any, answer: unknown, correct: string | string[]): boolean => {
+export const isWorksheetAnswerCorrect = (item: any, answer: unknown, correct: string | string[]): boolean => {
   const type = String(item?.type ?? "");
   if (answer === undefined || answer === null || answer === "") return false;
   switch (type) {
@@ -98,10 +100,10 @@ const isAnswerCorrect = (item: any, answer: unknown, correct: string | string[])
 };
 
 /** Typy, které nelze automaticky vyhodnotit. */
-const MANUAL_TYPES = new Set(["open_answer", "short_answer", "offline_activity"]);
+export const MANUAL_WORKSHEET_TYPES = new Set(["open_answer", "short_answer", "offline_activity"]);
 
 /** Typy s automaticky vyhodnotitelnou odpovědí – ostatní (layout) do statistiky nepatří. */
-const SCORABLE_TYPES = new Set([
+export const SCORABLE_WORKSHEET_TYPES = new Set([
   "mcq",
   "true_false",
   "fill_blank",
@@ -204,28 +206,37 @@ const AssignmentDifficultyStats = ({
           const activities: LessonActivityInfo[] = await fetchLessonActivities(lessonId, lessonSource);
           let query = supabase
             .from("student_activity_results")
-            .select("user_id, activity_index, score, max_score")
+            .select("user_id, activity_index, score, max_score, completed_at")
             .eq("lesson_id", lessonId);
           if (studentIds.length > 0) query = query.in("user_id", studentIds);
           const { data } = await query;
 
-          const byIndex = new Map<number, { sum: number; n: number }>();
-          ((data as any[]) || []).forEach((r) => {
-            const max = Number(r.max_score) || 0;
-            if (max <= 0) return;
-            const pct = (Number(r.score) || 0) / max;
-            const cur = byIndex.get(r.activity_index) ?? { sum: 0, n: 0 };
-            byIndex.set(r.activity_index, { sum: cur.sum + pct, n: cur.n + 1 });
-          });
+          const resultRows = ((data as any[]) || []);
+          const profileIds = [...new Set(resultRows.map((row) => row.user_id))];
+          const { data: profiles } = profileIds.length
+            ? await supabase.from("profiles").select("id, first_name, last_name").in("id", profileIds)
+            : { data: [] as any[] };
+          const names = new Map(((profiles ?? []) as any[]).map((profile) => [profile.id, `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()]));
 
           for (const act of activities) {
-            const agg = byIndex.get(act.index);
+            const activityRows = resultRows.filter((row) => row.activity_index === act.index);
+            const learners = [...new Set(activityRows.map((row) => row.user_id))].map((userId) => ({
+              learnerId: userId,
+              learnerName: names.get(userId) || "Žák",
+              attempts: activityRows.filter((row) => row.user_id === userId).map((row) => ({
+                correctRatio: resultRatio(row) ?? 0,
+                order: new Date(row.completed_at ?? 0).getTime(),
+                completedAt: row.completed_at,
+              })),
+            }));
+            const summary = summarizePerformance({ key: `a-${act.index}`, label: `${act.title}${act.required ? " (povinné)" : ""}` }, learners);
             scored.push({
               key: `a-${act.index}`,
               label: `${act.title}${act.required ? " (povinné)" : ""}`,
-              pct: agg && agg.n > 0 ? Math.round((agg.sum / agg.n) * 100) : null,
-              sampleCount: agg?.n ?? 0,
+              pct: summary.firstPct,
+              sampleCount: summary.learnerCount,
               activityIndex: act.index,
+              ...summary,
             });
           }
         }
@@ -235,21 +246,18 @@ const AssignmentDifficultyStats = ({
             supabase.from("worksheets").select("spec").eq("id", worksheetId).maybeSingle(),
             supabase
               .from("assignment_attempts" as any)
-              .select("student_id, answers, attempt_number")
+              .select("student_id, answers, attempt_number, status, submitted_at")
               .eq("assignment_id", assignmentId),
           ]);
 
           const spec = (wsRes.data as any)?.spec;
           const variants: any[] = Array.isArray(spec?.variants) ? spec.variants : [];
-          const attempts = ((attRes.data as any[]) || [])
-            .slice()
-            .sort((a, b) => (b.attempt_number ?? 0) - (a.attempt_number ?? 0));
-          // Jeden (nejnovější) pokus na žáka, aby se nepočítalo dvakrát.
-          const latestByStudent = new Map<string, any>();
-          attempts.forEach((a) => {
-            if (!latestByStudent.has(a.student_id)) latestByStudent.set(a.student_id, a);
-          });
-          const answerSets = [...latestByStudent.values()].map((a) => (a.answers ?? {}) as Record<string, unknown>);
+          const attempts = ((attRes.data as any[]) || []).filter((attempt) => attempt.status === "submitted");
+          const attemptProfileIds = [...new Set(attempts.map((attempt) => attempt.student_id))];
+          const { data: attemptProfiles } = attemptProfileIds.length
+            ? await supabase.from("profiles").select("id, first_name, last_name").in("id", attemptProfileIds)
+            : { data: [] as any[] };
+          const attemptNames = new Map(((attemptProfiles ?? []) as any[]).map((profile) => [profile.id, `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()]));
 
           for (const variant of variants) {
             const keys: any[] = spec?.answerKeys?.[variant.variantId] ?? [];
@@ -258,21 +266,32 @@ const AssignmentDifficultyStats = ({
               const item = itemMap.get(key.itemId);
               if (!item) continue;
               const label = truncate(String(item.prompt || `Úloha ${item.itemNumber ?? ""}`));
-              if (MANUAL_TYPES.has(item.type)) {
-                manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0 });
+               if (MANUAL_WORKSHEET_TYPES.has(item.type)) {
+                manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0, learnerCount: 0, firstPct: null, bestPct: null, repeaters: 0, averageAttempts: 0, failedLearners: [], category: "other" });
                 continue;
               }
               // Layoutové bloky (zápis, nadpisy, boxy) nemají odpověď – vynecháme je.
-              if (!SCORABLE_TYPES.has(item.type)) continue;
-              const relevant = answerSets.filter((ans) => key.itemId in ans);
-              const correct = relevant.filter((ans) =>
-                isAnswerCorrect(item, ans[key.itemId], key.correctAnswer),
-              ).length;
+               if (!SCORABLE_WORKSHEET_TYPES.has(item.type)) continue;
+              const learners = [...new Set(attempts.map((attempt) => attempt.student_id))].flatMap((studentId) => {
+                const studentAttempts = attempts.filter((attempt) => attempt.student_id === studentId && key.itemId in (attempt.answers ?? {}));
+                if (!studentAttempts.length) return [];
+                return [{
+                  learnerId: studentId,
+                  learnerName: attemptNames.get(studentId) || "Žák",
+                  attempts: studentAttempts.map((attempt) => ({
+                     correctRatio: isWorksheetAnswerCorrect(item, attempt.answers[key.itemId], key.correctAnswer) ? 1 : 0,
+                    order: Number(attempt.attempt_number) || 0,
+                    completedAt: attempt.submitted_at,
+                  })),
+                }];
+              });
+              const summary = summarizePerformance({ key: `w-${variant.variantId}-${key.itemId}`, label }, learners);
               scored.push({
                 key: `w-${variant.variantId}-${key.itemId}`,
                 label,
-                pct: relevant.length > 0 ? Math.round((correct / relevant.length) * 100) : null,
-                sampleCount: relevant.length,
+                pct: summary.firstPct,
+                sampleCount: summary.learnerCount,
+                ...summary,
               });
             }
           }
@@ -290,10 +309,13 @@ const AssignmentDifficultyStats = ({
     };
   }, [assignmentId, lessonId, lessonSource, worksheetId, studentIds.join(",")]);
 
-  const sorted = useMemo(() => {
-    const withData = rows.filter((r) => r.pct !== null).sort((a, b) => (a.pct! - b.pct!));
-    const without = rows.filter((r) => r.pct === null);
-    return [...withData, ...without];
+  const split = useMemo(() => {
+    const grouped = splitStrengthsWeaknesses(rows);
+    return {
+      strong: grouped.strong as DifficultyRow[],
+      weak: grouped.weak as DifficultyRow[],
+      other: grouped.other as DifficultyRow[],
+    };
   }, [rows]);
 
   if (loading) {
@@ -304,15 +326,17 @@ const AssignmentDifficultyStats = ({
     );
   }
 
-  if (sorted.length === 0 && manualRows.length === 0) {
-    return <p className="text-sm text-muted-foreground">Pro tuto úlohu nejsou data pro statistiku obtížnosti.</p>;
+   if (rows.length === 0 && manualRows.length === 0) {
+     return <p className="text-sm text-muted-foreground">Pro tuto úlohu nejsou data pro silné a slabé stránky.</p>;
   }
 
   return (
     <div className="space-y-3">
-      {sorted.length > 0 && (
-        <ul className="space-y-2">
-          {sorted.map((r) => (
+      {([...[{ title: "Silné stránky", rows: split.strong }, { title: "Slabé stránky", rows: split.weak }]] as const).map((section) => section.rows.length > 0 && (
+        <div key={section.title} className="space-y-2">
+          <h4 className="text-sm font-semibold">{section.title}</h4>
+          <ul className="space-y-2">
+          {section.rows.map((r) => (
             <li key={r.key} className="space-y-1">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="min-w-0 flex-1 truncate">{r.label}</span>
@@ -320,7 +344,7 @@ const AssignmentDifficultyStats = ({
                   <Badge variant="outline" className="text-[10px]">Bez odpovědí</Badge>
                 ) : (
                   <span className="shrink-0 font-medium">
-                    {r.pct}% <span className="text-muted-foreground">({r.sampleCount})</span>
+                     první {r.firstPct}% · nejlepší {r.bestPct}% <span className="text-muted-foreground">({r.sampleCount} žáků)</span>
                   </span>
                 )}
               </div>
@@ -330,6 +354,7 @@ const AssignmentDifficultyStats = ({
                 </div>
               )}
               <div className="flex flex-wrap gap-1">
+                 <span className="text-[11px] text-muted-foreground">Opakovalo {r.repeaters} · průměr {r.averageAttempts} pokusu</span>
                 {typeof r.activityIndex === "number" && sameLessonCount > 1 && (
                   <Button
                     size="sm"
@@ -367,9 +392,20 @@ const AssignmentDifficultyStats = ({
                   </Button>
                 )}
               </div>
+               {r.category === "weak" && r.failedLearners.length > 0 && (
+                 <p className="text-[11px] text-destructive">Pod 50 % i v nejlepším pokusu: {r.failedLearners.join(", ")}</p>
+               )}
             </li>
           ))}
-        </ul>
+          </ul>
+        </div>
+      ))}
+
+      {split.other.length > 0 && (
+        <details className="rounded-md border border-border p-2">
+          <summary className="cursor-pointer text-sm font-medium">Ostatní ({split.other.length})</summary>
+          <ul className="mt-2 space-y-1">{split.other.map((row) => <li key={row.key} className="text-xs">{row.label} · první {row.firstPct ?? "—"}% · nejlepší {row.bestPct ?? "—"}%</li>)}</ul>
+        </details>
       )}
 
       {trendRow && lessonId && typeof trendRow.activityIndex === "number" && (

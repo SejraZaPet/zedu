@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { bestActivityResults, bestAttemptsBy } from "@/lib/best-results";
 import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle, Mail, BellOff, FolderOpen, GraduationCap } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -100,21 +101,25 @@ const ParentDashboard = () => {
     await Promise.all(studentIds.map(async (sid) => {
       const [completionsRes, activityRes, attemptsRes] = await Promise.all([
         supabase.from("student_lesson_completions").select("id").eq("user_id", sid),
-        supabase.from("student_activity_results").select("score, max_score").eq("user_id", sid),
+        supabase.from("student_activity_results").select("lesson_id, activity_index, score, max_score, completed_at").eq("user_id", sid),
         supabase.from("assignment_attempts")
-          .select("id, status, score, max_score, assignment_id, assignments(title, exam_type)")
+          .select("id, status, score, max_score, assignment_id, submitted_at, assignments(title, exam_type)")
           .eq("student_id", sid)
           .order("started_at", { ascending: false }),
       ]);
 
-      const totalScore = (activityRes.data ?? []).reduce((s: number, r: any) => s + (r.score ?? 0), 0);
-      const totalMaxScore = (activityRes.data ?? []).reduce((s: number, r: any) => s + (r.max_score ?? 0), 0);
+      const bestActivities = [...new Set((activityRes.data ?? []).map((row: any) => row.lesson_id))].flatMap((lessonId) =>
+        [...bestActivityResults((activityRes.data ?? []).filter((row: any) => row.lesson_id === lessonId) as any).values()],
+      );
+      const totalScore = bestActivities.reduce((s: number, r: any) => s + (r.score ?? 0), 0);
+      const totalMaxScore = bestActivities.reduce((s: number, r: any) => s + (r.max_score ?? 0), 0);
+      const bestAssignments = [...bestAttemptsBy((attemptsRes.data ?? []) as any[], (attempt: any) => attempt.assignment_id).values()];
 
       statsMap[sid] = {
         completedLessons: completionsRes.data?.length ?? 0,
         totalScore,
         totalMaxScore,
-        assignments: (attemptsRes.data ?? []).map((a: any) => ({
+        assignments: bestAssignments.map((a: any) => ({
           id: a.id,
           title: a.assignments?.title ?? "Úloha",
           status: a.status,

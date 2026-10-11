@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
+import AssignmentDetailDialog, { type AssignmentDetailAssignment } from "@/components/admin/AssignmentDetailDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/csv-export";
 import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
+import { bestAttemptsBy } from "@/lib/best-results";
+import { splitStrengthsWeaknesses, summarizePerformance } from "@/lib/strengths-weaknesses";
+import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+import { resultRatio } from "@/lib/best-results";
+import { isWorksheetAnswerCorrect, SCORABLE_WORKSHEET_TYPES } from "@/components/admin/AssignmentDifficultyStats";
 
 type ClassOpt = { id: string; name: string };
 type GroupOpt = { id: string; name: string; subject: string | null; subjectId: string | null };
@@ -32,6 +38,7 @@ type Attempt = {
   started_at: string;
   submitted_at: string | null;
   answers: Record<string, any>;
+  attempt_number?: number | null;
 };
 type Assignment = {
   id: string;
@@ -44,6 +51,9 @@ type Assignment = {
   subject?: string | null;
   status?: string | null;
   scheduled_publish_at?: string | null;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
+  worksheet_id?: string | null;
 };
 
 const ALL = ALL_SCOPE;
@@ -67,6 +77,8 @@ const TeacherResults = () => {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
+  const [detailAssignment, setDetailAssignment] = useState<AssignmentDetailAssignment | null>(null);
+  const [richStrengthRows, setRichStrengthRows] = useState<ReturnType<typeof summarizePerformance>[]>([]);
 
   // Initial load
   useEffect(() => {
@@ -90,7 +102,7 @@ const TeacherResults = () => {
       // Teacher's assignments + lesson plan subject
       const { data: asg } = await supabase
         .from("assignments")
-        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, status, scheduled_publish_at")
+        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, lesson_id, lesson_source, worksheet_id, status, scheduled_publish_at")
         .eq("teacher_id", uid);
       const asgRows = (asg ?? []) as any[];
 
@@ -181,7 +193,7 @@ const TeacherResults = () => {
       if (asgIds.length > 0) {
         const { data: at } = await supabase
           .from("assignment_attempts")
-          .select("id, assignment_id, student_id, status, score, max_score, started_at, submitted_at, answers")
+          .select("id, assignment_id, student_id, status, score, max_score, started_at, submitted_at, attempt_number, answers")
           .in("assignment_id", asgIds);
         setAttempts((at ?? []) as any);
       }
@@ -248,6 +260,64 @@ const TeacherResults = () => {
     () => attempts.filter((a) => filteredAsgIds.has(a.assignment_id)),
     [attempts, filteredAsgIds],
   );
+  const bestFilteredAttempts = useMemo(
+    () => [...bestAttemptsBy(filteredAttempts, (attempt) => `${attempt.assignment_id}:${attempt.student_id}`).values()],
+    [filteredAttempts],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rows: ReturnType<typeof summarizePerformance>[] = [];
+      for (const assignment of filteredAssignments) {
+        const assignmentAttempts = filteredAttempts.filter((attempt) => attempt.assignment_id === assignment.id && attempt.status === "submitted");
+        if (assignment.lesson_id) {
+          const [activities, resultResponse] = await Promise.all([
+            fetchLessonActivities(assignment.lesson_id, assignment.lesson_source),
+            supabase.from("student_activity_results").select("user_id, activity_index, score, max_score, completed_at").eq("lesson_id", assignment.lesson_id).in("user_id", [...scopeStudentIds]),
+          ]);
+          const resultRows = (resultResponse.data ?? []) as any[];
+          activities.forEach((activity) => {
+            const activityRows = resultRows.filter((row) => row.activity_index === activity.index);
+            const learners = [...new Set(activityRows.map((row) => row.user_id))].map((studentId) => ({
+              learnerId: studentId,
+              learnerName: `${profiles[studentId]?.first_name ?? ""} ${profiles[studentId]?.last_name ?? ""}`.trim() || "Žák",
+              attempts: activityRows.filter((row) => row.user_id === studentId).map((row) => ({
+                correctRatio: resultRatio(row) ?? 0,
+                order: new Date(row.completed_at ?? 0).getTime(),
+              })),
+            }));
+            rows.push(summarizePerformance({ key: `${assignment.id}:lesson:${activity.index}`, label: activity.title, assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
+          });
+        }
+        if (assignment.worksheet_id) {
+          const { data } = await supabase.from("worksheets").select("spec").eq("id", assignment.worksheet_id).maybeSingle();
+          const spec = (data as any)?.spec;
+          for (const variant of Array.isArray(spec?.variants) ? spec.variants : []) {
+            const items = new Map<string, any>((variant.items ?? []).map((item: any) => [item.id, item]));
+            for (const key of spec?.answerKeys?.[variant.variantId] ?? []) {
+              const item = items.get(key.itemId);
+              if (!item || !SCORABLE_WORKSHEET_TYPES.has(item.type)) continue;
+              const learners = [...new Set(assignmentAttempts.map((attempt) => attempt.student_id))].flatMap((studentId) => {
+                const studentAttempts = assignmentAttempts.filter((attempt) => attempt.student_id === studentId && key.itemId in (attempt.answers ?? {}));
+                return studentAttempts.length ? [{
+                  learnerId: studentId,
+                  learnerName: `${profiles[studentId]?.first_name ?? ""} ${profiles[studentId]?.last_name ?? ""}`.trim() || "Žák",
+                  attempts: studentAttempts.map((attempt) => ({
+                    correctRatio: isWorksheetAnswerCorrect(item, attempt.answers[key.itemId], key.correctAnswer) ? 1 : 0,
+                    order: Number(attempt.attempt_number) || 0,
+                  })),
+                }] : [];
+              });
+              rows.push(summarizePerformance({ key: `${assignment.id}:worksheet:${variant.variantId}:${key.itemId}`, label: String(item.prompt || `Úloha ${item.itemNumber ?? ""}`), assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
+            }
+          }
+        }
+      }
+      if (!cancelled) setRichStrengthRows(rows);
+    })();
+    return () => { cancelled = true; };
+  }, [filteredAssignments, filteredAttempts, profiles, scopeStudentIds]);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -283,7 +353,7 @@ const TeacherResults = () => {
       engagementPct,
       activeStudents: activeStudents.size,
       totalStudents,
-      submittedCount: submitted.length,
+      submittedCount: new Set(submitted.map((attempt) => `${attempt.assignment_id}:${attempt.student_id}`)).size,
     };
   }, [filteredAttempts, filteredAssignments, membersOfAssignment, scopeStudentIds]);
 
@@ -310,9 +380,8 @@ const TeacherResults = () => {
   }, [filteredAttempts]);
 
   // Top problems: per-question incorrect rate
-  const problems = useMemo(() => {
-    type Row = { key: string; assignmentTitle: string; question: string; correct: number; total: number };
-    const map = new Map<string, Row>();
+  const strengthPanel = useMemo(() => {
+    const rows = [];
     for (const a of filteredAssignments) {
       const items = Array.isArray(a.activity_data) ? a.activity_data : [];
       const submitted = filteredAttempts.filter(
@@ -320,32 +389,22 @@ const TeacherResults = () => {
       );
       items.forEach((item: any, idx: number) => {
         const qText = String(item?.question || item?.title || item?.prompt || `Otázka ${idx + 1}`).slice(0, 140);
-        const key = `${a.id}:${idx}`;
-        const row = map.get(key) ?? {
-          key,
-          assignmentTitle: a.title || "Úkol",
-          question: qText,
-          correct: 0,
-          total: 0,
-        };
-        for (const at of submitted) {
-          const ans = (at.answers as any)?.[idx];
-          if (ans === undefined || ans === null || ans === "") continue;
-          row.total += 1;
-          if (item.type === "mcq" && ans === item.correctIndex) row.correct += 1;
-          else if (item.type === "true_false" && ans === item.isTrue) row.correct += 1;
-          else if (item.type === "short_answer" && typeof ans === "string" && typeof item.correctAnswer === "string") {
-            if (ans.trim().toLowerCase() === item.correctAnswer.trim().toLowerCase()) row.correct += 1;
-          }
-        }
-        if (row.total > 0) map.set(key, row);
+        const learners = [...new Set(submitted.map((attempt) => attempt.student_id))].flatMap((studentId) => {
+          const studentAttempts = submitted.filter((attempt) => attempt.student_id === studentId && (attempt.answers as any)?.[idx] !== undefined);
+          if (!studentAttempts.length) return [];
+          return [{ learnerId: studentId, attempts: studentAttempts.map((attempt) => {
+            const answer = (attempt.answers as any)?.[idx];
+            const correct = (item.type === "mcq" && answer === item.correctIndex)
+              || (item.type === "true_false" && answer === item.isTrue)
+              || (item.type === "short_answer" && typeof answer === "string" && typeof item.correctAnswer === "string" && answer.trim().toLowerCase() === item.correctAnswer.trim().toLowerCase());
+            return { correctRatio: correct ? 1 : 0, order: Number(attempt.attempt_number) || 0 };
+          }) }];
+        });
+        rows.push(summarizePerformance({ key: `${a.id}:${idx}`, label: qText, assignmentId: a.id, assignmentTitle: a.title }, learners));
       });
     }
-    return [...map.values()]
-      .map((r) => ({ ...r, successPct: Math.round((r.correct / r.total) * 100) }))
-      .sort((a, b) => a.successPct - b.successPct)
-      .slice(0, 5);
-  }, [filteredAssignments, filteredAttempts]);
+    return splitStrengthsWeaknesses([...rows, ...richStrengthRows]);
+  }, [filteredAssignments, filteredAttempts, richStrengthRows]);
 
   const handleExportXlsx = () => {
     const studentName = (id: string) => {
@@ -362,7 +421,7 @@ const TeacherResults = () => {
     // Sheet 1: Class overview – per student
     const studentIds = [...scopeStudentIds];
     const overviewRows = studentIds.map((sid) => {
-      const studentAttempts = filteredAttempts.filter(
+      const studentAttempts = bestFilteredAttempts.filter(
         (a) => a.student_id === sid && a.status === "submitted",
       );
       const scores = studentAttempts
@@ -381,7 +440,7 @@ const TeacherResults = () => {
     }).sort((a, b) => String(a["Jméno"]).localeCompare(String(b["Jméno"]), "cs"));
 
     // Sheet 2: Detailed results
-    const detailRows = filteredAttempts
+    const detailRows = bestFilteredAttempts
       .filter((a) => a.status === "submitted")
       .map((a) => {
         const asg = asgById.get(a.assignment_id);
@@ -514,43 +573,48 @@ const TeacherResults = () => {
               </CardContent>
             </Card>
 
-            {/* Top problems */}
+            {/* Silné a slabé stránky */}
             <Card className="mb-10">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive" /> Největší problémy
+                  <AlertTriangle className="w-4 h-4 text-destructive" /> Silné a slabé stránky
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {problems.length === 0 ? (
+                {parseScope(classFilter).kind === "all" ? (
+                  <p className="text-sm text-muted-foreground">Vyberte třídu nebo skupinu</p>
+                ) : scopeStudentIds.size < 3 ? (
+                  <p className="text-sm text-muted-foreground">Málo dat pro spolehlivé závěry</p>
+                ) : strengthPanel.strong.length === 0 && strengthPanel.weak.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Zatím nejsou k dispozici data o úspěšnosti otázek.
+                    Zatím nejsou k dispozici data o úspěšnosti aktivit a otázek.
                   </p>
                 ) : (
-                  <ul className="space-y-3">
-                    {problems.map((p) => (
-                      <li key={p.key} className="border border-border rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-xs uppercase tracking-wider text-muted-foreground">{p.assignmentTitle}</p>
-                            <p className="font-medium text-sm mt-0.5 truncate">{p.question}</p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className={`text-lg font-bold ${p.successPct < 40 ? "text-destructive" : p.successPct < 70 ? "text-yellow-500" : "text-foreground"}`}>
-                              {p.successPct}%
-                            </div>
-                            <div className="text-xs text-muted-foreground">{p.correct}/{p.total} správně</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={p.successPct < 40 ? "h-full bg-destructive" : p.successPct < 70 ? "h-full bg-yellow-500" : "h-full bg-primary"}
-                            style={{ width: `${p.successPct}%` }}
-                          />
-                        </div>
-                      </li>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {[{ title: "5 nejsilnějších", rows: strengthPanel.strong.slice(0, 5) }, { title: "5 nejslabších", rows: strengthPanel.weak.slice(0, 5) }].map((section) => (
+                      <div key={section.title} className="space-y-2">
+                        <h3 className="text-sm font-semibold">{section.title}</h3>
+                        {section.rows.length === 0 ? <p className="text-xs text-muted-foreground">Žádné položky.</p> : (
+                          <ul className="space-y-2">{section.rows.map((row) => (
+                            <li key={row.key} className="rounded-md border border-border p-3">
+                              <Button
+                                variant="link"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => {
+                                  const selected = filteredAssignments.find((assignment) => assignment.id === row.assignmentId);
+                                  if (selected) setDetailAssignment(selected as AssignmentDetailAssignment);
+                                }}
+                              >
+                                {row.assignmentTitle}
+                              </Button>
+                              <p className="truncate text-sm font-medium">{row.label}</p>
+                              <p className="text-xs text-muted-foreground">První {row.firstPct}% · nejlepší {row.bestPct}% · opakovalo {row.repeaters}</p>
+                            </li>
+                          ))}</ul>
+                        )}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -559,6 +623,11 @@ const TeacherResults = () => {
 
         {/* Existing class detail manager */}
         <ClassResultsManager />
+        <AssignmentDetailDialog
+          assignment={detailAssignment}
+          open={detailAssignment !== null}
+          onOpenChange={(open) => { if (!open) setDetailAssignment(null); }}
+        />
       </main>
       <SiteFooter />
     </div>

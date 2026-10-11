@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { bestAttempt } from "@/lib/best-results";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,8 +108,9 @@ const StudentAssignments = () => {
             {assignments.map((a) => {
               const status = getAssignmentStatus(a);
               const deadlinePassed = isDeadlinePassed(a.deadline);
-              const bestScore = Math.max(...a.attempts.filter((att) => att.score !== null).map((att) => att.score!), 0);
-              const bestMaxScore = a.attempts.find((att) => att.max_score !== null)?.max_score || 0;
+              const best = bestAttempt(a.attempts);
+              const bestScore = best?.score ?? 0;
+              const bestMaxScore = best?.max_score ?? 0;
               const inProgress = a.attempts.find((att) => att.status === "in_progress");
 
               return (

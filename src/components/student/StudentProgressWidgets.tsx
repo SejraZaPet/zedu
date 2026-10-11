@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Trophy, Flame, Sparkles, BookOpenCheck, BarChart3, Award } from "lucide-react";
 import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
+import { bestAttemptsBy } from "@/lib/best-results";
 
 type WeekBucket = { label: string; avg: number; count: number };
 
@@ -93,9 +94,10 @@ const StudentProgressWidgets = ({ userId }: { userId: string }) => {
         .eq("status", "submitted")
         .gte("submitted_at", sinceMonth.toISOString());
 
-      const valid = ((attempts ?? []) as any[]).filter(
+      const validRows = ((attempts ?? []) as any[]).filter(
         (a) => a.score != null && a.max_score && a.max_score > 0 && a.submitted_at,
       );
+      const valid = [...bestAttemptsBy(validRows, (attempt) => attempt.assignment_id).values()];
       if (valid.length > 0) {
         const pcts = valid.map((a) => (a.score / a.max_score) * 100);
         setMonthAvgPct(Math.round(pcts.reduce((s, x) => s + x, 0) / pcts.length));

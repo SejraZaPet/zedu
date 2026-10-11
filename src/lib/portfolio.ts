@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { bestAttemptsBy } from "@/lib/best-results";
 
 export type PortfolioItemType =
   | "worksheet_result"
@@ -121,7 +122,8 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
     manual.filter((m) => m.source_assignment_id).map((m) => m.source_assignment_id as string),
   );
 
-  for (const a of (attemptsRes.data ?? []) as any[]) {
+  const bestPortfolioAttempts = bestAttemptsBy((attemptsRes.data ?? []) as any[], (attempt) => attempt.assignment_id);
+  for (const a of bestPortfolioAttempts.values()) {
     if (linkedAssignmentIds.has(a.assignment_id)) continue;
     auto.push({
       id: `attempt-${a.id}`,
