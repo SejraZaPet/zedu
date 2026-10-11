@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import AssignmentFormActions from "@/components/assignments/AssignmentFormActions";
+import { showSaveChangesOnly, editSaveOutcome } from "@/lib/assignment-edit-save";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -650,7 +652,7 @@ const TeacherAssignments = () => {
   // Už publikovaná úloha při editaci: místo tří tlačítek jen "Uložit změny",
   // aby učitel omylem nestáhl publikovaný úkol do konceptu.
   const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
-  const isEditingPublished = editingOriginal?.status === "published";
+  const isEditingPublished = showSaveChangesOnly(editingOriginal?.status);
 
   // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
   useEffect(() => {
