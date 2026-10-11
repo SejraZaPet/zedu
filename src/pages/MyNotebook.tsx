@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import NotebookCanvas from "@/components/notebook/NotebookCanvas";
 import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
+import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
+import { worksheetLinkHref } from "@/lib/worksheet-notebook";
+import { Link } from "react-router-dom";
 import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
   NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
@@ -33,6 +36,7 @@ export default function MyNotebook() {
   const lessonTitle = params.get("nazev");
   const subjectParam = params.get("predmet");
   const openId = params.get("otevrit");
+  const openPageId = params.get("strana");
 
 
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -73,12 +77,16 @@ export default function MyNotebook() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const openNotebook = useCallback(async (nb: Notebook) => {
+  const openNotebook = useCallback(async (nb: Notebook, pageId?: string | null) => {
     setOpen(nb);
     setActiveIndex(0);
     try {
       const p = await loadPages(nb.id);
       setPages(p);
+      if (pageId) {
+        const idx = p.findIndex((x) => x.id === pageId);
+        if (idx >= 0) setActiveIndex(idx);
+      }
     } catch (e: any) {
       toast.error(e.message || "Stránky se nepodařilo načíst.");
     }
@@ -188,8 +196,8 @@ export default function MyNotebook() {
     const found = notebooks.find((n) => n.id === openId);
     if (!found) return;
     handledOpenId.current = true;
-    openNotebook(found);
-  }, [user, openId, loading, notebooks, openNotebook]);
+    openNotebook(found, openPageId);
+  }, [user, openId, openPageId, loading, notebooks, openNotebook]);
 
 
   const activePage = pages[activeIndex] ?? null;
@@ -503,6 +511,14 @@ export default function MyNotebook() {
                   <Checkbox checked={includeToc} onCheckedChange={(v) => setIncludeToc(v === true)} />
                   Zahrnout obsah
                 </label>
+                <InsertWorksheetButton
+                  notebook={open}
+                  label="+ Vložit pracovní list"
+                  onInserted={(nbId, inserted) => {
+                    const nb = notebooks.find((n) => n.id === nbId) ?? open;
+                    openNotebook(nb, inserted[0]?.id ?? null);
+                  }}
+                />
                 {open.related_class_id && (
                   <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={insertClassNames}>
                     <Users className="h-4 w-4" /> Vložit jména žáků třídy
@@ -652,6 +668,22 @@ export default function MyNotebook() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {activePage?.content.worksheet?.mode === "digital" && (
+                  <Card>
+                    <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div>
+                        <p className="font-semibold">{activePage.content.worksheet.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Pracovní list digitálně{activePage.content.worksheet.assignmentId ? " · úkol, odevzdáš ho tam" : ""}. Odpovědi se ukládají u listu.
+                        </p>
+                      </div>
+                      <Button asChild className="h-11">
+                        <Link to={worksheetLinkHref(activePage.content.worksheet)}>Otevřít na A4</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {activePage && (
                   <NotebookCanvas
