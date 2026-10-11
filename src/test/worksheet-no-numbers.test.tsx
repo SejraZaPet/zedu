@@ -32,7 +32,7 @@ describe("pracovní list bez čísel úloh", () => {
     const { default: WorksheetPlayer } = await import("@/components/WorksheetPlayer");
     const { container } = render(
       <MemoryRouter>
-        <WorksheetPlayer spec={makeSpec()} variantId="A" {...({} as never)} />
+        <WorksheetPlayer {...({ spec: makeSpec(), variantId: "A" } as any)} />
       </MemoryRouter>,
     );
     const text = container.textContent ?? "";
