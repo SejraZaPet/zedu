@@ -45,7 +45,12 @@ describe("dbg", () => {
     console.log("MARK: after render");
     await new Promise((r) => setTimeout(r, 3000));
     console.log("MARK: after wait, body buttons:", document.querySelectorAll("button").length);
-    console.log("MARK: body text head:", document.body.textContent?.slice(0, 300));
+    const edit = screen.getAllByRole("button", { name: "Upravit" })[0];
+    console.log("MARK: found edit button");
+    fireEvent.click(edit);
+    console.log("MARK: clicked edit");
+    await new Promise((r) => setTimeout(r, 2000));
+    console.log("MARK: after edit wait, text:", document.body.textContent?.slice(0, 200));
     expect(true).toBe(true);
   });
 });
