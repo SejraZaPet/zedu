@@ -236,3 +236,34 @@ export async function fetchStudentClassTextbookLinks(
     return true;
   });
 }
+
+/** Zdroje, které znamenají přiřazení učebnice ke kurzu (ne zápis kódem ani umístění lekce). */
+const ASSIGNED_SOURCES = new Set<StudentTextbookLink["source"]>(["class", "class_subject", "schedule", "group"]);
+
+/**
+ * Globální učebnice, které se žákovi v seznamu nemají nabízet, protože stejný předmět
+ * (párováno jen přes `subject_id`) má přiřazenou učitelskou učebnici, kterou žák smí číst.
+ * Globální učebnice se skryje jen tehdy, když KAŽDÝ její odkaz má `subject_id` a ten je
+ * pokrytý — nespárovatelné odkazy nic neskrývají.
+ *
+ * @param teacherSubjectById učitelské učebnice, které žák smí číst → jejich `subject_id`
+ */
+export function globalTextbooksCoveredByTeacher(
+  links: StudentTextbookLink[],
+  teacherSubjectById: Map<string, string | null>,
+): Set<string> {
+  const covered = new Set<string>();
+  for (const l of links) {
+    if (l.textbook_type !== "teacher" || !ASSIGNED_SOURCES.has(l.source)) continue;
+    if (!teacherSubjectById.has(l.textbook_id)) continue; // bez oprávnění / smazaná
+    const subj = l.subject_id ?? teacherSubjectById.get(l.textbook_id) ?? null;
+    if (subj) covered.add(subj);
+  }
+  const byGlobal = new Map<string, boolean>();
+  for (const l of links) {
+    if (l.textbook_type !== "global") continue;
+    const ok = !!l.subject_id && covered.has(l.subject_id);
+    byGlobal.set(l.textbook_id, (byGlobal.get(l.textbook_id) ?? true) && ok);
+  }
+  return new Set([...byGlobal].filter(([, hide]) => hide).map(([id]) => id));
+}
