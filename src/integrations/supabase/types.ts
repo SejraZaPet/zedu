@@ -2547,6 +2547,21 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_rate: {
+        Row: {
+          id: number
+          next_slot: string
+        }
+        Insert: {
+          id?: number
+          next_slot?: string
+        }
+        Update: {
+          id?: number
+          next_slot?: string
+        }
+        Relationships: []
+      }
       export_jobs: {
         Row: {
           attempt: number
@@ -8792,6 +8807,10 @@ export type Database = {
       regenerate_school_registration_code: {
         Args: { _school_id: string }
         Returns: string
+      }
+      reserve_email_send_slot: {
+        Args: { _interval_ms?: number }
+        Returns: number
       }
       reserve_room_series: {
         Args: {
