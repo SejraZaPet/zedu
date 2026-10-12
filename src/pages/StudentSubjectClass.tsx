@@ -394,7 +394,12 @@ export default function StudentSubjectClass() {
   }, [slots]);
 
   const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
-  const upcomingLessons = occurrences.filter((e) => isUpcomingLesson(e, now)).slice(0, 15);
+  // Nadcházející hodiny: jen nejbližších 30 dní, ať přehled není zahlcený.
+  const upcomingLimit = new Date(now);
+  upcomingLimit.setDate(upcomingLimit.getDate() + 30);
+  const upcomingLessons = occurrences
+    .filter((e) => isUpcomingLesson(e, now) && e.start <= upcomingLimit)
+    .slice(0, 15);
 
   // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
   useEffect(() => {
