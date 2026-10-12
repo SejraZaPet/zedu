@@ -78,6 +78,8 @@ import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-stor
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import PlanWorksheetsSection from "@/components/lesson-plan/PlanWorksheetsSection";
+import { parsePlanWorksheetIds } from "@/lib/plan-worksheets";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
@@ -263,6 +265,7 @@ export default function TeacherLessonPlanEditor() {
       if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
       if (typeof (data as any).anonymous === "boolean") setAnonymous((data as any).anonymous);
       setMaterials(parseMaterials((data as any).materials));
+      setWorksheetIds(parsePlanWorksheetIds((data as any).worksheet_ids));
       setVisibleToStudents(Boolean((data as any).visible_to_students));
       setVisibleFrom(
         (data as any).visible_from ? String((data as any).visible_from).slice(0, 10) : "",
@@ -463,6 +466,7 @@ export default function TeacherLessonPlanEditor() {
   const [classId, setClassId] = useState<string>("");
   // Přílohy plánu a ruční zveřejnění žákům (výchozí vypnuto).
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  const [worksheetIds, setWorksheetIds] = useState<string[]>([]);
   const [visibleToStudents, setVisibleToStudents] = useState(false);
   // Zdroj propojené lekce uložený v DB (fallback, když ještě nejsou načtené lekce).
   const [dbLessonSource, setDbLessonSource] = useState<string | null>(null);
@@ -1110,6 +1114,7 @@ export default function TeacherLessonPlanEditor() {
         grade_band: "",
         slides: [],
         materials: materials as any,
+        worksheet_ids: worksheetIds,
         student_description: studentDescription.trim() || null,
         teacher_instructions: teacherInstructions.trim() || null,
         visible_to_students: visibleToStudents,
@@ -1929,6 +1934,13 @@ export default function TeacherLessonPlanEditor() {
               materials={materials}
               onChange={setMaterials}
               teacherId={user?.id ?? ""}
+            />
+            <PlanWorksheetsSection
+              teacherId={user?.id ?? ""}
+              value={worksheetIds}
+              onChange={setWorksheetIds}
+              subjectId={subjectId}
+              subject={subject}
             />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
               <div>
