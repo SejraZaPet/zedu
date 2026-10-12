@@ -179,11 +179,26 @@ export async function fetchStudentClassTextbookLinks(
       if (slugs.length > 0) {
         const { data: subjectRows } = await supabase
           .from("textbook_subjects")
-          .select("id, slug")
+          .select("id, slug, label")
           .in("slug", slugs);
         const idBySlug = new Map<string, string>(
           ((subjectRows as any[]) ?? []).map((s) => [s.slug, s.id]),
         );
+        // Skutečný předmět globální učebnice (podle názvu v katalogu `subjects`).
+        // Skupiny bývají technicky vedené pod jiným předmětem (např. „Administrativa“),
+        // takže předmět skupiny nelze použít pro párování s učitelskou učebnicí.
+        const labels = [...new Set(((subjectRows as any[]) ?? []).map((s) => s.label).filter(Boolean))];
+        const realSubjectBySlug = new Map<string, string>();
+        if (labels.length > 0) {
+          const { data: canon } = await supabase.from("subjects").select("id, name").in("name", labels);
+          const idByName = new Map<string, string>(
+            ((canon as any[]) ?? []).map((c) => [String(c.name).trim().toLowerCase(), c.id]),
+          );
+          for (const s of (subjectRows as any[]) ?? []) {
+            const id = idByName.get(String(s.label ?? "").trim().toLowerCase());
+            if (id) realSubjectBySlug.set(s.slug, id);
+          }
+        }
         for (const row of assignRows) {
           const slug = slugByTopic.get(row.topic_id);
           const textbookId = slug ? idBySlug.get(slug) : undefined;
@@ -192,9 +207,9 @@ export async function fetchStudentClassTextbookLinks(
             textbook_id: textbookId,
             textbook_type: "global",
             class_id: row.class_id ?? null,
-            subject_id: row.subject_group_id
-              ? subjectIdByGroup.get(row.subject_group_id) ?? null
-              : null,
+            subject_id:
+              realSubjectBySlug.get(slug!) ??
+              (row.subject_group_id ? subjectIdByGroup.get(row.subject_group_id) ?? null : null),
             source: "placement",
           });
         }
