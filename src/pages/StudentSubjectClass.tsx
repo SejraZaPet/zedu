@@ -317,9 +317,14 @@ export default function StudentSubjectClass() {
         // U skupiny bereme učebnici z rozvrhu, z propojení skupiny nebo ze samotné skupiny.
         const { data: gLinks } = await supabase
           .from("subject_group_textbooks" as any)
-          .select("textbook_id, textbook_type")
+          .select("textbook_id, textbook_type, subject_id")
           .eq("subject_group_id", groupId);
+        // Skupina může mít víc učebnic (každá pro jiný předmět) — vyber tu pro tento předmět.
         const gMatch =
+          ((gLinks as any[]) ?? []).find(
+            (l) => l.textbook_type === "teacher" && subjectIdKey && l.subject_id === subjectIdKey,
+          ) ??
+          ((gLinks as any[]) ?? []).find((l) => l.textbook_type === "teacher" && !l.subject_id) ??
           ((gLinks as any[]) ?? []).find((l) => l.textbook_type === "teacher") ??
           ((gLinks as any[]) ?? [])[0];
         const fallback =
