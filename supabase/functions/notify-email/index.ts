@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
+import { isTooOld } from "../_shared/email-delivery.ts";
 
 const APP_URL = "https://www.bezli.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -57,8 +58,12 @@ Deno.serve(async (req) => {
   if (!id) return json({ error: "notification_id required" }, 400);
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-  const { data: n } = await db.from("notifications").select("id, recipient_id, title, body, link").eq("id", id).maybeSingle();
+  const { data: n } = await db.from("notifications").select("id, recipient_id, title, body, link, created_at").eq("id", id).maybeSingle();
   if (!n) return json({ skipped: "not_found" });
+  if (isTooOld((n as any).created_at)) {
+    console.log("skipped: too_old", id);
+    return json({ skipped: "too_old" });
+  }
 
   const { data: p } = await db.from("profiles").select("email, email_notifications_enabled").eq("id", n.recipient_id).maybeSingle();
   if (!p?.email || (p as any).email_notifications_enabled === false) return json({ skipped: "disabled_or_no_email" });

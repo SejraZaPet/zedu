@@ -1,5 +1,6 @@
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendWithRetry, SEND_INTERVAL_MS } from "../_shared/email-delivery.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,13 +111,21 @@ Deno.serve(async (req) => {
     if (text) payload.text = text;
     if (replyTo) payload.reply_to = replyTo;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+    const res = await sendWithRetry({
+      reserveSlot: async () => {
+        const { data, error } = await db.rpc("reserve_email_send_slot", { _interval_ms: SEND_INTERVAL_MS });
+        if (error) throw error;
+        return Number(data ?? 0);
       },
-      body: JSON.stringify(payload),
+      doFetch: () =>
+        fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify(payload),
+        }),
     });
 
     const data = await res.json().catch(() => ({}));
