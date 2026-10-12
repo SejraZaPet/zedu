@@ -609,7 +609,12 @@ export default function TeacherSubjectClass() {
     toast({ title: "Uloženo" });
   };
 
-  const upcomingLessons = occurrences.filter((e) => isUpcomingLesson(e, now)).slice(0, 15);
+  // Nadcházející hodiny: jen nejbližších 30 dní, ať přehled není zahlcený.
+  const upcomingLimit = new Date(now);
+  upcomingLimit.setDate(upcomingLimit.getDate() + 30);
+  const upcomingLessons = occurrences
+    .filter((e) => isUpcomingLesson(e, now) && e.start <= upcomingLimit)
+    .slice(0, 15);
 
 
   const room = slots[0]?.room || "";
