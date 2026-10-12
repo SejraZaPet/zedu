@@ -363,7 +363,7 @@ const TeacherAssignments = () => {
       setFilterGroupMembers((groupMembersRes.data ?? []) as any);
       const ids = [...new Set([
         ...(slotsRes.data ?? []).map((slot: any) => slot.subject_id),
-        ...groups.map((group) => group.subject_id),
+        ...groups.flatMap((group) => group.subjectIds ?? [group.subject_id]),
         ...assignments.map((assignment) => assignment.subject_id).filter(Boolean),
       ])] as string[];
       const [{ data: linkedSubjects }, { data: ownedSubjects }] = await Promise.all([
@@ -375,7 +375,7 @@ const TeacherAssignments = () => {
         id: subject.id,
         name: subject.name,
         classIds: (slotsRes.data ?? []).filter((slot: any) => slot.subject_id === subject.id).map((slot: any) => slot.class_id),
-        groupIds: groups.filter((group) => group.subject_id === subject.id).map((group) => group.id),
+        groupIds: groups.filter((group) => (group.subjectIds ?? [group.subject_id]).includes(subject.id)).map((group) => group.id),
       })));
     })();
   }, [assignments, classes, groups, userId]);

@@ -9,6 +9,8 @@ export interface SubjectGroupOption {
   subjectName?: string | null;
   abbreviation?: string | null;
   color?: string | null;
+  /** Skutečné předměty skupiny (rozvrh + učebnice); prázdné → jen `subject_id`. */
+  subjectIds?: string[];
 }
 
 /**
@@ -46,6 +48,7 @@ export const useSubjectGroups = () => {
           subjectName: real.length ? real.map((r) => r.name).join(" / ") : g.subjects?.name ?? null,
           abbreviation: first ? first.abbreviation : g.subjects?.abbreviation ?? null,
           color: first ? first.color : g.subjects?.color ?? null,
+          subjectIds: real.length ? real.map((r) => r.id) : [g.subject_id],
         };
       });
     },
