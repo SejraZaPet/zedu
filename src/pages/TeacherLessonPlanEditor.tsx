@@ -80,6 +80,8 @@ import { savePhasePlan } from "@/lib/lesson-phase-plans";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import PlanWorksheetsSection from "@/components/lesson-plan/PlanWorksheetsSection";
 import { parsePlanWorksheetIds } from "@/lib/plan-worksheets";
+import PlanLinksPanel from "@/components/lesson-plan/PlanLinksPanel";
+import { loadPlanLinks, type PlanLinks } from "@/lib/plan-links";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
@@ -278,6 +280,15 @@ export default function TeacherLessonPlanEditor() {
       if ((data as any).lesson_source) setDbLessonSource((data as any).lesson_source);
     })();
   }, [user, id]);
+
+  const [planLinks, setPlanLinks] = useState<PlanLinks | null>(null);
+  const [planLinksTick, setPlanLinksTick] = useState(0);
+  useEffect(() => {
+    if (!user || !id || id === "novy" || !isViewMode) return;
+    let cancelled = false;
+    loadPlanLinks([id]).then((m) => { if (!cancelled) setPlanLinks(m[id] ?? null); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, id, isViewMode, planLinksTick]);
 
   const [dbSlots, setDbSlots] = useState<any[]>([]);
   useEffect(() => {
@@ -1274,6 +1285,8 @@ export default function TeacherLessonPlanEditor() {
               <AssignmentMaterialsList materials={materials} title="Přílohy k hodině" />
             )}
           </div>
+
+          <PlanLinksPanel links={planLinks} onChanged={() => setPlanLinksTick((t) => t + 1)} />
 
           <div className="space-y-4">
             {PHASES.map((p) => {

@@ -76,6 +76,8 @@ import {
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
+import { PlanLinkIcons } from "@/components/lesson-plan/PlanLinksPanel";
+import { loadPlanLinks, type PlanLinks } from "@/lib/plan-links";
 import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
 import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 
@@ -719,6 +721,14 @@ export default function TeacherSubjectClass() {
         setLessonSheets(byLesson);
       } else setLessonSheets({});
     })();
+    return () => { cancelled = true; };
+  }, [shownPlanIdsKey]);
+  const [rowLinks, setRowLinks] = useState<Record<string, PlanLinks>>({});
+  useEffect(() => {
+    const ids = shownPlanIdsKey ? shownPlanIdsKey.split(",") : [];
+    if (!ids.length) { setRowLinks({}); return; }
+    let cancelled = false;
+    loadPlanLinks(ids).then((m) => { if (!cancelled) setRowLinks(m); }).catch(() => {});
     return () => { cancelled = true; };
   }, [shownPlanIdsKey]);
   function rowBadges(dateKey: string, planId?: string) {
@@ -1426,6 +1436,7 @@ export default function TeacherSubjectClass() {
                                 ) : null}
                               </Button>
 
+                              {planForDate && <PlanLinkIcons links={rowLinks[planForDate.id]} />}
                               {planForDate && (
                                 <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}>
                                   <FileText className="h-3.5 w-3.5 mr-1" />
@@ -1524,6 +1535,8 @@ export default function TeacherSubjectClass() {
                               ) : null}
                             </div>
                             {planForDate ? (
+                              <div className="flex items-center gap-1">
+                              <PlanLinkIcons links={rowLinks[planForDate.id]} />
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -1532,6 +1545,7 @@ export default function TeacherSubjectClass() {
                                 <FileText className="h-3.5 w-3.5 mr-1" />
                                 Otevřít
                               </Button>
+                              </div>
                             ) : (
                               <div className="flex gap-1">
                                 <Button
