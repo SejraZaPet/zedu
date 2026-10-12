@@ -100,3 +100,8 @@
 - [x] Přepracovat statistiku na první pokus vs. nejlepší výsledek.
 - [x] Přidat souhrnný panel na Výsledky respektující filtry.
 - [x] Ověřit testy, sestavení a chování XP triggeru.
+
+## Krátké seznamy hodin (2026-10-12)
+- [ ] Zobrazit pět hodin a nezávislé rozbalení s rolováním na obou stránkách.
+- [ ] Zachovat měsíční rozsah a dávkové načítání jen viditelných plánů.
+- [ ] Ověřit cílené testy a přehled v prohlížeči.
