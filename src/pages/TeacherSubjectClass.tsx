@@ -76,6 +76,8 @@ import {
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
+import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
+import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 
 interface LessonTopicRow {
   id: string;
@@ -169,6 +171,8 @@ interface AssignmentRow {
   status: string;
   deadline: string | null;
   created_at: string;
+  lesson_id?: string | null;
+  worksheet_id?: string | null;
 }
 
 interface AttemptRow {
@@ -275,7 +279,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at")
+        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id")
         .eq("teacher_id", user.id);
       if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
       else assignQuery = assignQuery.eq("class_id", classId);
@@ -603,7 +607,8 @@ export default function TeacherSubjectClass() {
     toast({ title: "Uloženo" });
   };
 
-  const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
+  const upcomingLessons = occurrences.filter((e) => isUpcomingLesson(e, now)).slice(0, 15);
+
 
   const room = slots[0]?.room || "";
 
@@ -667,6 +672,64 @@ export default function TeacherSubjectClass() {
             : s.classId === classId || (!s.classId && !s.groupId)) &&
           (!s.subject || s.subject.trim().toLowerCase() === subjectKey),
       );
+    });
+  }
+
+  // ---- Ikonky u řádků (přílohy, listy, úkol): jeden dotaz na všechny zobrazené plány ----
+  const [planExtras, setPlanExtras] = useState<
+    Record<string, { worksheetIds: string[]; materials: number; lessonId: string | null }>
+  >({});
+  const [lessonSheets, setLessonSheets] = useState<Record<string, string[]>>({});
+  const shownPlanIdsKey = [...pastLessons, ...upcomingLessons]
+    .map((e) => findPlanForDate(format(e.start, "yyyy-MM-dd"))?.id)
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .sort()
+    .join(",");
+  useEffect(() => {
+    const ids = shownPlanIdsKey ? shownPlanIdsKey.split(",") : [];
+    if (!ids.length) { setPlanExtras({}); setLessonSheets({}); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("lesson_plans")
+        .select("id, worksheet_ids, materials, lesson_ref_id")
+        .in("id", ids);
+      if (cancelled) return;
+      const map: Record<string, { worksheetIds: string[]; materials: number; lessonId: string | null }> = {};
+      const lessonIds = new Set<string>();
+      for (const r of (data as any[]) ?? []) {
+        map[r.id] = {
+          worksheetIds: Array.isArray(r.worksheet_ids) ? r.worksheet_ids : [],
+          materials: Array.isArray(r.materials) ? r.materials.length : 0,
+          lessonId: r.lesson_ref_id ?? null,
+        };
+        if (r.lesson_ref_id) lessonIds.add(r.lesson_ref_id);
+      }
+      setPlanExtras(map);
+      if (lessonIds.size) {
+        const { data: sheets } = await supabase
+          .from("worksheets")
+          .select("id, source_lesson_id")
+          .eq("status", "published")
+          .in("source_lesson_id", [...lessonIds]);
+        if (cancelled) return;
+        const byLesson: Record<string, string[]> = {};
+        for (const w of (sheets as any[]) ?? []) (byLesson[w.source_lesson_id] ??= []).push(w.id);
+        setLessonSheets(byLesson);
+      } else setLessonSheets({});
+    })();
+    return () => { cancelled = true; };
+  }, [shownPlanIdsKey]);
+  function rowBadges(dateKey: string, planId?: string) {
+    const extra = planId ? planExtras[planId] : undefined;
+    return computeRowBadges({
+      topicMaterials: lessonTopics[dateKey]?.materials?.length ?? 0,
+      planMaterials: extra?.materials ?? 0,
+      planWorksheetIds: extra?.worksheetIds,
+      lessonWorksheetIds: extra?.lessonId ? lessonSheets[extra.lessonId] : [],
+      lessonId: extra?.lessonId,
+      assignments,
     });
   }
 
@@ -1268,7 +1331,7 @@ export default function TeacherSubjectClass() {
           <TabsContent value="stream" className="mt-4 space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Past */}
-              <section>
+              <section className="order-2" data-testid="section-past">
                 <h2 className="font-semibold mb-3 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                   Co jsme probrali
@@ -1286,11 +1349,12 @@ export default function TeacherSubjectClass() {
                       const editingTopic = topicEditDate === dateKey;
 
                       return (
-                        <Card key={e.id} className="p-3">
+                        <Card key={e.id} className="p-3" data-testid="lesson-row">
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {dateStr} · {formatTime(e.start)}
+                              <div className="text-sm font-medium truncate flex items-center gap-2">
+                                <span className="truncate">{dateStr} · {formatTime(e.start)}</span>
+                                <LessonRowBadges badges={rowBadges(dateKey, planForDate?.id)} />
                               </div>
                               {planForDate ? (
                                 <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
@@ -1406,7 +1470,7 @@ export default function TeacherSubjectClass() {
               </section>
 
               {/* Upcoming */}
-              <section>
+              <section className="order-1" data-testid="section-upcoming">
                 <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                   <h2 className="font-semibold flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1431,11 +1495,20 @@ export default function TeacherSubjectClass() {
                       const dateKey = format(e.start, "yyyy-MM-dd");
                       const planForDate = findPlanForDate(dateKey);
                       return (
-                        <Card key={e.id} className="p-3">
+                        <Card
+                          key={e.id}
+                          className={`p-3 ${isTodayLesson(e, now) ? TODAY_ROW_CLASS : ""}`}
+                          data-testid="lesson-row"
+                          data-today={isTodayLesson(e, now) ? "true" : undefined}
+                        >
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                              <div className="text-sm font-medium truncate flex items-center gap-2">
+                                <span className="truncate">
+                                  {isTodayLesson(e, now) ? "Dnes · " : ""}
+                                  {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                                </span>
+                                <LessonRowBadges badges={rowBadges(dateKey, planForDate?.id)} />
                               </div>
                               {planForDate ? (
                                 <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
