@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
+import { LessonListDisclosure, useLessonListDisclosure } from "@/components/lesson/LessonListDisclosure";
 import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
 import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
@@ -393,13 +394,15 @@ export default function StudentSubjectClass() {
     return events.sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [slots]);
 
-  const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
+  const pastLessons = occurrences.filter((e) => e.end < now).reverse().slice(0, 200);
+  const pastList = useLessonListDisclosure(pastLessons);
   // Nadcházející hodiny: jen nejbližších 30 dní, ať přehled není zahlcený.
   const upcomingLimit = new Date(now);
   upcomingLimit.setDate(upcomingLimit.getDate() + 30);
   const upcomingLessons = occurrences
     .filter((e) => isUpcomingLesson(e, now) && e.start <= upcomingLimit)
-    .slice(0, 15);
+    .slice(0, 200);
+  const upcomingList = useLessonListDisclosure(upcomingLessons);
 
   // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
   useEffect(() => {
@@ -633,8 +636,8 @@ export default function StudentSubjectClass() {
                 Zatím žádné proběhnuté hodiny.
               </p>
             ) : (
-              <div className="space-y-2">
-                {pastLessons.map((e) => {
+              <div className={pastList.className}>
+                {pastList.visible.map((e) => {
                   const dateKey = format(e.start, "yyyy-MM-dd");
                   const topicRow = lessonTopics[dateKey];
                   const slotPlans = plansBySlot[`${dateKey}|${format(e.start, "HH:mm")}`] ?? [];
@@ -689,6 +692,7 @@ export default function StudentSubjectClass() {
 
               </div>
             )}
+                <LessonListDisclosure {...pastList} />
           </TabsContent>
 
           {/* UPCOMING */}
@@ -702,8 +706,8 @@ export default function StudentSubjectClass() {
                 Žádné nadcházející hodiny.
               </p>
             ) : (
-              <div className="space-y-2">
-                {upcomingLessons.map((e) => {
+              <div className={upcomingList.className}>
+                {upcomingList.visible.map((e) => {
                   const slotPlans =
                     plansBySlot[`${format(e.start, "yyyy-MM-dd")}|${format(e.start, "HH:mm")}`] ??
                     [];
@@ -769,6 +773,7 @@ export default function StudentSubjectClass() {
                 )}
               </div>
             )}
+                <LessonListDisclosure {...upcomingList} />
             {user && unpairedPlans.length > 0 && upcomingLessons.length === 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-semibold mb-2">Plány bez termínu v rozvrhu</h3>

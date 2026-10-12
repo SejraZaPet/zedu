@@ -78,6 +78,7 @@ import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { PlanLinkIcons } from "@/components/lesson-plan/PlanLinksPanel";
 import { loadPlanLinks, type PlanLinks } from "@/lib/plan-links";
+import { LessonListDisclosure, useLessonListDisclosure } from "@/components/lesson/LessonListDisclosure";
 import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
 import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 
@@ -500,11 +501,12 @@ export default function TeacherSubjectClass() {
     return events.sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [slots]);
 
-  const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
+  const pastLessons = occurrences.filter((e) => e.end < now).reverse().slice(0, 200);
+  const pastList = useLessonListDisclosure(pastLessons);
 
   useEffect(() => {
     if (!user || !classId) return;
-    const dates = pastLessons.map((e) => format(e.start, "yyyy-MM-dd"));
+    const dates = pastList.visible.map((e) => format(e.start, "yyyy-MM-dd"));
     if (!dates.length) return;
     const fromDate = dates.reduce((a, b) => (a < b ? a : b));
     const toDate = dates.reduce((a, b) => (a > b ? a : b));
@@ -522,7 +524,7 @@ export default function TeacherSubjectClass() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, classId, pastLessons.length, reflectionVersion]);
+  }, [user, classId, pastList.visible.length, reflectionVersion]);
 
   // ---- Témata hodin („Co jsme probrali“) ----
   useEffect(() => {
@@ -614,7 +616,8 @@ export default function TeacherSubjectClass() {
   upcomingLimit.setDate(upcomingLimit.getDate() + 30);
   const upcomingLessons = occurrences
     .filter((e) => isUpcomingLesson(e, now) && e.start <= upcomingLimit)
-    .slice(0, 15);
+    .slice(0, 200);
+  const upcomingList = useLessonListDisclosure(upcomingLessons);
 
 
   const room = slots[0]?.room || "";
@@ -687,7 +690,7 @@ export default function TeacherSubjectClass() {
     Record<string, { worksheetIds: string[]; materials: number; lessonId: string | null }>
   >({});
   const [lessonSheets, setLessonSheets] = useState<Record<string, string[]>>({});
-  const shownPlanIdsKey = [...pastLessons, ...upcomingLessons]
+  const shownPlanIdsKey = [...pastList.visible, ...upcomingList.visible]
     .map((e) => findPlanForDate(format(e.start, "yyyy-MM-dd"))?.id)
     .filter(Boolean)
     .filter((v, i, a) => a.indexOf(v) === i)
@@ -1354,8 +1357,8 @@ export default function TeacherSubjectClass() {
                 {pastLessons.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Zatím žádné proběhlé hodiny.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {pastLessons.map((e) => {
+                  <div className={pastList.className}>
+                    {pastList.visible.map((e) => {
                       const dateStr = format(e.start, "EEE d. M.", { locale: cs });
                       const dateKey = format(e.start, "yyyy-MM-dd");
                       const planForDate = findPlanForDate(dateKey);
@@ -1483,6 +1486,7 @@ export default function TeacherSubjectClass() {
                     })}
                   </div>
                 )}
+                <LessonListDisclosure {...pastList} />
               </section>
 
               {/* Upcoming */}
@@ -1506,8 +1510,8 @@ export default function TeacherSubjectClass() {
                 {upcomingLessons.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Žádné nadcházející hodiny.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {upcomingLessons.map((e) => {
+                  <div className={upcomingList.className}>
+                    {upcomingList.visible.map((e) => {
                       const dateKey = format(e.start, "yyyy-MM-dd");
                       const planForDate = findPlanForDate(dateKey);
                       return (
@@ -1577,6 +1581,7 @@ export default function TeacherSubjectClass() {
                     })}
                   </div>
                 )}
+                <LessonListDisclosure {...upcomingList} />
               </section>
             </div>
 
