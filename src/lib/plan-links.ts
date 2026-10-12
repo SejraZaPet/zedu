@@ -56,14 +56,20 @@ export async function loadPlanLinks(planIds: string[]): Promise<Record<string, P
       : Promise.resolve({ data: [] }),
     lessonIds.length ? supabase.from("textbook_lessons").select("id, title").in("id", lessonIds) : Promise.resolve({ data: [] }),
     lessonIds.length
-      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id, teacher_textbooks(title)").in("id", lessonIds)
+      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id").in("id", lessonIds)
       : Promise.resolve({ data: [] }),
   ]);
   const wsMap = new Map<string, any>();
   for (const w of [...((wsById as any).data ?? []), ...((wsByLesson as any).data ?? [])]) wsMap.set(w.id, w);
   const lessonMap = new Map<string, any>();
   for (const l of (gl as any).data ?? []) lessonMap.set(l.id, { ...l, source: "textbook_lessons" });
-  for (const l of (tl as any).data ?? []) lessonMap.set(l.id, { ...l, source: "teacher_textbook_lessons" });
+  const tbIds = [...new Set((((tl as any).data ?? []) as any[]).map((l) => l.textbook_id).filter(Boolean))];
+  const tbTitles = new Map<string, string>();
+  if (tbIds.length) {
+    const { data: tbs } = await supabase.from("teacher_textbooks").select("id, title").in("id", tbIds);
+    for (const t of (tbs as any[]) ?? []) tbTitles.set(t.id, t.title);
+  }
+  for (const l of (tl as any).data ?? []) lessonMap.set(l.id, { ...l, textbook: tbTitles.get(l.textbook_id) ?? null, source: "teacher_textbook_lessons" });
 
   for (const r of rows) {
     const links = emptyLinks();
@@ -71,7 +77,7 @@ export async function loadPlanLinks(planIds: string[]): Promise<Record<string, P
     if (l) {
       const source = r.lesson_source || l.source;
       links.lesson = {
-        id: l.id, title: l.title || "Lekce", textbook: l.teacher_textbooks?.title ?? null,
+        id: l.id, title: l.title || "Lekce", textbook: l.textbook ?? null,
         href: teacherLessonHref(l.id, source, l.textbook_id),
       };
     }
