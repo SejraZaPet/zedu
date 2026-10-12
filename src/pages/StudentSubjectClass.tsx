@@ -24,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
+import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
+import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
 
 
@@ -89,6 +91,8 @@ interface AssignmentRow {
   deadline: string | null;
   created_at: string;
   class_id: string | null;
+  lesson_id?: string | null;
+  worksheet_id?: string | null;
 }
 
 interface AttemptRow {
@@ -214,7 +218,7 @@ export default function StudentSubjectClass() {
 
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, class_id")
+        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, worksheet_id")
         .eq("status", "published");
       assignQuery = isGroup
         ? assignQuery.eq("group_id", groupId)
@@ -385,7 +389,7 @@ export default function StudentSubjectClass() {
   }, [slots]);
 
   const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
-  const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
+  const upcomingLessons = occurrences.filter((e) => isUpcomingLesson(e, now)).slice(0, 15);
 
   // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
   useEffect(() => {
@@ -624,13 +628,19 @@ export default function StudentSubjectClass() {
                   const dateKey = format(e.start, "yyyy-MM-dd");
                   const topicRow = lessonTopics[dateKey];
                   const slotPlans = plansBySlot[`${dateKey}|${format(e.start, "HH:mm")}`] ?? [];
+                  const badges = computeRowBadges({
+                    planMaterials: slotPlans.reduce((n, p) => n + (p.materials?.length ?? 0), 0),
+                    planWorksheetIds: slotPlans.flatMap((p) => p.worksheets.map((w) => w.id)),
+                    assignments,
+                  });
                   return (
-                  <Card key={e.id} className="p-3">
+                  <Card key={e.id} className="p-3" data-testid="lesson-row">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">
                           {format(e.start, "EEE d. M.", { locale: cs })} ·{" "}
-                          {formatTime(e.start)}
+                          {formatTime(e.start)}{" "}
+                          <LessonRowBadges badges={badges} />
                         </div>
                         {topicRow?.topic && (
                           <div className="text-xs text-muted-foreground truncate">
@@ -687,13 +697,28 @@ export default function StudentSubjectClass() {
                   const slotPlans =
                     plansBySlot[`${format(e.start, "yyyy-MM-dd")}|${format(e.start, "HH:mm")}`] ??
                     [];
+                  const dk = format(e.start, "yyyy-MM-dd");
+                  const today = isTodayLesson(e, now);
+                  const badges = computeRowBadges({
+                    topicMaterials: lessonTopics[dk]?.materials?.length ?? 0,
+                    planMaterials: slotPlans.reduce((n, p) => n + (p.materials?.length ?? 0), 0),
+                    planWorksheetIds: slotPlans.flatMap((p) => p.worksheets.map((w) => w.id)),
+                    assignments,
+                  });
                   return (
-                  <Card key={e.id} className="p-3">
+                  <Card
+                    key={e.id}
+                    className={`p-3 ${today ? TODAY_ROW_CLASS : ""}`}
+                    data-testid="lesson-row"
+                    data-today={today ? "true" : undefined}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">
                           {format(e.start, "EEE d. M.", { locale: cs })} ·{" "}
-                          {formatTime(e.start)} – {formatTime(e.end)}
+                          {today ? "Dnes · " : ""}
+                          {formatTime(e.start)} – {formatTime(e.end)}{" "}
+                          <LessonRowBadges badges={badges} />
                         </div>
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
