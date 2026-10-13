@@ -107,5 +107,5 @@
 - [x] Ověřit cílené testy a přehled v prohlížeči.
 
 ## Čistý text v náhledech popisů (2026-10-13)
-- [ ] Najít a opravit náhledy, které zobrazují HTML značky, bez změny uloženého obsahu.
-- [ ] Ověřit regresní testy, sestavení a kartu „NÁVOD PRO KÁMOŠE - ICT“ v přihlášeném preview.
+- [x] Najít a opravit náhledy úkolů na učitelské i žákovské stránce předmětu bez změny uloženého obsahu.
+- [x] Ověřit regresní testy, sestavení a kartu „NÁVOD PRO KÁMOŠE - ICT“ v přihlášeném preview na počítači i mobilu.
