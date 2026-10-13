@@ -111,5 +111,5 @@
 - [x] Ověřit regresní testy, sestavení a kartu „NÁVOD PRO KÁMOŠE - ICT“ v přihlášeném preview na počítači i mobilu.
 
 ## Zalamování otázek v editoru pracovních listů (2026-10-13)
-- [ ] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
-- [ ] Ověřit regresní testy, sestavení a dlouhou otázku v přihlášeném preview.
+- [x] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
+- [x] Ověřit šest regresních testů, sestavení a dlouhou otevřenou otázku v přihlášeném preview (Manipulativní techniky v médiích; znění o zapékání není v dostupných listech).
