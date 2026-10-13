@@ -18,7 +18,7 @@ const entries: ActivityProgressEntry[] = [
 const allDone: ActivityProgressEntry[] = [
   {
     activity: { index: 1, title: "Kvíz", activityType: "quiz", required: true },
-    best: { score: 8, max_score: 8, completed_at: "2026-10-13T08:00:00Z" },
+    best: { score: 8, maxScore: 8, completedAt: "2026-10-13T08:00:00Z" },
   },
 ];
 
@@ -58,8 +58,8 @@ describe("LessonActivityChecklist (učitelská karta)", () => {
       { index: 2, title: "Bonus", activityType: "quiz", required: false },
     ];
     const best = new Map([
-      [1, { score: 8, max_score: 8, completed_at: "2026-10-13T08:00:00Z" }],
-      [2, { score: 4, max_score: 4, completed_at: "2026-10-13T08:05:00Z" }],
+      [1, { score: 8, maxScore: 8, completedAt: "2026-10-13T08:00:00Z" }],
+      [2, { score: 4, maxScore: 4, completedAt: "2026-10-13T08:05:00Z" }],
     ]);
     const p = computeLessonActivityProgress(acts, best);
     expect(p.total).toBe(1);
