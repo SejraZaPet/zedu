@@ -45,9 +45,14 @@ export const sanitizeAssignmentDescription = (value: string) => {
 
 /** Čistý text pro hlasové čtení, náhledy a AI kontext. */
 export const assignmentDescriptionToText = (value: string) => {
-  const clean = sanitizeAssignmentDescription(value)
+  // Náhled zachová hranice nadpisů, seznamů a dalších bloků i z bohatších editorů.
+  // Povolené formátování plného zadání se tím nemění.
+  const clean = DOMPurify.sanitize(assignmentDescriptionToEditorHtml(value), {
+    ALLOWED_TAGS: [...ALLOWED_TAGS, "h1", "h2", "h3", "h4", "h5", "h6", "div", "ul", "ol", "li", "blockquote"],
+    ALLOWED_ATTR: [],
+  })
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n");
+    .replace(/<\/(?:p|h[1-6]|div|li|ul|ol|blockquote)>/gi, "\n");
   const container = document.createElement("div");
   container.innerHTML = clean;
   return (container.textContent ?? "").replace(/\n{3,}/g, "\n\n").trim();
