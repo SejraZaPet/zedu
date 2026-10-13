@@ -109,3 +109,7 @@
 ## Čistý text v náhledech popisů (2026-10-13)
 - [x] Najít a opravit náhledy úkolů na učitelské i žákovské stránce předmětu bez změny uloženého obsahu.
 - [x] Ověřit regresní testy, sestavení a kartu „NÁVOD PRO KÁMOŠE - ICT“ v přihlášeném preview na počítači i mobilu.
+
+## Zalamování otázek v editoru pracovních listů (2026-10-13)
+- [ ] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
+- [ ] Ověřit regresní testy, sestavení a dlouhou otázku v přihlášeném preview.
