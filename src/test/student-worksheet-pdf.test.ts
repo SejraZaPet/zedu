@@ -2,8 +2,21 @@ import { describe, it, expect } from "vitest";
 import { WORKSHEET_SPEC_EXAMPLE } from "@/lib/worksheet-spec";
 import { buildStudentWorksheetHtml, toStudentPrintSpec } from "@/lib/worksheet-pdf-export";
 import { scoreWorksheet } from "@/components/WorksheetPlayer";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 
 describe("žákovské PDF", () => {
+  it("QR zůstává vedle názvu v záhlaví a používá kompaktní popisek", async () => {
+    const spec = emptyWorksheetSpec({ title: "Skopové maso" });
+    const html = await buildStudentWorksheetHtml(spec, "ws1");
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const header = doc.querySelector(".ws-header-top");
+    expect(header?.querySelector(":scope > .ws-qr-wrap")).not.toBeNull();
+    expect(header?.querySelector(".ws-title-block .ws-qr-wrap")).toBeNull();
+    expect(header?.querySelector(".ws-qr-label")?.textContent).toContain("Pokračuj online");
+    expect(doc.querySelector(".ws-fields-strip")?.closest(".ws-header")).not.toBeNull();
+    expect(html).toContain("await document.fonts.ready");
+  });
+
   it("neobsahuje klíč odpovědí ani vysvětlení", async () => {
     const spec = { ...WORKSHEET_SPEC_EXAMPLE, renderConfig: { ...WORKSHEET_SPEC_EXAMPLE.renderConfig, includeAnswerKey: true } };
     const html = await buildStudentWorksheetHtml(spec, "ws1");
