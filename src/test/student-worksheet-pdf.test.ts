@@ -15,6 +15,8 @@ describe("žákovské PDF", () => {
     expect(header?.querySelector(".ws-qr-label")?.textContent).toContain("Pokračuj online");
     expect(doc.querySelector(".ws-fields-strip")?.closest(".ws-header")).not.toBeNull();
     expect(html).toContain("await document.fonts.ready");
+    expect(html).toContain("item.getBoundingClientRect().bottom");
+    expect(html).not.toContain("current.content.scrollHeight >");
   });
 
   it("neobsahuje klíč odpovědí ani vysvětlení", async () => {

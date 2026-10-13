@@ -107,7 +107,10 @@ window.addEventListener("load", async function () {
   var current = { page: sourcePage, content: sourceContent, list: sourceItems };
   items.forEach(function (item) {
     current.list.appendChild(item);
-    if (current.content.scrollHeight > pageHeight + 1 && current.list.children.length > 1) {
+    // scrollHeight zahrnuje i dolní margin posledního bloku, který na konci
+    // stránky není obsah. Měřit skutečný spodní okraj, ne rezervu za ním.
+    var usedHeight = item.getBoundingClientRect().bottom - current.content.getBoundingClientRect().top;
+    if (usedHeight > pageHeight + 1 && current.list.children.length > 1) {
       current.list.removeChild(item);
       current = makePage(current.page);
       current.list.appendChild(item);
