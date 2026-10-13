@@ -68,7 +68,7 @@ async function buildPrintHtml(
   const qrBlock = `
 <div class="ws-qr-wrap">
   <img src="${qrDataUrl}" alt="QR online verze" />
-  <div>Pokračuj online →<br/>bezli.cz</div>
+  <div class="ws-qr-label">Pokračuj online →<br/>bezli.cz</div>
 </div>`;
 
   // Explicitní místo mimo title-block: regex přes vnořené divy vkládal QR
