@@ -28,6 +28,7 @@ import { LessonListDisclosure, useLessonListDisclosure } from "@/components/less
 import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
 import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
+import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 
 import SiteHeader from "@/components/SiteHeader";
@@ -816,7 +817,7 @@ export default function StudentSubjectClass() {
                           </div>
                           {a.description && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {a.description}
+                              {assignmentDescriptionToText(a.description)}
                             </p>
                           )}
                           <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-3">
