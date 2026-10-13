@@ -7,7 +7,7 @@ import { computeLessonActivityProgress } from "@/lib/lesson-activity-progress";
 const entries: ActivityProgressEntry[] = [
   {
     activity: { index: 1, title: "Kvíz", activityType: "quiz", required: true },
-    best: { score: 8, max_score: 8, completed_at: "2026-10-13T08:00:00Z" },
+    best: { score: 8, maxScore: 8, completedAt: "2026-10-13T08:00:00Z" },
   },
   {
     activity: { index: 2, title: "Pexeso", activityType: "matching", required: true },
