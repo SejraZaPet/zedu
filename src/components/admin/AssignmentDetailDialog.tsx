@@ -30,7 +30,7 @@ import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterial
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
-import { BookOpen, BarChart3 } from "lucide-react";
+import { BookOpen, BarChart3, Check } from "lucide-react";
 import { fetchLessonActivities } from "@/lib/lesson-activity-index";
 import {
   bestResultsByActivity,
