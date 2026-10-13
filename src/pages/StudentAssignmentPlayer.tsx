@@ -726,7 +726,7 @@ const StudentAssignmentPlayer = () => {
               </h2>
               {lessonActivityProgress.completedAvgPct !== null && (
                 <p className="text-xs text-muted-foreground">
-                  Průměr hotových aktivit: {lessonActivityProgress.completedAvgPct} %
+                  Průměrné skóre hotových aktivit: {lessonActivityProgress.completedAvgPct} %
                 </p>
               )}
               <LessonActivityChecklist
