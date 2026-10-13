@@ -113,3 +113,7 @@
 ## Zalamování otázek v editoru pracovních listů (2026-10-13)
 - [x] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
 - [x] Ověřit šest regresních testů, sestavení a dlouhou otevřenou otázku v přihlášeném preview (Manipulativní techniky v médiích; znění o zapékání není v dostupných listech).
+
+## První strana tisku pracovního listu (2026-10-13)
+- [ ] Opravit příčinu nadbytečného zalomení bez změny obsahu listu.
+- [ ] Ověřit regresní testy a vizuálně skutečné PDF listu Skopové maso.

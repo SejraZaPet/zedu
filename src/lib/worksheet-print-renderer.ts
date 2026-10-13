@@ -771,6 +771,7 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
       ${subtitle}
     </div>
     ${qrBlock}
+    <!--ws-header-qr-->
   </div>
   ${fields.length ? `<div class="ws-fields-strip">${fields.join("")}</div>` : ""}
   ${h.instructions ? `<div class="ws-instructions">${esc(h.instructions)}</div>` : ""}
