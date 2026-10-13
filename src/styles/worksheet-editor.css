@@ -99,7 +99,7 @@
 
 .worksheet-paper-prompt {
   display: grid;
-  grid-template-columns: 18pt minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0;
   margin-bottom: 6pt;
   padding-bottom: 4pt;
@@ -107,6 +107,13 @@
   font-size: 12pt;
   font-weight: 600;
   line-height: 1.4;
+}
+
+.worksheet-paper-prompt > :first-child {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .worksheet-paper-number {
