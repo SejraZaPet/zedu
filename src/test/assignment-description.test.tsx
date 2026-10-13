@@ -32,4 +32,17 @@ describe("formátovaný popis úkolu", () => {
     expect(clean).not.toContain("onerror");
     expect(assignmentDescriptionToText(unsafe)).toBe("Ahoj žáku");
   });
+
+  it("zobrazí náhled NÁVOD PRO KÁMOŠE bez značek a oddělí nadpis od odstavce", () => {
+    const description = '<h1><span style="color: rgb(147, 51, 234);">NÁVOD PRO KÁMOŠE</span></h1><p>Představ si, že vytvoříš <strong>návod ve Wordu</strong>.</p>';
+    const preview = assignmentDescriptionToText(description);
+    render(<p className="line-clamp-2">{preview}</p>);
+    expect(preview).toBe("NÁVOD PRO KÁMOŠE\nPředstav si, že vytvoříš návod ve Wordu.");
+    expect(screen.getByText(/NÁVOD PRO KÁMOŠE/)).not.toHaveTextContent(/<h1>|<span|style=|<p>/);
+  });
+
+  it("převede seznam a entity na čitelný text bez spojených položek", () => {
+    expect(assignmentDescriptionToText('<ul><li>Soubor &amp; obrázek</li><li>Odevzdání</li></ul>'))
+      .toBe("Soubor & obrázek\nOdevzdání");
+  });
 });
