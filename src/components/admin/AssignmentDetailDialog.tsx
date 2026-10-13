@@ -570,20 +570,24 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                             </span>
                           )}
                           {s.lessonProgress && (
-                             <Badge
-                               variant="outline"
-                               className={cn(
-                                 "text-[10px]",
-                                 s.lessonProgress.done === 0
-                                   ? "bg-muted text-muted-foreground"
-                                   : s.lessonProgress.total > 0 && s.lessonProgress.done >= s.lessonProgress.total
-                                     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
-                                     : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-                               )}
-                               title={`${s.lessonProgress.completionPct} % je skóre z povinných aktivit, nehotové se počítají jako 0 %.`}
-                             >
-                              <BookOpen className="mr-1 h-3 w-3" />
-                               Lekce {s.lessonProgress.done}/{s.lessonProgress.total} hotovo · {s.lessonProgress.completionPct} %
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                s.lessonProgress.done === 0
+                                  ? "bg-muted text-muted-foreground"
+                                  : s.lessonProgress.total > 0 && s.lessonProgress.done >= s.lessonProgress.total
+                                       ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+                                       : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+                              )}
+                              title={`${s.lessonProgress.completionPct} % je skóre z povinných aktivit, nehotové se počítají jako 0 %.`}
+                            >
+                              {s.lessonProgress.total > 0 && s.lessonProgress.done >= s.lessonProgress.total ? (
+                                <Check className="mr-1 h-3 w-3" aria-hidden="true" />
+                              ) : (
+                                <BookOpen className="mr-1 h-3 w-3" aria-hidden="true" />
+                              )}
+                              Povinné aktivity {s.lessonProgress.done}/{s.lessonProgress.total} · {s.lessonProgress.completionPct} %
                             </Badge>
                           )}
                           {s.bestScore !== null && (
@@ -614,7 +618,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                           <div className="space-y-3 border-t border-border p-3">
                              {s.lessonProgress?.completedAvgPct !== null && s.lessonProgress?.completedAvgPct !== undefined && (
                                <p className="text-xs text-muted-foreground">
-                                 Průměr hotových aktivit: {s.lessonProgress.completedAvgPct} %
+                                 Průměrné skóre hotových aktivit: {s.lessonProgress.completedAvgPct} %
                                </p>
                              )}
                             {s.activityProgress && s.activityProgress.required.length > 0 && (
@@ -625,7 +629,12 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                             )}
                             {s.activityProgress && s.activityProgress.other.length > 0 && (
                               <div className="space-y-1">
-                                <p className="text-xs font-medium text-foreground">Další aktivity</p>
+                                <p className="text-xs font-medium text-foreground">
+                                  Další aktivity{" "}
+                                  <span className="font-normal text-muted-foreground">
+                                    · nepovinné, do postupu se nepočítají
+                                  </span>
+                                </p>
                                 <LessonActivityChecklist entries={s.activityProgress.other} teacher />
                               </div>
                             )}
