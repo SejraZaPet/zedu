@@ -68,20 +68,19 @@ async function buildPrintHtml(
   const qrBlock = `
 <div class="ws-qr-wrap">
   <img src="${qrDataUrl}" alt="QR online verze" />
-  <div>Pokračuj online →<br/>bezli.cz</div>
+  <div class="ws-qr-label">Pokračuj online →<br/>bezli.cz</div>
 </div>`;
 
-  // Vlož QR do header-top (před uzavírací </div> ws-header-top)
-  const htmlWithQr = baseHtml.replace(
-    /<div class="ws-header-top">([\s\S]*?)<\/div>\s*(?=\s*(?:<div class="ws-fields-strip"|<div class="ws-instructions"|<\/div>))/,
-    (_m, inner) =>
-      `<div class="ws-header-top">${inner}${qrBlock}</div>\n  `,
-  );
+  // Explicitní místo mimo title-block: regex přes vnořené divy vkládal QR
+  // dovnitř názvu, rozbíjel tabulkové záhlaví a nadhodnocoval jeho výšku.
+  const htmlWithQr = baseHtml.replace("<!--ws-header-qr-->", qrBlock);
 
   if (!preview) return htmlWithQr;
 
   const previewScript = `<script>
-window.addEventListener("load", function () {
+window.addEventListener("load", async function () {
+  // Rozdělovat až po finálních rozměrech obrázků a písma.
+  await document.fonts.ready;
   var sourcePage = document.querySelector(".ws-page");
   var sourceContent = sourcePage && sourcePage.querySelector(":scope > .ws-content");
   var sourceItems = sourceContent && sourceContent.querySelector(":scope > .ws-items");
@@ -108,7 +107,10 @@ window.addEventListener("load", function () {
   var current = { page: sourcePage, content: sourceContent, list: sourceItems };
   items.forEach(function (item) {
     current.list.appendChild(item);
-    if (current.content.scrollHeight > pageHeight + 1 && current.list.children.length > 1) {
+    // scrollHeight zahrnuje i dolní margin posledního bloku, který na konci
+    // stránky není obsah. Měřit skutečný spodní okraj, ne rezervu za ním.
+    var usedHeight = item.getBoundingClientRect().bottom - current.content.getBoundingClientRect().top;
+    if (usedHeight > pageHeight + 1 && current.list.children.length > 1) {
       current.list.removeChild(item);
       current = makePage(current.page);
       current.list.appendChild(item);

@@ -113,3 +113,7 @@
 ## Zalamování otázek v editoru pracovních listů (2026-10-13)
 - [x] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
 - [x] Ověřit šest regresních testů, sestavení a dlouhou otevřenou otázku v přihlášeném preview (Manipulativní techniky v médiích; znění o zapékání není v dostupných listech).
+
+## První strana tisku pracovního listu (2026-10-13)
+- [x] Opravit vložení QR do záhlaví a měření skutečné výšky bloků bez změny obsahu listu.
+- [x] Ověřit sedm regresních testů, sestavení a všechny čtyři strany PDF: ovce i „Použití a dělení dle jakosti“ jsou na první straně. Původní téměř prázdná strana se v aktuálních datech nereprodukovala; před opravou byl obrázek na druhé straně.
