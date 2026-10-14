@@ -14,12 +14,13 @@ import { qrSvgDataUrl } from "@/lib/qr-inline";
 import { seededShuffleNonIdentity } from "@/lib/shuffle";
 import type {
   WorksheetSpec,
+  PrintDensity,
   WorksheetVariant,
   WorksheetItem,
   AnswerKeyEntry,
   AnswerSpace,
 } from "./worksheet-spec";
-import { getWriteLineCount } from "./worksheet-write-lines";
+import { getWriteLineCount, getWriteLineHeightMm, WRITE_LINE_HEIGHT_MM, answerSpaceHeightMm, answerSpaceLineCount, getBlankBoxHeightMm, blankBoxBackgroundCss } from "./worksheet-write-lines";
 
 
 /**
