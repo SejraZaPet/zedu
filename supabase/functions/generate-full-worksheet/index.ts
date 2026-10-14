@@ -499,17 +499,18 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "openai/gpt-6-astra",
           messages: [
             { role: "system", content: `Jsi expert na projektovou výuku na českých školách. Z dodaného obsahu navrhni zadání žákovského projektu. Použij jen informace z obsahu. Jazyk čeština.${planGradeBand ? ` Ročník: ${planGradeBand}.` : ""} Kritéria hodnocení: 3–6 položek s body (celé číslo).` },
             { role: "user", content: `Téma: ${lessonTitle || "(bez názvu)"}\n${planSubject ? `Předmět: ${planSubject}\n` : ""}Obsah:\n${lessonContent.slice(0, 30000)}\n\n${hint ? `Pokyn učitele: ${hint}\n` : ""}Navrhni zadání projektu.` },
           ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "create_project_brief",
-              description: "Zadání projektu.",
-              parameters: {
+          reasoning_effort: "low",
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "project_brief",
+              strict: true,
+              schema: {
                 type: "object",
                 properties: {
                   goal: { type: "string" },
@@ -521,6 +522,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
                       type: "object",
                       properties: { criterion: { type: "string" }, points: { type: "number" } },
                       required: ["criterion", "points"],
+                      additionalProperties: false,
                     },
                   },
                 },
@@ -528,8 +530,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
                 additionalProperties: false,
               },
             },
-          }],
-          tool_choice: { type: "function", function: { name: "create_project_brief" } },
+          },
         }),
       });
       if (!response.ok) {
@@ -539,9 +540,9 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
         throw new AiError(500, "Chyba AI služby");
       }
       const data = await response.json();
-      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-      if (!toolCall) throw new AiError(500, "AI nevrátila strukturovaný výstup");
-      return JSON.parse(toolCall.function.arguments) as ProjectBrief;
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new AiError(500, "AI nevrátila zadání projektu");
+      return JSON.parse(text) as ProjectBrief;
     };
 
     const result: { items: any[] } = { items: [] };
