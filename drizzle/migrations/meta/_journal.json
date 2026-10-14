@@ -386,6 +386,13 @@
       "when": 1791793974901,
       "tag": "0054_email_send_rate_slot",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1791969567767,
+      "tag": "0055_migration",
+      "breakpoints": true
     }
   ]
 }
