@@ -1311,6 +1311,11 @@ export default function WorksheetEditor() {
   const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
   /** Režim pro každou aktivitu z lekce: QR kód na aktivitu, nebo převod na blok listu. */
   const [activityModes, setActivityModes] = useState<Record<string, "qr" | "convert">>({});
+  // Při otevření dialogu převezmi aktuální druh listu.
+  useEffect(() => {
+    if (showAiGenerateDialog && spec) setAiKind(normalizeWorksheetKind(spec.header.worksheetMode));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAiGenerateDialog]);
   const topicPrefillDone = useRef(false);
   /** Kontext předaný z „Návrh lekce podle metody“ (modelová situace + aktivity fází). */
   const [suggestionContext, setSuggestionContext] = useState("");
