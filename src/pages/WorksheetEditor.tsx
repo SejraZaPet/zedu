@@ -170,7 +170,7 @@ import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
 import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
-import { createWriteLinePatch, getWriteLineCount } from "@/lib/worksheet-write-lines";
+import { createWriteLinePatch, getWriteLineCount, getWriteLineHeightMm, answerSpaceHeightMm, WRITE_LINE_HEIGHT_MM, WRITE_LINE_HEIGHT_MIN_MM, WRITE_LINE_HEIGHT_MAX_MM, getBlankBoxHeightMm, BLANK_BOX_MIN_MM, BLANK_BOX_MAX_MM } from "@/lib/worksheet-write-lines";
 import "@/styles/worksheet-editor.css";
 import {
   Tooltip,
@@ -218,6 +218,7 @@ const ITEM_TYPES: ItemType[] = [
 const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "section_header",
   "write_lines",
+  "blank_box",
   "instruction_box",
   "two_boxes",
   "qr_link",
@@ -2273,6 +2274,23 @@ export default function WorksheetEditor() {
             placeholder="Pokyny pro žáka…"
           />
         </div>
+        <div>
+          <Label className="text-xs">Hustota tisku</Label>
+          <Select
+            value={spec.header.printDensity ?? "compact"}
+            onValueChange={(value) => updateSpec((state) => ({
+              ...state,
+              header: { ...state.header, printDensity: value as "compact" | "normal" | "loose" },
+            }))}
+          >
+            <SelectTrigger className="mt-1" aria-label="Hustota tisku"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="compact">Kompaktní (méně mezer)</SelectItem>
+              <SelectItem value="normal">Běžná</SelectItem>
+              <SelectItem value="loose">Volná (více místa)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Collapsible>
           <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-sm font-medium">
             Poznámky pro učitele
@@ -3442,8 +3460,15 @@ function SortableItemBlock({
           {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
         </div>
         <EditorImageSlot item={item} expanded={expanded} onUpdateItem={onUpdateItem} />
-        {item.type !== "write_lines" && item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
-          <div className="worksheet-paper-answer" style={{ height: `${item.answerSpace.heightMm}mm` }} />
+        {item.type !== "write_lines" && item.type !== "blank_box" && item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
+          <div
+            className={`worksheet-paper-answer worksheet-paper-answer--${item.answerSpace.type}`}
+            data-testid="editor-answer-space"
+            style={{
+              height: `${answerSpaceHeightMm(item.answerSpace)}mm`,
+              ...(item.answerSpace.type === "lines" ? { backgroundSize: `100% ${WRITE_LINE_HEIGHT_MM}mm` } : {}),
+            }}
+          />
         )}
         {expanded && (
           <div className="mt-3 flex flex-wrap gap-2 border-t border-dashed border-border px-1 pt-3" onClick={(event) => event.stopPropagation()}>
@@ -4107,6 +4132,44 @@ function PropertiesPanel({
         </div>
       )}
 
+      {item.type === "blank_box" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Výška (mm)</Label>
+              <Input
+                type="number"
+                min={BLANK_BOX_MIN_MM}
+                max={BLANK_BOX_MAX_MM}
+                value={getBlankBoxHeightMm(item)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (!Number.isFinite(n)) return;
+                  onUpdateItem({ heightMm: Math.max(BLANK_BOX_MIN_MM, Math.min(BLANK_BOX_MAX_MM, Math.round(n))) });
+                }}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Pozadí</Label>
+              <Select value={item.blankStyle ?? "none"} onValueChange={(v) => onUpdateItem({ blankStyle: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Čisté</SelectItem>
+                  <SelectItem value="lines">Linky</SelectItem>
+                  <SelectItem value="grid">Mřížka</SelectItem>
+                  <SelectItem value="dots">Tečky</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Popisek (volitelné)</Label>
+            <Input value={item.prompt ?? ""} onChange={(e) => onUpdateItem({ prompt: e.target.value })} placeholder="Např. Nakresli…" />
+          </div>
+          <p className="text-xs text-muted-foreground">Nečísluje se a nemá body. V tisku se nerozdělí mezi stránky.</p>
+        </div>
+      )}
+
       {item.type === "write_lines" && (
         <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
           <div className="grid grid-cols-2 gap-2">
@@ -4120,6 +4183,22 @@ function PropertiesPanel({
                 onChange={(e) =>
                   onUpdateItem(createWriteLinePatch(item, Number(e.target.value)))
                 }
+              />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-xs" htmlFor={`line-h-${item.id}`}>Výška řádku: {getWriteLineHeightMm(item).toLocaleString("cs-CZ")} mm</Label>
+              <input
+                id={`line-h-${item.id}`}
+                type="range"
+                min={WRITE_LINE_HEIGHT_MIN_MM}
+                max={WRITE_LINE_HEIGHT_MAX_MM}
+                step={0.5}
+                value={getWriteLineHeightMm(item)}
+                onChange={(e) => {
+                  const lineHeightMm = Number(e.target.value);
+                  onUpdateItem({ lineHeightMm, ...createWriteLinePatch({ ...item, lineHeightMm }, getWriteLineCount(item)) });
+                }}
+                className="mt-1 w-full accent-primary"
               />
             </div>
             <div>
@@ -4263,7 +4342,7 @@ function PropertiesPanel({
         />
       </div>}
 
-      {item.type !== "write_lines" && <div className="pt-3 border-t border-border">
+      {item.type !== "write_lines" && item.type !== "blank_box" && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Odkaz (URL, volitelné)</Label>
         <Input
           value={item.linkUrl ?? ""}
@@ -4282,7 +4361,7 @@ function PropertiesPanel({
       </div>}
 
 
-      {item.type !== "write_lines" && <div className="pt-3 border-t border-border">
+      {item.type !== "write_lines" && item.type !== "blank_box" && <div className="pt-3 border-t border-border">
         <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
         <Select
           value={item.answerSpace.type}

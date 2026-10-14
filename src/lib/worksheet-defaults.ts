@@ -132,6 +132,10 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
       return { ...base, prompt: "Zapište definici:", points: 0, timeEstimateSec: 120,
         lineCount: 4, lineStyle: "dotted",
         answerSpace: { type: "lines", heightMm: 30, lineCount: 4 } };
+    case "blank_box":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        heightMm: 40, blankStyle: "none",
+        answerSpace: { type: "none", heightMm: 0 } };
     case "instruction_box":
       return { ...base, prompt: "Pracujte s učebnicí a zapište si hlavní body.", points: 0,
         timeEstimateSec: 0, instructionVariant: "blue", instructionIcon: "info",
@@ -295,6 +299,7 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   offline_activity: { label: "Offline aktivita", description: "Diskuse, skupinová práce nebo praktické cvičení" },
   section_header: { label: "Nadpis sekce", description: "Vizuální oddělení sekcí v PL" },
   write_lines: { label: "Řádky pro zápis", description: "Prázdné tečkované řádky pro ruční zápis" },
+  blank_box: { label: "Prázdné místo", description: "Volné místo s nastavitelnou výškou (čisté, linky, mřížka, tečky)" },
   instruction_box: { label: "Pokyn pro žáka", description: "Zvýrazněný box s instrukcí" },
   two_boxes: { label: "Dva boxy", description: "Dva boxy vedle sebe pro porovnání nebo úkoly" },
   qr_link: { label: "QR kód", description: "QR kód s odkazem na video, kvíz nebo web" },

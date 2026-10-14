@@ -73,8 +73,8 @@ export interface WorksheetPlayerProps {
 // ────────────────── Scoring ──────────────────
 
 /** Ručně hodnocené úlohy — do automatického skóre se nepočítají. */
-export const MANUAL_ITEM_TYPES = ["open_answer", "offline_activity", "write_lines", "two_boxes"];
-const WRITING_TYPES = new Set(["write_lines", "two_boxes"]);
+export const MANUAL_ITEM_TYPES = ["open_answer", "offline_activity", "write_lines", "two_boxes", "blank_box"];
+const WRITING_TYPES = new Set(["write_lines", "two_boxes", "blank_box"]);
 
 /** Je položka zodpovězená? Psací bloky jen tehdy, když obsahují text. */
 export function isItemAnswered(item: WorksheetItem, value: unknown): boolean {

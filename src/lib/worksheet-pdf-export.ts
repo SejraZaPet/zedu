@@ -93,7 +93,7 @@ window.addEventListener("load", async function () {
 
   function makePage(afterPage) {
     var page = document.createElement("div");
-    page.className = "ws-page";
+    page.className = sourcePage.className;
     var content = document.createElement("div");
     content.className = "ws-content";
     var list = document.createElement("div");

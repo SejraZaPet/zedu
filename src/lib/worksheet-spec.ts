@@ -42,7 +42,14 @@ export type ItemType =
   | "image"
   | "image_text"
   | "gallery"
-  | "callout";
+  | "callout"
+  // v1.5 — samostatné prázdné místo
+  | "blank_box";
+
+/** Hustota tisku (výchozí compact i pro starší listy bez pole). */
+export type PrintDensity = "compact" | "normal" | "loose";
+/** Pozadí prázdného místa (blank_box). */
+export type BlankBoxStyle = "none" | "lines" | "grid" | "dots";
 
 /** Křížovka — položka */
 export interface CrosswordEntry {
@@ -124,6 +131,8 @@ export interface WorksheetHeader {
   instructions?: string;
   /** QR kódy v pravé části záhlaví (doporučeno max. 4–5). Prázdné url = placeholder pro doplnění. */
   qrCodes?: { url: string; label: string }[];
+  /** Hustota tisku; chybí-li, platí "compact". */
+  printDensity?: PrintDensity;
 }
 
 export interface AnswerSpace {
@@ -182,6 +191,12 @@ export interface WorksheetItem {
   lineCount?: number;
   /** Styl čáry (pro write_lines) */
   lineStyle?: LineStyle;
+  /** Výška řádku v mm, 7–12 (pro write_lines; výchozí 8,5) */
+  lineHeightMm?: number;
+  /** Výška prázdného místa v mm, 10–200 (pro blank_box; výchozí 40) */
+  heightMm?: number;
+  /** Pozadí prázdného místa (pro blank_box; výchozí none) */
+  blankStyle?: BlankBoxStyle;
   /** URL pro QR kód (pro qr_link) */
   qrUrl?: string;
   /** Kroky diagramu (pro flow_steps) */
@@ -354,6 +369,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
       properties: {
         title: { type: "string" },
         subtitle: { type: "string" },
+        printDensity: { type: "string", enum: ["compact", "normal", "loose"] },
         subject: { type: "string" },
         gradeBand: { type: "string" },
         worksheetMode: { type: "string", enum: ["classwork", "homework", "test", "revision"] },
@@ -381,7 +397,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout", "blank_box"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
@@ -408,6 +424,9 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
                 durationMin: { type: "integer", minimum: 0 },
                 groupSize: { type: "string", enum: ["individual", "pair", "small_group", "class"] },
                 lineCount: { type: "integer", minimum: 0 },
+                lineHeightMm: { type: "number", minimum: 7, maximum: 12 },
+                heightMm: { type: "number", minimum: 10, maximum: 200 },
+                blankStyle: { type: "string", enum: ["none", "lines", "grid", "dots"] },
                 lineStyle: { type: "string", enum: ["dotted", "solid", "dashed"] },
                 qrUrl: { type: "string" },
                 flowSteps: { type: "array", items: { type: "string" } },
