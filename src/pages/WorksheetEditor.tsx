@@ -170,7 +170,7 @@ import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
 import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
-import { createWriteLinePatch, getWriteLineCount, getWriteLineHeightMm, answerSpaceHeightMm, answerSpaceLineCount, WRITE_LINE_HEIGHT_MM, WRITE_LINE_HEIGHT_MIN_MM, WRITE_LINE_HEIGHT_MAX_MM, getBlankBoxHeightMm, BLANK_BOX_MIN_MM, BLANK_BOX_MAX_MM } from "@/lib/worksheet-write-lines";
+import { createWriteLinePatch, getWriteLineCount, getWriteLineHeightMm, answerSpaceHeightMm, WRITE_LINE_HEIGHT_MM, WRITE_LINE_HEIGHT_MIN_MM, WRITE_LINE_HEIGHT_MAX_MM, getBlankBoxHeightMm, BLANK_BOX_MIN_MM, BLANK_BOX_MAX_MM } from "@/lib/worksheet-write-lines";
 import "@/styles/worksheet-editor.css";
 import {
   Tooltip,
