@@ -1,3 +1,4 @@
+import { worksheetDocumentTitle } from "@/lib/worksheet-kinds";
 /**
  * Export pracovního listu do PDF přes nativní browser print engine.
  *
@@ -157,10 +158,14 @@ export async function downloadWorksheetPdf(
     zIndex: "-1",
   } as Partial<CSSStyleDeclaration>);
 
+  // Název souboru při „Uložit jako PDF“ bere prohlížeč z titulku stránky.
+  const prevTitle = document.title;
+  document.title = worksheetDocumentTitle(spec.header.title, spec.header.worksheetMode, spec.header.variantLabel);
   let cleaned = false;
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
+    document.title = prevTitle;
     iframe.remove();
   };
 
