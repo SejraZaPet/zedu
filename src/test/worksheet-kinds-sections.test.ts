@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { parseSections, missingByType, assembleSections, projectBriefToItems } from "../../supabase/functions/_shared/worksheet-sections";
 import { sanitizeSections, sectionTotals, worksheetKindPrintLabel, worksheetDocumentTitle, normalizeWorksheetKind, SECTION_PRESETS } from "@/lib/worksheet-kinds";
-import { renderWorksheetHtml } from "@/lib/worksheet-print-renderer";
-import { createDefaultSpec } from "@/lib/worksheet-defaults";
+import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
+const renderWorksheetHtml = (s: any) => renderWorksheetVariantHtml(s, s.variants[0].variantId);
+import { emptyWorksheetSpec as createDefaultSpec } from "@/lib/worksheet-defaults";
 
 describe("sekce AI listu", () => {
   const req = sanitizeSections([
