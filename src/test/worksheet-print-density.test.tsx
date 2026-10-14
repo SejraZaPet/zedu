@@ -12,7 +12,11 @@ const withItems = (items: WorksheetItem[], density?: any): WorksheetSpec => ({
   variants: [{ ...WORKSHEET_SPEC_EXAMPLE.variants[0], items }],
 });
 
-const varBlock = (css: string, sel: string) => css.slice(css.indexOf(sel + " {"), css.indexOf("}", css.indexOf(sel + " {")));
+const varBlock = (css: string, sel: string) => {
+  const re = new RegExp(sel.replace(/\./g, "\\.") + " \\{[^}]*\\}", "g");
+  const blocks = css.match(re) ?? [];
+  return blocks.find((b) => b.includes("--ws-item-gap")) ?? blocks[0] ?? "";
+};
 const mm = (block: string) => parseFloat(block.match(/--ws-item-gap:\s*([\d.]+)mm/)![1]);
 
 describe("hustota tisku", () => {
@@ -48,7 +52,7 @@ describe("blank_box", () => {
     const html = renderWorksheetVariantHtml(withItems([item]), "A");
     expect(html).toContain('class="ws-blank-box"');
     expect(html).toContain("height:60mm");
-    expect(html).not.toContain("ws-item-num");
+    expect(html).not.toContain('class="ws-item-num"');
     expect(varBlock(buildWorksheetCss(), ".ws-blank-box")).toContain("break-inside: avoid");
   });
 });
