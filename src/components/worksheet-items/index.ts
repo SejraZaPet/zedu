@@ -45,6 +45,7 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   write_lines: LayoutBlockItem,
   instruction_box: LayoutBlockItem,
   two_boxes: LayoutBlockItem,
+  blank_box: LayoutBlockItem,
   qr_link: LayoutBlockItem,
   flow_steps: LayoutBlockItem,
   crossword: ActivityBlockItem,

@@ -48,7 +48,7 @@ function NotebookSnapshotView({ answers }: { answers: Record<string, unknown> | 
 const LAYOUT_TYPES = new Set([
   "section_header", "heading", "text_block", "info_box", "divider", "image", "write_lines", "lesson_block",
 ]);
-const OPEN_TYPES = new Set(["open_answer", "offline_activity", "write_lines", "two_boxes"]);
+const OPEN_TYPES = new Set(["open_answer", "offline_activity", "write_lines", "two_boxes", "blank_box"]);
 const LETTERS = "ABCDEFGHIJKLMNOP";
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
 

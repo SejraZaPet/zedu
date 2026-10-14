@@ -369,6 +369,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
       properties: {
         title: { type: "string" },
         subtitle: { type: "string" },
+        printDensity: { type: "string", enum: ["compact", "normal", "loose"] },
         subject: { type: "string" },
         gradeBand: { type: "string" },
         worksheetMode: { type: "string", enum: ["classwork", "homework", "test", "revision"] },
