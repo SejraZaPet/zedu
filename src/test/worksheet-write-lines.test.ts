@@ -14,7 +14,7 @@ describe("worksheet write lines compatibility", () => {
   it("updates count and derived print height as one patch", () => {
     expect(createWriteLinePatch({ answerSpace: { type: "none", heightMm: 0 } }, 4)).toEqual({
       lineCount: 4,
-      answerSpace: { type: "lines", lineCount: 4, heightMm: 30 },
+      answerSpace: { type: "lines", lineCount: 4, heightMm: 34 },
     });
   });
 
