@@ -1,3 +1,4 @@
+import { WORKSHEET_KINDS, WORKSHEET_KIND_LABELS, WORKSHEET_KIND_BADGE_CLASS, normalizeWorksheetKind, worksheetKindLabel, type WorksheetKind } from "@/lib/worksheet-kinds";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,12 +54,6 @@ interface WorksheetRow {
 }
 
 
-const MODE_LABELS: Record<string, string> = {
-  classwork: "Práce v hodině",
-  homework: "Domácí úkol",
-  test: "Test",
-  revision: "Opakování",
-};
 
 export default function TeacherWorksheets() {
   const navigate = useNavigate();
@@ -73,6 +68,7 @@ export default function TeacherWorksheets() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [kindFilter, setKindFilter] = useState<"all" | WorksheetKind>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
@@ -343,13 +339,14 @@ export default function TeacherWorksheets() {
   const filtered = useMemo(() => {
     return items.filter((it) => {
       if (statusFilter !== "all" && it.status !== statusFilter) return false;
+      if (kindFilter !== "all" && normalizeWorksheetKind(it.worksheet_mode) !== kindFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (!it.title.toLowerCase().includes(q) && !it.subject.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [items, search, statusFilter]);
+  }, [items, search, statusFilter, kindFilter]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -386,6 +383,15 @@ export default function TeacherWorksheets() {
               <SelectItem value="all">Vše</SelectItem>
               <SelectItem value="draft">Koncepty</SelectItem>
               <SelectItem value="published">Publikované</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as any)}>
+            <SelectTrigger className="w-[180px]" aria-label="Druh listu">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Vše</SelectItem>
+              {WORKSHEET_KINDS.map((k) => <SelectItem key={k} value={k}>{WORKSHEET_KIND_LABELS[k]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -427,8 +433,14 @@ export default function TeacherWorksheets() {
                       {row.status === "published" ? "Publikováno" : "Koncept"}
                     </Badge>
                   </div>
+                  <span
+                    data-testid="worksheet-kind-badge"
+                    className={`mb-2 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${WORKSHEET_KIND_BADGE_CLASS[normalizeWorksheetKind(row.worksheet_mode)]}`}
+                  >
+                    {worksheetKindLabel(row.worksheet_mode)}
+                  </span>
                   <div className="text-sm text-muted-foreground mb-3">
-                    {[row.subject, row.grade_band, MODE_LABELS[row.worksheet_mode] ?? row.worksheet_mode]
+                    {[row.subject, row.grade_band]
                       .filter(Boolean)
                       .join(" · ") || "Bez metadat"}
                   </div>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
+import { parseSections, missingByType, assembleSections, projectBriefToItems, type ProjectBrief } from "../_shared/worksheet-sections.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +46,8 @@ const MODE_GUIDANCE: Record<string, string> = {
   test: "Hlavně mcq, true_false, fill_blank, matching a short_answer. Bez instruction_box.",
   revision: "Hlavně matching, ordering, fill_blank, mcq. Žádné dlouhé otevřené otázky.",
   homework: "Hlavně open_answer, short_answer, reflexivní instruction_box.",
+  exam: "Písemná práce: hlavně short_answer, open_answer, fill_blank a mcq. Bez instruction_box.",
+  general: "Mix typů — kombinuj mcq, true_false, fill_blank, short_answer, matching a sekce.",
   worksheet: "Hlavně section_header, write_lines, instruction_box, two_boxes, flow_steps. Min. mcq/true_false.",
   study:
     "Výukový list – zápis a aktivity: list slouží k zápisu do hodiny i k procvičení. Prokládej výklad/zápis a aktivity, začni section_header, používej write_lines, two_boxes a instruction_box pro strukturu zápisu.",
@@ -158,7 +161,14 @@ serve(async (req) => {
       tables,
       qrLinks,
       activityPlan,
+      // Sestavení po sekcích: [{ type, count, pointsPerItem, title }] (volitelné)
+      sections: rawSections,
+      // Zaměření AI (general | study | technique | worksheet) – nezávislé na druhu listu
+      focus,
     } = body ?? {};
+    const requestedSections = parseSections(rawSections);
+    const isProject = worksheetMode === "project";
+    const guidanceKey: string = typeof focus === "string" && focus && focus !== "general" ? focus : worksheetMode;
 
     /** Tabulky z lekce – reprodukují se 1:1, AI je negeneruje. */
     const lessonTables: Array<{ rows: string[][]; caption?: string }> = Array.isArray(tables)
@@ -246,7 +256,9 @@ serve(async (req) => {
     }
 
     const requestedCount = Math.max(1, Math.min(40, Number(numItems ?? itemCount) || 8));
-    const types: string[] = Array.isArray(availableTypes) && availableTypes.length > 0
+    const types: string[] = requestedSections
+      ? [...new Set(requestedSections.map((s) => s.type))]
+      : Array.isArray(availableTypes) && availableTypes.length > 0
       ? availableTypes.filter((t: string) => DEFAULT_TYPES.includes(t))
       : DEFAULT_TYPES;
 
@@ -256,7 +268,7 @@ serve(async (req) => {
       hard: "Náročná (maturita) — většina medium/hard, hlubší aplikace pojmů.",
     };
 
-    const isStudyMode = worksheetMode === "study";
+    const isStudyMode = !requestedSections && guidanceKey === "study";
     const rhythmSection = isStudyMode
       ? `\n${RHYTHM_RULE}\n${RATIO_GUIDANCE[notesRatio] ?? RATIO_GUIDANCE.balanced}\n`
       : `\nDoporučený rytmus: pokud si režim nebo pokyn učitele vyžádá prostor na poznámky, po každých 1–2 aktivitových blocích vlož jeden layoutový blok (write_lines / two_boxes / section_header + write_lines).\n`;
@@ -326,7 +338,7 @@ PRAVIDLA:
           ? `\n- Začni blokem typu "section_header" s krátkým názvem tématu (prompt = název).`
           : ""
       }
-- ${MODE_GUIDANCE[worksheetMode] ?? MODE_GUIDANCE.classwork}
+- ${requestedSections ? "Dodrž PŘESNĚ požadované typy a počty úloh (viz níže), nic jiného negeneruj." : MODE_GUIDANCE[guidanceKey] ?? MODE_GUIDANCE.classwork}
 - ${diffGuidance[difficulty] ?? diffGuidance.mixed}
 - Povolené typy: ${types.join(", ")}.
 ${rhythmSection}- Každý blok MUSÍ mít: type, prompt, points (int), difficulty ("easy"|"medium"|"hard"), timeEstimateSec (int).
@@ -363,6 +375,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
       count: number,
       isFirst: boolean,
       partInfo: string,
+      extraInstruction = "",
     ): Promise<any[]> => {
       const sections = headingsOf(chunk);
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -375,7 +388,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
           model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: buildSystemPrompt(count, sections, isFirst) },
-            { role: "user", content: buildUserPrompt(chunk, count, sections, partInfo) },
+            { role: "user", content: buildUserPrompt(chunk, count, sections, partInfo) + extraInstruction },
           ],
           tools: [{
             type: "function",
@@ -475,9 +488,81 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
       return Array.isArray(parsed.items) ? parsed.items : [];
     };
 
+    const sectionsInstruction = (secs: Array<{ type: string; count: number; title?: string }>) =>
+      `\n\nPOVINNÁ STRUKTURA (dodrž přesně, žádné jiné typy ani section_header):\n${secs
+        .map((s, i) => `${i + 1}. typ "${s.type}" – přesně ${s.count} úloh${s.title ? ` (sekce „${s.title}“)` : ""}`)
+        .join("\n")}\nCelkem přesně ${secs.reduce((a, s) => a + s.count, 0)} úloh.`;
+
+    /** Zadání projektu (cíl, kroky, výstup, kritéria) přes vlastní nástroj. */
+    const runProjectAi = async (): Promise<ProjectBrief> => {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai/gpt-6-astra",
+          messages: [
+            { role: "system", content: `Jsi expert na projektovou výuku na českých školách. Z dodaného obsahu navrhni zadání žákovského projektu. Použij jen informace z obsahu. Jazyk čeština.${planGradeBand ? ` Ročník: ${planGradeBand}.` : ""} Kritéria hodnocení: 3–6 položek s body (celé číslo).` },
+            { role: "user", content: `Téma: ${lessonTitle || "(bez názvu)"}\n${planSubject ? `Předmět: ${planSubject}\n` : ""}Obsah:\n${lessonContent.slice(0, 30000)}\n\n${hint ? `Pokyn učitele: ${hint}\n` : ""}Navrhni zadání projektu.` },
+          ],
+          reasoning_effort: "low",
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "project_brief",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  goal: { type: "string" },
+                  steps: { type: "array", items: { type: "string" } },
+                  output: { type: "string" },
+                  criteria: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: { criterion: { type: "string" }, points: { type: "number" } },
+                      required: ["criterion", "points"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["goal", "steps", "output", "criteria"],
+                additionalProperties: false,
+              },
+            },
+          },
+        }),
+      });
+      if (!response.ok) {
+        if (response.status === 429) throw new AiError(429, "Příliš mnoho požadavků, zkuste to později.");
+        if (response.status === 402) throw new AiError(402, "Nedostatek kreditů pro AI generování.");
+        console.error("AI gateway error:", response.status, await response.text());
+        throw new AiError(500, "Chyba AI služby");
+      }
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new AiError(500, "AI nevrátila zadání projektu");
+      return JSON.parse(text) as ProjectBrief;
+    };
+
     const result: { items: any[] } = { items: [] };
     try {
-      for (let i = 0; i < chunks.length; i++) {
+      if (isProject) {
+        result.items = projectBriefToItems(await runProjectAi());
+      } else if (requestedSections) {
+        const content = lessonContent.slice(0, 30000);
+        const total = requestedSections.reduce((a, s) => a + s.count, 0);
+        const pool = await runAi(content, total, false, "", sectionsInstruction(requestedSections));
+        const missing = missingByType(requestedSections, pool);
+        if (Object.keys(missing).length > 0) {
+          // Druhé volání jen pro chybějící úlohy.
+          const missSecs = Object.entries(missing).map(([type, count]) => ({ type, count }));
+          const more = await runAi(content, missSecs.reduce((a, s) => a + s.count, 0), false, "",
+            sectionsInstruction(missSecs) + "\nVytvoř JINÉ úlohy, než jsou běžné úvodní otázky – pokryj další části obsahu.");
+          pool.push(...more);
+        }
+        result.items = assembleSections(requestedSections, pool);
+      } else for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         const share = chunk.length / totalLen;
         const count = chunks.length === 1

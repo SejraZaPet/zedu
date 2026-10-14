@@ -1,3 +1,4 @@
+import { worksheetKindPrintLabel, worksheetDocumentTitle } from "@/lib/worksheet-kinds";
 /**
  * Worksheet Print Renderer — converts WorksheetSpec → print-ready HTML + CSS.
  *
@@ -195,6 +196,17 @@ html, body {
   vertical-align: top;
   width: 75%;
   padding-right: 8pt;
+}
+.ws-kind-label {
+  display: inline-block;
+  font-size: 9pt;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #1A1F2C !important;
+  border: 1.2pt solid #1A1F2C;
+  border-radius: 3pt;
+  padding: 1pt 5pt;
+  margin-bottom: 3pt;
 }
 .ws-eyebrow {
   display: block;
@@ -817,6 +829,7 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
 <div class="ws-header">
   <div class="ws-header-top">
     <div class="ws-title-block">
+      ${worksheetKindPrintLabel(h.worksheetMode) ? `<div class="ws-kind-label" data-kind="${esc(h.worksheetMode)}">${esc(worksheetKindPrintLabel(h.worksheetMode))}</div>` : ""}
       ${eyebrow}
       <h1 class="ws-title">${esc(h.title)}</h1>
       ${subtitle}
@@ -1472,7 +1485,7 @@ export function renderWorksheetVariantHtml(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(specCopy.header.title)}${specCopy.header.variantLabel ? ` — ${esc(specCopy.header.variantLabel)}` : ""}</title>
+<title>${esc(worksheetDocumentTitle(specCopy.header.title, specCopy.header.worksheetMode, specCopy.header.variantLabel))}</title>
 <style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}</style>
 </head>
 <body>

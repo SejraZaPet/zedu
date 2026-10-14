@@ -6,6 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import SiteHeader from "@/components/SiteHeader";
 import { FolderOpen } from "lucide-react";
+import {
+  WORKSHEET_KINDS, WORKSHEET_KIND_LABELS, normalizeWorksheetKind, SECTION_PRESETS, SECTION_QUESTION_TYPES,
+  SECTION_TYPE_LABELS, sanitizeSections, sectionTotals, clampSectionCount,
+  type WorksheetKind, type WorksheetSection, type SectionPresetId, type AiFocus, type SectionQuestionType,
+} from "@/lib/worksheet-kinds";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import WorksheetImageField from "@/components/worksheet/WorksheetImageField";
 import { fillLessonVisualImages } from "@/lib/worksheet-images";
@@ -257,12 +262,7 @@ const OFFLINE_MODES: OfflineMode[] = [
   "reflection",
 ];
 
-const MODE_OPTIONS = [
-  { value: "classwork", label: "Práce v hodině" },
-  { value: "homework", label: "Domácí úkol" },
-  { value: "test", label: "Test" },
-  { value: "revision", label: "Opakování" },
-];
+const MODE_OPTIONS = WORKSHEET_KINDS.map((value) => ({ value, label: WORKSHEET_KIND_LABELS[value] }));
 
 const HISTORY_LIMIT = 50;
 
@@ -1297,8 +1297,12 @@ export default function WorksheetEditor() {
 
   // ── AI: generate whole worksheet from lesson ──
   const [showAiGenerateDialog, setShowAiGenerateDialog] = useState(false);
-  const [aiMode, setAiMode] = useState<string>("classwork");
-  const [aiCount, setAiCount] = useState<string>("8");
+  /** Zaměření AI (study / technique / worksheet) – NENÍ druh listu. */
+  const [aiMode, setAiMode] = useState<AiFocus>("general");
+  /** Druh listu, který se po generování uloží do header.worksheetMode. */
+  const [aiKind, setAiKind] = useState<WorksheetKind>("classwork");
+  const [aiPreset, setAiPreset] = useState<SectionPresetId>("classwork");
+  const [aiSections, setAiSections] = useState<WorksheetSection[]>(() => SECTION_PRESETS.classwork.sections.map((x) => ({ ...x })));
   const [aiDifficulty, setAiDifficulty] = useState<string>("mixed");
   const [aiCustomHint, setAiCustomHint] = useState<string>("");
   const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
@@ -1307,6 +1311,11 @@ export default function WorksheetEditor() {
   const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
   /** Režim pro každou aktivitu z lekce: QR kód na aktivitu, nebo převod na blok listu. */
   const [activityModes, setActivityModes] = useState<Record<string, "qr" | "convert">>({});
+  // Při otevření dialogu převezmi aktuální druh listu.
+  useEffect(() => {
+    if (showAiGenerateDialog && spec) setAiKind(normalizeWorksheetKind(spec.header.worksheetMode));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAiGenerateDialog]);
   const topicPrefillDone = useRef(false);
   /** Kontext předaný z „Návrh lekce podle metody“ (modelová situace + aktivity fází). */
   const [suggestionContext, setSuggestionContext] = useState("");
@@ -1743,8 +1752,9 @@ export default function WorksheetEditor() {
             allLessons.find((l) => l.id === activeLessonId)?.title ??
             topicParam ??
             spec.header.title,
-          worksheetMode: aiMode,
-          itemCount: parseInt(aiCount, 10),
+          worksheetMode: aiKind,
+          focus: aiMode,
+          ...(aiKind === "project" ? {} : { sections: sanitizeSections(aiSections) }),
           difficulty: aiDifficulty,
           hint: aiCustomHint,
           notesRatio: aiNotesRatio,
@@ -1825,7 +1835,7 @@ export default function WorksheetEditor() {
             : s.header.qrCodes;
         return {
           ...s,
-          header: { ...s.header, qrCodes },
+          header: { ...s.header, qrCodes, worksheetMode: aiKind },
           variants: s.variants.map((v, idx) =>
             idx === 0
               ? { ...v, items: [...existingItems, ...newItems, ...convertedItems] }
@@ -2250,9 +2260,9 @@ export default function WorksheetEditor() {
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Režim</Label>
+          <Label className="text-xs">Druh listu</Label>
           <Select
-            value={spec.header.worksheetMode}
+            value={normalizeWorksheetKind(spec.header.worksheetMode)}
             onValueChange={(value) => updateSpec((state) => ({ ...state, header: { ...state.header, worksheetMode: value } }))}
           >
             <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -2402,6 +2412,17 @@ export default function WorksheetEditor() {
             {spec.header.title}
           </span>
           <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} className="hidden sm:inline-flex" />
+          <Select
+            value={normalizeWorksheetKind(spec.header.worksheetMode)}
+            onValueChange={(value) => updateSpec((state) => ({ ...state, header: { ...state.header, worksheetMode: value } }))}
+          >
+            <SelectTrigger aria-label="Druh listu" className="h-8 w-[150px] shrink-0 border-primary/40 bg-primary/10 font-semibold text-primary">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MODE_OPTIONS.map((mode) => <SelectItem key={mode.value} value={mode.value}>{mode.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
@@ -2960,17 +2981,23 @@ export default function WorksheetEditor() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Zaměření pracovního listu</Label>
-              <Select value={aiMode} onValueChange={setAiMode}>
+              <Label>Druh listu</Label>
+              <Select value={aiKind} onValueChange={(v) => setAiKind(v as WorksheetKind)}>
+                <SelectTrigger aria-label="Druh listu pro AI"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {WORKSHEET_KINDS.map((k) => <SelectItem key={k} value={k}>{WORKSHEET_KIND_LABELS[k]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Zaměření</Label>
+              <Select value={aiMode} onValueChange={(v) => setAiMode(v as AiFocus)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="classwork">Práce v hodině (mix typů)</SelectItem>
-                  <SelectItem value="test">Test (MCQ + krátké odpovědi)</SelectItem>
-                  <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
-                  <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
+                  <SelectItem value="general">Běžné (podle druhu listu)</SelectItem>
                   <SelectItem value="study">Výukový list – zápis a aktivity</SelectItem>
                   <SelectItem value="technique">Technika s videi</SelectItem>
-                  <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
+                  <SelectItem value="worksheet">Pracovní list s aktivitami (zápis, pokyny, boxy)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3003,18 +3030,24 @@ export default function WorksheetEditor() {
                 )}
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label>Počet bloků</Label>
-              <Select value={aiCount} onValueChange={setAiCount}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="5">5 (krátký, ~10 min)</SelectItem>
-                  <SelectItem value="8">8 (střední, ~15 min)</SelectItem>
-                  <SelectItem value="12">12 (dlouhý, ~25 min)</SelectItem>
-                  <SelectItem value="15">15 (obsáhlý, ~35 min)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {aiKind === "project" ? (
+              <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+                AI vytvoří zadání projektu: cíl, kroky, výstup, kritéria hodnocení s body a místo na poznámky.
+              </div>
+            ) : (
+              <AiSectionsBuilder
+                preset={aiPreset}
+                sections={aiSections}
+                onPreset={(id) => {
+                  setAiPreset(id);
+                  if (id !== "custom") {
+                    setAiSections(SECTION_PRESETS[id].sections.map((x) => ({ ...x })));
+                    setAiKind(SECTION_PRESETS[id].kind);
+                  }
+                }}
+                onChange={(next) => { setAiSections(next); setAiPreset("custom"); }}
+              />
+            )}
             <div className="space-y-1.5">
               <Label>Obtížnost</Label>
               <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
@@ -4412,3 +4445,67 @@ function PropertiesPanel({
   );
 }
 
+
+/** Sestavení AI listu po sekcích (typ, počet, body, nadpis) s průběžným součtem. */
+export function AiSectionsBuilder({ preset, sections, onPreset, onChange }: {
+  preset: SectionPresetId;
+  sections: WorksheetSection[];
+  onPreset: (id: SectionPresetId) => void;
+  onChange: (next: WorksheetSection[]) => void;
+}) {
+  const totals = sectionTotals(sections);
+  const patch = (i: number, p: Partial<WorksheetSection>) => onChange(sections.map((s, j) => (j === i ? { ...s, ...p } : s)));
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= sections.length) return;
+    const next = [...sections];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label>Rychlé předvolby</Label>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Rychlé předvolby">
+          {([...Object.keys(SECTION_PRESETS), "custom"] as SectionPresetId[]).map((id) => (
+            <Button key={id} type="button" size="sm" variant={preset === id ? "default" : "outline"} aria-pressed={preset === id} onClick={() => onPreset(id)}>
+              {id === "custom" ? "Vlastní" : SECTION_PRESETS[id as Exclude<SectionPresetId, "custom">].label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Sekce</Label>
+        {sections.map((s, i) => (
+          <div key={i} className="space-y-2 rounded-lg border p-2" data-testid="ai-section">
+            <div className="flex items-center gap-2">
+              <Select value={s.type} onValueChange={(v) => patch(i, { type: v as SectionQuestionType })}>
+                <SelectTrigger aria-label={`Typ otázek v sekci ${i + 1}`} className="flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {SECTION_QUESTION_TYPES.map((t) => <SelectItem key={t} value={t}>{SECTION_TYPE_LABELS[t]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" size="icon" variant="ghost" aria-label="Posunout nahoru" disabled={i === 0} onClick={() => move(i, -1)}>↑</Button>
+              <Button type="button" size="icon" variant="ghost" aria-label="Posunout dolů" disabled={i === sections.length - 1} onClick={() => move(i, 1)}>↓</Button>
+              <Button type="button" size="icon" variant="ghost" aria-label="Odebrat sekci" disabled={sections.length <= 1} onClick={() => onChange(sections.filter((_, j) => j !== i))}>✕</Button>
+            </div>
+            <div className="grid grid-cols-[5rem_5rem_1fr] gap-2">
+              <Input type="number" min={1} max={20} aria-label={`Počet otázek v sekci ${i + 1}`} value={s.count}
+                onChange={(e) => patch(i, { count: clampSectionCount(e.target.value) })} />
+              <Input type="number" min={0} step={0.5} aria-label={`Body za otázku v sekci ${i + 1}`} placeholder="body"
+                value={s.pointsPerItem ?? ""} onChange={(e) => patch(i, { pointsPerItem: e.target.value === "" ? null : Number(e.target.value) })} />
+              <Input aria-label={`Nadpis sekce ${i + 1}`} placeholder="Nadpis (volitelný)" value={s.title ?? ""}
+                onChange={(e) => patch(i, { title: e.target.value })} />
+            </div>
+          </div>
+        ))}
+        <Button type="button" size="sm" variant="outline" onClick={() => onChange([...sections, { type: "mcq", count: 3, pointsPerItem: 1 }])}>
+          + Přidat sekci
+        </Button>
+        <p className="text-sm font-medium" aria-live="polite" data-testid="ai-sections-total">
+          Celkem {totals.questions} otázek · {totals.points} bodů
+        </p>
+      </div>
+    </div>
+  );
+}

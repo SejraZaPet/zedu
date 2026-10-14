@@ -115,7 +115,7 @@ export interface WorksheetHeader {
   subtitle?: string;
   subject: string;
   gradeBand: string;
-  /** "classwork" | "homework" | "test" | "revision" */
+  /** Druh listu: "classwork" | "test" | "exam" | "revision" | "homework" | "project" (viz worksheet-kinds.ts) */
   worksheetMode: string;
   /** Teacher name shown on print */
   teacherName?: string;
@@ -372,7 +372,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
         printDensity: { type: "string", enum: ["compact", "normal", "loose"] },
         subject: { type: "string" },
         gradeBand: { type: "string" },
-        worksheetMode: { type: "string", enum: ["classwork", "homework", "test", "revision"] },
+        worksheetMode: { type: "string", enum: ["classwork", "homework", "test", "revision", "exam", "project"] },
         teacherName: { type: "string" },
         studentNameField: { type: "boolean" },
         dateField: { type: "boolean" },
