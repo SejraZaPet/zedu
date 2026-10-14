@@ -54,7 +54,6 @@ interface WorksheetRow {
 }
 
 
-const MODE_LABELS: Record<string, string> = WORKSHEET_KIND_LABELS;
 
 export default function TeacherWorksheets() {
   const navigate = useNavigate();
