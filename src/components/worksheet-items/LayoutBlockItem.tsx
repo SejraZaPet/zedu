@@ -1,7 +1,7 @@
 import { Info, Video, PenLine, MessageCircle, Users } from "lucide-react";
 import type { WorksheetItemProps } from "./types";
 import type { InstructionIcon } from "@/lib/worksheet-spec";
-import { getWriteLineCount } from "@/lib/worksheet-write-lines";
+import { getWriteLineCount, getWriteLineHeightMm, WRITE_LINE_HEIGHT_MM, getBlankBoxHeightMm, blankBoxBackgroundCss } from "@/lib/worksheet-write-lines";
 import { QRCodeSVG } from "qrcode.react";
 
 const ICONS: Record<InstructionIcon, typeof Info> = {
@@ -36,11 +36,21 @@ export function hasWrittenText(v: unknown): boolean {
   return typeof v === "string" && v.trim() !== "";
 }
 
-const LINE_PX = 28;
+/** CSS text `a:b;c:d` → React style objekt. */
+function cssToStyle(css: string): React.CSSProperties {
+  const out: Record<string, string> = {};
+  for (const part of css.split(";")) {
+    const i = part.indexOf(":");
+    if (i < 0) continue;
+    const key = part.slice(0, i).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    if (key) out[key] = part.slice(i + 1).trim();
+  }
+  return out as React.CSSProperties;
+}
 
 function LinedTextarea({
-  lines, value, onChange, disabled, label, lineStyle = "dotted",
-}: { lines: number; value: string; onChange: (v: string) => void; disabled: boolean; label: string; lineStyle?: string }) {
+  lines, value, onChange, disabled, label, lineStyle = "dotted", lineMm = WRITE_LINE_HEIGHT_MM,
+}: { lines: number; value: string; onChange: (v: string) => void; disabled: boolean; label: string; lineStyle?: string; lineMm?: number }) {
   return (
     <textarea
       aria-label={label}
@@ -50,10 +60,10 @@ function LinedTextarea({
       rows={lines}
       className="block w-full resize-none bg-transparent px-1 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
       style={{
-        lineHeight: `${LINE_PX}px`,
-        minHeight: `${lines * LINE_PX}px`,
-        backgroundImage: `linear-gradient(to bottom, transparent ${LINE_PX - 1}px, hsl(var(--border)) ${LINE_PX - 1}px)`,
-        backgroundSize: `100% ${LINE_PX}px`,
+        lineHeight: `${lineMm}mm`,
+        minHeight: `${lines * lineMm}mm`,
+        backgroundImage: `linear-gradient(to bottom, transparent calc(${lineMm}mm - 1px), hsl(var(--border)) calc(${lineMm}mm - 1px))`,
+        backgroundSize: `100% ${lineMm}mm`,
       }}
     />
   );
@@ -73,6 +83,7 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
     case "write_lines": {
       const count = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
+      const lineMm = getWriteLineHeightMm(item);
       if (writable) {
         return (
           <div className="space-y-1">
@@ -80,6 +91,7 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
             <LinedTextarea
               lines={count}
               lineStyle={style}
+              lineMm={lineMm}
               value={typeof value === "string" ? value : ""}
               onChange={(v) => onChange(v)}
               disabled={disabled}
@@ -91,12 +103,11 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
       return (
         <div className="space-y-1">
           {item.prompt && <p className="text-sm text-muted-foreground">{item.prompt}</p>}
-          <div className="space-y-1.5">
+          <div data-testid="write-lines-static">
             {Array.from({ length: count }).map((_, i) => (
               <div
                 key={i}
-                className="h-7"
-                style={{ borderBottom: `1px ${style} hsl(var(--border))` }}
+                style={{ height: `${lineMm}mm`, borderBottom: `1px ${style} hsl(var(--border))` }}
               />
             ))}
           </div>
@@ -138,9 +149,9 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
         if (match) {
           const n = parseInt(match[1], 10);
           return (
-            <div className="space-y-1.5">
+            <div>
               {Array.from({ length: n }).map((_, i) => (
-                <div key={i} className="h-6 border-b border-dotted border-border" />
+                <div key={i} className="border-b border-dotted border-border" style={{ height: `${WRITE_LINE_HEIGHT_MM}mm` }} />
               ))}
             </div>
           );
@@ -160,6 +171,29 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
               {renderContent(item.rightContent, 1, item.rightTitle)}
             </div>
           </div>
+        </div>
+      );
+    }
+
+    case "blank_box": {
+      const h = getBlankBoxHeightMm(item);
+      const bg = cssToStyle(blankBoxBackgroundCss(item.blankStyle));
+      const label = item.prompt?.trim();
+      return (
+        <div className="space-y-1" data-testid="blank-box">
+          {label && <p className="text-sm text-muted-foreground">{label}</p>}
+          {writable ? (
+            <textarea
+              aria-label={label || "Prázdné místo"}
+              value={typeof value === "string" ? value : ""}
+              readOnly={disabled}
+              onChange={(e) => onChange(e.target.value)}
+              className="block w-full resize-none rounded-sm border border-border bg-transparent p-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{ height: `${h}mm`, lineHeight: `${WRITE_LINE_HEIGHT_MM}mm`, ...bg }}
+            />
+          ) : (
+            <div className="rounded-sm border border-border" style={{ height: `${h}mm`, ...bg }} />
+          )}
         </div>
       );
     }
