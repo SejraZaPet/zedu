@@ -63,8 +63,8 @@ export const BLANK_BOX_DEFAULT_MM = 40;
 export const BLANK_BOX_MIN_MM = 10;
 export const BLANK_BOX_MAX_MM = 200;
 
-export function getBlankBoxHeightMm(item: Pick<WorksheetItem, "blankHeightMm">): number {
-  const raw = Number(item.blankHeightMm);
+export function getBlankBoxHeightMm(item: Pick<WorksheetItem, "heightMm">): number {
+  const raw = Number(item.heightMm);
   if (!Number.isFinite(raw) || raw <= 0) return BLANK_BOX_DEFAULT_MM;
   return Math.max(BLANK_BOX_MIN_MM, Math.min(BLANK_BOX_MAX_MM, Math.round(raw)));
 }
