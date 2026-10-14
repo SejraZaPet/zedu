@@ -166,12 +166,19 @@
   margin: 6pt 0 0 18pt;
   border: 1px solid hsl(var(--border));
   border-radius: 5px;
-  background-image: repeating-linear-gradient(
+}
+
+/* Linky jen u typu „lines“ (výška řádku = sdílená konstanta, nastavuje se inline). */
+.worksheet-paper-answer--lines {
+  background-image: linear-gradient(
     to bottom,
-    transparent 0,
-    transparent 27px,
-    hsl(var(--border)) 28px
+    transparent calc(100% - 1px),
+    hsl(var(--border)) calc(100% - 1px)
   );
+}
+
+.worksheet-paper-answer--blank {
+  border-style: dashed;
 }
 
 .worksheet-page-number {
