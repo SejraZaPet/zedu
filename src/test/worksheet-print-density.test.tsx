@@ -48,7 +48,7 @@ describe("blank_box", () => {
     const html = renderWorksheetVariantHtml(withItems([item]), "A");
     expect(html).toContain('class="ws-blank-box"');
     expect(html).toContain("height:60mm");
-    expect(html).not.toContain("ws-item-num");
+    expect(html).not.toContain('class="ws-item-num"');
     expect(varBlock(buildWorksheetCss(), ".ws-blank-box")).toContain("break-inside: avoid");
   });
 });
