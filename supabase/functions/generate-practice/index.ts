@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/auth.ts";
+import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const { method_id, lesson_id } = await req.json().catch(() => ({}));
+    const { method_id, lesson_id, question_count } = await req.json().catch(() => ({}));
     if (!method_id || typeof method_id !== "string") {
       return json({ error: "method_id je povinné" }, 400);
     }
@@ -86,15 +87,15 @@ Deno.serve(async (req) => {
     let lessonTitle = "";
     let lessonText = "";
     if (lesson_id) {
-      const { data: tLesson } = await sb
-        .from("teacher_textbook_lessons")
-        .select("title, blocks")
-        .eq("id", lesson_id)
-        .maybeSingle();
-      if (tLesson) {
-        lessonTitle = tLesson.title ?? "";
-        lessonText = blocksToText(tLesson.blocks);
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: auth.authHeader } },
+      });
+      const found = await loadPracticeLesson(userClient, sb, lesson_id);
+      if (found.ok) {
+        lessonTitle = found.lesson.title;
+        lessonText = blocksToText(found.lesson.blocks);
       } else {
+        // Starší obecné lekce (tabulka lessons) – zachované chování.
         const { data: gLesson } = await sb
           .from("lessons")
           .select("title, content")
@@ -103,6 +104,8 @@ Deno.serve(async (req) => {
         if (gLesson) {
           lessonTitle = gLesson.title ?? "";
           lessonText = (gLesson.content ?? "").toString();
+        } else {
+          return json({ error: found.error }, found.status);
         }
       }
     }
@@ -131,7 +134,7 @@ Vytvoř pro každou fázi metody 2–3 otázky, které žáka touto fází prove
 - Pro fáze typu "co už vím" / brainstorming volej typ "open" (otevřená odpověď, correct_answer prázdné).
 - Pro fáze ověření znalostí volej typ "multiple_choice" se 4 možnostmi a indexem správné odpovědi.
 - Pro fáze pojmů volej typ "short_answer" s krátkou očekávanou odpovědí.
-Vrať strukturovaný JSON přes nástroj generate_practice_set.`;
+${question_count ? `Celkem vytvoř přibližně ${clampQuestionCount(question_count, 8)} otázek (rozděl je mezi fáze).\n` : ""}Vrať strukturovaný JSON přes nástroj generate_practice_set.`;
 
     const aiBody = {
       model: "google/gemini-3-flash-preview",

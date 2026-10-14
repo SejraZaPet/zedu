@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { questionCountForDuration } from "@/lib/study-method-info";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
@@ -77,6 +78,8 @@ const StudentPractice = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const lessonId = searchParams.get("lesson") || null;
+  const plannedMin = Number(searchParams.get("min")) || null;
+  const questionCount = questionCountForDuration(plannedMin);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -123,7 +126,7 @@ const StudentPractice = () => {
       if (lessonId) {
         const { data: { session } } = await supabase.auth.getSession();
         const ragRes = await supabase.functions.invoke("ai-practice-rag", {
-          body: { lesson_id: lessonId, student_id: session?.user.id, method: slug },
+          body: { lesson_id: lessonId, method: slug, ...(questionCount ? { question_count: questionCount } : {}) },
         });
         if (ragRes.error || ragRes.data?.error) {
           fnErr = ragRes.error || { message: ragRes.data?.error };
@@ -147,7 +150,7 @@ const StudentPractice = () => {
         }
       } else {
         const r = await supabase.functions.invoke("generate-practice", {
-          body: { method_id: method.id, lesson_id: lessonId },
+          body: { method_id: method.id, lesson_id: lessonId, ...(questionCount ? { question_count: questionCount } : {}) },
         });
         fnData = r.data;
         fnErr = r.error;
@@ -169,7 +172,7 @@ const StudentPractice = () => {
     return () => {
       cancelled = true;
     };
-  }, [slug, lessonId, reloadKey]);
+  }, [slug, lessonId, reloadKey, questionCount]);
 
   // Load mastery for this lesson
   useEffect(() => {
@@ -229,7 +232,7 @@ const StudentPractice = () => {
     setSavingSession(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      const duration = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+      const duration = plannedMin ?? Math.max(1, Math.round((Date.now() - startedAt) / 60000));
       const { error: insErr } = await supabase.from("student_practice_sessions").insert({
         student_id: session.user.id,
         method_id: data.method.id,

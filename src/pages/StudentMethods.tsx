@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -13,6 +12,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { SelectGroup, SelectLabel } from "@/components/ui/select";
+import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
+import { methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
   NotebookPen, ArrowRightCircle, GraduationCap, Play, ChevronLeft, ChevronRight, CheckCircle2,
@@ -27,7 +29,6 @@ type Method = {
   steps_json: { name: string; description: string }[] | null;
 };
 
-type LessonOption = { id: string; title: string; textbook: string };
 
 const ICONS: Record<string, React.ElementType> = {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer, NotebookPen, ArrowRightCircle,
@@ -42,7 +43,8 @@ const StudentMethods = () => {
   const [detail, setDetail] = useState<Method | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
   const [practiceFor, setPracticeFor] = useState<Method | null>(null);
-  const [lessons, setLessons] = useState<LessonOption[]>([]);
+  const [lessonGroups, setLessonGroups] = useState<PracticeLessonGroup[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<string>("none");
   const [duration, setDuration] = useState<string>("15");
   const [submitting, setSubmitting] = useState(false);
@@ -72,68 +74,21 @@ const StudentMethods = () => {
 
   useEffect(() => {
     if (!practiceFor) return;
+    let cancelled = false;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const userId = session.user.id;
-
-      // Teacher textbooks via enrollment
-      const { data: enrollData } = await supabase
-        .from("teacher_textbook_enrollments")
-        .select("textbook_id, teacher_textbooks(id, title)")
-        .eq("student_id", userId);
-
-      // Teacher textbooks via class membership
-      const { data: memberships } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", userId);
-      const classIds = (memberships ?? []).map((m: any) => m.class_id);
-      let classTeacherBooks: any[] = [];
-      if (classIds.length > 0) {
-        const { data } = await supabase
-          .from("class_textbooks")
-          .select("textbook_id, textbook_type")
-          .in("class_id", classIds)
-          .eq("textbook_type", "teacher");
-        classTeacherBooks = data ?? [];
+      setLessonsLoading(true);
+      try {
+        const groups = await fetchStudentPracticeLessons(session.user.id);
+        if (!cancelled) setLessonGroups(groups);
+      } catch {
+        if (!cancelled) setLessonGroups([]);
+      } finally {
+        if (!cancelled) setLessonsLoading(false);
       }
-
-      const tbIds = new Set<string>([
-        ...(enrollData ?? []).map((e: any) => e.textbook_id),
-        ...classTeacherBooks.map((c: any) => c.textbook_id),
-      ]);
-      const tbTitleById = new Map<string, string>();
-      for (const e of (enrollData ?? []) as any[]) {
-        if (e.teacher_textbooks?.title) tbTitleById.set(e.textbook_id, e.teacher_textbooks.title);
-      }
-      const missingTitles = [...tbIds].filter((id) => !tbTitleById.has(id));
-      if (missingTitles.length > 0) {
-        const { data: tbs } = await supabase
-          .from("teacher_textbooks")
-          .select("id, title")
-          .in("id", missingTitles)
-          .is("deleted_at", null);
-        for (const t of (tbs ?? []) as any[]) tbTitleById.set(t.id, t.title);
-      }
-
-      if (tbIds.size === 0) {
-        setLessons([]);
-        return;
-      }
-      const { data: lessonsData } = await supabase
-        .from("teacher_textbook_lessons")
-        .select("id, title, textbook_id")
-        .in("textbook_id", [...tbIds])
-        .order("title");
-      setLessons(
-        ((lessonsData ?? []) as any[]).map((l) => ({
-          id: l.id,
-          title: l.title,
-          textbook: tbTitleById.get(l.textbook_id) ?? "",
-        })),
-      );
     })();
+    return () => { cancelled = true; };
   }, [practiceFor]);
 
   const openDetail = (m: Method) => {
@@ -143,8 +98,10 @@ const StudentMethods = () => {
 
   const startPractice = () => {
     if (!practiceFor) return;
-    const lessonParam = selectedLesson !== "none" ? `?lesson=${selectedLesson}` : "";
-    navigate(`/student/metody/${practiceFor.slug}/procviceni${lessonParam}`);
+    const params = new URLSearchParams();
+    if (selectedLesson !== "none") params.set("lesson", selectedLesson);
+    params.set("min", duration);
+    navigate(`/student/metody/${practiceFor.slug}/procviceni?${params.toString()}`);
     setPracticeFor(null);
     setSelectedLesson("none");
     setDuration("15");
@@ -159,11 +116,11 @@ const StudentMethods = () => {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2 text-primary">
             <GraduationCap className="w-5 h-5" />
-            <span className="text-sm font-medium uppercase tracking-wider">Studijní metody</span>
+            <span className="text-sm font-medium uppercase tracking-wider">Učím se</span>
           </div>
           <h1 className="font-heading text-3xl font-bold">Jak se učit chytře</h1>
           <p className="text-muted-foreground mt-1">
-            Vyber si metodu, podívej se na návod a hned ji vyzkoušej na lekci z učebnice.
+            Vyber si techniku, vyber učivo a nech si z něj udělat procvičení. Každá technika má krátký návod.
           </p>
         </div>
 
@@ -198,6 +155,14 @@ const StudentMethods = () => {
                   <Icon className={`text-primary ${big ? "w-8 h-8" : "w-6 h-6"}`} />
                 </div>
                 <h3 className={`font-heading font-semibold mb-1 ${big ? "text-2xl" : "text-lg"}`}>{m.name}</h3>
+                {methodPurpose(m.slug) && (
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-foreground/80">{methodPurpose(m.slug)!.purpose}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                      <Timer className="w-3 h-3" aria-hidden /> {methodPurpose(m.slug)!.duration}
+                    </span>
+                  </div>
+                )}
                 {m.description && (
                   <p className={`text-muted-foreground ${big ? "text-base line-clamp-4" : "text-sm line-clamp-3"}`}>
                     {m.description}
@@ -352,32 +317,42 @@ const StudentMethods = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Bez konkrétní lekce</SelectItem>
-                  {lessons.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.title}
-                      {l.textbook ? ` — ${l.textbook}` : ""}
-                    </SelectItem>
+                  {lessonGroups.map((g) => (
+                    <SelectGroup key={g.subject}>
+                      <SelectLabel>{g.subject}</SelectLabel>
+                      {g.lessons.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.title}
+                          {l.textbook && l.textbook !== g.subject ? ` — ${l.textbook}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
-              {lessons.length === 0 && (
+              {lessonsLoading ? (
+                <p className="text-xs text-muted-foreground mt-1">Načítám tvoje lekce…</p>
+              ) : lessonGroups.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Zatím nemáš žádné dostupné lekce z učebnic.
+                  Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce.
                 </p>
               )}
             </div>
 
             <div>
               <Label htmlFor="duration">Délka (minuty)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min={1}
-                max={240}
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="mt-1"
-              />
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger id="duration" className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRACTICE_DURATIONS.map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {d} min · {questionCountForDuration(d)} otázek
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

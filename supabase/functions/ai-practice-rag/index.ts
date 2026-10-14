@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
+import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,7 +60,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lesson_id, student_id, method } = await req.json();
+    const { lesson_id, student_id, method, question_count } = await req.json();
+    const total = clampQuestionCount(question_count, 6);
+    const tfCount = Math.max(1, Math.round(total / 3));
+    const mcCount = total - tfCount;
     if (!lesson_id) {
       return new Response(JSON.stringify({ error: "lesson_id required" }), {
         status: 400,
@@ -88,19 +92,18 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 
-    // Fetch lesson content
-    const { data: lesson, error: lessonErr } = await supabase
-      .from("textbook_lessons")
-      .select("id, title, blocks")
-      .eq("id", lesson_id)
-      .maybeSingle();
-
-    if (lessonErr || !lesson) {
-      return new Response(JSON.stringify({ error: "Lesson not found" }), {
-        status: 404,
+    // Lekce: nejdřív globální, pak učitelská; přístup ověřen RLS volajícího.
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: auth.authHeader } },
+    });
+    const found = await loadPracticeLesson(userClient, supabase, lesson_id);
+    if (!found.ok) {
+      return new Response(JSON.stringify({ error: found.error }), {
+        status: found.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const lesson = found.lesson;
 
     const lessonText = blocksToText(lesson.blocks);
 
@@ -144,7 +147,7 @@ Deno.serve(async (req) => {
     }
 
     const prompt = `Jsi učitel připravující procvičovací otázky pro českého žáka.
-Tvým úkolem je vygenerovat 6 otázek STRIKTNĚ z následujícího obsahu lekce – nepoužívej žádné obecné znalosti mimo tento text.
+Tvým úkolem je vygenerovat ${total} otázek STRIKTNĚ z následujícího obsahu lekce – nepoužívej žádné obecné znalosti mimo tento text.
 
 LEKCE: ${lesson.title}
 ${method ? `METODA: ${method}` : ""}
@@ -164,7 +167,7 @@ Vrať JSON ve formátu:
   "recommendation": "Krátké česky psané doporučení co opakovat (1-2 věty)."
 }
 
-Mix obtížností kolem cílové úrovně. Zhruba 4 multiple_choice + 2 true_false. Otázky musí být zodpověditelné výhradně z výše uvedeného textu.`;
+Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + ${tfCount} true_false. Otázky musí být zodpověditelné výhradně z výše uvedeného textu.`;
 
     const aiRes = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

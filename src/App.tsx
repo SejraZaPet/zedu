@@ -223,6 +223,7 @@ const App = () => (
             <Route path="/ucitel/bezlistart" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherBezliStart /></ProtectedRoute>} />
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
+            <Route path="/student/ucim-se" element={<Navigate to="/student/metody" replace />} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
             <Route path="/bezlimarket" element={<ProtectedRoute><BezliMarketPage /></ProtectedRoute>} />
             <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><SharedWithMe /></ProtectedRoute>} />

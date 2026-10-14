@@ -96,7 +96,7 @@ const ACADEMY_BY_ROLE: Record<string, string> = {
 
 /** Položky žáka přesunuté z hlavní lišty do rozbalovacího Menu (odlehčení lišty). */
 const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
-  { label: "Studijní metody", href: "/student/metody", icon: Brain },
+  { label: "Učím se", href: "/student/metody", icon: GraduationCap },
   { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
   { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
   { label: "Můj sešit", href: "/student/sesit", icon: NotebookPen },
