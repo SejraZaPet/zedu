@@ -1,4 +1,5 @@
 import { Info, Video, PenLine, MessageCircle, Users } from "lucide-react";
+import type { CSSProperties } from "react";
 import type { WorksheetItemProps } from "./types";
 import type { InstructionIcon } from "@/lib/worksheet-spec";
 import { getWriteLineCount, getWriteLineHeightMm, WRITE_LINE_HEIGHT_MM, getBlankBoxHeightMm, blankBoxBackgroundCss } from "@/lib/worksheet-write-lines";
@@ -37,7 +38,7 @@ export function hasWrittenText(v: unknown): boolean {
 }
 
 /** CSS text `a:b;c:d` → React style objekt. */
-function cssToStyle(css: string): React.CSSProperties {
+function cssToStyle(css: string): CSSProperties {
   const out: Record<string, string> = {};
   for (const part of css.split(";")) {
     const i = part.indexOf(":");
@@ -45,7 +46,7 @@ function cssToStyle(css: string): React.CSSProperties {
     const key = part.slice(0, i).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase());
     if (key) out[key] = part.slice(i + 1).trim();
   }
-  return out as React.CSSProperties;
+  return out as CSSProperties;
 }
 
 function LinedTextarea({

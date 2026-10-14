@@ -104,6 +104,56 @@ html, body {
 
 .ws-items { display: block; width: 100%; }
 
+/* ─── Hustota tisku (výchozí compact i bez třídy) ─── */
+.ws-page {
+  --ws-item-gap: 4mm;
+  --ws-choice-pad: 3pt;
+  --ws-tf-gap: 5pt;
+  --ws-order-pad: 5pt;
+  --ws-order-box-top: 3pt;
+  --ws-match-pad: 4pt;
+  --ws-match-spacing: 2pt;
+  --ws-prompt-size: 11pt;
+  --ws-num-size: 12pt;
+}
+.ws-page.ws-density-normal {
+  --ws-item-gap: 7mm;
+  --ws-choice-pad: 4pt;
+  --ws-tf-gap: 6.5pt;
+  --ws-order-pad: 6.5pt;
+  --ws-order-box-top: 4.5pt;
+  --ws-match-pad: 5pt;
+  --ws-match-spacing: 3pt;
+  --ws-prompt-size: 12pt;
+  --ws-num-size: 14pt;
+}
+.ws-page.ws-density-loose {
+  --ws-item-gap: 10mm;
+  --ws-choice-pad: 5pt;
+  --ws-tf-gap: 8pt;
+  --ws-order-pad: 8pt;
+  --ws-order-box-top: 6pt;
+  --ws-match-pad: 6pt;
+  --ws-match-spacing: 4pt;
+  --ws-prompt-size: 12pt;
+  --ws-num-size: 14pt;
+}
+
+/* ─── Prázdné místo (blank_box) — nikdy nedělit mezi stránky ─── */
+.ws-blank-box {
+  display: block;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0 0 var(--ws-item-gap, 4mm) 0;
+}
+.ws-blank-box-label { font-size: 10pt; margin: 0 0 4pt; color: #475569 !important; }
+.ws-blank-box-area {
+  display: block;
+  border: 0.7pt solid #CBD5E1;
+  border-radius: 2pt;
+  background-color: #FFFFFF;
+}
+
 .ws-lesson-visual {
   display: block;
   margin: 8pt 0;
@@ -261,7 +311,7 @@ html, body {
   display: block;
   break-inside: avoid;
   page-break-inside: avoid;
-  margin-bottom: 10mm;
+  margin-bottom: var(--ws-item-gap, 4mm);
   background: #FFFFFF !important;
   color: #1A1F2C !important;
   overflow: visible;
@@ -274,7 +324,7 @@ html, body {
 .ws-item-num {
   display: inline-block;
   width: 18pt;
-  font-size: 14pt;
+  font-size: var(--ws-num-size, 12pt);
   font-weight: 700;
   color: #7C3AED !important;
   vertical-align: top;
@@ -283,7 +333,7 @@ html, body {
 .ws-item-prompt,
 .ws-item .prompt {
   display: inline;
-  font-size: 12pt;
+  font-size: var(--ws-prompt-size, 11pt);
   font-weight: 600;
   color: #1A1F2C !important;
   background: transparent !important;
@@ -308,7 +358,7 @@ html, body {
 }
 .ws-choices li {
   display: block;
-  padding: 5pt 0;
+  padding: var(--ws-choice-pad, 3pt) 0;
   font-size: 11pt;
   line-height: 1.5;
   color: #1A1F2C !important;
@@ -326,7 +376,7 @@ html, body {
 /* ─── D.4 True/False ─── */
 .ws-tf-options {
   display: block;
-  margin: 8pt 0 0 18pt;
+  margin: var(--ws-tf-gap, 5pt) 0 0 18pt;
 }
 .ws-tf-option {
   display: inline-block;
@@ -397,7 +447,7 @@ html, body {
 .ws-matching-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 4pt;
+  border-spacing: 0 var(--ws-match-spacing, 2pt);
   margin: 6pt 0 0 18pt;
   break-inside: avoid;
   page-break-inside: avoid;
@@ -412,7 +462,7 @@ html, body {
   padding: 2pt 10pt 4pt;
 }
 .ws-matching-table td {
-  padding: 6pt 10pt;
+  padding: var(--ws-match-pad, 4pt) 10pt;
   font-size: 10pt;
   background: #FFFFFF !important;
   border-bottom: 0.5pt solid #E5E7EB;
@@ -459,7 +509,7 @@ html, body {
 }
 .ws-ordering-list li {
   display: block;
-  padding: 8pt 0 8pt 36pt;
+  padding: var(--ws-order-pad, 5pt) 0 var(--ws-order-pad, 5pt) 36pt;
   font-size: 11pt;
   position: relative;
   border-bottom: 0.5pt solid #E5E7EB;
@@ -469,7 +519,7 @@ html, body {
   display: inline-block;
   position: absolute;
   left: 0;
-  top: 6pt;
+  top: var(--ws-order-box-top, 3pt);
   width: 24pt;
   height: 22pt;
   border: 1.5pt solid #1A1F2C;
@@ -486,7 +536,7 @@ html, body {
 .ws-answer-lines { display: block; width: 100%; }
 .ws-answer-line {
   display: block;
-  height: 8mm;
+  height: ${WRITE_LINE_HEIGHT_MM}mm;
   border-bottom: 0.7pt solid #94A3B8;
   margin: 0;
 }
@@ -659,7 +709,7 @@ p, li { orphans: 2; widows: 2; }
   }
 
   /* Page breaks */
-  .ws-item, .ws-offline-activity, .ws-matching-table, .ws-ordering-list {
+  .ws-item, .ws-offline-activity, .ws-matching-table, .ws-ordering-list, .ws-blank-box {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -781,11 +831,11 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
 function renderAnswerSpace(space: AnswerSpace): string {
   if (space.type === "none" || space.heightMm <= 0) return "";
 
-  const hStyle = `height:${space.heightMm}mm`;
+  const hStyle = `height:${answerSpaceHeightMm(space)}mm`;
 
   switch (space.type) {
     case "lines": {
-      const count = space.lineCount ?? Math.max(2, Math.floor(space.heightMm / 8));
+      const count = answerSpaceLineCount(space);
       const lines = Array.from({ length: count }, () => `<div class="ws-answer-line"></div>`).join("");
       return `<div class="ws-answer-space ws-answer-lines" style="${hStyle}">${lines}</div>`;
     }
@@ -923,12 +973,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
     case "write_lines": {
       const n = getWriteLineCount(item);
       const style = item.lineStyle ?? "dotted";
+      const lineMm = getWriteLineHeightMm(item);
       const written = printAnswers?.[item.id];
       if (typeof written === "string" && written.trim()) {
-        return `<div style="margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${writtenLinesHtml(written, n, style)}</div>`;
+        return `<div style="margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${writtenLinesHtml(written, n, style, lineMm)}</div>`;
       }
       const lines = Array.from({ length: n })
-        .map(() => `<div style="border-bottom:1px ${style} #999;height:24px;margin-bottom:2px;"></div>`)
+        .map(() => `<div class="ws-write-line" style="border-bottom:1px ${style} #999;height:${lineMm}mm;box-sizing:border-box;"></div>`)
         .join("");
       return `<div style="margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${lines}</div>`;
     }
@@ -951,11 +1002,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       const boxContent = (c?: string, side?: 0 | 1) => {
         const m = c?.match(/^lines:(\d+)$/);
         const w = Array.isArray(tbv) && side !== undefined ? String(tbv[side] ?? "") : "";
-        if (m && w.trim()) return writtenLinesHtml(w, parseInt(m[1], 10), "dotted", 20);
+        if (m && w.trim()) return writtenLinesHtml(w, parseInt(m[1], 10), "dotted");
         if (m) {
           const n = parseInt(m[1], 10);
           return Array.from({ length: n })
-            .map(() => `<div style="border-bottom:1px dotted #999;height:20px;margin-bottom:2px;"></div>`)
+            .map(() => `<div class="ws-write-line" style="border-bottom:1px dotted #999;height:${WRITE_LINE_HEIGHT_MM}mm;box-sizing:border-box;"></div>`)
             .join("");
         }
         return `<p style="font-size:10pt;margin:0;white-space:pre-wrap;">${esc(c ?? "")}</p>`;
@@ -964,6 +1015,16 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.leftTitle ?? "")}</h4>${boxContent(item.leftContent, 0)}</div>
         <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.rightTitle ?? "")}</h4>${boxContent(item.rightContent, 1)}</div>
       </div>`;
+    }
+
+    case "blank_box": {
+      const h = getBlankBoxHeightMm(item);
+      const written = printAnswers?.[item.id];
+      const label = item.prompt?.trim() ? `<p class="ws-blank-box-label">${esc(item.prompt.trim())}</p>` : "";
+      const text = typeof written === "string" && written.trim()
+        ? `<div style="padding:4pt;font-size:11pt;line-height:${WRITE_LINE_HEIGHT_MM}mm;white-space:pre-wrap;">${esc(written)}</div>`
+        : "";
+      return `<div class="ws-blank-box" data-type="blank_box">${label}<div class="ws-blank-box-area" style="height:${h}mm;${blankBoxBackgroundCss(item.blankStyle)}">${text}</div></div>`;
     }
 
     case "qr_link": {
@@ -1288,12 +1349,21 @@ function renderFooter(spec: WorksheetSpec): string {
 let printAnswers: Record<string, unknown> | null = null;
 
 /** Napsaný text na linkách; linky navíc se doplní prázdné. */
-function writtenLinesHtml(text: string, minLines: number, style: string, h = 24): string {
+function writtenLinesHtml(text: string, minLines: number, style: string, hMm = WRITE_LINE_HEIGHT_MM): string {
   const rows = text.split(/\n/);
   const n = Math.max(minLines, rows.length);
   return Array.from({ length: n })
-    .map((_, i) => `<div style="border-bottom:1px ${style} #999;min-height:${h}px;margin-bottom:2px;font-size:11pt;white-space:pre-wrap;">${esc(rows[i] ?? "")}</div>`)
+    .map((_, i) => `<div class="ws-write-line" style="border-bottom:1px ${style} #999;min-height:${hMm}mm;box-sizing:border-box;font-size:11pt;white-space:pre-wrap;">${esc(rows[i] ?? "")}</div>`)
     .join("");
+}
+
+/** Třída hustoty tisku; starší listy bez pole → compact. */
+export function printDensityOf(spec: Pick<WorksheetSpec, "header">): PrintDensity {
+  const d = spec.header?.printDensity;
+  return d === "normal" || d === "loose" ? d : "compact";
+}
+function densityClass(spec: Pick<WorksheetSpec, "header">): string {
+  return `ws-density-${printDensityOf(spec)}`;
 }
 
 export interface WorksheetPrintOptions {
@@ -1406,7 +1476,7 @@ export function renderWorksheetVariantHtml(
 </head>
 <body>
 
-<div class="ws-page">
+<div class="ws-page ${densityClass(specCopy)}">
   <div class="ws-content">
 ${header}
 
@@ -1451,7 +1521,7 @@ export function renderWorksheetVariantFragment(
     : "";
 
   const bodyHtml = `
-<div class="ws-page">
+<div class="ws-page ${densityClass(specCopy)}">
   <div class="ws-content">
 ${header}
 
