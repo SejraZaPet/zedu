@@ -27,6 +27,7 @@ export function useGameSession(
   useEffect(() => {
     const d = (session as any)?.activity_data;
     slidesLenRef.current = Array.isArray(d) ? d.length : -1;
+    sessionRef.current = session;
   }, [session]);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
