@@ -32,6 +32,9 @@ import {
 } from "@/lib/lesson-activity-progress";
 import LessonActivityChecklist from "@/components/assignments/LessonActivityChecklist";
 import { bestAttempt } from "@/lib/best-results";
+import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
+import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
+import ExamTypeBadge from "@/components/assignments/ExamTypeBadge";
 
 interface AssignmentData {
   id: string;
@@ -185,6 +188,9 @@ const StudentAssignmentPlayer = () => {
       } else {
         setLinkedLesson(null);
       }
+
+      // Plán bez obsahu: jen termín a lekce, žádný pokus se nezakládá.
+      if (isPlanWithoutContent(assignmentData)) return;
 
       // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
       if (assignmentData.worksheet_id) {
@@ -548,6 +554,47 @@ const StudentAssignmentPlayer = () => {
         <main className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Úloha nenalezena.</p>
         </main>
+      </div>
+    );
+  }
+
+  if (isPlanWithoutContent(assignment)) {
+    const lessons = planLessons(assignment);
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl" style={{ paddingTop: "calc(70px + 2rem)" }}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/student/ulohy")} className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Zpět na úlohy
+          </Button>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-heading text-2xl font-bold break-words">{assignment.title}</h1>
+                <ExamTypeBadge examType={(assignment as any).exam_type} showDefault />
+                <Badge variant="outline">Naplánováno</Badge>
+              </div>
+              {assignment.deadline && (
+                <p className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  Termín: {new Date(assignment.deadline).toLocaleString("cs", { weekday: "long", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
+              {assignment.description && <AssignmentDescription description={assignment.description} />}
+              {lessons.length > 0 && (
+                <div className="space-y-2">
+                  <h2 className="font-semibold text-sm">Co se máš naučit</h2>
+                  <ul className="list-disc pl-5 text-sm space-y-0.5">
+                    {lessons.map((l) => <li key={l.id}>{l.title}</li>)}
+                  </ul>
+                  <PlanPrepareButton lessons={lessons} size="default" />
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">Učitel zatím nepřipojil zadání. Teď není co odevzdat – připrav se na termín.</p>
+            </CardContent>
+          </Card>
+        </main>
+        <SiteFooter />
       </div>
     );
   }
