@@ -36,6 +36,7 @@ export function blocksToPlainText(blocks: unknown, maxLen = LESSON_TEXT_MAX): st
       if (typeof node.heading === "string") out.push(node.heading);
       if (Array.isArray(node.children)) walk(node.children);
       if (Array.isArray(node.items)) walk(node.items);
+      if (node.props && typeof node.props === "object") walk(node.props);
     }
   };
   walk(blocks);
