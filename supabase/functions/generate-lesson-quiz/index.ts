@@ -20,6 +20,11 @@ serve(async (req) => {
 
   const auth = await requireAuth(req);
   if (!auth.ok) return json(auth.body, auth.status);
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-lesson-quiz");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
