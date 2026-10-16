@@ -8404,6 +8404,15 @@ export type Database = {
         Returns: string
       }
       class_engagement_stats: { Args: { _class_id: string }; Returns: Json }
+      class_leaderboard: {
+        Args: { _class_id: string }
+        Returns: {
+          badge_count: number
+          level: number
+          student_id: string
+          total_xp: number
+        }[]
+      }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
       compute_textbook_visibility: {
         Args: { _textbook_id: string }

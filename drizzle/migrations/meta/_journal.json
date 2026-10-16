@@ -400,6 +400,13 @@
       "when": 1792131682299,
       "tag": "0056_exam_type_prace_v_hodine",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792143143912,
+      "tag": "0057_student_space_security",
+      "breakpoints": true
     }
   ]
 }
