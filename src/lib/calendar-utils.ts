@@ -29,7 +29,7 @@ export type CalendarEvent = {
   color?: string;
   abbreviation?: string;
   weekParity?: "every" | "odd" | "even";
-  examType?: "ustni" | "pisemne" | "digitalni" | "projekt" | null;
+  examType?: "ustni" | "pisemne" | "digitalni" | "projekt" | "prace_v_hodine" | null;
 };
 
 export type ScheduleSlotInput = {

@@ -393,6 +393,13 @@
       "when": 1791969567767,
       "tag": "0055_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792131682299,
+      "tag": "0056_exam_type_prace_v_hodine",
+      "breakpoints": true
     }
   ]
 }
