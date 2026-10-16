@@ -2816,6 +2816,50 @@ export default function TeacherLessonPlanEditor() {
         </DialogContent>
       </Dialog>
 
+      {attachPhase && user && (
+        <AttachExistingDialog
+          teacherId={user.id}
+          open
+          onOpenChange={(o) => { if (!o) setAttachPhase(null); }}
+          alreadyAttached={phases[attachPhase]?.attached ?? []}
+          onAttach={(items) => handleAttachExisting(attachPhase, items)}
+        />
+      )}
+
+      <Dialog open={linkPhase !== null} onOpenChange={(o) => { if (!o) setLinkPhase(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Přidat odkaz</DialogTitle>
+            <DialogDescription>Odkaz na externí aktivitu (Wordwall, Kahoot, Quizizz, Liveworksheets…). Otevře se v nové záložce.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="attach-link-url">Adresa (URL)</Label>
+              <Input
+                id="attach-link-url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://wordwall.net/…"
+                inputMode="url"
+              />
+            </div>
+            <div>
+              <Label htmlFor="attach-link-title">Název (nepovinný)</Label>
+              <Input
+                id="attach-link-title"
+                value={linkTitle}
+                onChange={(e) => setLinkTitle(e.target.value)}
+                placeholder="např. Interaktivní cvičení"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkPhase(null)}>Zrušit</Button>
+            <Button onClick={handleAddLink} disabled={!linkUrl.trim()}>Připnout odkaz</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SiteFooter />
     </div>
   );
