@@ -89,6 +89,7 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
           exam_type: a.exam_type,
           deadline: a.deadline,
           lesson_id: a.lesson_id ?? null,
+          lesson_source: a.lesson_source ?? null,
           subjectName: a.subject_id ? subjectNames.get(a.subject_id) ?? null : null,
         })),
       );
@@ -96,12 +97,15 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
     })();
   }, [userId]);
 
-  const handlePrepare = (item: UpcomingExam) => {
+  const handlePrepare = async (item: UpcomingExam) => {
     if (item.lesson_id) {
-      navigate(`/student/lekce/${item.lesson_id}`);
-    } else {
-      navigate("/student/ulohy");
+      const linked = await resolveLinkedLesson(item.lesson_id, item.lesson_source);
+      if (linked) {
+        navigate(linked.url);
+        return;
+      }
     }
+    navigate("/student/ulohy");
   };
 
   return (
