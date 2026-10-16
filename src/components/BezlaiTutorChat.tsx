@@ -19,6 +19,11 @@ interface BezlaiTutorChatProps {
   contextKey?: string;
   /** Umístění plovoucího tlačítka. */
   className?: string;
+  /** Řízené otevření zvenčí (např. tlačítkem „Zeptat se“ ve studijní liště). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Skryje plovoucí tlačítko – chat se otevírá jen přes open. */
+  hideTrigger?: boolean;
 }
 
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
