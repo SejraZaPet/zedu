@@ -1,5 +1,10 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Banka slov v doplňování
+- [x] Banka slov, vracení slov, kliknutí a přetahování včetně dotyku
+- [x] Nastavení editoru, výchozí zapnuto, falešná slova
+- [x] Testy bodování/answers (453 testů); náhled Poživatin: přetažení, vrácení, dotyk a 5 odpovědí i po obnovení
+
 ## Kontrola odpovědí aktivit v lekci
 - [x] Přidat nepovinné answers bez změny existujících dat a politik
 - [x] Ukládání a přehled odpovědí v lekci i po návratu, staré výsledky beze změny

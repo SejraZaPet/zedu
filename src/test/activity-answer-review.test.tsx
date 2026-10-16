@@ -94,7 +94,7 @@ describe("snapshot automaticky hodnocených aktivit", () => {
   });
   it("doplňování respektuje alternativy a původní normalizaci", () => {
     const complete = vi.fn();
-    render(<FillBlanksActivity text="Je to {{ovoce/jablko}}." onComplete={complete} />);
+    render(<FillBlanksActivity text="Je to {{ovoce/jablko}}." showWordBank={false} onComplete={complete} />);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "JABLKO" } });
     fireEvent.click(screen.getByRole("button", { name: "Zkontrolovat" }));
     expect(complete.mock.calls[0]?.slice(0, 2)).toEqual([1, 1]);
