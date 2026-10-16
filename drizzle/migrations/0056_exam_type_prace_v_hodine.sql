@@ -1,0 +1,2 @@
+ALTER TABLE public.assignments DROP CONSTRAINT IF EXISTS assignments_exam_type_check;
+ALTER TABLE public.assignments ADD CONSTRAINT assignments_exam_type_check CHECK (exam_type IS NULL OR exam_type IN ('ustni','pisemne','digitalni','projekt','prace_v_hodine'));

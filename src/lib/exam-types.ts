@@ -1,6 +1,6 @@
-import { Mic, PenLine, Monitor, Lightbulb, ClipboardList, type LucideIcon } from "lucide-react";
+import { Mic, PenLine, Monitor, Lightbulb, ClipboardList, School, type LucideIcon } from "lucide-react";
 
-export type ExamType = "ustni" | "pisemne" | "digitalni" | "projekt";
+export type ExamType = "ustni" | "pisemne" | "digitalni" | "projekt" | "prace_v_hodine";
 
 export interface ExamTypeMeta {
   value: ExamType | "ukol";
@@ -19,6 +19,13 @@ export const EXAM_TYPE_META: Record<ExamType | "ukol", ExamTypeMeta> = {
     icon: ClipboardList,
     badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     color: "#3B82F6",
+  },
+  prace_v_hodine: {
+    value: "prace_v_hodine",
+    label: "Práce v hodině",
+    icon: School,
+    badgeClass: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+    color: "#14B8A6",
   },
   ustni: {
     value: "ustni",
@@ -57,6 +64,7 @@ export function getExamTypeMeta(examType: string | null | undefined): ExamTypeMe
 
 export const EXAM_TYPE_OPTIONS: ExamTypeMeta[] = [
   EXAM_TYPE_META.ukol,
+  EXAM_TYPE_META.prace_v_hodine,
   EXAM_TYPE_META.ustni,
   EXAM_TYPE_META.pisemne,
   EXAM_TYPE_META.digitalni,
