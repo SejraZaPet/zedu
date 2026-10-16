@@ -1,3 +1,6 @@
+import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
+import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -95,6 +98,8 @@ interface AssignmentRow {
   class_id: string | null;
   lesson_id?: string | null;
   worksheet_id?: string | null;
+  exam_type?: string | null;
+  scheduled_publish_at?: string | null;
 }
 
 interface AttemptRow {
@@ -220,7 +225,7 @@ export default function StudentSubjectClass() {
 
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, worksheet_id")
+        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, worksheet_id, exam_type")
         .eq("status", "published");
       assignQuery = isGroup
         ? assignQuery.eq("group_id", groupId)
@@ -353,14 +358,7 @@ export default function StudentSubjectClass() {
       setAssignments(_assignments);
 
       if (_assignments.length) {
-        const { data: aData } = await supabase
-          .from("assignment_attempts")
-          .select("id, assignment_id, status, score, max_score, submitted_at, teacher_feedback_text, teacher_feedback_emoji")
-          .eq("student_id", user.id)
-          .in(
-            "assignment_id",
-            _assignments.map((a) => a.id),
-          );
+        const aData = await loadStudentAssignmentAttempts(user.id, _assignments.map((a) => a.id));
         if (!cancelled) setAttempts((aData as AttemptRow[]) ?? []);
       } else {
         setAttempts([]);
@@ -797,61 +795,13 @@ export default function StudentSubjectClass() {
                 Pro tuto třídu zatím nemáš žádné úkoly.
               </Card>
             ) : (
-              <div className="space-y-2">
-                {assignments.map((a) => {
-                  const state = attemptState(a);
-                  const meta = stateMeta[state];
-                  const att = attemptByAssignment.get(a.id);
-                  const overdue =
-                    a.deadline && new Date(a.deadline) < now && state === "not_submitted";
-                  return (
-                    <Card key={a.id} className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-medium truncate">{a.title}</h3>
-                            <Badge variant={meta.variant}>{meta.label}</Badge>
-                            {overdue && (
-                              <Badge variant="destructive">Po termínu</Badge>
-                            )}
-                          </div>
-                          {a.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {assignmentDescriptionToText(a.description)}
-                            </p>
-                          )}
-                          <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-3">
-                            {a.deadline && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Termín{" "}
-                                {format(new Date(a.deadline), "d. M. yyyy HH:mm", {
-                                  locale: cs,
-                                })}
-                              </span>
-                            )}
-                            {state === "graded" &&
-                              att &&
-                              att.max_score != null && (
-                                <span>
-                                  Hodnocení: {att.score}/{att.max_score} b
-                                </span>
-                              )}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/student/ulohy/${a.id}`)}
-                        >
-                          {state === "not_submitted" ? "Otevřít" : "Detail"}
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+              <AssignmentStatusGroups items={assignments} storageKey={`assignment-groups:student:${classId || groupId}`}
+                statusOf={(a) => assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id))}
+                renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
+                  actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>
+                  {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
+                  {a.deadline && <p className="text-xs">Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</p>}
+                </AssignmentStatusCard>} />
             )}
           </TabsContent>
 

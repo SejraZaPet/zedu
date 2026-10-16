@@ -196,6 +196,17 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         if (!studentIds.includes(att.student_id)) studentIds.push(att.student_id);
       });
 
+      const sharedGroupIds = [...new Set(((attemptsRes.data ?? []) as any[]).map((a) => a.group_id).filter(Boolean))] as string[];
+      if (sharedGroupIds.length) {
+        const { data: sharedMembers } = await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", sharedGroupIds);
+        for (const member of sharedMembers ?? []) {
+          const shared = ((attemptsRes.data ?? []) as any[]).filter((a) => a.group_id === member.group_id);
+          const combined = [...(attemptsByStudent[member.student_id] ?? []), ...shared];
+          attemptsByStudent[member.student_id] = [...new Map(combined.map((a) => [a.id, a])).values()];
+          if (!studentIds.includes(member.student_id)) studentIds.push(member.student_id);
+        }
+      }
+
       const filesByStudent: Record<string, any[]> = {};
       ((filesRes.data as any[]) || []).forEach((f: any) => {
         if (!filesByStudent[f.student_id]) filesByStudent[f.student_id] = [];

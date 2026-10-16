@@ -1,3 +1,6 @@
+import { assignmentStatus, type StatusAttempt } from "@/lib/assignment-status";
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
+import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, ClipboardList, ArrowRight, Plus } from "lucide-react";
@@ -35,7 +38,9 @@ interface Props {
 interface UpcomingAssignment {
   id: string;
   title: string;
-  deadline: string;
+  deadline: string | null;
+  exam_type?: string | null;
+  attempts?: StatusAttempt[];
   kind: "assignment" | "todo";
 }
 
@@ -144,16 +149,13 @@ const TodayWidget = ({ role }: Props) => {
 
       let assignmentsQuery = supabase
         .from("assignments")
-        .select("id, title, deadline, teacher_id, status")
-        .not("deadline", "is", null)
-        .gte("deadline", fromIso)
-        .lte("deadline", toIso)
+        .select("id, title, deadline, teacher_id, status, exam_type")
         .order("deadline", { ascending: true });
 
       if (role === "student") {
-        assignmentsQuery = assignmentsQuery.eq("status", "published");
+        assignmentsQuery = assignmentsQuery.eq("status", "published").or(`deadline.lte.${toIso},deadline.is.null`);
       } else if (user) {
-        assignmentsQuery = assignmentsQuery.eq("teacher_id", user.id);
+        assignmentsQuery = assignmentsQuery.eq("teacher_id", user.id).not("deadline", "is", null).gte("deadline", fromIso).lte("deadline", toIso);
       }
 
       // Osobní úkoly (vč. úkolů z porad) s termínem v příštích 7 dnech
@@ -176,22 +178,14 @@ const TodayWidget = ({ role }: Props) => {
       let visibleAssignmentRows = (assignmentsRes.data ?? []) as any[];
       if (role === "student" && user && visibleAssignmentRows.length > 0) {
         const assignmentIds = visibleAssignmentRows.map((assignment) => assignment.id);
-        const { data: submittedAttempts } = await supabase
-          .from("assignment_attempts")
-          .select("assignment_id")
-          .eq("student_id", user.id)
-          .eq("status", "submitted")
-          .in("assignment_id", assignmentIds);
-        const submittedAssignmentIds = new Set(
-          (submittedAttempts ?? []).map((attempt) => attempt.assignment_id),
-        );
-        visibleAssignmentRows = visibleAssignmentRows.filter(
-          (assignment) => !submittedAssignmentIds.has(assignment.id),
-        );
+        const submittedAttempts = await loadStudentAssignmentAttempts(user.id, assignmentIds);
+        visibleAssignmentRows = visibleAssignmentRows.map((assignment) => ({ ...assignment,
+          attempts: (submittedAttempts ?? []).filter((attempt) => attempt.assignment_id === assignment.id),
+        }));
       }
 
       const assignments: UpcomingAssignment[] = visibleAssignmentRows.map(
-        (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, kind: "assignment" as const }),
+        (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, exam_type: a.exam_type, attempts: a.attempts, kind: "assignment" as const }),
       );
       const todos: UpcomingAssignment[] = (((todosRes as any).data ?? []) as any[]).map(
         (t: any) => ({
@@ -203,7 +197,7 @@ const TodayWidget = ({ role }: Props) => {
       );
 
       const combined = [...assignments, ...todos].sort(
-        (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
+        (a, b) => (a.deadline ? new Date(a.deadline).getTime() : Infinity) - (b.deadline ? new Date(b.deadline).getTime() : Infinity),
       );
 
       if (!mounted) return;
@@ -237,7 +231,7 @@ const TodayWidget = ({ role }: Props) => {
     }
   };
 
-  const visibleAssignments = upcomingAssignments.slice(0, 5);
+  const visibleAssignments = role === "student" ? upcomingAssignments : upcomingAssignments.slice(0, 5);
   const hasMoreAssignments = upcomingAssignments.length > 5;
 
   return (
@@ -348,7 +342,7 @@ const TodayWidget = ({ role }: Props) => {
             <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+            <span className="text-sm text-muted-foreground">{role === "student" ? "podle stavu" : "následujících 7 dní"}</span>
             <button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -372,10 +366,20 @@ const TodayWidget = ({ role }: Props) => {
               ? "V příštích 7 dnech tě nečekají žádné úkoly."
               : "V příštích 7 dnech nemáš žádné termíny zadaných úkolů."}
           </p>
+        ) : role === "student" ? (
+          <div className="space-y-3">
+            <AssignmentStatusGroups items={visibleAssignments.filter((a) => a.kind === "assignment")}
+              storageKey="assignment-groups:student:dashboard" statusOf={(a) => assignmentStatus(a, a.attempts)}
+              renderItem={(a, status) => <AssignmentStatusCard title={a.title} status={status}
+                actions={<Button size="sm" className="assignment-card-action" onClick={() => handleAssignmentClick(a)}>Otevřít</Button>}>
+                {a.deadline && <p className="text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
+              </AssignmentStatusCard>} />
+            {visibleAssignments.filter((a) => a.kind === "todo").map((a) => <Button key={a.id} variant="ghost" onClick={() => handleAssignmentClick(a)}>{a.title} · Můj úkol</Button>)}
+          </div>
         ) : (
           <ul className="space-y-1">
             {visibleAssignments.map((a) => {
-              const deadline = new Date(a.deadline);
+              const deadline = new Date(a.deadline ?? "");
               const days = differenceInCalendarDays(deadline, now);
               const colorClass = deadlineColorClass(deadline, now);
               return (

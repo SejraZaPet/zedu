@@ -1,5 +1,10 @@
 # Roadmap
 
+## Vizuální stavy úkolů (2026-10-16)
+- [x] Sdílený výpočet stavu, skupiny a přístupné gradientové karty žáka i učitele.
+- [x] Zachovat akce, filtry, hodnocení, data a demo ochrany.
+- [x] Hraniční testy, celá sada a ověření v přihlášeném náhledu i na telefonu.
+
 ## Prezentace z lekce — věrnost a ukládání (2026-09-29)
 - [x] A: Zapojit uloženou učitelskou verzi do editoru i projektoru.
 - [x] A: Zachovat ruční obsah, pořadí, smazání a zámek snímku.
