@@ -12,19 +12,20 @@ function BankWord({ word, used, selected, disabled, onSelect }: { word: Word; us
     disabled={used || disabled} aria-pressed={selected} onClick={onSelect}>{word.text}</Button>;
 }
 
-function Gap({ index, answer, disabled, selected, onFill, onReturn }: { index: number; answer: string; disabled: boolean; selected: boolean; onFill: () => void; onReturn: () => void }) {
+function Gap({ index, answer, disabled, selected, correct, onFill, onReturn }: { index: number; answer: string; disabled: boolean; selected: boolean; correct?: boolean; onFill: () => void; onReturn: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: `gap-${index}`, disabled });
   return <span ref={setNodeRef} className="inline-flex items-center mx-1 gap-1">
     <Button size="sm" variant="outline" disabled={disabled} aria-label={`Mezera ${index + 1}${answer ? `: ${answer}` : ""}`}
-      className={`min-w-20 max-w-[200px] h-auto min-h-8 whitespace-normal break-words ${isOver || selected ? "border-primary" : ""}`}
+      className={`min-w-20 max-w-[200px] h-auto min-h-8 whitespace-normal break-words ${correct === true ? "border-activity-correct bg-activity-correct/10" : correct === false ? "border-destructive bg-destructive/10" : isOver || selected ? "border-primary" : ""}`}
       onClick={onFill}>{answer || "…"}</Button>
     {answer && !disabled && <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" aria-label={`Vrátit slovo z mezery ${index + 1}`} title="Vrátit slovo" onClick={onReturn}><X className="h-4 w-4" /></Button>}
   </span>;
 }
 
 /** Bank entries have occurrence IDs: equal words remain independently usable. */
-export function FillWordBank({ words, distractors, answers, disabled, onChange, children }: {
+export function FillWordBank({ words, distractors, answers, results, disabled, onChange, children }: {
   words: string[]; distractors: string[]; answers: string[]; disabled: boolean;
+  results?: boolean[] | null;
   onChange: (index: number, value: string) => void; children: (renderGap: (index: number) => ReactNode) => ReactNode;
 }) {
   const bank = useMemo(() => {
@@ -55,7 +56,7 @@ export function FillWordBank({ words, distractors, answers, disabled, onChange, 
       {bank.map(word => <BankWord key={word.id} word={word} disabled={disabled} used={Object.values(assigned).includes(word.id)} selected={selected === word.id}
         onSelect={() => setSelected(previous => previous === word.id ? null : word.id)} />)}
     </div>
-    {children(index => <Gap index={index} answer={answers[index]} disabled={disabled} selected={selected !== null}
+    {children(index => <Gap index={index} answer={answers[index]} disabled={disabled} selected={selected !== null} correct={results?.[index]}
       onFill={() => fill(index, selected)} onReturn={() => {
         setAssigned(previous => { const next = { ...previous }; delete next[index]; return next; });
         onChange(index, "");

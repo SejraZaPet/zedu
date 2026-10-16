@@ -189,7 +189,7 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
       </div>
         );
         return showWordBank
-          ? <FillWordBank key={bankRevision} words={words} distractors={distractors} answers={answers} disabled={checked} onChange={handleUpdate}>{renderText}</FillWordBank>
+          ? <FillWordBank key={bankRevision} words={words} distractors={distractors} answers={answers} results={results} disabled={checked} onChange={handleUpdate}>{renderText}</FillWordBank>
           : renderText();
       })()}
 
