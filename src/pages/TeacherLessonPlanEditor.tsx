@@ -85,6 +85,14 @@ import { loadPlanLinks, type PlanLinks } from "@/lib/plan-links";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
+import {
+  CREATABLE_KINDS,
+  createdHref,
+  createGameFromSuggestion,
+  createWorksheetFromSuggestion,
+  type CreatedRef,
+} from "@/lib/plan-suggested-activities";
+import { launchTemplateSession } from "@/lib/game-templates";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 import {
   buildLessonUnits,
@@ -121,6 +129,8 @@ type ActivityKind =
 interface SuggestedActivity {
   kind: ActivityKind;
   title: string;
+  /** Odkaz na obsah vytvořený tlačítkem „Vytvořit z návrhu“. */
+  created?: CreatedRef;
 }
 
 interface PhaseValue {
@@ -130,7 +140,7 @@ interface PhaseValue {
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
-  quiz: { label: "Kvíz / interaktivní aktivita", href: "/ucitel/aktivity", hrefLabel: "Otevřít aktivity" },
+  quiz: { label: "Kvíz / interaktivní aktivita", href: "/aktivity", hrefLabel: "Otevřít aktivity" },
   worksheet: { label: "Pracovní list", href: "/ucitel/pracovni-listy", hrefLabel: "Pracovní listy" },
   live_game: { label: "Živá hra", href: "/ucitel/hry", hrefLabel: "Spustit živou hru" },
   lesson_block: { label: "Blok z učebnice", href: null, hrefLabel: "Otevřít lekci" },
