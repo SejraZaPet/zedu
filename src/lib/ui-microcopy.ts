@@ -169,7 +169,7 @@ export const UI_COPY = {
   // ═══════════════════════════════════════
   projector: {
     headline: "Naskenuj QR kód",
-    body: "nebo zadej kód na bezli.cz/hra",
+    body: "nebo zadej kód na bezli.cz/live/pripojit",
     waitingForPlayers: "Čekáme na hráče…",
     getReady: "Připravte se!",
     questionOf: (current: number, total: number) =>

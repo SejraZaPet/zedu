@@ -167,6 +167,9 @@ const App = () => (
             <Route path="/aktivity" element={<ActivitiesPage />} />
             <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherGameScreen /></ProtectedRoute>} />
             <Route path="/hra/pripojit" element={<StudentGameJoin />} />
+            {/* Krátké adresy z lobby a starších materiálů – vedou na připojení ke hře. */}
+            <Route path="/hra" element={<StudentGameJoin />} />
+            <Route path="/live" element={<StudentGameJoin />} />
             <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
             <Route path="/ucitel/hry" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherGames /></ProtectedRoute>} />
             <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><LiveTeacherScreen /></ProtectedRoute>} />
