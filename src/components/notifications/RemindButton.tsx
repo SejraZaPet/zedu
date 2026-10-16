@@ -24,6 +24,8 @@ interface Props {
   variant?: "default" | "outline" | "ghost" | "secondary";
   /** Vlastní label (jinak "Připomenout") */
   label?: string;
+  /** Volitelná třída tlačítka (např. styling na kartě úkolu) */
+  className?: string;
 }
 
 /**
