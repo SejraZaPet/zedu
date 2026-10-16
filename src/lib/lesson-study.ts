@@ -1,3 +1,5 @@
+import { blocksToText } from "../../supabase/functions/_shared/lesson-text";
+
 // Pomocné funkce pro studijní lištu u lekce (Kartičky · Kvíz · Shrnutí · Zeptat se).
 // Čisté funkce bez závislostí na Reactu/Supabase, aby šly testovat.
 
@@ -17,31 +19,7 @@ type AnyNode = any;
 
 /** Vytáhne prostý text z bloků lekce (pro AI kontext a čtení nahlas). */
 export function blocksToPlainText(blocks: unknown, maxLen = LESSON_TEXT_MAX): string {
-  if (!Array.isArray(blocks)) return "";
-  const out: string[] = [];
-  const walk = (node: AnyNode) => {
-    if (!node) return;
-    if (typeof node === "string") {
-      out.push(node);
-      return;
-    }
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
-    }
-    if (typeof node === "object") {
-      if (typeof node.text === "string") out.push(node.text);
-      if (typeof node.content === "string") out.push(node.content);
-      if (typeof node.title === "string") out.push(node.title);
-      if (typeof node.heading === "string") out.push(node.heading);
-      if (Array.isArray(node.children)) walk(node.children);
-      if (Array.isArray(node.items)) walk(node.items);
-      if (node.props && typeof node.props === "object") walk(node.props);
-    }
-  };
-  walk(blocks);
-  const text = out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-  return text.length > maxLen ? text.slice(0, maxLen) : text;
+  return blocksToText(blocks, maxLen);
 }
 
 /**

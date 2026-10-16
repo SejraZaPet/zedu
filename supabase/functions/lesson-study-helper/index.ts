@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { loadPracticeLesson } from "../_shared/practice-lesson.ts";
 
@@ -17,37 +18,6 @@ const json = (body: unknown, status = 200) =>
 
 const MAX_CARDS = 15;
 const SUMMARY_BULLETS = 5;
-const LESSON_TEXT_MAX = 6000;
-
-function blocksToText(blocks: unknown): string {
-  if (!Array.isArray(blocks)) return "";
-  const out: string[] = [];
-  // deno-lint-ignore no-explicit-any
-  const walk = (node: any) => {
-    if (!node) return;
-    if (typeof node === "string") {
-      out.push(node);
-      return;
-    }
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
-    }
-    if (typeof node === "object") {
-      if (typeof node.text === "string") out.push(node.text);
-      if (typeof node.content === "string") out.push(node.content);
-      if (typeof node.title === "string") out.push(node.title);
-      if (typeof node.heading === "string") out.push(node.heading);
-      if (Array.isArray(node.children)) walk(node.children);
-      if (Array.isArray(node.items)) walk(node.items);
-      if (node.props && typeof node.props === "object") walk(node.props);
-    }
-  };
-  walk(blocks);
-  const text = out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-  return text.length > LESSON_TEXT_MAX ? text.slice(0, LESSON_TEXT_MAX) : text;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -91,8 +61,8 @@ Deno.serve(async (req) => {
     if (!found.ok) return json({ error: found.error }, found.status);
 
     const lessonText = blocksToText(found.lesson.blocks);
-    if (!lessonText) {
-      return json({ error: "Lekce zatím nemá žádný textový obsah." }, 400);
+    if (!hasEnoughLessonText(lessonText)) {
+      return json({ error: INSUFFICIENT_LESSON_TEXT }, 422);
     }
 
     const systemPrompt =

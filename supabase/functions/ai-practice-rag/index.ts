@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
 
@@ -11,35 +12,6 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-
-type Block = {
-  type?: string;
-  text?: string;
-  content?: string;
-  title?: string;
-  items?: unknown[];
-  [k: string]: unknown;
-};
-
-function blocksToText(blocks: unknown): string {
-  if (!Array.isArray(blocks)) return "";
-  const out: string[] = [];
-  for (const b of blocks as Block[]) {
-    if (!b) continue;
-    if (typeof b.title === "string") out.push(`## ${b.title}`);
-    if (typeof b.text === "string") out.push(b.text);
-    if (typeof b.content === "string") out.push(b.content);
-    if (Array.isArray(b.items)) {
-      for (const it of b.items) {
-        if (typeof it === "string") out.push(`- ${it}`);
-        else if (it && typeof it === "object" && "text" in (it as any)) {
-          out.push(`- ${(it as any).text}`);
-        }
-      }
-    }
-  }
-  return out.join("\n").slice(0, 8000);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -106,6 +78,11 @@ Deno.serve(async (req) => {
     const lesson = found.lesson;
 
     const lessonText = blocksToText(lesson.blocks);
+    if (!hasEnoughLessonText(lessonText)) {
+      return new Response(JSON.stringify({ error: INSUFFICIENT_LESSON_TEXT }), {
+        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Adapt difficulty: combine XP level + recent success rate
     let targetDifficulty: "easy" | "medium" | "hard" = "medium";
