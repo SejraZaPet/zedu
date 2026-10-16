@@ -198,14 +198,15 @@ export async function createGameFromSuggestion(ctx: SuggestionContext): Promise<
 }
 
 /** Vytáhne srozumitelnou hlášku z chyby edge funkce (vč. demo limitu AI). */
-function extractFnError(error: any): string {
+async function extractFnError(error: any): Promise<string> {
   const ctx = error?.context;
   if (ctx && typeof ctx.json === "function") {
-    // FunctionsHttpError – tělo odpovědi může obsahovat { error }
-    return ctx
-      .json()
-      .then((b: any) => b?.error || error.message)
-      .catch(() => error.message) as unknown as string;
+    try {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    } catch {
+      /* ignore */
+    }
   }
   return error?.message || "Nepodařilo se vygenerovat obsah.";
 }
