@@ -9,7 +9,7 @@
 - Lesson-list disclosure is page-local; batch links from visible items.
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
-- Worksheet item editors emit patches to WorksheetEditor handlers; never persist directly.
+- Worksheet item editors emit patches to WorksheetEditor; never persist.
 - Insert print-header additions through an explicit template marker and paginate after fonts load using block bounds, not trailing margins, so print previews share stable page geometry.
 - Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
