@@ -1,12 +1,12 @@
 # Architecture rules
 
-- FillWordBank is lesson-only; occurrence IDs support duplicate words without changing scoring.
+- FillWordBank is lesson-only; occurrence IDs allow duplicate words.
 - Store snapshots in student_activity_results.answers via ActivityAnswerReview; pair with scored attempts, separate from live-game grading.
 
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
 - Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
 
-- Keep lesson-list disclosure page-local; batch links from visible occurrences without changing schedules or permissions.
+- Keep lesson-list disclosure page-local; batch links from visible occurrences only.
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
 - Worksheet item editors emit patches to WorksheetEditor handlers; never persist directly.
