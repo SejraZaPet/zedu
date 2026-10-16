@@ -1,17 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-function calculateStandardScore(correct: boolean, responseTimeMs: number, timeLimitMs: number): number {
-  if (!correct) return 0;
-  const ratio = Math.max(0, 1 - responseTimeMs / timeLimitMs);
-  return Math.round(400 + 600 * ratio);
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -117,68 +112,22 @@ serve(async (req) => {
       ? Date.now() - new Date(session.question_started_at).getTime()
       : timeLimitMs;
 
-    let score = 0;
-    let stolenFrom: string | null = null;
-    let stolenFromNickname: string | null = null;
-
-    // Per-slide game settings (slide.gameSettings) override the session mode for
-    // THIS slide only. "race" is session-only and never a per-slide override.
-    const slideMode = (question as any)?.gameSettings?.mode as string | undefined;
-    const effectiveMode =
-      slideMode && slideMode !== "race" && gameMode !== "race" ? slideMode : gameMode;
-
-    if (effectiveMode === "race") {
-      // Time-to-Climb: flat 10 points per correct answer.
-      score = 10;
-    } else if (effectiveMode === "tower") {
-      score = isCorrect ? 1 : 0;
-    } else if (effectiveMode === "steal") {
-      if (isCorrect) {
-        const { data: opponents } = await adminClient
-          .from("game_players")
-          .select("id, total_score, nickname")
-          .eq("session_id", session.id)
-          .neq("id", player.id);
-
-        // Team-mode: exclude opponents on the attacker's team so a player
-        // can't steal from their own teammates.
-        const teamModeKind =
-          (question as any)?.gameSettings?.teamMode ?? settings?.teamModeKind ?? "none";
-        const teamsArr = ((session as any).teams?.teams ?? []) as Array<{ id: string; members: string[] }>;
-        let candidatePool = opponents || [];
-        if (teamModeKind !== "none" && teamsArr.length > 0) {
-          const myTeam = teamsArr.find((t) => Array.isArray(t.members) && t.members.includes(player.id));
-          if (myTeam) {
-            const teammateIds = new Set(myTeam.members);
-            candidatePool = candidatePool.filter((o) => !teammateIds.has(o.id));
-          }
-        }
-
-        const eligible = candidatePool.filter((o) => (o.total_score ?? 0) > 0);
-        const pool = eligible.length > 0 ? eligible : candidatePool;
-        if (pool.length > 0) {
-          const target = pool[Math.floor(Math.random() * pool.length)];
-          stolenFrom = target.id;
-          stolenFromNickname = (target as any).nickname ?? null;
-          await adminClient.rpc("increment_player_score", {
-            _player_id: target.id, _score_delta: -5,
-          });
-          score = 5;
-        } else {
-          score = 5;
-        }
-      } else {
-        score = -3;
-      }
-    } else {
-      score = calculateStandardScore(isCorrect, elapsed, timeLimitMs);
-    }
+    const scored = await scoreLiveAnswer(adminClient, {
+      sessionId: session.id, settings, teams: (session as any).teams, slide: question,
+      playerId: player.id, correct: !!isCorrect, elapsedMs: elapsed,
+    });
+    const score = scored.score;
+    const effectiveMode = scored.mode;
+    const stolenFrom = scored.victimId;
+    const stolenFromNickname = scored.victimNickname;
+    const stolenAmount = -scored.victimDelta;
+    const robber = scored.robber;
 
     await adminClient.from("game_responses").insert({
       session_id: session.id,
       player_id: player.id,
       question_index: qi,
-      answer: { index: answerIndex, stolenFrom, gameMode: effectiveMode },
+      answer: { index: answerIndex, stolenFrom, stolenAmount, robber, gameMode: effectiveMode },
 
       is_correct: isCorrect,
       response_time_ms: Math.round(elapsed),
@@ -192,7 +141,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ correct: isCorrect, score, stolenFrom, stolenFromNickname, questionIndex: qi }),
+      JSON.stringify({ correct: isCorrect, score, stolenFrom, stolenFromNickname, stolenAmount, robber, questionIndex: qi }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

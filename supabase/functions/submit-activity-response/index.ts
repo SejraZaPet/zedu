@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
+import { mcqCorrectFromSelection } from "../_shared/game-scoring.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,7 +58,7 @@ serve(async (req) => {
     // Load session activity_data to inspect question type
     const { data: sess } = await admin
       .from("game_sessions")
-      .select("activity_data")
+      .select("activity_data, settings, teams, question_started_at")
       .eq("id", sessionId)
       .maybeSingle();
     const activityData = (sess?.activity_data as any[]) || [];
@@ -85,15 +87,24 @@ serve(async (req) => {
     let finalIsCorrect = !!isCorrect;
     let finalScore = typeof score === "number" ? score : 0;
 
-    const hasMcqOptions = Array.isArray(question?.activitySpec?.options);
-    if (hasMcqOptions) {
-      // TODO: client-trusted score for MCQ activity — requires answerData.selectedIndex
-      // to verify server-side. Currently QuizActivity (StudentGamePlay.tsx) only
-      // submits derived score/maxScore without the selected option index, so we cannot
-      // independently recompute correctness here.
+    // Server rozhoduje: u MCQ ověří správnost ze zvolených indexů a body
+    // spočítá podle herního režimu (stejná pravidla jako submit-answer).
+    let modeExtras: Record<string, unknown> = {};
+    let victimHandled = false;
+    if (!openEnded && question) {
+      const verified = mcqCorrectFromSelection(question?.activitySpec?.options, answerPayload?.selected);
+      if (verified !== null) finalIsCorrect = verified;
+      const startedAt = sess?.question_started_at ? new Date(sess.question_started_at).getTime() : null;
+      const elapsedMs = startedAt ? Date.now() - startedAt : (typeof responseTimeMs === "number" ? responseTimeMs : 0);
+      // Neověřitelné úlohy (hodnocené na zařízení) – správnost zůstává z telefonu.
+      const scored = await scoreLiveAnswer(admin, {
+        sessionId, settings: sess?.settings ?? {}, teams: (sess as any)?.teams, slide: question,
+        playerId, correct: finalIsCorrect, elapsedMs,
+      });
+      finalScore = scored.score;
+      victimHandled = true;
+      modeExtras = { gameMode: scored.mode, stolenFrom: scored.victimId, stolenAmount: -scored.victimDelta, robber: scored.robber };
     }
-    // For Poll/Wall and other types without a definitive "correct" answer,
-    // client-supplied isCorrect/score are preserved as-is.
 
     const safeScore = Math.max(-1000, Math.min(1000, Math.round(finalScore)));
     const safeRt = typeof responseTimeMs === "number" ? Math.max(0, Math.round(responseTimeMs)) : 0;
@@ -102,7 +113,7 @@ serve(async (req) => {
       session_id: sessionId,
       player_id: playerId,
       question_index: questionIndex,
-      answer: answerPayload,
+      answer: victimHandled ? { ...answerPayload, ...modeExtras } : answerPayload,
       is_correct: finalIsCorrect,
       score: safeScore,
       response_time_ms: safeRt,
@@ -113,7 +124,7 @@ serve(async (req) => {
     // leaderboards / race track stay at zero even when students answer well.
     // Open-ended activities (wall, wordcloud, open) carry no correctness, so they
     // never contribute points.
-    if (!openEnded && safeScore > 0) {
+    if (!openEnded && safeScore !== 0) {
       const { error: incErr } = await admin.rpc("increment_player_score", {
         _player_id: playerId,
         _score_delta: safeScore,
@@ -132,7 +143,7 @@ serve(async (req) => {
       }
     }
 
-    return json({ success: true, score: safeScore }, 200);
+    return json({ success: true, score: safeScore, isCorrect: finalIsCorrect, ...modeExtras }, 200);
   } catch (e) {
     console.error("submit-activity-response error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
