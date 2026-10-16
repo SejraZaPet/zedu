@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
+import { reminderBody, reminderMemberSource } from "../_shared/reminder-targets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
   // Najdi publikované úkoly s deadlinem v okně 24-48h.
   const { data: assignments, error: aErr } = await supabase
     .from("assignments")
-    .select("id, title, deadline, class_id, teacher_id")
+    .select("id, title, deadline, class_id, group_id, teacher_id, settings, worksheet_id, is_portfolio_task, activity_data")
     .eq("status", "published")
     .gte("deadline", in24h.toISOString())
     .lte("deadline", in48h.toISOString());
@@ -52,14 +53,14 @@ Deno.serve(async (req) => {
   let skipped = 0;
 
   for (const a of assignments ?? []) {
-    if (!a.class_id || !a.deadline) continue;
-
-    // Žáci ve třídě
+    // Žáci ve třídě nebo ve skupině (dříve se skupiny přeskakovaly).
+    const src = reminderMemberSource(a as any);
+    if (!src) continue;
     const { data: members } = await supabase
-      .from("class_members")
-      .select("user_id")
-      .eq("class_id", a.class_id);
-    const studentIds = (members ?? []).map((m: any) => m.user_id);
+      .from(src.table)
+      .select(src.userColumn)
+      .eq(src.idColumn, src.id);
+    const studentIds = [...new Set((members ?? []).map((m: any) => m[src.userColumn]).filter(Boolean))] as string[];
     if (studentIds.length === 0) continue;
 
     // Žáci, kteří už úkol odevzdali
@@ -88,13 +89,13 @@ Deno.serve(async (req) => {
     skipped += targets.length - finalTargets.length;
     if (finalTargets.length === 0) continue;
 
-    const dueDateLabel = new Date(a.deadline).toLocaleDateString("cs-CZ");
+    const dueDateLabel = new Date(a.deadline!).toLocaleDateString("cs-CZ");
     const rows = finalTargets.map((uid) => ({
       recipient_id: uid,
       sender_id: a.teacher_id,
       sender_role: "system",
       title: `Připomenutí úkolu: ${a.title}`,
-      body: `Tvůj úkol „${a.title}" má termín ${dueDateLabel}. Odevzdej ho prosím včas.`,
+      body: reminderBody(a as any, dueDateLabel),
       type: "reminder",
       is_manual: false,
       status: "sent",
