@@ -37,7 +37,7 @@ export function blocksToText(blocks: unknown, maxLength = LESSON_TEXT_LIMIT): st
   if (!Array.isArray(blocks)) return "";
   const out: string[] = [];
   const textFields = ["text", "title", "heading", "caption", "content", "question", "explanation", "front", "back"];
-  const nestedFields = ["props", "children", "blocks", "items", "data", "quiz", "answers", "flashcards", "revealCards", "cards"];
+  const nestedFields = ["props", "children", "blocks", "items", "data", "quiz", "questions", "answers", "flashcards", "revealCards", "cards"];
   const walk = (node: unknown): void => {
     if (typeof node === "string") {
       const text = cleanLessonText(node);

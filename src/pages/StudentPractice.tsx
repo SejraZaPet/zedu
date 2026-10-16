@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
+import { practiceErrorMessage } from "@/lib/practice-error";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
@@ -157,12 +158,19 @@ const StudentPractice = () => {
       }
       if (cancelled) return;
       if (fnErr) {
-        setError(fnErr.message || "Nepodařilo se vygenerovat cvičení.");
+        const message = await practiceErrorMessage(fnErr);
+        if (cancelled) return;
+        setError(message);
         setLoading(false);
         return;
       }
       if (fnData?.error) {
         setError(fnData.error);
+        setLoading(false);
+        return;
+      }
+      if (!(fnData?.practice?.phases ?? []).some((phase: Phase) => phase.questions?.length > 0)) {
+        setError("Z této lekce se nepodařilo vytvořit otázky. Zkus to znovu.");
         setLoading(false);
         return;
       }
