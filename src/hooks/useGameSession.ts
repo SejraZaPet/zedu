@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/game-types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { syncClock, getClockOffset } from "@/lib/clock-sync";
+import { applyLightSessionState, extractLightState, rowSlidesLength } from "@/lib/game-session-sync";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -26,6 +27,7 @@ export function useGameSession(
   useEffect(() => {
     const d = (session as any)?.activity_data;
     slidesLenRef.current = Array.isArray(d) ? d.length : -1;
+    sessionRef.current = session;
   }, [session]);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
@@ -36,6 +38,8 @@ export function useGameSession(
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lightPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionRef = useRef<GameSession | null>(null);
   const mountedRef = useRef(true);
 
   // Brání souběžným stahováním: pomalá síť jinak hromadila dotazy každé 2 s
@@ -121,6 +125,34 @@ export function useGameSession(
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
     setLoading(false);
   };
+
+  // Lehké průběžné načítání stavu hry (status, current_question_index,
+  // question_started_at) přes bezpečnou funkci get_player_session. Hráč bez
+  // účtu nemá user_id, takže mu RLS odfiltruje realtime události z
+  // game_sessions, přestože se kanál připojí — bez této zálohy se mu nová
+  // otázka ukázala až po ručním obnovení stránky. Funkce ověřuje joinToken
+  // a vrací jen data bez správných odpovědí, takže je bezpečná pro oba typy
+  // hráčů. Po skončení hry se polling zastaví.
+  const lightPoll = useCallback(async () => {
+    if (!sessionId || !mountedRef.current) return;
+    const current = sessionRef.current;
+    if (current?.status === "finished") return;
+    const { data, error } = await supabase.rpc("get_player_session" as any, {
+      _session_id: sessionId,
+      _join_token: joinToken || null,
+    });
+    if (error || !mountedRef.current) return;
+    const row = Array.isArray(data) ? (data as any[])[0] : (data as any);
+    const light = extractLightState(row);
+    if (!light) return;
+    // Změnil se počet snímků (zveřejněný koncept) → plné bezpečné načtení.
+    const len = rowSlidesLength(row);
+    if (len >= 0 && slidesLenRef.current >= 0 && len !== slidesLenRef.current) {
+      fetchData();
+      return;
+    }
+    setSession((prev) => applyLightSessionState(prev, light) as GameSession | null);
+  }, [sessionId, joinToken, fetchData]);
 
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(async () => {
@@ -295,6 +327,24 @@ export function useGameSession(
     });
     subscribe();
 
+    // Záchranná síť: každé 2 s lehký stav hry (jen viditelná karta).
+    lightPollRef.current = setInterval(() => {
+      if (!mountedRef.current) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      lightPoll();
+    }, 2000);
+
+    // Návrat karty do popředí nebo obnovení sítě → okamžité načtení stavu.
+    const onVisible = () => {
+      if (typeof document !== "undefined" && !document.hidden) lightPoll();
+    };
+    const onOnline = () => {
+      lightPoll();
+      if (!connectedRef.current) reconnect();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+    if (typeof window !== "undefined") window.addEventListener("online", onOnline);
+
     return () => {
       mountedRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -302,12 +352,18 @@ export function useGameSession(
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+      if (lightPollRef.current) {
+        clearInterval(lightPollRef.current);
+        lightPollRef.current = null;
+      }
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
+      if (typeof window !== "undefined") window.removeEventListener("online", onOnline);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [fetchData, subscribe, refetchTrigger]);
+  }, [fetchData, subscribe, refetchTrigger, lightPoll, reconnect]);
 
   return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
 }
