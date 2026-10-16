@@ -72,19 +72,20 @@ const StudentLeaderboard = () => {
       const ids = (members ?? []).map((m: any) => m.user_id);
       if (ids.length === 0) { setRows([]); setLoading(false); return; }
 
-      const [{ data: profiles }, { data: xps }, { data: badges }, { data: baselines }] = await Promise.all([
+      const [{ data: profiles }, { data: board }, { data: baselines }] = await Promise.all([
         supabase.from("profiles").select("id, first_name, last_name").in("id", ids),
-        supabase.from("student_xp").select("student_id, total_xp, level").in("student_id", ids),
-        supabase.from("student_badges").select("student_id").in("student_id", ids),
+        supabase.rpc("class_leaderboard", { _class_id: classId }),
         supabase.from("class_leaderboard_baselines").select("student_id, baseline_xp").eq("class_id", classId),
       ]);
 
       const baseMap = new Map<string, number>();
       (baselines ?? []).forEach((b: any) => baseMap.set(b.student_id, b.baseline_xp ?? 0));
       const xpMap = new Map<string, { total: number; level: number }>();
-      (xps ?? []).forEach((x: any) => xpMap.set(x.student_id, { total: x.total_xp ?? 0, level: x.level ?? 1 }));
       const badgeCount = new Map<string, number>();
-      (badges ?? []).forEach((b: any) => badgeCount.set(b.student_id, (badgeCount.get(b.student_id) ?? 0) + 1));
+      (board ?? []).forEach((r: any) => {
+        xpMap.set(r.student_id, { total: r.total_xp ?? 0, level: r.level ?? 1 });
+        badgeCount.set(r.student_id, Number(r.badge_count ?? 0));
+      });
 
 
       const anon = !!currentClass?.leaderboard_anonymous;

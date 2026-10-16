@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureMyCourseNotebooks } from "@/lib/notebook";
 import { Button } from "@/components/ui/button";
-import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from "lucide-react";
+import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays, GraduationCap } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
@@ -11,6 +11,7 @@ import StudentProgressWidgets from "@/components/student/StudentProgressWidgets"
 import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import RecognitionWidget from "@/components/behavior/RecognitionWidget";
+import UpcomingExamsCard from "@/components/student/UpcomingExamsCard";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -95,6 +96,13 @@ const StudentDashboard = () => {
       button: "Otevřít úkoly",
       onClick: () => navigate("/todo"),
     },
+    {
+      icon: GraduationCap,
+      title: "Učím se",
+      description: "Procvičuj si učivo vlastním tempem a sleduj, co už ti jde.",
+      button: "Začít se učit",
+      onClick: () => navigate("/student/metody"),
+    },
   ];
 
   return (
@@ -104,19 +112,16 @@ const StudentDashboard = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex flex-wrap items-center gap-4">
           <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} />
 
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="font-heading text-3xl font-bold">
               Ahoj, {profile?.first_name || "studente"}! 👋
             </h1>
             <p className="text-muted-foreground mt-1">Studentský panel</p>
           </div>
         </div>
-
-        <TodayWidget role="student" />
-
 
         {user && (
           <PlayerProfileWidget
@@ -125,6 +130,11 @@ const StudentDashboard = () => {
             lastName={profile?.last_name}
           />
         )}
+
+        <TodayWidget role="student" />
+
+        {user && <UpcomingExamsCard userId={user.id} />}
+
 
         {user && <StudentProgressWidgets userId={user.id} />}
 
@@ -136,6 +146,7 @@ const StudentDashboard = () => {
 
 
 
+        <h2 className="font-heading text-xl font-semibold mb-4">Další</h2>
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
