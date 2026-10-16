@@ -24,7 +24,6 @@ function gradientAt(state: string, pct: number) {
   return pct <= 55 ? mix(from, mid, pct / 55) : mix(mid, to, (pct - 55) / 45);
 }
 const WHITE = [1, 1, 1];
-const SOON_TEXT = [0.2, 0.67, 0.12];
 
 describe("assignment card readability", () => {
   it.each(["pending", "soon", "submitted", "overdue", "graded", "preparing"])("%s badge keeps dark text on white at AA", (state) => {
@@ -33,19 +32,14 @@ describe("assignment card readability", () => {
 
   it("light amber 'soon' card uses dark text with AA contrast along the entire gradient", () => {
     for (let step = 0; step <= 100; step += 5) {
-      expect(contrast(gradientAt("soon", step), SOON_TEXT)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(gradientAt("soon", step), token("soon", "foreground"))).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  it.each(["pending", "submitted", "overdue", "graded", "preparing"])("%s keeps white bold title readable over the darker left of the gradient", (state) => {
-    for (let step = 0; step <= 25; step += 5) {
+  it.each(["pending", "submitted", "overdue", "graded", "preparing"])("%s keeps white title text readable over the gradient", (state) => {
+    expect(contrast(token(state, "from"), WHITE)).toBeGreaterThanOrEqual(4.5);
+    for (let step = 5; step <= 20; step += 5) {
       expect(contrast(gradientAt(state, step), WHITE)).toBeGreaterThanOrEqual(3);
-    }
-  });
-
-  it("pending and submitted stay AA for white text where the title starts", () => {
-    for (const state of ["pending", "submitted"]) {
-      expect(contrast(token(state, "from"), WHITE)).toBeGreaterThanOrEqual(4.5);
     }
   });
 });

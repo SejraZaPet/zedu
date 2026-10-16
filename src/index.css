@@ -341,11 +341,11 @@ body.a11y-line-height main .whitespace-pre-wrap {
   --assignment-submitted-mid: 209.77 48.88% 69.22%;  /* #6FB1F2 */
   --assignment-submitted-to: 209.77 48.88% 69.22%;
   --assignment-submitted-badge: 217.61 69.79% 37.65%; /* #1D4FA3 */
-  --assignment-overdue-from: 358.03 53.15% 58.04%;   /* #E0484D */
+  --assignment-overdue-from: 357.6 66.7% 54.1%;      /* #D83C42 – o chlup tmavší start kvůli kontrastu bílého textu */
   --assignment-overdue-mid: 7.91 50.59% 74.71%;      /* #FF8F7E */
   --assignment-overdue-to: 7.91 50.59% 74.71%;
   --assignment-overdue-badge: 357.84 63.47% 42.94%;  /* #B3282D */
-  --assignment-graded-from: 159.9 71.68% 33.33%;     /* #189269 – o chlup tmavší start kvůli kontrastu bílého textu */
+  --assignment-graded-from: 161.4 70% 30%;           /* #178261 – o chlup tmavší start kvůli kontrastu bílého textu */
   --assignment-graded-mid: 158.35 33.33% 66.86%;     /* #7ADBB8 */
   --assignment-graded-to: 158.35 33.33% 66.86%;
   --assignment-graded-badge: 161.36 71.03% 28.43%;   /* #157C5C */
