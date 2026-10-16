@@ -34,6 +34,7 @@ import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+import { isPlanWithoutContent } from "@/lib/planned-assignment";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDescriptionEditor";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
@@ -1707,6 +1708,11 @@ const TeacherAssignments = () => {
                                     <h3 className="font-semibold break-words">{a.title}</h3>
                                     <AssignmentStateBadge status={visualStatus} />
                                     <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {isPlanWithoutContent(a) && (
+                                      <Badge variant="outline" className="text-xs" title="Naplánováno z přehledu Dnes. Obsah připojíte přes Upravit → Uložit změny.">
+                                        Plán · bez obsahu
+                                      </Badge>
+                                    )}
                                     {!a.subject_id && (
                                       <Badge
                                         variant="outline"
