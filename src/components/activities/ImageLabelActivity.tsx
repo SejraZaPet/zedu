@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import type { ActivityCompletion } from "@/lib/activity-answers";
+import { evaluateImageLabel } from "@/lib/ordering-imagelabel-answers";
 
 interface Marker {
   x: number; // percentage 0-100
@@ -13,7 +15,7 @@ interface Props {
   markers: Marker[];
   tolerance?: number; // percentage radius
   shuffleWords?: boolean;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: ActivityCompletion;
 }
 
 const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWords = true, onComplete }: Props) => {
@@ -72,7 +74,8 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
     });
     setResults(res);
     setChecked(true);
-    onComplete?.(Object.values(res).filter(Boolean).length, markers.length);
+    const r = evaluateImageLabel(markers, placed);
+    onComplete?.(r.score, r.maxScore, r.answers);
   };
 
   const handleReset = () => {
