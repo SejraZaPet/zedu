@@ -1,7 +1,7 @@
 # Architecture rules
 
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.
-- Store snapshots in student_activity_results.answers via ActivityAnswerReview; pair with scored attempts, separate from live-game grading.
+- Snapshots go to student_activity_results.answers via ActivityAnswerReview, separate from live-game grading.
 
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
 - Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
@@ -14,7 +14,7 @@
 - Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
-- Live MCQ looks: one mapping; activity→questions for both /hra and /live only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
+- Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
 - Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
 - Keep live-session slide drafts in `live_session_drafts` (never in game_sessions) and publish only via the `publish_live_draft` RPC, so projectors never see drafts and publishing is one atomic update that cannot insert before the current slide.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
