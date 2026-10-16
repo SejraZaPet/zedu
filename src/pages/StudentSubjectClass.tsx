@@ -35,6 +35,8 @@ import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 
 import SiteHeader from "@/components/SiteHeader";
+import { planLessons, upcomingForSubject } from "@/lib/planned-assignment";
+import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -100,6 +102,8 @@ interface AssignmentRow {
   worksheet_id?: string | null;
   exam_type?: string | null;
   scheduled_publish_at?: string | null;
+  lesson_source?: string | null;
+  settings?: any;
 }
 
 interface AttemptRow {
@@ -225,7 +229,7 @@ export default function StudentSubjectClass() {
 
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, worksheet_id, exam_type")
+        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, lesson_source, worksheet_id, exam_type, settings")
         .eq("status", "published");
       assignQuery = isGroup
         ? assignQuery.eq("group_id", groupId)
@@ -603,6 +607,37 @@ export default function StudentSubjectClass() {
 
           </div>
         </Card>
+
+        {upcomingHere.length > 0 && (
+          <section className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-5" aria-labelledby="co-nas-ceka">
+            <h2 id="co-nas-ceka" className="font-heading text-lg font-semibold mb-3 flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" /> Co nás čeká v tomto předmětu
+            </h2>
+            <ul className="space-y-2">
+              {upcomingHere.map((a) => {
+                const lessons = planLessons(a);
+                return (
+                  <li key={a.id} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium break-words">{a.title}</span>
+                        <ExamTypeBadge examType={a.exam_type} showDefault />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(a.deadline!), "EEEE d. M. HH:mm", { locale: cs })}
+                        {lessons.length > 0 && ` · Uč se: ${lessons.map((l) => l.title).join(", ")}`}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <PlanPrepareButton lessons={lessons} />
+                      <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Detail</Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <Tabs defaultValue="past" className="w-full">
           <TabsList>
