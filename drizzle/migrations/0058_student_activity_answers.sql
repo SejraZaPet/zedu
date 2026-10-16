@@ -1,0 +1,1 @@
+ALTER TABLE public.student_activity_results ADD COLUMN IF NOT EXISTS answers jsonb;

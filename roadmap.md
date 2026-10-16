@@ -1,5 +1,11 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Kontrola odpovědí aktivit v lekci
+- [x] Přidat nepovinné answers bez změny existujících dat a politik
+- [x] Ukládání a přehled odpovědí v lekci i po návratu, staré výsledky beze změny
+- [x] Testy a přihlášené ověření (449 testů, build OK; Poživatiny: 8 položek ihned i po obnovení)
+- [ ] Doplnit správné odpovědi tří výroků Poživatin — vyžaduje potvrzení autorky, obsah ani skórování nebyly změněny
+
 - [ ] A) Opravy zabezpečení a dat (jen DB)
   - [ ] A1 student_xp: žák nesmí insert/update vlastní řádek; čte jen svůj; žebříček přes bezpečnou funkci/pohled (spolužáci)
   - [ ] A2 učitel čte student_xp + student_badges jen žáků svých tříd/skupin

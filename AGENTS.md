@@ -1,15 +1,17 @@
 # Architecture rules
 
+- Store graded item snapshots in student_activity_results.answers and render through ActivityAnswerReview; keep answers paired with their scored attempt, separate from live-game grading.
+
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
 - Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
 
-- Keep lesson-list disclosure in page-local state and derive batched row-link loading from visible occurrences, so expanding lists never changes schedule data or permissions.
+- Keep lesson-list disclosure page-local; batch links from visible occurrences without changing schedules or permissions.
 
-- Keep worksheet editor pagination presentational: it may regroup existing item IDs into A4 pages, but all mutations must continue through WorksheetEditor `updateSpec` so undo, metadata, autosave, scoring, and print/PDF remain authoritative.
-- Keep worksheet item editors presentational and contextual: field changes must emit patches to WorksheetEditor handlers, never mutate spec or persistence directly.
+- Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
+- Worksheet item editors emit patches to WorksheetEditor handlers; never persist directly.
 - Insert print-header additions through an explicit template marker and paginate after fonts load using block bounds, not trailing margins, so print previews share stable page geometry.
 - Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
-- Keep assignment descriptions as sanitized limited HTML, with one shared renderer and plain-text conversion for card previews, speech or AI context, so legacy text and formatted instructions stay consistent without exposing HTML tags.
+- Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Keep live MCQ option colors, shapes, and accessible names in one shared mapping so projector, student controls, and result charts always match.
 - Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.

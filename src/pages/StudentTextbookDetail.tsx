@@ -72,7 +72,7 @@ const StudentTextbookDetail = () => {
       if (!session?.user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index, score, max_score, completed_at")
+        .select("activity_index, score, max_score, completed_at, answers")
         .eq("user_id", session.user.id)
         .eq("lesson_id", selectedLesson.id);
       if (cancelled || !data || data.length === 0) return;
@@ -338,7 +338,7 @@ const StudentTextbookDetail = () => {
       if (!user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index, score, max_score, completed_at")
+        .select("activity_index, score, max_score, completed_at, answers")
         .eq("user_id", user.id)
         .eq("lesson_id", selectedLesson.id);
       if (data && data.length > 0) {
@@ -442,15 +442,15 @@ const StudentTextbookDetail = () => {
                 isCompleted={completedActivityIndices.has(idx)}
                 completedResult={bestResults.get(idx) ?? null}
                 activityTitle={activityTitles.get(idx)}
-                onActivityComplete={(activityIndex, activityType, score, maxScore) => {
-                  if (completedActivityIndices.has(activityIndex)) return;
+                onActivityComplete={(activityIndex, activityType, score, maxScore, answers) => {
+                  if (completedActivityIndices.has(activityIndex) && !answers) return;
                   setCompletedActivityIndices(prev => new Set([...prev, activityIndex]));
                   setBestResults((prev) => {
                     const next = new Map(prev);
-                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString() })));
+                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString(), answers })));
                     return next;
                   });
-                  trackActivity(activityIndex, activityType, score, maxScore);
+                  trackActivity(activityIndex, activityType, score, maxScore, answers);
                 }}
               />
               </div>

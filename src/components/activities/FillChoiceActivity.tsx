@@ -1,3 +1,5 @@
+import { ActivityAnswerReview } from "./ActivityAnswerReview";
+import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
@@ -23,7 +25,7 @@ interface FillChoiceToken {
 interface Props {
   tokens: FillChoiceToken[];
   options: string[];
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: ActivityCompletion;
 }
 
 const DraggableWord = ({
@@ -109,6 +111,11 @@ const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) =>
   const blanks = useMemo(() => tokens.filter((t) => t.type === "blank"), [tokens]);
   const [answers, setAnswers] = useState<(string | null)[]>(() => blanks.map(() => null));
   const [checked, setChecked] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
+  const complete: ActivityCompletion = (score, maxScore, items) => {
+    setReviewAnswers(items ?? []);
+    onComplete?.(score, maxScore, items);
+  };
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
 
@@ -280,6 +287,8 @@ const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) =>
           </div>
         )}
 
+      {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
+
         {/* Controls */}
         <div className="flex flex-wrap gap-2 pt-2 print:hidden">
           {!checked && (
@@ -291,7 +300,11 @@ const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) =>
                   (b, i) =>
                     answers[i]?.trim().toLowerCase() === b.answer?.trim().toLowerCase()
                 ).length;
-                onComplete?.(correct, blanks.length);
+                complete(correct, blanks.length, blanks.map((blank, i) => ({
+                  index: i, text: tokens.map((token) => token.type === "text" ? token.value ?? "" : " […] ").join(""),
+                  studentAnswer: answers[i] ?? "", correctAnswer: blank.answer ?? "",
+                  correct: answers[i]?.trim().toLowerCase() === blank.answer?.trim().toLowerCase(),
+                })));
               }}
               disabled={answers.some((a) => a === null)}
             >

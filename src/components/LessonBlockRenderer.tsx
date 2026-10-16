@@ -27,6 +27,9 @@ import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import { embedAspectRatio, isAllowedEmbedUrl } from "@/lib/embed-allowlist";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
+import { Button } from "@/components/ui/button";
+import { ActivityAnswerReview } from "@/components/activities/ActivityAnswerReview";
+import type { ActivityAnswer } from "@/lib/activity-answers";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Check } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
@@ -153,19 +156,14 @@ const CompletedActivitySummary = ({
   const when = result ? formatCompletedAt(result.completedAt) : "";
   const percent = result ? formatActivityPercent(result) : null;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/40 bg-green-500/5 p-3">
+    <div className="space-y-3 rounded-lg border border-green-500/40 bg-green-500/5 p-3">
       <p className="text-sm font-medium text-foreground">
         <span aria-hidden="true">✓ </span>Hotovo
         {result && result.maxScore > 0 && <> · {formatActivityScore(result)} bodů{percent && <> · {percent}</>}</>}
         {when && <> · dokončeno {when}</>}
       </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="min-h-[40px] rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
-      >
-        Zkusit znovu
-      </button>
+      {result?.answers && <ActivityAnswerReview answers={result.answers} />}
+      <Button variant="outline" onClick={onRetry}>Zkusit znovu</Button>
     </div>
   );
 };
@@ -195,7 +193,7 @@ export const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: 
 interface LessonBlockProps {
   block: Block;
   blockIndex?: number;
-  onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
+  onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number, answers?: ActivityAnswer[]) => void;
   isTeacher?: boolean;
   /** Aktivita je již dokončená (aktuální návštěva nebo dřívější uložený výsledek). */
   isCompleted?: boolean;
@@ -560,9 +558,9 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
       );
     case "activity": {
       const at = p.activityType || "flashcards";
-      const handleComplete = (score: number, maxScore: number) => {
+      const handleComplete = (score: number, maxScore: number, answers?: ActivityAnswer[]) => {
         if (onActivityComplete && blockIndex !== undefined) {
-          onActivityComplete(blockIndex, at, score, maxScore);
+          onActivityComplete(blockIndex, at, score, maxScore, answers);
         }
       };
 

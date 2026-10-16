@@ -5947,6 +5947,7 @@ export type Database = {
         Row: {
           activity_index: number
           activity_type: string
+          answers: Json | null
           completed_at: string
           id: string
           lesson_id: string | null
@@ -5959,6 +5960,7 @@ export type Database = {
         Insert: {
           activity_index?: number
           activity_type?: string
+          answers?: Json | null
           completed_at?: string
           id?: string
           lesson_id?: string | null
@@ -5971,6 +5973,7 @@ export type Database = {
         Update: {
           activity_index?: number
           activity_type?: string
+          answers?: Json | null
           completed_at?: string
           id?: string
           lesson_id?: string | null

@@ -5,9 +5,11 @@
  */
 import { activityMeta } from "@/lib/activity-meta";
 import type { LessonActivityInfo } from "@/lib/lesson-activity-index";
+import { readActivityAnswers, type ActivityAnswer } from "@/lib/activity-answers";
 import { bestActivityResults } from "@/lib/best-results";
 
 export interface ActivityResultRow {
+  answers?: unknown;
   activity_index: number;
   score: number | null;
   max_score: number | null;
@@ -15,6 +17,7 @@ export interface ActivityResultRow {
 }
 
 export interface BestActivityResult {
+  answers?: ActivityAnswer[];
   score: number;
   maxScore: number;
   /** 0..1, nebo null když aktivita nemá body (max 0). */
@@ -37,7 +40,8 @@ export function betterResult(a: BestActivityResult | undefined, b: BestActivityR
 export function toBestResult(r: ActivityResultRow): BestActivityResult {
   const score = Number(r.score) || 0;
   const maxScore = Number(r.max_score) || 0;
-  return { score, maxScore, ratio: ratioOf(score, maxScore), completedAt: r.completed_at ?? null };
+  const answers = readActivityAnswers(r.answers);
+  return { score, maxScore, ratio: ratioOf(score, maxScore), completedAt: r.completed_at ?? null, ...(answers ? { answers } : {}) };
 }
 
 export function bestResultsByActivity(rows: ActivityResultRow[]): Map<number, BestActivityResult> {

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
+import type { ActivityAnswer } from "@/lib/activity-answers";
 import { bestResultsByActivity, betterResult, computeLessonActivityProgress, lessonActivityTitles, toBestResult, type BestActivityResult } from "@/lib/lesson-activity-progress";
 import { buildReadAloudText } from "@/lib/lesson-content-splitter";
 import LessonWorksheets from "@/components/lesson/LessonWorksheets";
@@ -120,7 +121,7 @@ const LessonPage = () => {
       if (!session?.user) return;
       const { data } = await supabase
         .from("student_activity_results")
-        .select("activity_index, score, max_score, completed_at")
+        .select("activity_index, score, max_score, completed_at, answers")
         .eq("user_id", session.user.id)
         .eq("lesson_id", lesson.id);
       if (data && data.length > 0) {
@@ -137,14 +138,14 @@ const LessonPage = () => {
 
   // Track activity completion
   const handleActivityComplete = useCallback(
-    (activityIndex: number, activityType: string, score: number, maxScore: number) => {
+    (activityIndex: number, activityType: string, score: number, maxScore: number, answers?: ActivityAnswer[]) => {
       setCompletedActivityIndices((prev) => new Set([...prev, activityIndex]));
       setBestResults((prev) => {
                     const next = new Map(prev);
-                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString() })));
+                    next.set(activityIndex, betterResult(prev.get(activityIndex), toBestResult({ activity_index: activityIndex, score, max_score: maxScore, completed_at: new Date().toISOString(), answers })));
                     return next;
                   });
-      trackActivity(activityIndex, activityType, score, maxScore);
+      trackActivity(activityIndex, activityType, score, maxScore, answers);
     },
     [trackActivity]
   );
