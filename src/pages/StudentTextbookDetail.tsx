@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
 import TextbookSearch from "@/components/textbook/TextbookSearch";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
+import LessonStudyBar from "@/components/lesson/LessonStudyBar";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
 
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
@@ -414,7 +415,14 @@ const StudentTextbookDetail = () => {
           <Button variant="ghost" size="sm" onClick={closeLesson} className="mb-4 gap-2">
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnici
           </Button>
-          <h1 className="font-heading text-2xl font-bold mb-6">{selectedLesson.title}</h1>
+          <h1 className="font-heading text-2xl font-bold mb-4">{selectedLesson.title}</h1>
+          <div className="mb-6">
+            <LessonStudyBar
+              lessonId={selectedLesson.id}
+              lessonTitle={selectedLesson.title}
+              blocks={visibleBlocks}
+            />
+          </div>
           <LessonHighlightLayer
             lessonId={selectedLesson.id}
             lessonSource="teacher_textbook_lessons"

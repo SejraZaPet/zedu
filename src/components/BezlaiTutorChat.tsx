@@ -41,8 +41,16 @@ export default function BezlaiTutorChat({
   subject,
   contextKey,
   className,
+  open: openProp,
+  onOpenChange,
+  hideTrigger = false,
 }: BezlaiTutorChatProps) {
-  const [open, setOpen] = useState(false);
+  const [openInner, setOpenInner] = useState(false);
+  const open = openProp ?? openInner;
+  const setOpen = (v: boolean) => {
+    setOpenInner(v);
+    onOpenChange?.(v);
+  };
   const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -99,6 +107,7 @@ export default function BezlaiTutorChat({
 
   return (
     <>
+      {!hideTrigger && (
       <Button
         type="button"
         onClick={() => setOpen(true)}
@@ -111,6 +120,7 @@ export default function BezlaiTutorChat({
         <MessageCircleQuestion className="w-5 h-5" />
         <span className="font-semibold">Zeptej se Bezlai</span>
       </Button>
+      )}
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">

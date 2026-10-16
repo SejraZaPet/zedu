@@ -13,7 +13,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
-import BezlaiTutorChat from "@/components/BezlaiTutorChat";
+import LessonStudyBar from "@/components/lesson/LessonStudyBar";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
 import { downloadLessonOfflineHtml } from "@/lib/lesson-offline-export";
@@ -273,6 +273,17 @@ const LessonPage = () => {
                 </div>
               </div>
 
+              {isAuthenticated && !isTeacherOrAdmin && (
+                <div className="mb-8">
+                  <LessonStudyBar
+                    lessonId={lesson.id}
+                    lessonTitle={lesson.title}
+                    blocks={visibleBlocks}
+                    subject={subjectId}
+                  />
+                </div>
+              )}
+
               {isAuthenticated && lessonActivityProgress.total > 0 && (
                 <div className="mb-8">
                   <LessonSuccessSummary progress={lessonActivityProgress} />
@@ -340,14 +351,7 @@ const LessonPage = () => {
         />
       )}
 
-      {/* Bezlai tutor – jen pro žáky (ne pro učitele/adminy) */}
-      {!isTeacherOrAdmin && lesson && (
-        <BezlaiTutorChat
-          question={`Lekce: ${lesson.title}\n\nPředmět: ${subjectId ?? ""}`}
-          subject={subjectId}
-          contextKey={lesson.id}
-        />
-      )}
+      {/* Bezlai tutor se otevírá tlačítkem „Zeptat se“ ve studijní liště (LessonStudyBar). */}
     </div>
   );
 };
