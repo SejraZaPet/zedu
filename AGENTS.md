@@ -28,5 +28,5 @@
 - Insert worksheets into notebooks only via `worksheet-notebook.ts` (`content.worksheet` ref; digital = link page, pen = locked background images) and attach pen pages to a submitted attempt as a snapshot in `assignment-uploads` under `answers._notebookSnapshot`, so answers are never copied and teachers read handwriting through existing storage policies.
 - Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
 
-- Use pure `_shared/lesson-text.ts` for lesson text cleanup, so practice, study helpers and chat share context.
+- Lesson text cleanup only in pure `_shared/lesson-text.ts`, so practice, helpers and chat share context.
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
