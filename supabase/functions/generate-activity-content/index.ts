@@ -151,13 +151,13 @@ ${context.slice(0, 6000)}
 
 ${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
 
-Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}${flashcardsPart}`
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}${flashcardsPart}${wizardPart}`
       : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}${flashcardsPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}${flashcardsPart}${wizardPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
