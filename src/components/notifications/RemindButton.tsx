@@ -40,13 +40,14 @@ export default function RemindButton({
   size = "sm",
   variant = "outline",
   label = "Připomenout",
+  className,
 }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size}>
+        <Button variant={variant} size={size} className={className}>
           <Bell className="w-4 h-4 mr-1.5" />
           {label}
         </Button>

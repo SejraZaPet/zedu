@@ -1779,6 +1779,7 @@ const TeacherAssignments = () => {
                                     mode="teacher"
                                     receiverType="class"
                                     receiverIds={[a.class_id]}
+                                    className="assignment-card-action"
                                     title={`Připomenutí úkolu: ${a.title}`}
                                     content={
                                       a.deadline
