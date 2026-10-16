@@ -30,6 +30,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import PlanForClassFields from "@/components/calendar/PlanForClassFields";
+import { buildPlanInsert, validatePlanForm, type PlanForm } from "@/lib/planned-assignment";
+
+const CLASS_TARGET = "__class__";
+const emptyPlan = (): PlanForm => ({ target: "", subjectId: null, kind: "test", title: "", date: "", time: "08:00", note: "", lessons: [] });
 
 interface Props {
   role: "student" | "teacher";
@@ -76,9 +81,32 @@ const TodayWidget = ({ role }: Props) => {
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
   const [addForm, setAddForm] = useState({ assignee: "me", title: "", due_date: "", priority: "normal" });
+  const [planForm, setPlanForm] = useState<PlanForm>(emptyPlan);
+
+  const handleAddPlan = async () => {
+    if (!user) return;
+    const errors = validatePlanForm(planForm);
+    if (errors.length) {
+      toast({ title: errors[0], variant: "destructive" });
+      return;
+    }
+    setAddSaving(true);
+    const { error } = await supabase.from("assignments" as any).insert(buildPlanInsert(planForm, user.id) as any);
+    setAddSaving(false);
+    if (error) {
+      toast({ title: "Plán se nepodařilo uložit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Naplánováno", description: "Žáci uvidí termín v kalendáři i v úlohách. Obsah připojíte později v Úlohách." });
+    setPlanForm(emptyPlan());
+    setAddForm({ assignee: "me", title: "", due_date: "", priority: "normal" });
+    setAddOpen(false);
+    setReloadKey((k) => k + 1);
+  };
 
   const handleAddTask = async () => {
     if (!user) return;
+    if (addForm.assignee === CLASS_TARGET) return handleAddPlan();
     if (!addForm.title.trim()) {
       toast({ title: "Zadejte název úkolu", variant: "destructive" });
       return;
@@ -347,7 +375,7 @@ const TodayWidget = ({ role }: Props) => {
               type="button"
               onClick={() => setAddOpen(true)}
               aria-label="Přidat úkol"
-              title="Přidat úkol sobě nebo kolegovi"
+              title={role === "teacher" ? "Přidat úkol sobě, kolegovi nebo naplánovat test třídě" : "Přidat úkol"}
               className="w-9 h-9 rounded-xl bg-gradient-brand-sm flex items-center justify-center text-white shadow-sm hover:opacity-90 transition-opacity"
             >
               <Plus className="w-5 h-5" />
@@ -424,12 +452,12 @@ const TodayWidget = ({ role }: Props) => {
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Přidat úkol</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {role === "teacher" && colleagues.length > 0 && (
+            {role === "teacher" && (
               <div>
                 <Label>Pro koho *</Label>
                 <Select
@@ -441,6 +469,7 @@ const TodayWidget = ({ role }: Props) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="me">Sobě</SelectItem>
+                    <SelectItem value={CLASS_TARGET}>Třídě nebo skupině (test, písemka, úkol, projekt)</SelectItem>
                     {colleagues
                       .filter((c) => c.id !== user?.id)
                       .map((c) => (
@@ -452,6 +481,9 @@ const TodayWidget = ({ role }: Props) => {
                 </Select>
               </div>
             )}
+            {addForm.assignee === CLASS_TARGET ? (
+              <PlanForClassFields form={planForm} onChange={setPlanForm} />
+            ) : (<>
             <div>
               <Label>Název *</Label>
               <Input
@@ -489,13 +521,14 @@ const TodayWidget = ({ role }: Props) => {
                 </Select>
               </div>
             </div>
+            </>)}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>
               Zrušit
             </Button>
             <Button onClick={handleAddTask} disabled={addSaving}>
-              {addSaving ? "Ukládám…" : "Přidat úkol"}
+              {addSaving ? "Ukládám…" : addForm.assignee === CLASS_TARGET ? "Naplánovat" : "Přidat úkol"}
             </Button>
           </DialogFooter>
         </DialogContent>

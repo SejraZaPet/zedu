@@ -1,12 +1,12 @@
 # Architecture rules
 
-- FillWordBank is lesson-only; occurrence IDs support duplicate words without changing scoring.
+- FillWordBank is lesson-only; occurrence IDs allow duplicate words.
 - Store snapshots in student_activity_results.answers via ActivityAnswerReview; pair with scored attempts, separate from live-game grading.
 
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
 - Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
 
-- Keep lesson-list disclosure page-local; batch links from visible occurrences without changing schedules or permissions.
+- Keep lesson-list disclosure page-local; batch links from visible occurrences only.
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
 - Worksheet item editors emit patches to WorksheetEditor handlers; never persist directly.
@@ -14,7 +14,7 @@
 - Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
-- Keep live MCQ option colors, shapes, and accessible names in one shared mapping so projector, student controls, and result charts always match.
+- One shared mapping for live MCQ option colors/shapes/names so projector, controls, charts match.
 - Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
 - Keep live-session slide drafts in `live_session_drafts` (never in game_sessions) and publish only via the `publish_live_draft` RPC, so projectors never see drafts and publishing is one atomic update that cannot insert before the current slide.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
@@ -28,4 +28,5 @@
 - Insert worksheets into notebooks only via `worksheet-notebook.ts` (`content.worksheet` ref; digital = link page, pen = locked background images) and attach pen pages to a submitted attempt as a snapshot in `assignment-uploads` under `answers._notebookSnapshot`, so answers are never copied and teachers read handwriting through existing storage policies.
 - Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
 
-- Use pure `_shared/lesson-text.ts` for nested content and HTML cleanup, so practice, study helpers and chat share context without changing access checks.
+- Use pure `_shared/lesson-text.ts` for lesson text cleanup, so practice, study helpers and chat share context.
+- Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
