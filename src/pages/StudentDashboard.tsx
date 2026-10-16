@@ -96,6 +96,13 @@ const StudentDashboard = () => {
       button: "Otevřít úkoly",
       onClick: () => navigate("/todo"),
     },
+    {
+      icon: GraduationCap,
+      title: "Učím se",
+      description: "Procvičuj si učivo vlastním tempem a sleduj, co už ti jde.",
+      button: "Začít se učit",
+      onClick: () => navigate("/student/metody"),
+    },
   ];
 
   return (
@@ -139,6 +146,7 @@ const StudentDashboard = () => {
 
 
 
+        <h2 className="font-heading text-xl font-semibold mb-4">Další</h2>
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
