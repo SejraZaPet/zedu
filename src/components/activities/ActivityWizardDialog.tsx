@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import SearchablePickList from "@/components/activities/SearchablePickList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,8 +44,8 @@ const STEPS: { id: Step; label: string }[] = [
   { id: "use", label: "4. Použít" },
 ];
 
-interface TbRow { id: string; title: string }
-interface LessonRow { id: string; title: string; textbook_id: string; blocks: unknown; sort_order: number; status: string; hero_image_url: string | null; scheduled_publish_at: string | null; require_activities: boolean }
+interface TbRow { id: string; title: string; subject?: string | null }
+interface LessonRow { id: string; title: string; blocks: unknown; sort_order: number; status: string; hero_image_url: string | null; scheduled_publish_at: string | null; require_activities?: boolean; source: "textbook_lessons" | "teacher_textbook_lessons" }
 
 export default function ActivityWizardDialog({ catalogId, title, onOpenChange }: Props) {
   const { user } = useAuth();
@@ -58,6 +59,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   const [textbooks, setTextbooks] = useState<TbRow[]>([]);
   const [textbookId, setTextbookId] = useState("");
   const [lessons, setLessons] = useState<LessonRow[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [pasted, setPasted] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -76,17 +78,49 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
   useEffect(() => {
     if (!open || !user) return;
-    supabase.from("teacher_textbooks").select("id, title").eq("teacher_id", user.id).is("deleted_at", null)
+    supabase.from("teacher_textbooks").select("id, title, subject").eq("teacher_id", user.id).is("deleted_at", null)
       .order("title").then(({ data }) => setTextbooks((data as TbRow[]) ?? []));
   }, [open, user]);
 
+  // Lekce učebnice se načítají stejně jako na stránce učebnice (TeacherTextbooks):
+  // katalogové lekce témat předmětu + lekce umístěné přes lesson_placements + přímé lekce.
   useEffect(() => {
     if (!textbookId) { setLessons([]); return; }
-    supabase.from("teacher_textbook_lessons")
-      .select("id, title, textbook_id, blocks, sort_order, status, hero_image_url, scheduled_publish_at, require_activities")
-      .eq("textbook_id", textbookId).order("sort_order")
-      .then(({ data }) => setLessons((data as LessonRow[]) ?? []));
-  }, [textbookId]);
+    let cancelled = false;
+    setLessonsLoading(true);
+    (async () => {
+      const tb = textbooks.find((t) => t.id === textbookId);
+      const out: LessonRow[] = [];
+      const seen = new Set<string>();
+      const push = (l: any, source: LessonRow["source"]) => {
+        if (!l || seen.has(l.id)) return;
+        seen.add(l.id);
+        out.push({ ...l, title: l.title || "Bez názvu", source });
+      };
+      const cols = "id, title, blocks, sort_order, status, hero_image_url, scheduled_publish_at";
+      if (tb?.subject) {
+        const { data: topics } = await supabase.from("textbook_topics").select("id, sort_order")
+          .eq("subject", tb.subject).order("sort_order");
+        const topicIds = (topics ?? []).map((t: any) => t.id);
+        if (topicIds.length) {
+          const { data } = await supabase.from("textbook_lessons")
+            .select(`${cols}, require_activities, topic_id`).in("topic_id", topicIds).order("sort_order");
+          const order = new Map(topicIds.map((id: string, i: number) => [id, i]));
+          [...(data ?? [])].sort((a: any, b: any) =>
+            (order.get(a.topic_id) ?? 0) - (order.get(b.topic_id) ?? 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .forEach((l) => push(l, "textbook_lessons"));
+        }
+        const { data: placed } = await supabase.from("lesson_placements")
+          .select(`teacher_textbook_lessons(${cols})`).eq("subject_slug", tb.subject);
+        (placed ?? []).forEach((p: any) => push(p.teacher_textbook_lessons, "teacher_textbook_lessons"));
+      }
+      const { data: direct } = await supabase.from("teacher_textbook_lessons")
+        .select(cols).eq("textbook_id", textbookId).order("sort_order");
+      (direct ?? []).forEach((l) => push(l, "teacher_textbook_lessons"));
+      if (!cancelled) { setLessons(out); setLessonsLoading(false); }
+    })().catch(() => { if (!cancelled) { setLessons([]); setLessonsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [textbookId, textbooks]);
 
   const pickedLessons = useMemo(() => lessons.filter((l) => picked.includes(l.id)), [lessons, picked]);
 
@@ -137,15 +171,17 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function openInLesson() {
     if (!block || !targetLessonId) return;
+    const target = lessons.find((l) => l.id === targetLessonId);
+    const source = target?.source ?? "teacher_textbook_lessons";
     setBusy(true);
-    const { data, error } = await supabase.from("teacher_textbook_lessons")
+    const { data, error } = await (supabase.from(source) as any)
       .select("id, title, sort_order, status, blocks, hero_image_url, scheduled_publish_at, require_activities")
       .eq("id", targetLessonId).maybeSingle();
     setBusy(false);
     if (error || !data) { toast({ title: "Lekci se nepodařilo načíst", variant: "destructive" }); return; }
     const existing = Array.isArray((data as any).blocks) ? (data as any).blocks : [];
     // Nic se neukládá – blok je jen v konceptu editoru, dokud učitel lekci neuloží.
-    setEditorLesson({ ...(data as any), blocks: [...existing, block], source: "teacher_textbook_lessons" });
+    setEditorLesson({ ...(data as any), blocks: [...existing, block], source });
   }
 
   async function saveTemplate() {
@@ -211,23 +247,21 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
-                  <Label>Učebnice</Label>
-                  <Select value={textbookId} onValueChange={(v) => { setTextbookId(v); setPicked([]); }}>
-                    <SelectTrigger><SelectValue placeholder={textbooks.length ? "Vyberte učebnici" : "Nemáte vlastní učebnici"} /></SelectTrigger>
-                    <SelectContent>{textbooks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {lessons.length > 0 && (
-                    <fieldset className="space-y-1 max-h-56 overflow-y-auto border rounded-lg p-3">
-                      <legend className="text-sm font-medium px-1">Lekce (lze vybrat více)</legend>
-                      {lessons.map((l) => (
-                        <label key={l.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox checked={picked.includes(l.id)}
-                            onCheckedChange={(v) => setPicked((p) => (v ? [...p, l.id] : p.filter((x) => x !== l.id)))} />
-                          {l.title}
-                        </label>
-                      ))}
-                    </fieldset>
+                  {textbooks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nemáte vlastní učebnici.</p>
+                  ) : (
+                    <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
+                      onChange={(ids) => { setTextbookId(ids[0] ?? ""); setPicked([]); }}
+                      label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
                   )}
+                  {textbookId && (lessonsLoading ? (
+                    <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Načítám lekce…</p>
+                  ) : lessons.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Tato učebnice zatím nemá žádné lekce.</p>
+                  ) : (
+                    <SearchablePickList items={lessons} mode="multi" selected={picked} onChange={setPicked}
+                      label="Lekce (lze vybrat více)" searchPlaceholder="Hledat lekci" showCount />
+                  ))}
                 </TabsContent>
                 <TabsContent value="text" className="space-y-3">
                   <Label htmlFor="wiz-text">Text podkladu</Label>
@@ -328,14 +362,13 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
             <div className="space-y-5">
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Vložit do lekce</h3>
-                <Select value={textbookId} onValueChange={(v) => { setTextbookId(v); setTargetLessonId(""); }}>
-                  <SelectTrigger aria-label="Učebnice"><SelectValue placeholder="Vyberte učebnici" /></SelectTrigger>
-                  <SelectContent>{textbooks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={targetLessonId} onValueChange={setTargetLessonId} disabled={!allLessonsForTarget.length}>
-                  <SelectTrigger aria-label="Lekce"><SelectValue placeholder="Vyberte lekci" /></SelectTrigger>
-                  <SelectContent>{allLessonsForTarget.map((l) => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
+                  onChange={(ids) => { setTextbookId(ids[0] ?? ""); setTargetLessonId(""); }}
+                  label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
+                {textbookId && (lessonsLoading
+                  ? <p className="text-sm text-muted-foreground">Načítám lekce…</p>
+                  : <SearchablePickList items={allLessonsForTarget} mode="single" selected={targetLessonId ? [targetLessonId] : []}
+                      onChange={(ids) => setTargetLessonId(ids[0] ?? "")} label="Lekce" searchPlaceholder="Hledat lekci" />)}
                 <p className="text-xs text-muted-foreground">Otevře se editor lekce s aktivitou na konci. Nic se neuloží, dokud lekci neuložíte.</p>
                 <Button onClick={openInLesson} disabled={!targetLessonId || busy}>Otevřít v editoru lekce</Button>
               </section>
