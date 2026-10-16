@@ -39,6 +39,11 @@ serve(async (req) => {
 
   const auth = await requireAuth(req);
   if (!auth.ok) return json(auth.body, auth.status);
+  {
+    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
+    const demoBlock = await demoAiGuard(auth, "generate-activity-content");
+    if (demoBlock) return demoBlock;
+  }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -122,6 +127,19 @@ než ${cardCount}, vytvoř méně kartiček – ale nikdy nezůstávej u zlomku 
         }`
       : "";
 
+    // Nepovinná nastavení z průvodce /aktivity (bez nich se chování nemění).
+    const rawItems = Number(body?.itemCount);
+    const itemCount = Number.isFinite(rawItems) && rawItems > 0 ? Math.min(12, Math.max(4, Math.round(rawItems))) : null;
+    const difficulty = ["easy", "medium", "hard"].includes(body?.difficulty) ? body.difficulty : null;
+    const rawOpts = Number(body?.optionCount);
+    const optionCount = activityType === "quiz" && Number.isFinite(rawOpts) ? Math.min(5, Math.max(2, Math.round(rawOpts))) : null;
+    const diffLabel: Record<string, string> = { easy: "snadná (základní fakta)", medium: "střední", hard: "náročná (souvislosti, aplikace)" };
+    const wizardPart = [
+      itemCount && !questionCount && !cardCount ? `\n\nPOČET POLOŽEK: vytvoř ${itemCount} položek (otázek/tvrzení/párů/kroků/vět), pokud na to podklad stačí.` : "",
+      difficulty ? `\n\nOBTÍŽNOST: ${diffLabel[difficulty]}.` : "",
+      optionCount ? `\n\nPOČET MOŽNOSTÍ: každá otázka má přesně ${optionCount} možností, z toho přesně 1 správnou (přepiš pravidlo o 4 možnostech).` : "",
+    ].join("");
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
@@ -133,13 +151,13 @@ ${context.slice(0, 6000)}
 
 ${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
 
-Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}${flashcardsPart}`
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}${flashcardsPart}${wizardPart}`
       : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}${flashcardsPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}${flashcardsPart}${wizardPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -197,11 +215,6 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
 
     return json({ props: { ...parsed, activityType } });
   } catch (e) {
-  {
-    const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
-    const demoBlock = await demoAiGuard(auth, "generate-activity-content");
-    if (demoBlock) return demoBlock;
-  }
     console.error("generate-activity-content error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }

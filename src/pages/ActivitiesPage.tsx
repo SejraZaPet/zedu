@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Seo from "@/components/Seo";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import ActivityWizardDialog from "@/components/activities/ActivityWizardDialog";
+import { isSupported, type CatalogId } from "@/lib/activity-wizard";
+
+const TEACHER_ROLES = ["teacher", "lektor", "school_admin", "admin"];
+const STUDENT_NOTICE = "Aktivity pro svou třídu vytváří učitel, tady si můžeš procvičit vlastní materiál";
 
 const categories = [
   { id: "all", label: "Všechny aktivity" },
@@ -255,6 +262,18 @@ const previewMap: Record<string, React.FC> = {
 const ActivitiesPage = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const navigate = useNavigate();
+  const { isLoggedIn, role, loading } = useAuth();
+  const [wizard, setWizard] = useState<{ id: CatalogId; title: string } | null>(null);
+  const isTeacher = !!role && TEACHER_ROLES.includes(role);
+
+  const openActivity = (id: string, title: string) => {
+    if (loading || !isLoggedIn || !isSupported(id)) return;
+    if (!isTeacher) {
+      navigate("/student/z-materialu", { state: { notice: STUDENT_NOTICE } });
+      return;
+    }
+    setWizard({ id: id as CatalogId, title });
+  };
 
   const filtered =
     activeCategory === "all"
@@ -309,10 +328,17 @@ const ActivitiesPage = () => {
             {filtered.map((activity) => {
               const Icon = activity.icon;
               const Preview = previewMap[activity.preview];
+              const supported = isSupported(activity.id);
+              const clickable = supported && isLoggedIn;
               return (
                 <div
                   key={activity.id}
-                  className="group bg-card border border-border rounded-2xl p-5 flex flex-col transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1"
+                  role={clickable ? "button" : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  aria-label={clickable ? `Použít aktivitu ${activity.title}` : undefined}
+                  onClick={clickable ? () => openActivity(activity.id, activity.title) : undefined}
+                  onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openActivity(activity.id, activity.title); } } : undefined}
+                  className={cn(clickable && "cursor-pointer", "group bg-card border border-border rounded-2xl p-5 flex flex-col transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1")}
                 >
                   {/* Icon + title */}
                   <div className="flex items-center gap-3 mb-3">
@@ -337,14 +363,23 @@ const ActivitiesPage = () => {
                   </div>
 
                   {/* CTA */}
-                  <button
-                    onClick={() => {
-                      /* navigate to editor – placeholder for now */
-                    }}
-                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
-                  >
-                    Použít aktivitu
-                  </button>
+                  {!supported ? (
+                    <button type="button" disabled aria-disabled="true"
+                      className="w-full py-2 rounded-xl text-xs font-semibold border border-border text-muted-foreground opacity-70 cursor-not-allowed">
+                      Brzy
+                    </button>
+                  ) : !isLoggedIn ? (
+                    <Link to="/demo" onClick={(e) => e.stopPropagation()}
+                      className="block text-center w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
+                      Vyzkoušet v demu
+                    </Link>
+                  ) : (
+                    <button type="button"
+                      onClick={(e) => { e.stopPropagation(); openActivity(activity.id, activity.title); }}
+                      className="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
+                      Použít aktivitu
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -352,6 +387,11 @@ const ActivitiesPage = () => {
         </div>
       </main>
       <SiteFooter />
+      <ActivityWizardDialog
+        catalogId={wizard?.id ?? null}
+        title={wizard?.title ?? ""}
+        onOpenChange={(o) => { if (!o) setWizard(null); }}
+      />
     </div>
   );
 };
