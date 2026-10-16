@@ -178,7 +178,8 @@ export function activityToGameQuestions(props: any): { question: string; answers
     const rights = [...new Set(pairs.map((p) => p.right))];
     return pairs.map((p, i) => {
       const others = rights.filter((x) => x !== p.right);
-      const pick = others.slice(i % Math.max(1, others.length)).concat(others).slice(0, 3);
+      const k = i % Math.max(1, others.length);
+      const pick = others.slice(k).concat(others.slice(0, k)).slice(0, 3);
       const answers = [p.right, ...pick];
       // deterministické umístění správné odpovědi
       const pos = i % answers.length;
