@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
+
 - Keep lesson-list disclosure in page-local state and derive batched row-link loading from visible occurrences, so expanding lists never changes schedule data or permissions.
 
 - Keep worksheet editor pagination presentational: it may regroup existing item IDs into A4 pages, but all mutations must continue through WorksheetEditor `updateSpec` so undo, metadata, autosave, scoring, and print/PDF remain authoritative.
