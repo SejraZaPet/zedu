@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -123,6 +123,12 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
     }
   };
 
+  // Přehled se načte hned po ukončení (a po změně anonymizace / klíče), ne až po kliknutí na Report.
+  useEffect(() => {
+    void handleLoadReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, anonymization, includeAnswerKey]);
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -153,6 +159,17 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
           </Button>
         </div>
       </div>
+
+      {!report && loadingReport && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+          <Loader2 className="w-4 h-4 animate-spin" /> Načítám přehled…
+        </p>
+      )}
+      {report && (report.sessionOverview?.totalResponses ?? 0) === 0 && (
+        <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground" role="status">
+          Zatím žádné odpovědi.
+        </p>
+      )}
 
       {/* Report view */}
       {report && (

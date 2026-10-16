@@ -1,3 +1,4 @@
+import { limitActivityItems } from "../_shared/activity-item-limit.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
 
@@ -135,7 +136,7 @@ než ${cardCount}, vytvoř méně kartiček – ale nikdy nezůstávej u zlomku 
     const optionCount = activityType === "quiz" && Number.isFinite(rawOpts) ? Math.min(5, Math.max(2, Math.round(rawOpts))) : null;
     const diffLabel: Record<string, string> = { easy: "snadná (základní fakta)", medium: "střední", hard: "náročná (souvislosti, aplikace)" };
     const wizardPart = [
-      itemCount && !questionCount && !cardCount ? `\n\nPOČET POLOŽEK: vytvoř ${itemCount} položek (otázek/tvrzení/párů/kroků/vět), pokud na to podklad stačí.` : "",
+      itemCount && !questionCount && !cardCount ? `\n\nPOČET POLOŽEK: vytvoř PŘESNĚ ${itemCount} položek (otázek/tvrzení/párů/kroků/vět), ne více.` : "",
       difficulty ? `\n\nOBTÍŽNOST: ${diffLabel[difficulty]}.` : "",
       optionCount ? `\n\nPOČET MOŽNOSTÍ: každá otázka má přesně ${optionCount} možností, z toho přesně 1 správnou (přepiš pravidlo o 4 možnostech).` : "",
     ].join("");
@@ -213,7 +214,8 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
       (parsed as any).quiz = { questions: (parsed as any).questions };
     }
 
-    return json({ props: { ...parsed, activityType } });
+    const limited = itemCount && !questionCount && !cardCount ? limitActivityItems(parsed, itemCount) : parsed;
+    return json({ props: { ...limited, activityType } });
   } catch (e) {
     console.error("generate-activity-content error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);

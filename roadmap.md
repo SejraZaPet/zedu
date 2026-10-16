@@ -47,3 +47,12 @@
 - [ ] Ostrá zkouška [TEST] her se 3 hráči, pak úklid
 ## Bezli liga v1
 - [ ] Schváleno – po etapě 2: migrace xp_events, add_xp, school_league_week, cron, záložka Liga
+
+## Etapa 1 – nálezy z testu na bezli.cz (16. 10.)
+- [x] Telefon: Pravda/Nepravda velká tlačítka s popisky (ověřeno v náhledu)
+- [x] Lobby text bezli.cz/live/pripojit + adresy /hra a /live vedou na připojení
+- [x] Lišta „Prohlížíš jako“ nezakrývá tlačítka (spodní odsazení)
+- [x] Průvodce: počet položek se dodrží (oříznutí výstupu AI)
+- [x] Výsledky po ukončení: přehled se načte hned, „Zatím žádné odpovědi“
+- [ ] Smazat „Charakteristika a rozdělení poživatin“ až po ostré zkoušce
+- [ ] Etapa 2 dokončení, etapa 3, ostrá zkouška [TEST], Bezli liga v1

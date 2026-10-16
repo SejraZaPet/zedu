@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Eye, X } from "lucide-react";
+import { useEffect } from "react";
 
 const LABELS: Record<string, string> = {
   admin: "Administrátor",
@@ -15,7 +16,15 @@ const LABELS: Record<string, string> = {
  */
 const ViewAsBanner = () => {
   const { realRole, viewAsRole, setViewAsRole } = useAuth();
-  if (realRole !== "admin" || !viewAsRole || viewAsRole === "admin") return null;
+  const visible = realRole === "admin" && !!viewAsRole && viewAsRole !== "admin";
+  // Lišta je plovoucí – spodní odsazení stránky zajistí, že nezakryje tlačítka na konci stránky.
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = "4.5rem";
+    return () => { document.body.style.paddingBottom = prev; };
+  }, [visible]);
+  if (!visible) return null;
 
   const label = LABELS[viewAsRole] ?? viewAsRole;
 

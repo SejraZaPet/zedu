@@ -69,6 +69,8 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
 
   if (live) {
     const show = submitted && live.revealed;
+    // Pravda/Nepravda: popisky nejsou obsah otázky, takže je telefon ukáže přímo na tlačítkách.
+    const tfLabels = current.answers.length === 2 && current.answers.every((a) => /^(pravda|nepravda)$/i.test(a.text.trim()));
     return (
       <div className="space-y-4">
         <p className="sr-only">Odpověz podle možností zobrazených na společné obrazovce.</p>
@@ -82,12 +84,16 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
                 variant="ghost"
                 onClick={() => toggle(i)}
                 disabled={submitted || live.revealed}
-                aria-label={`Možnost ${i + 1}: ${optionName}`}
+                aria-label={tfLabels ? `Možnost ${i + 1}: ${a.text} (${optionName})` : `Možnost ${i + 1}: ${optionName}`}
                 aria-pressed={selected.has(i)}
                 className={`relative h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
-                <McqOptionIcon index={i} className="!h-12 !w-12" />
-                <span className="sr-only">{optionName}</span>
+                <McqOptionIcon index={i} className={tfLabels ? "!h-8 !w-8 shrink-0" : "!h-12 !w-12"} />
+                {tfLabels ? (
+                  <span className="ml-2 text-left text-lg font-bold leading-tight whitespace-normal break-words">{a.text}</span>
+                ) : (
+                  <span className="sr-only">{optionName}</span>
+                )}
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>
             );
