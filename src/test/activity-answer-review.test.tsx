@@ -57,7 +57,7 @@ describe("snapshot automaticky hodnocených aktivit", () => {
   it("kvíz uloží skutečný výběr, vysvětlení a součet", () => {
     const complete = vi.fn();
     render(<QuizActivity quiz={{ question: "Otázka", answers: [{ text: "Ano", correct: true }, { text: "Ne", correct: false }], explanation: "Proč" }} onComplete={complete} />);
-    fireEvent.click(screen.getByRole("button", { name: "Ne", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ne$/ }));
     fireEvent.click(screen.getByRole("button", { name: "Ověřit odpověď" }));
     fireEvent.click(screen.getByRole("button", { name: "Zobrazit výsledek" }));
     expect(complete).toHaveBeenCalledWith(0, 1, [{ index: 0, text: "Otázka", studentAnswer: "Ne", correctAnswer: "Ano", correct: false, explanation: "Proč" }]);
