@@ -126,6 +126,34 @@ export function useGameSession(
     setLoading(false);
   };
 
+  // Lehké průběžné načítání stavu hry (status, current_question_index,
+  // question_started_at) přes bezpečnou funkci get_player_session. Hráč bez
+  // účtu nemá user_id, takže mu RLS odfiltruje realtime události z
+  // game_sessions, přestože se kanál připojí — bez této zálohy se mu nová
+  // otázka ukázala až po ručním obnovení stránky. Funkce ověřuje joinToken
+  // a vrací jen data bez správných odpovědí, takže je bezpečná pro oba typy
+  // hráčů. Po skončení hry se polling zastaví.
+  const lightPoll = useCallback(async () => {
+    if (!sessionId || !mountedRef.current) return;
+    const current = sessionRef.current;
+    if (current?.status === "finished") return;
+    const { data, error } = await supabase.rpc("get_player_session" as any, {
+      _session_id: sessionId,
+      _join_token: joinToken || null,
+    });
+    if (error || !mountedRef.current) return;
+    const row = Array.isArray(data) ? (data as any[])[0] : (data as any);
+    const light = extractLightState(row);
+    if (!light) return;
+    // Změnil se počet snímků (zveřejněný koncept) → plné bezpečné načtení.
+    const len = rowSlidesLength(row);
+    if (len >= 0 && slidesLenRef.current >= 0 && len !== slidesLenRef.current) {
+      fetchData();
+      return;
+    }
+    setSession((prev) => applyLightSessionState(prev, light) as GameSession | null);
+  }, [sessionId, joinToken, fetchData]);
+
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(async () => {
     if (!sessionId || !mountedRef.current) return;
