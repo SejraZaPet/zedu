@@ -327,6 +327,24 @@ export function useGameSession(
     });
     subscribe();
 
+    // Záchranná síť: každé 2 s lehký stav hry (jen viditelná karta).
+    lightPollRef.current = setInterval(() => {
+      if (!mountedRef.current) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      lightPoll();
+    }, 2000);
+
+    // Návrat karty do popředí nebo obnovení sítě → okamžité načtení stavu.
+    const onVisible = () => {
+      if (typeof document !== "undefined" && !document.hidden) lightPoll();
+    };
+    const onOnline = () => {
+      lightPoll();
+      if (!connectedRef.current) reconnect();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+    if (typeof window !== "undefined") window.addEventListener("online", onOnline);
+
     return () => {
       mountedRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -334,12 +352,18 @@ export function useGameSession(
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+      if (lightPollRef.current) {
+        clearInterval(lightPollRef.current);
+        lightPollRef.current = null;
+      }
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
+      if (typeof window !== "undefined") window.removeEventListener("online", onOnline);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [fetchData, subscribe, refetchTrigger]);
+  }, [fetchData, subscribe, refetchTrigger, lightPoll, reconnect]);
 
   return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
 }
