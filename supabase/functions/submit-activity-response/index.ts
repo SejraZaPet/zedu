@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
 import { mcqCorrectFromSelection } from "../_shared/game-scoring.ts";
+import { isGradedSlide } from "../_shared/session-participants.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,7 +92,7 @@ serve(async (req) => {
     // spočítá podle herního režimu (stejná pravidla jako submit-answer).
     let modeExtras: Record<string, unknown> = {};
     let victimHandled = false;
-    if (!openEnded && question) {
+    if (!openEnded && question && isGradedSlide(question)) {
       const verified = mcqCorrectFromSelection(question?.activitySpec?.options, answerPayload?.selected);
       if (verified !== null) finalIsCorrect = verified;
       const startedAt = sess?.question_started_at ? new Date(sess.question_started_at).getTime() : null;
