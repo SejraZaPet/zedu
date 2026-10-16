@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { answerDistribution, classSuccessSummary, computeParticipantStats, isGradedSlide, pct } from "../_shared/session-participants.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,7 +74,8 @@ serve(async (req) => {
     const { data: players } = await supabase
       .from("game_players")
       .select("id, nickname, user_id, total_score")
-      .eq("session_id", sessionId);
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
 
     const { data: responses } = await supabase
       .from("game_responses")
@@ -113,6 +115,7 @@ serve(async (req) => {
         ? Math.round(slideResponses.reduce((s, r) => s + r.response_time_ms, 0) / totalAnswered)
         : 0;
       const successRate = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+      const graded = isGradedSlide(slide);
 
       // Find most common wrong answers
       const wrongAnswers = slideResponses.filter((r) => !r.is_correct);
@@ -135,8 +138,20 @@ serve(async (req) => {
         successRate,
         avgTimeMs: avgTime,
         commonMistakes,
+        graded,
+        successRatePct: graded ? pct(correctCount, totalAnswered) : null,
+        needsPractice: graded && totalAnswered > 0 && successRate < 50,
+        distribution: answerDistribution(slide, slideResponses),
       };
     });
+
+    // Participant success (correct / graded answers)
+    const nameFor = (p: any, i: number) =>
+      anonymizationMode === "named" ? (p.user_id && profileMap[p.user_id]) || p.nickname
+        : anonymizationMode === "pseudonymous" ? `Student_${i + 1}` : `Účastník ${i + 1}`;
+    const participantStats = computeParticipantStats(slides, players || [], (responses || []) as any);
+    const participants = participantStats.map((st, i) => ({ ...st, name: nameFor((players || [])[i], i) }));
+    const successSummary = classSuccessSummary(participantStats);
 
     // Class-level stats
     const allScores = (players || []).map((p) => p.total_score);
@@ -233,6 +248,8 @@ ${weakSlides.map((s) => `- Slide ${s.index} "${s.headline}" (${s.successRate}%):
           : 0,
       },
       perSlideResults: slideStats,
+      participants,
+      successSummary,
       classStatistics: classStats,
       commonMistakes: slideStats
         .filter((s) => s.commonMistakes.length > 0)

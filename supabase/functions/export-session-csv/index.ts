@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { classSuccessSummary, computeParticipantStats } from "../_shared/session-participants.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,8 +60,9 @@ serve(async (req) => {
     // Fetch players
     const { data: players } = await supabase
       .from("game_players")
-      .select("id, nickname, user_id")
-      .eq("session_id", sessionId);
+      .select("id, nickname, user_id, total_score")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
 
     // Fetch responses
     const { data: responses } = await supabase
@@ -142,6 +144,23 @@ serve(async (req) => {
         csvRows.push(row.join(separator));
       }
     }
+
+    // Participant summary: success % and correct out of graded
+    const stats = computeParticipantStats(slides, players || [], (responses || []) as any);
+    csvRows.push("");
+    csvRows.push("# ÚČASTNÍCI");
+    csvRows.push(["participant", "success_pct", "correct_of_total", "correct", "graded", "score", "avg_response_time_ms"].join(separator));
+    stats.forEach((st, i) => {
+      csvRows.push([
+        anonymizationMode === "anonymous" ? `Účastník ${i + 1}` : (playerIdentifiers[st.playerId] || ""),
+        st.successRate === null ? "–" : String(st.successRate),
+        st.graded ? `${st.correct} z ${st.graded}` : "–",
+        String(st.correct), String(st.graded), String(st.score),
+        st.avgTimeMs === null ? "" : String(st.avgTimeMs),
+      ].join(separator));
+    });
+    const sum = classSuccessSummary(stats);
+    csvRows.push(`# Průměrná úspěšnost třídy: ${sum.averageSuccessRate === null ? "–" : sum.averageSuccessRate + " %"}; pod 50 %: ${sum.needHelpCount}`);
 
     // Add answer key at the end if requested
     if (includeAnswerKey) {
