@@ -2512,6 +2512,86 @@ export default function TeacherLessonPlanEditor() {
                     </ul>
                   </div>
                 )}
+
+                {/* Přiložené aktivity ke kroku */}
+                <div className="mt-3 space-y-2" data-testid={`attached-${phase.key}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-xs font-medium text-muted-foreground">Přiložené aktivity</p>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs">
+                          <Paperclip className="w-3 h-3 mr-1" /> Přiložit aktivitu
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            document
+                              .querySelector(`[data-testid="attached-${phase.key}"]`)
+                              ?.closest(".bg-card")
+                              ?.querySelector("ul")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" /> Vytvořit z návrhu (viz návrhy výše)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setAttachPhase(phase.key)}>
+                          <Plus className="w-4 h-4 mr-2" /> Vybrat existující…
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => { setLinkPhase(phase.key); setLinkUrl(""); setLinkTitle(""); }}>
+                          <Link2 className="w-4 h-4 mr-2" /> Přidat odkaz…
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {(value.attached?.length ?? 0) === 0 ? (
+                    <p className="text-xs text-muted-foreground">Zatím nic připnuté.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {value.attached!.map((att, i) => {
+                        const href = attachedHref(att);
+                        return (
+                          <li
+                            key={`${att.type}:${att.id ?? att.url ?? i}`}
+                            className="flex items-center justify-between gap-3 text-sm bg-muted/30 border border-border rounded-md px-3 py-2"
+                            data-testid="attached-item"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{att.title}</div>
+                              <div className="text-xs text-muted-foreground">{ATTACHED_TYPE_LABEL[att.type]}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {att.type === "link" && att.url ? (
+                                <a
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline whitespace-nowrap inline-flex items-center gap-1"
+                                >
+                                  Otevřít <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : href ? (
+                                <a href={href} className="text-xs text-primary hover:underline whitespace-nowrap">
+                                  Otevřít →
+                                </a>
+                              ) : null}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                aria-label="Odebrat z kroku"
+                                onClick={() => handleRemoveAttached(phase.key, i)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               </div>
             );
           })}
