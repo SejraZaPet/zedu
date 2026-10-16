@@ -76,17 +76,49 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
   useEffect(() => {
     if (!open || !user) return;
-    supabase.from("teacher_textbooks").select("id, title").eq("teacher_id", user.id).is("deleted_at", null)
+    supabase.from("teacher_textbooks").select("id, title, subject").eq("teacher_id", user.id).is("deleted_at", null)
       .order("title").then(({ data }) => setTextbooks((data as TbRow[]) ?? []));
   }, [open, user]);
 
+  // Lekce učebnice se načítají stejně jako na stránce učebnice (TeacherTextbooks):
+  // katalogové lekce témat předmětu + lekce umístěné přes lesson_placements + přímé lekce.
   useEffect(() => {
     if (!textbookId) { setLessons([]); return; }
-    supabase.from("teacher_textbook_lessons")
-      .select("id, title, textbook_id, blocks, sort_order, status, hero_image_url, scheduled_publish_at, require_activities")
-      .eq("textbook_id", textbookId).order("sort_order")
-      .then(({ data }) => setLessons((data as LessonRow[]) ?? []));
-  }, [textbookId]);
+    let cancelled = false;
+    setLessonsLoading(true);
+    (async () => {
+      const tb = textbooks.find((t) => t.id === textbookId);
+      const out: LessonRow[] = [];
+      const seen = new Set<string>();
+      const push = (l: any, source: LessonRow["source"]) => {
+        if (!l || seen.has(l.id)) return;
+        seen.add(l.id);
+        out.push({ ...l, title: l.title || "Bez názvu", source });
+      };
+      const cols = "id, title, blocks, sort_order, status, hero_image_url, scheduled_publish_at";
+      if (tb?.subject) {
+        const { data: topics } = await supabase.from("textbook_topics").select("id, sort_order")
+          .eq("subject", tb.subject).order("sort_order");
+        const topicIds = (topics ?? []).map((t: any) => t.id);
+        if (topicIds.length) {
+          const { data } = await supabase.from("textbook_lessons")
+            .select(`${cols}, require_activities, topic_id`).in("topic_id", topicIds).order("sort_order");
+          const order = new Map(topicIds.map((id: string, i: number) => [id, i]));
+          [...(data ?? [])].sort((a: any, b: any) =>
+            (order.get(a.topic_id) ?? 0) - (order.get(b.topic_id) ?? 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .forEach((l) => push(l, "textbook_lessons"));
+        }
+        const { data: placed } = await supabase.from("lesson_placements")
+          .select(`teacher_textbook_lessons(${cols})`).eq("subject_slug", tb.subject);
+        (placed ?? []).forEach((p: any) => push(p.teacher_textbook_lessons, "teacher_textbook_lessons"));
+      }
+      const { data: direct } = await supabase.from("teacher_textbook_lessons")
+        .select(cols).eq("textbook_id", textbookId).order("sort_order");
+      (direct ?? []).forEach((l) => push(l, "teacher_textbook_lessons"));
+      if (!cancelled) { setLessons(out); setLessonsLoading(false); }
+    })().catch(() => { if (!cancelled) { setLessons([]); setLessonsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [textbookId, textbooks]);
 
   const pickedLessons = useMemo(() => lessons.filter((l) => picked.includes(l.id)), [lessons, picked]);
 
