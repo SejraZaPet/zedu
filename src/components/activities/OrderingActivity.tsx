@@ -17,6 +17,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import type { ActivityCompletion } from "@/lib/activity-answers";
+import { evaluateOrdering } from "@/lib/ordering-imagelabel-answers";
 
 interface OrderingData {
   items: string[];
@@ -75,7 +77,7 @@ const SortableItem = ({
   );
 };
 
-const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: (score: number, maxScore: number) => void }) => {
+const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: ActivityCompletion }) => {
   const correctOrder: string[] = ordering?.items ?? [];
 
   // Create shuffled order once
@@ -150,7 +152,8 @@ const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; on
         <button
           onClick={() => {
             setChecked(true);
-            onComplete?.(score, total);
+            const r = evaluateOrdering(correctOrder, items.map((it) => it.correctIndex));
+            onComplete?.(r.score, r.maxScore, r.answers);
           }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -170,6 +173,14 @@ const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; on
               </button>
             )}
           </div>
+          {!allCorrect && (
+            <div className="rounded-lg border border-border p-3 text-sm">
+              <p className="font-medium mb-1">Správné pořadí:</p>
+              <ol className="list-decimal pl-5 space-y-0.5">
+                {correctOrder.map((t, i) => <li key={i}>{t}</li>)}
+              </ol>
+            </div>
+          )}
           {!allCorrect && (
             <button
               className="text-xs text-muted-foreground underline"
