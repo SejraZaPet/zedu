@@ -356,7 +356,7 @@ body.a11y-line-height main .whitespace-pre-wrap {
 
 .assignment-status-card {
   color: hsl(var(--assignment-foreground));
-  background-image: linear-gradient(hsl(var(--assignment-scrim) / .34), hsl(var(--assignment-scrim) / .34)),
+  background-image: linear-gradient(hsl(var(--assignment-scrim) / .37), hsl(var(--assignment-scrim) / .37)),
     linear-gradient(100deg, hsl(var(--assignment-from)), hsl(var(--assignment-mid)) 55%, hsl(var(--assignment-to)));
   border: 0;
   border-radius: 8px;
@@ -381,3 +381,8 @@ body.a11y-line-height main .whitespace-pre-wrap {
   background: hsl(var(--assignment-foreground)); color: hsl(var(--assignment-from));
 }
 .assignment-status-card .assignment-card-action:hover { opacity: .9; }
+.assignment-status-card .assignment-card-outline {
+  color: hsl(var(--assignment-foreground));
+  border-color: hsl(var(--assignment-foreground) / .55);
+  background: hsl(var(--assignment-foreground) / .12);
+}

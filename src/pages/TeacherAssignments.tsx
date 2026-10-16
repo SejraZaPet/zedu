@@ -1717,13 +1717,13 @@ const TeacherAssignments = () => {
                                       </Badge>
                                     )}
                                     {targetName && (
-                                      <Badge variant="outline" className="text-xs">
+                                      <Badge variant="outline" className="assignment-card-outline text-xs">
                                         <Users className="w-3 h-3 mr-1" />
                                         {targetName}
                                       </Badge>
                                     )}
                                     {a.status === "scheduled" && a.scheduled_publish_at && (
-                                      <Badge variant="outline" className="text-xs">
+                                      <Badge variant="outline" className="assignment-card-outline text-xs">
                                         <CalendarIcon className="w-3 h-3 mr-1" />
                                         {new Date(a.scheduled_publish_at).toLocaleString("cs-CZ", {
                                           day: "numeric",
@@ -1788,7 +1788,7 @@ const TeacherAssignments = () => {
                                   />
                                 )}
                                 {(a.status === "draft" || a.status === "scheduled") && (
-                                  <Button size="sm" variant="outline" onClick={() => handlePublish(a.id)}>
+                                  <Button size="sm" variant="outline" className="assignment-card-action" onClick={() => handlePublish(a.id)}>
                                     <Send className="w-3.5 h-3.5 mr-1" />
                                     {a.status === "scheduled" ? "Publikovat hned" : "Publikovat"}
                                   </Button>
