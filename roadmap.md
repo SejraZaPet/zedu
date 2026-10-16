@@ -22,6 +22,6 @@
 - [ ] Ověřit připínání aktivit v plánu v browseru
 
 ## Oprava textu lekce pro procvičování
-- [ ] Sdílená extrakce vnořených bloků a čistý kontext chatu
-- [ ] Odmítnutí krátkého textu a srozumitelná hláška v procvičování
-- [ ] Testy, nasazení funkcí a ověření Poživatin
+- [x] Sdílená extrakce vnořených bloků a čistý kontext chatu
+- [x] Odmítnutí krátkého textu a srozumitelná hláška v procvičování
+- [x] Testy, nasazení funkcí a ověření Poživatin (439 testů; 4 otázky v náhledu)
