@@ -39,6 +39,9 @@ import {
   Wand2,
   Pencil,
   Printer,
+  Paperclip,
+  Link2,
+  ExternalLink,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -93,6 +96,15 @@ import {
   type CreatedRef,
 } from "@/lib/plan-suggested-activities";
 import { launchTemplateSession } from "@/lib/game-templates";
+import AttachExistingDialog from "@/components/lesson-plan/AttachExistingDialog";
+import {
+  addAttached,
+  attachedHref,
+  ATTACHED_TYPE_LABEL,
+  removeAttached,
+  validateExternalUrl,
+  type AttachedItem,
+} from "@/lib/plan-attachments";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 import {
   buildLessonUnits,
@@ -137,6 +149,8 @@ interface PhaseValue {
   timeMin: string;
   description: string;
   activities?: SuggestedActivity[];
+  /** Aktivity připnuté učitelem ke kroku (existující obsah nebo externí odkaz). */
+  attached?: AttachedItem[];
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
@@ -215,6 +229,11 @@ export default function TeacherLessonPlanEditor() {
   const [saving, setSaving] = useState(false);
   /** Klíč „fáze:index“ návrhu, který se právě vytváří (nebo „launch:id“). */
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  /** Fáze, ke které se právě připíná existující aktivita / odkaz. */
+  const [attachPhase, setAttachPhase] = useState<string | null>(null);
+  const [linkPhase, setLinkPhase] = useState<string | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkTitle, setLinkTitle] = useState("");
   const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
     aiGenerated: false,
     aiModifiedAt: null,
@@ -1301,6 +1320,37 @@ export default function TeacherLessonPlanEditor() {
     } finally {
       setCreatingKey(null);
     }
+  }
+
+  /** Připne existující aktivity ke kroku (jen propojení, obsah se nemění). */
+  function handleAttachExisting(phaseKey: string, items: AttachedItem[]) {
+    if (!items.length) return;
+    setPhases((prev) => {
+      let phase = prev[phaseKey] ?? { timeMin: "", description: "" };
+      for (const item of items) phase = addAttached(phase, item);
+      return { ...prev, [phaseKey]: phase };
+    });
+    toast({ title: "Aktivita připnuta", description: "Uloží se s plánem." });
+  }
+
+  /** Přidá externí odkaz ke kroku. Povolené jsou jen http(s) adresy. */
+  function handleAddLink() {
+    if (!linkPhase) return;
+    const url = validateExternalUrl(linkUrl);
+    if (!url) {
+      toast({ title: "Neplatný odkaz", description: "Zadejte prosím adresu začínající http:// nebo https://.", variant: "destructive" });
+      return;
+    }
+    const title = linkTitle.trim() || url.replace(/^https?:\/\//, "").split("/")[0];
+    handleAttachExisting(linkPhase, [{ type: "link", url, title }]);
+    setLinkPhase(null);
+    setLinkUrl("");
+    setLinkTitle("");
+  }
+
+  /** Odebere jen propojení s krokem – samotná aktivita zůstává učiteli. */
+  function handleRemoveAttached(phaseKey: string, index: number) {
+    setPhases((prev) => ({ ...prev, [phaseKey]: removeAttached(prev[phaseKey] ?? { timeMin: "", description: "" }, index) }));
   }
 
   /** „Spustit živou hru“ u již vytvořené šablony. */
@@ -2462,6 +2512,86 @@ export default function TeacherLessonPlanEditor() {
                     </ul>
                   </div>
                 )}
+
+                {/* Přiložené aktivity ke kroku */}
+                <div className="mt-3 space-y-2" data-testid={`attached-${phase.key}`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-xs font-medium text-muted-foreground">Přiložené aktivity</p>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs">
+                          <Paperclip className="w-3 h-3 mr-1" /> Přiložit aktivitu
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            document
+                              .querySelector(`[data-testid="attached-${phase.key}"]`)
+                              ?.closest(".bg-card")
+                              ?.querySelector("ul")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" /> Vytvořit z návrhu (viz návrhy výše)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setAttachPhase(phase.key)}>
+                          <Plus className="w-4 h-4 mr-2" /> Vybrat existující…
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => { setLinkPhase(phase.key); setLinkUrl(""); setLinkTitle(""); }}>
+                          <Link2 className="w-4 h-4 mr-2" /> Přidat odkaz…
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {(value.attached?.length ?? 0) === 0 ? (
+                    <p className="text-xs text-muted-foreground">Zatím nic připnuté.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {value.attached!.map((att, i) => {
+                        const href = attachedHref(att);
+                        return (
+                          <li
+                            key={`${att.type}:${att.id ?? att.url ?? i}`}
+                            className="flex items-center justify-between gap-3 text-sm bg-muted/30 border border-border rounded-md px-3 py-2"
+                            data-testid="attached-item"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{att.title}</div>
+                              <div className="text-xs text-muted-foreground">{ATTACHED_TYPE_LABEL[att.type]}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {att.type === "link" && att.url ? (
+                                <a
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline whitespace-nowrap inline-flex items-center gap-1"
+                                >
+                                  Otevřít <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : href ? (
+                                <a href={href} className="text-xs text-primary hover:underline whitespace-nowrap">
+                                  Otevřít →
+                                </a>
+                              ) : null}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                aria-label="Odebrat z kroku"
+                                onClick={() => handleRemoveAttached(phase.key, i)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -2682,6 +2812,50 @@ export default function TeacherLessonPlanEditor() {
               {sharingSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Uložit
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {attachPhase && user && (
+        <AttachExistingDialog
+          teacherId={user.id}
+          open
+          onOpenChange={(o) => { if (!o) setAttachPhase(null); }}
+          alreadyAttached={phases[attachPhase]?.attached ?? []}
+          onAttach={(items) => handleAttachExisting(attachPhase, items)}
+        />
+      )}
+
+      <Dialog open={linkPhase !== null} onOpenChange={(o) => { if (!o) setLinkPhase(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Přidat odkaz</DialogTitle>
+            <DialogDescription>Odkaz na externí aktivitu (Wordwall, Kahoot, Quizizz, Liveworksheets…). Otevře se v nové záložce.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="attach-link-url">Adresa (URL)</Label>
+              <Input
+                id="attach-link-url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://wordwall.net/…"
+                inputMode="url"
+              />
+            </div>
+            <div>
+              <Label htmlFor="attach-link-title">Název (nepovinný)</Label>
+              <Input
+                id="attach-link-title"
+                value={linkTitle}
+                onChange={(e) => setLinkTitle(e.target.value)}
+                placeholder="např. Interaktivní cvičení"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkPhase(null)}>Zrušit</Button>
+            <Button onClick={handleAddLink} disabled={!linkUrl.trim()}>Připnout odkaz</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
