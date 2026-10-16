@@ -342,7 +342,7 @@ const TodayWidget = ({ role }: Props) => {
             <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+            <span className="text-sm text-muted-foreground">{role === "student" ? "podle stavu" : "následujících 7 dní"}</span>
             <button
               type="button"
               onClick={() => setAddOpen(true)}
