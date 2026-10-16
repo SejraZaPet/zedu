@@ -1817,7 +1817,6 @@ const TeacherAssignments = () => {
                                   className="assignment-card-action"
                                   size="icon"
                                   variant="ghost"
-                                  className="text-destructive"
                                   aria-label="Smazat"
                                   title="Smazat"
                                   onClick={() => handleDelete(a.id)}
