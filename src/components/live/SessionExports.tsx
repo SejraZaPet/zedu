@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileDown, FileText, BarChart3, Award, AlertTriangle, Lightbulb, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { sortParticipants } from "@/lib/session-participants-sort";
 
 interface Props {
   sessionId: string;
@@ -36,7 +37,12 @@ interface Report {
     successRate: number;
     avgTimeMs: number;
     commonMistakes: Array<{ answer: any; count: number }>;
+    graded?: boolean;
+    needsPractice?: boolean;
+    distribution?: Array<{ label: string; correct: boolean; count: number }>;
   }>;
+  participants?: Array<{ playerId: string; name: string; correct: number; graded: number; successRate: number | null; score: number; avgTimeMs: number | null }>;
+  successSummary?: { averageSuccessRate: number | null; needHelpCount: number; ratedCount: number };
   classStatistics: { mean: number; median: number; min: number; max: number };
   commonMistakes: Array<{
     slide: number;
@@ -48,12 +54,22 @@ interface Report {
   answerKey?: Array<{ slide: number; headline: string; correctAnswer: string }>;
 }
 
+const barTone = (r: number) => (r >= 70 ? "bg-green-500" : r >= 40 ? "bg-amber-500" : "bg-red-500");
+const textTone = (r: number) => (r >= 70 ? "text-green-700 dark:text-green-400" : r >= 40 ? "text-amber-700 dark:text-amber-400" : "text-red-700 dark:text-red-400");
+type SortKey = "success" | "name" | "score";
+
 const SessionExports = ({ sessionId, sessionTitle }: Props) => {
   const [anonymization, setAnonymization] = useState("pseudonymous");
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("success");
+  const [openSlide, setOpenSlide] = useState<number | null>(null);
+  const sortedParticipants = useMemo(
+    () => sortParticipants(report?.participants ?? [], sortKey),
+    [report, sortKey],
+  );
 
   const handleCsvExport = async () => {
     setExportingCsv(true);
@@ -152,6 +168,10 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
                 { label: "Slidy", value: report.sessionOverview.totalSlides },
                 { label: "Odpovědí", value: report.sessionOverview.totalResponses },
                 { label: "Ø skóre", value: report.classStatistics.mean },
+                ...(report.successSummary ? [
+                  { label: "Ø úspěšnost třídy", value: report.successSummary.averageSuccessRate === null ? "–" : `${report.successSummary.averageSuccessRate} %` },
+                  { label: "Potřebuje pomoc (pod 50 %)", value: report.successSummary.needHelpCount },
+                ] : []),
               ].map((item) => (
                 <div key={item.label} className="text-center p-2 bg-muted/30 rounded">
                   <div className="text-lg font-bold">{item.value}</div>
@@ -169,29 +189,98 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
           <div className="border border-border rounded-lg p-4">
             <h3 className="font-bold text-sm mb-2">Výsledky per slide</h3>
             <div className="space-y-2">
-              {report.perSlideResults.map((s) => (
-                <div key={s.index} className="flex items-center gap-3 text-xs">
-                  <span className="w-6 text-right font-mono text-muted-foreground">{s.index}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+              {report.perSlideResults.map((s) => {
+                const dist = s.distribution ?? [];
+                const open = openSlide === s.index;
+                return (
+                <div key={s.index} className="text-xs">
+                  <button type="button" className="flex w-full items-center gap-3 text-left rounded hover:bg-muted/40 p-1 disabled:cursor-default"
+                    onClick={() => setOpenSlide(open ? null : s.index)} disabled={!dist.length} aria-expanded={dist.length ? open : undefined}>
+                  <span className="w-6 text-right font-mono text-muted-foreground shrink-0">{s.index}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate max-w-[200px]">{s.headline}</span>
                       <Badge variant="outline" className="text-[10px]">{s.type}</Badge>
+                      {s.needsPractice && <Badge variant="destructive" className="text-[10px]">Procvičit</Badge>}
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                      <div
-                        className={`h-1.5 rounded-full ${s.successRate >= 70 ? "bg-green-500" : s.successRate >= 40 ? "bg-amber-500" : "bg-red-500"}`}
-                        style={{ width: `${s.successRate}%` }}
-                      />
+                      <div className={`h-1.5 rounded-full ${barTone(s.successRate)}`} style={{ width: `${s.successRate}%` }} />
                     </div>
                   </div>
-                  <span className={`font-mono font-bold ${s.successRate >= 70 ? "text-green-600" : s.successRate >= 40 ? "text-amber-600" : "text-red-600"}`}>
-                    {s.successRate}%
+                  <span className="text-right shrink-0">
+                    <span className={`block font-mono font-bold ${textTone(s.successRate)}`}>{s.graded === false ? "–" : `${s.successRate}%`}</span>
+                    <span className="block text-muted-foreground">{s.correctCount} z {s.totalAnswered}</span>
                   </span>
-                  <span className="text-muted-foreground w-16 text-right">{Math.round(s.avgTimeMs / 1000)}s</span>
+                  <span className="text-muted-foreground w-10 text-right shrink-0">{Math.round(s.avgTimeMs / 1000)}s</span>
+                  </button>
+                  {open && dist.length > 0 && (
+                    <ul className="ml-9 mt-1 mb-2 space-y-1">
+                      {dist.map((d, i) => (
+                        <li key={i} className={`flex items-center gap-2 ${d.correct ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                          <span className="w-5 text-right font-mono">{d.count}×</span>
+                          <span className="min-w-0 flex-1 break-words">{d.label || `Možnost ${i + 1}`}</span>
+                          {d.correct && <Badge className="text-[10px]">Správně</Badge>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
+          {/* Participants */}
+          {report.participants && (
+            <div className="border border-border rounded-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h3 className="font-bold text-sm">Účastníci</h3>
+                <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                  <SelectTrigger className="w-40 h-8 text-xs" aria-label="Řadit účastníky"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="success">Podle úspěšnosti</SelectItem>
+                    <SelectItem value="name">Podle jména</SelectItem>
+                    <SelectItem value="score">Podle skóre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {sortedParticipants.length === 0 ? <p className="text-xs text-muted-foreground">Žádní účastníci.</p> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-muted-foreground">
+                      <tr className="text-left">
+                        <th className="py-1 pr-2 font-medium">#</th>
+                        <th className="py-1 pr-2 font-medium">Jméno</th>
+                        <th className="py-1 pr-2 font-medium">Úspěšnost</th>
+                        <th className="py-1 pr-2 font-medium whitespace-nowrap">Správně</th>
+                        <th className="py-1 pr-2 font-medium text-right">Skóre</th>
+                        <th className="py-1 font-medium text-right whitespace-nowrap">Ø čas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedParticipants.map((p, i) => (
+                        <tr key={p.playerId} className="border-t border-border">
+                          <td className="py-1.5 pr-2 font-mono text-muted-foreground">{i + 1}.</td>
+                          <td className="py-1.5 pr-2 font-medium max-w-[9rem] truncate" title={p.name}>{p.name}</td>
+                          <td className="py-1.5 pr-2 min-w-[6rem]">
+                            {p.successRate === null ? <span className="text-muted-foreground">–</span> : (
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-12 sm:w-20 rounded-full bg-muted shrink-0"><div className={`h-1.5 rounded-full ${barTone(p.successRate)}`} style={{ width: `${p.successRate}%` }} /></div>
+                                <span className={`font-mono font-bold ${textTone(p.successRate)}`}>{p.successRate}%</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-1.5 pr-2 whitespace-nowrap">{p.graded ? `${p.correct} z ${p.graded}` : "–"}</td>
+                          <td className="py-1.5 pr-2 text-right font-mono">{p.score}</td>
+                          <td className="py-1.5 text-right whitespace-nowrap">{p.avgTimeMs === null ? "–" : `${(p.avgTimeMs / 1000).toFixed(1)} s`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Common mistakes */}
           {report.commonMistakes.length > 0 && (
