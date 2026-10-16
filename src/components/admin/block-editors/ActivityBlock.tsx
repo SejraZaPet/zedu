@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Upload, Sparkles, Loader2, BookOpen } from "lucide-react";
@@ -816,6 +817,16 @@ const FillBlanksEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 
       {/* Settings */}
       <div className="flex flex-col gap-3 pt-2 border-t border-border">
+        <Label className="flex items-center gap-2 text-xs">
+          <Switch checked={fb.showWordBank !== false}
+            onCheckedChange={(value) => onChange({ ...props, fillBlanks: { ...fb, showWordBank: value } })} />
+          Zobrazit banku slov
+        </Label>
+        <Label className="space-y-1 text-xs">
+          <span>Falešná slova (každé na samostatném řádku)</span>
+          <Textarea value={(fb.distractors || []).join("\n")}
+            onChange={(event) => onChange({ ...props, fillBlanks: { ...fb, distractors: event.target.value.split("\n") } })} />
+        </Label>
         <div className="flex items-center gap-2">
           <Checkbox
             checked={fb.caseSensitive === true}

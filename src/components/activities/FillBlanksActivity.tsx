@@ -1,4 +1,5 @@
 import { ActivityAnswerReview } from "./ActivityAnswerReview";
+import { FillWordBank } from "./FillWordBank";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ interface Props {
   tokens?: FillBlankToken[];
   caseSensitive?: boolean;
   diacriticSensitive?: boolean;
+  showWordBank?: boolean;
+  distractors?: string[];
   onComplete?: ActivityCompletion;
 }
 
@@ -66,7 +69,9 @@ const tokensToSegments = (tokens: FillBlankToken[]): { segments: (string | numbe
   return { segments, blanks };
 };
 
-const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, onComplete }: Props) => {
+const EMPTY_WORDS: string[] = [];
+
+const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, showWordBank = true, distractors = EMPTY_WORDS, onComplete }: Props) => {
   const { segments, blanks } = useMemo(() => {
     // Prefer tokens format, fall back to legacy text
     if (tokens && tokens.length > 0) return tokensToSegments(tokens);
@@ -74,6 +79,8 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
   }, [text, tokens]);
 
   const [answers, setAnswers] = useState<string[]>(() => blanks.map(() => ""));
+  const words = useMemo(() => blanks.map(blank => blank.answer || blank.alternatives[0] || ""), [blanks]);
+  const [bankRevision, setBankRevision] = useState(0);
   const [checked, setChecked] = useState(false);
   const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
   const complete: ActivityCompletion = (score, maxScore, items) => {
@@ -104,6 +111,7 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
   };
 
   const reset = () => {
+    setBankRevision(previous => previous + 1);
     setAnswers(blanks.map(() => ""));
     setChecked(false);
     setShowSolution(false);
@@ -135,13 +143,16 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
         </div>
       )}
 
-      {/* Text with blanks */}
+      {/* Text with blanks; both modes feed unchanged grading. */}
+      {(() => {
+        const renderText = (renderGap?: (index: number) => React.ReactNode) => (
       <div className="text-foreground leading-loose text-base flex flex-wrap items-baseline gap-y-2">
         {segments.map((seg, i) => {
           if (typeof seg === "string") {
             return <span key={i}>{seg}</span>;
           }
           const idx = seg;
+          if (renderGap) return <span key={i}>{renderGap(idx)}{showSolution && checked && !results?.[idx] && <span className="block text-xs text-activity-correct">{blanks[idx].answer}</span>}</span>;
           const isCorrect = results?.[idx];
           const borderClass = checked
             ? isCorrect
@@ -176,6 +187,11 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
           );
         })}
       </div>
+        );
+        return showWordBank
+          ? <FillWordBank key={bankRevision} words={words} distractors={distractors} answers={answers} disabled={checked} onChange={handleUpdate}>{renderText}</FillWordBank>
+          : renderText();
+      })()}
 
       {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
 

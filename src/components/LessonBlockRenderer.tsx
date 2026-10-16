@@ -647,6 +647,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
               tokens={p.fillBlanks.tokens}
               caseSensitive={p.fillBlanks.caseSensitive}
               diacriticSensitive={p.fillBlanks.diacriticSensitive}
+              showWordBank={p.fillBlanks.showWordBank}
+              distractors={p.fillBlanks.distractors}
               onComplete={handleComplete}
             />
           )}
