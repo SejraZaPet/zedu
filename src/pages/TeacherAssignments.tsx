@@ -1,3 +1,5 @@
+import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
+import { AssignmentStatusGroups, AssignmentStateIcon, AssignmentStateBadge } from "@/components/assignments/AssignmentStatusGroups";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,7 +160,7 @@ const TeacherAssignments = () => {
   const [filterClassMembers, setFilterClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
   const [filterGroupMembers, setFilterGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   /** Odevzdanost pro publikované úlohy: id úlohy → {odevzdáno, celkem}. */
-  const [progress, setProgress] = useState<Record<string, { submitted: number; total: number }>>({});
+  const [progress, setProgress] = useState<Record<string, ClassProgress>>({});
   /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
   const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
   /** Úloha, pro kterou se mají zobrazit výsledky. */
@@ -419,40 +421,25 @@ const TeacherAssignments = () => {
     const groupIds = [...new Set(list.filter((a) => a.group_id).map((a) => a.group_id as string))];
 
     const [attemptsRes, membersRes, groupMembersRes] = await Promise.all([
-      supabase.from("assignment_attempts" as any).select("assignment_id, student_id, status").in("assignment_id", ids),
+      supabase.from("assignment_attempts" as any).select("assignment_id, student_id, group_id, status, score, max_score, submitted_at").in("assignment_id", ids),
       classIds.length
-        ? supabase.from("class_members").select("class_id").in("class_id", classIds)
+        ? supabase.from("class_members").select("class_id, user_id").in("class_id", classIds)
         : Promise.resolve({ data: [] as any[] }),
       groupIds.length
-        ? supabase.from("subject_group_members").select("group_id").in("group_id", groupIds)
+        ? supabase.from("subject_group_members").select("group_id, student_id").in("group_id", groupIds)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
-    const byClass: Record<string, number> = {};
-    ((membersRes as any).data || []).forEach((m: any) => {
-      byClass[m.class_id] = (byClass[m.class_id] || 0) + 1;
-    });
-    const byGroup: Record<string, number> = {};
-    ((groupMembersRes as any).data || []).forEach((m: any) => {
-      byGroup[m.group_id] = (byGroup[m.group_id] || 0) + 1;
-    });
-
-    const submittedByAssignment: Record<string, Set<string>> = {};
-    (((attemptsRes as any).data as any[]) || []).forEach((att: any) => {
-      if (att.status !== "submitted") return;
-      if (!submittedByAssignment[att.assignment_id]) submittedByAssignment[att.assignment_id] = new Set();
-      submittedByAssignment[att.assignment_id].add(att.student_id);
-    });
-
-    const next: Record<string, { submitted: number; total: number }> = {};
+    const { data: sharedGroups } = await supabase.from("assignment_groups").select("id").in("assignment_id", ids);
+    const { data: sharedMembers } = sharedGroups?.length ? await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", sharedGroups.map((g) => g.id)) : { data: [] };
+    const next: Record<string, ClassProgress> = {};
     list.forEach((a) => {
-      const submitted = submittedByAssignment[a.id]?.size ?? 0;
-      const total = a.group_id
-        ? byGroup[a.group_id] ?? 0
-        : a.class_id
-          ? byClass[a.class_id] ?? 0
-          : submitted;
-      next[a.id] = { submitted, total };
+      const rows = ((attemptsRes.data ?? []) as any[]).filter((t) => t.assignment_id === a.id);
+      const memberIds = a.group_id
+        ? ((groupMembersRes.data ?? []) as any[]).filter((m) => m.group_id === a.group_id).map((m) => m.student_id)
+        : a.class_id ? ((membersRes.data ?? []) as any[]).filter((m) => m.class_id === a.class_id).map((m) => m.user_id)
+        : rows.map((t) => t.student_id);
+      next[a.id] = assignmentClassProgress(rows, memberIds, sharedMembers ?? []);
     });
     setProgress(next);
   };
@@ -1694,60 +1681,31 @@ const TeacherAssignments = () => {
           const visible = filteredListAssignments
             .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType));
 
-          const SECTIONS: { key: string; label: string; dot: string }[] = [
-            { key: "published", label: "Publikováno", dot: "bg-emerald-500" },
-            { key: "scheduled", label: "Naplánováno", dot: "bg-muted-foreground" },
-            { key: "draft", label: "Koncepty", dot: "border border-border" },
-          ];
-
-          if (visible.length === 0) {
-            return <div className="text-center py-12 text-muted-foreground text-sm">Žádné úlohy odpovídající filtru.</div>;
-          }
-
+          if (visible.length === 0) return <div className="text-center py-12 text-muted-foreground text-sm">Žádné úlohy odpovídající filtru.</div>;
           return (
-            <div className="space-y-6">
-              {SECTIONS.map((section) => {
-                const items = visible.filter((a) =>
-                  section.key === "draft" ? a.status !== "published" && a.status !== "scheduled" : a.status === section.key,
-                );
-                if (items.length === 0) return null;
-                return (
-                  <div key={section.key} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("w-2.5 h-2.5 rounded-full", section.dot)} />
-                      <h2 className="text-sm font-semibold">{section.label}</h2>
-                      <span className="text-xs text-muted-foreground">({items.length})</span>
-                    </div>
-
-                    {items.map((a) => {
-                      // Typová ikona a barva: pracovní list / portfolio / běžný úkol
-                      const kind = a.worksheet_id
-                        ? { Icon: ClipboardList, className: "text-blue-600 dark:text-blue-400 bg-blue-500/10" }
-                        : a.is_portfolio_task
-                          ? { Icon: FolderCheck, className: "text-purple-600 dark:text-purple-400 bg-purple-500/10" }
-                          : { Icon: ListTodo, className: "text-muted-foreground bg-muted" };
-                      const KindIcon = kind.Icon;
+            <AssignmentStatusGroups items={visible} storageKey="assignment-groups:teacher"
+              statusOf={(a) => assignmentStatus(a, [], new Date(), progress[a.id] ?? { submitted: 0, total: 0, graded: 0 })}
+              renderItem={(a, visualStatus) => {
                       const targetName = a.group_id
                         ? groups.find((g) => g.id === a.group_id)?.name ?? "Skupina"
                         : classes.find((c) => c.id === a.class_id)?.name ?? null;
-                      const prog = progress[a.id] ?? { submitted: 0, total: 0 };
+                      const prog = progress[a.id] ?? { submitted: 0, total: 0, graded: 0 };
                       const pct = prog.total > 0 ? Math.round((prog.submitted / prog.total) * 100) : 0;
 
                       return (
                         <Card
                           key={a.id}
-                          className="hover:shadow-md transition-shadow cursor-pointer"
+                          className={`assignment-status-card assignment-status-${visualStatus.state} hover:shadow-md transition-shadow cursor-pointer`}
                           onClick={() => setDetailAssignment(a)}
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
                               <div className="flex gap-3 min-w-0">
-                                <span className={cn("shrink-0 rounded-md p-2", kind.className)}>
-                                  <KindIcon className="w-4 h-4" />
-                                </span>
+                                <AssignmentStateIcon status={visualStatus} />
                                 <div className="space-y-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <h3 className="font-semibold">{a.title}</h3>
+                                    <h3 className="font-semibold break-words">{a.title}</h3>
+                                    <AssignmentStateBadge status={visualStatus} />
                                     <ExamTypeBadge examType={a.exam_type} showDefault />
                                     {!a.subject_id && (
                                       <Badge
@@ -1814,7 +1772,7 @@ const TeacherAssignments = () => {
                                 </div>
                               </div>
 
-                              <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                 {a.status === "published" && a.class_id && (
                                   <RemindButton
                                     mode="teacher"
@@ -1836,6 +1794,7 @@ const TeacherAssignments = () => {
                                   </Button>
                                 )}
                                 <Button
+                                  className="assignment-card-action"
                                   size="icon"
                                   variant="ghost"
                                   aria-label="Výsledky"
@@ -1845,6 +1804,7 @@ const TeacherAssignments = () => {
                                   <BarChart3 className="w-4 h-4" />
                                 </Button>
                                 <Button
+                                  className="assignment-card-action"
                                   size="icon"
                                   variant="ghost"
                                   aria-label="Upravit"
@@ -1854,6 +1814,7 @@ const TeacherAssignments = () => {
                                   <Pencil className="w-4 h-4" />
                                 </Button>
                                 <Button
+                                  className="assignment-card-action"
                                   size="icon"
                                   variant="ghost"
                                   className="text-destructive"
@@ -1868,11 +1829,7 @@ const TeacherAssignments = () => {
                           </CardContent>
                         </Card>
                       );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
+              }} />
           );
         })()}
 
