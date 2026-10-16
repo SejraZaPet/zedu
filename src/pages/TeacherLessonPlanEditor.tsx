@@ -229,6 +229,11 @@ export default function TeacherLessonPlanEditor() {
   const [saving, setSaving] = useState(false);
   /** Klíč „fáze:index“ návrhu, který se právě vytváří (nebo „launch:id“). */
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  /** Fáze, ke které se právě připíná existující aktivita / odkaz. */
+  const [attachPhase, setAttachPhase] = useState<string | null>(null);
+  const [linkPhase, setLinkPhase] = useState<string | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkTitle, setLinkTitle] = useState("");
   const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
     aiGenerated: false,
     aiModifiedAt: null,
