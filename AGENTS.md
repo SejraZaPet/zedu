@@ -14,7 +14,7 @@
 - Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
-- One shared mapping for live MCQ option colors/shapes/names, so projector, controls and charts match.
+- One shared mapping for live MCQ option colors/shapes/names so projector, controls, charts match.
 - Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
 - Keep live-session slide drafts in `live_session_drafts` (never in game_sessions) and publish only via the `publish_live_draft` RPC, so projectors never see drafts and publishing is one atomic update that cannot insert before the current slide.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
