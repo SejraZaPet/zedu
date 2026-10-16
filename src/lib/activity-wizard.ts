@@ -27,8 +27,8 @@ export interface WizardTypeInfo {
 /** Které z 10 typů na stránce umí editor lekce opravdu vytvořit. */
 export const WIZARD_TYPES: Record<CatalogId, WizardTypeInfo> = {
   quiz:       { blockType: "activity", activityType: "quiz",        liveGame: true,  template: true },
-  truefalse:  { blockType: "activity", activityType: "true_false",  liveGame: false, template: true },
-  matching:   { blockType: "activity", activityType: "matching",    liveGame: false, template: true },
+  truefalse:  { blockType: "activity", activityType: "true_false",  liveGame: true, template: true },
+  matching:   { blockType: "activity", activityType: "matching",    liveGame: true, template: true },
   ordering:   { blockType: "activity", activityType: "ordering",    liveGame: false, template: true },
   fillblanks: { blockType: "activity", activityType: "fill_blanks", liveGame: false, template: true },
   imagelabel: { blockType: "activity", activityType: "image_label", liveGame: false, template: true },
@@ -145,4 +145,52 @@ export function buildBlock(
     props.fillBlanks = { ...(props.fillBlanks ?? { text: "" }), showWordBank: s.wordBank };
   }
   return { id: newId(), type: "activity", visible: true, props };
+}
+
+/**
+ * Převod aktivity z průvodce na snímky živé hry. Všechno se převádí na MCQ
+ * (nejlépe podporovaný formát hry: text otázky + možnosti se správnou odpovědí).
+ * Vrací [] pro typy, které jako živá hra hrát nejdou.
+ */
+export function activityToGameQuestions(props: any): { question: string; answers: string[]; correctIndex: number; explanation?: string }[] {
+  const s = (v: any) => String(v ?? "").replace(/<[^>]*>/g, "").trim();
+  const at = String(props?.activityType ?? "");
+  if (at === "quiz") {
+    return (props?.quiz?.questions ?? []).map((q: any) => {
+      const raw = Array.isArray(q?.answers) ? q.answers : [];
+      const answers = raw.map((a: any) => s(a?.text ?? a)).filter(Boolean);
+      const ci = raw.filter((a: any) => s(a?.text ?? a)).findIndex((a: any) => a?.correct);
+      return { question: s(q?.question), answers, correctIndex: Math.max(0, ci), ...(q?.explanation ? { explanation: q.explanation } : {}) };
+    }).filter((q: any) => q.question && q.answers.length >= 2);
+  }
+  if (at === "true_false") {
+    const st: any[] = props?.trueFalse?.statements ?? [];
+    return st
+      .map((x) => ({ text: s(x?.text ?? x?.statement), isTrue: x?.isTrue ?? x?.correct }))
+      .filter((x) => x.text && typeof x.isTrue === "boolean")
+      .map((x) => ({ question: x.text, answers: ["Pravda", "Nepravda"], correctIndex: x.isTrue ? 0 : 1 }));
+  }
+  if (at === "matching") {
+    const l: any[] = props?.matching?.left ?? [];
+    const r: any[] = props?.matching?.right ?? [];
+    const pairs = l.map((x, i) => ({ left: s(x), right: s(r[i]) })).filter((p) => p.left && p.right);
+    if (pairs.length < 2) return [];
+    const rights = [...new Set(pairs.map((p) => p.right))];
+    return pairs.map((p, i) => {
+      const others = rights.filter((x) => x !== p.right);
+      const k = i % Math.max(1, others.length);
+      const pick = others.slice(k).concat(others.slice(0, k)).slice(0, 3);
+      const answers = [p.right, ...pick];
+      // deterministické umístění správné odpovědi
+      const pos = i % answers.length;
+      [answers[0], answers[pos]] = [answers[pos], answers[0]];
+      return { question: `Co patří k pojmu „${p.left}“?`, answers, correctIndex: pos };
+    });
+  }
+  return [];
+}
+
+/** Důvod, proč typ nejde hrát živě (null = jde). */
+export function liveGameUnsupportedReason(activityType: string | null | undefined): string | null {
+  return ["quiz", "true_false", "matching"].includes(String(activityType)) ? null : "Tuto aktivitu nelze hrát jako živou hru";
 }

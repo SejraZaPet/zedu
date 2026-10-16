@@ -25,6 +25,7 @@ import { buildGameSlidesFromQuiz, GAMES_HREF } from "@/lib/plan-suggested-activi
 import { activityPropsToTemplate } from "@/components/admin/block-editors/ActivityBlock";
 import {
   buildAiRequest, buildBlock, clampItemCount, limitSourceText, resolveSource,
+  activityToGameQuestions,
   MAX_ITEMS, MIN_ITEMS, WIZARD_TYPES,
   type CatalogId, type Difficulty, type SourceMode, type WizardSettings,
 } from "@/lib/activity-wizard";
@@ -200,13 +201,8 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function saveAsGame() {
     if (!block || !user) return;
-    const questions = (block.props.quiz?.questions ?? []).map((q: any) => {
-      const answers = (q.answers ?? []).map((a: any) => String(a?.text ?? "")).filter(Boolean);
-      const correctIndex = Math.max(0, (q.answers ?? []).findIndex((a: any) => a?.correct));
-      return { question: String(q.question ?? ""), answers, correctIndex, explanation: q.explanation };
-    });
-    const slides = buildGameSlidesFromQuiz(questions);
-    if (!slides.length) { toast({ title: "Kvíz nemá žádné platné otázky", variant: "destructive" }); return; }
+    const slides = buildGameSlidesFromQuiz(activityToGameQuestions(block.props));
+    if (!slides.length) { toast({ title: "Aktivita nemá žádné platné otázky", description: "Doplňte text a správné odpovědi.", variant: "destructive" }); return; }
     setBusy(true);
     const { error } = await supabase.from("teacher_game_templates" as any).insert({
       teacher_id: user.id, title: (block.props.title || title).slice(0, 120), activity_data: slides,
@@ -378,12 +374,12 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                   <Button variant="outline" onClick={saveTemplate} disabled={busy}>Uložit jako šablonu</Button>
                 </section>
               )}
-              {info.liveGame && (
-                <section className="space-y-2">
-                  <h3 className="font-semibold text-sm">Živá hra</h3>
-                  <Button variant="outline" onClick={saveAsGame} disabled={busy}>Uložit do knihovny her a spustit</Button>
-                </section>
-              )}
+              <section className="space-y-2">
+                <h3 className="font-semibold text-sm">Živá hra</h3>
+                {info.liveGame
+                  ? <Button variant="outline" onClick={saveAsGame} disabled={busy}>Uložit do knihovny her a spustit</Button>
+                  : <p className="text-xs text-muted-foreground">Tuto aktivitu nelze hrát jako živou hru.</p>}
+              </section>
               <div className="flex justify-start">
                 <Button variant="outline" onClick={() => setStep("preview")}>Zpět</Button>
               </div>
