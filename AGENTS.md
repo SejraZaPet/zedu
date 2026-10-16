@@ -1,7 +1,7 @@
 # Architecture rules
 
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.
-- Snapshots go to student_activity_results.answers via ActivityAnswerReview, separate from live-game grading.
+- Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
 
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
 - Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
