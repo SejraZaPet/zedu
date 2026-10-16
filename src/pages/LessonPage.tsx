@@ -273,6 +273,17 @@ const LessonPage = () => {
                 </div>
               </div>
 
+              {isAuthenticated && !isTeacherOrAdmin && (
+                <div className="mb-8">
+                  <LessonStudyBar
+                    lessonId={lesson.id}
+                    lessonTitle={lesson.title}
+                    blocks={visibleBlocks}
+                    subject={subjectId}
+                  />
+                </div>
+              )}
+
               {isAuthenticated && lessonActivityProgress.total > 0 && (
                 <div className="mb-8">
                   <LessonSuccessSummary progress={lessonActivityProgress} />
@@ -340,14 +351,7 @@ const LessonPage = () => {
         />
       )}
 
-      {/* Bezlai tutor – jen pro žáky (ne pro učitele/adminy) */}
-      {!isTeacherOrAdmin && lesson && (
-        <BezlaiTutorChat
-          question={`Lekce: ${lesson.title}\n\nPředmět: ${subjectId ?? ""}`}
-          subject={subjectId}
-          contextKey={lesson.id}
-        />
-      )}
+      {/* Bezlai tutor se otevírá tlačítkem „Zeptat se“ ve studijní liště (LessonStudyBar). */}
     </div>
   );
 };
