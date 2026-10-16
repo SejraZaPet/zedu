@@ -1,124 +1,22 @@
-# Roadmap
+# Roadmap: Nový žákovský prostor (fáze 1)
 
-## Vizuální stavy úkolů (2026-10-16)
-- [x] Sdílený výpočet stavu, skupiny a přístupné gradientové karty žáka i učitele.
-- [x] Zachovat akce, filtry, hodnocení, data a demo ochrany.
-- [x] Hraniční testy, celá sada a ověření v přihlášeném náhledu i na telefonu.
+- [ ] A) Opravy zabezpečení a dat (jen DB)
+  - [ ] A1 student_xp: žák nesmí insert/update vlastní řádek; čte jen svůj; žebříček přes bezpečnou funkci/pohled (spolužáci)
+  - [ ] A2 učitel čte student_xp + student_badges jen žáků svých tříd/skupin
+  - [ ] A3 student_activity_results: čtení pro učitele tříd/skupin žáka; ověřit TeacherResults rozbor
+  - [ ] A4 student_practice_sessions + student_lesson_mastery: čtení učitelem i přes subject_group_members
+  - [ ] A5 XP za odevzdání úkolu: trigger na assignment_attempts (ne submissions), jednou, bez zdvojení
+  - [ ] Vypsat seznam změněných politik a funkcí
+- [ ] B) StudentDashboard „Dnes“
+  - [ ] Pořadí: pozdrav+avatar+série/XP, TodayWidget, „Co mě čeká“, StudentProgressWidgets, RecognitionWidget, „Další“ + karta „Učím se“ → /student/metody
+  - [ ] Karta „Co mě čeká“: testy/zkoušení/písemky 14 dní, tlačítko „Připravit se“
+- [ ] C) Studijní lišta u lekce (LessonPage + StudentTextbookDetail)
+  - [ ] Kartičky (flashcards/reveal bloky, jinak AI edge fn lesson-study-helper režim cards, max 15, neukládat)
+  - [ ] Shrnutí (režim summary, 5 odrážek, tykání)
+  - [ ] Kvíz → /student/metody/<metoda>/procviceni?lesson=<id>&min=5
+  - [ ] Zeptat se → ask-zedai-tutor s textem lekce (max 6000 znaků), i v StudentTextbookDetail
+  - [ ] AI označení + demo kvóty zachovat
 
-## Prezentace z lekce — věrnost a ukládání (2026-09-29)
-- [x] A: Zapojit uloženou učitelskou verzi do editoru i projektoru.
-- [x] A: Zachovat ruční obsah, pořadí, smazání a zámek snímku.
-- [x] B: Zachovat h3/h4, blokové typy, lokální barvy a kontrast.
-- [x] B: Rozdělit přeplněné skupiny bez tichého ořezu.
-- [x] Sjednotit editor, projektor a PDF a ověřit regresní testy.
-
-- [x] FÁZE 1: Sjednotit styly bloků prezentace s lekcí.
-- [x] FÁZE 2: Zachovat lokální nadpisová pozadí, hero, oddělovače a výšky skupin.
-- [x] FÁZE 3: Doplnit regresní testy a vizuálně ověřit lekci „Úvod maso“.
-- [x] Ověřit build a všechny relevantní testy.
-
-## Promítací režim lekce (2026-09-23)
-- [x] Přidat blokům slideBreakBefore a hiddenInPresentation (typ + BlockEditor UI).
-- [x] blocksToSlides: filtrovat skryté bloky, respektovat ruční zalomení.
-- [x] Launcher: vždy čerstvé snímky z lekce, bez merge a bez zápisu do teacher_presentations.
-- [x] Seznam Prezentace: propojené = jen náhled/spuštění + poznámka, bez editoru/tématu.
-- [x] Nové regresní testy; ověřit build a testy.
-## Závěrečné vyhodnocení živé hry (2026-09-29)
-- [x] Osobní karta žáka: správné otázky a otázky k procvičení.
-- [x] Učitelský přehled otázek seřazený podle úspěšnosti.
-- [x] Rychlá hra ze slabých otázek pod 50 %.
-- [x] Regresní testy, build a praktické ověření.
-
-## A4 editor pracovních listů (2026-09-29)
-- [x] Nahradit formulářový seznam živým A4 plátnem se stránkováním.
-- [x] Přesunout metadata a vlastnosti položek do pravého panelu.
-- [x] Sjednotit vzhled položek, palety a 21:9 záhlaví s editorem lekcí.
-- [x] Ověřit ukládání, výběr položek, tisk/PDF regresními testy, build a testy.
-## Kontextová editace položek pracovních listů (2026-09-29)
-- [x] Přesunout vlastnosti položek z pravého panelu do kontextového editoru u bloku.
-- [x] Sjednotit `write_lines` na jedno nastavení a odstranit dvojité vykreslení linek.
-- [x] Rozšířit náhled a editor tabulek na dostupnou šířku A4.
-- [x] Ověřit reprezentativní typy, stránkování, tisk/PDF, build a testy.
-
-## Výška řádků tabulek pracovních listů (2026-09-29)
-- [x] Nastavit tělo tabulky na jednotnou minimální výšku 10 mm v živém A4 plátně.
-- [x] Použít stejnou výšku a odsazení v tiskovém/PDF výstupu.
-- [x] Ověřit sestavení a regresní testy obou výstupů.
-
-## Formátovaný popis úkolu (2026-09-30)
-- [x] Přidat jednoduchý editor: tučně, kurzíva, podtržení a barva textu.
-- [x] Bezpečně zobrazit HTML žákovi a zachovat staré prosté texty.
-- [x] Ověřit vytvoření, úpravu, zobrazení a regresní testy.
-
-
-## Živá MCQ hra ve stylu sdílené obrazovky (2026-10-02)
-- [x] Projekce ukazuje text otázky a všech možností s barevnými tvary.
-- [x] Žák vybírá pouze barevný tvar bez textu možnosti.
-- [x] Po zveřejnění projekce ukazuje rozložení odpovědí, správnou možnost a oba žebříčky.
-- [x] Ověřit sestavení a vykreslení žákovských voleb, projekce a grafu regresním testem.
-
-## Oprava úkolu Výživa (2026-10-04)
-- [x] write_lines -> short_answer ve worksheetu 3a416b2a
-- [x] WorksheetPlayer: živý lock + hláška Termín vypršel
-
-## Prezentace — fullscreen a rychlost editoru (2026-10-04)
-- [x] Obrázková pozadí zobrazit ve fullscreen celá, vystředěná a bez ořezu.
-- [x] Přesouvání slidů promítnout okamžitě do editoru a bezpečně uložit.
-- [x] Omezit zbytečné překreslování náhledů s velkými PNG.
-- [x] Ověřit regresní testy a fullscreen náhled.
-
-## Demo režim (2026-10-05)
-- [x] 1a ochrana dat
-- [x] 1b vstup bez registrace, dvojice účtů, přepínač, banner, návratový kód
-- [x] 1c ukázkový obsah
-- [x] 1d kvóty, serverové zablokování nastavení účtu, úklid po 14 dnech
-
-## Oprava regrese send-email (2026-10-06)
-- [x] Duplicitní const recipients -> demoRecipients; deploy; ověřeno 401/400 místo 503; všech 85 funkcí bootuje
-
-## Detail úkolu — postup lekce (2026-10-06)
-- [ ] Počítat procento ze všech povinných aktivit a oddělit průměr hotových aktivit.
-- [ ] Rozlišit šedý, žlutý a zelený stav štítku podle dokončení.
-- [ ] Ověřit cílenými testy a sestavením.
-
-## Excel přílohy úkolu (2026-10-06)
-- [x] Povolit XLSX, XLS a CSV v žákovském nahrávání při zachování dosavadních typů.
-- [x] Nové přílohy do bucketu assignment-uploads (starý bucket nelze změnit), čtení s fallbackem na student-attachments.
-- [x] Zachovat demo limity a ověřit odmítnutí XLSM a souboru nad 10 MB.
-- [x] Prověřit další místa pro nahrávání příloh bez změn mimo tuto dávku.
-
-## Pracovní list jako A4 a práce bez úkolu
-- [x] Tabulka student_worksheet_work + RLS + demo_iso
-- [x] Ukládání bez úkolu, Dokončit / Začít znovu
-- [x] Zobrazení stránka A4 (steps zachováno)
-- [x] Žákovské PDF/tisk bez klíče
-
-## Filtry výsledků a úloh (2026-10-07)
-- [x] Sdílet filtr třídy/skupiny, předmětu a stavu mezi Výsledky a seznamem úloh.
-- [x] Nabízet předměty podle skupiny, rozvrhu třídy a existujících úloh.
-- [x] Zobrazit počty stavů a pamatovat volbu po dobu relace.
-- [x] Ověřit kombinace filtrů, reset předmětu a sestavení.
-
-## Nejlepší výsledky a silné/slabé stránky (2026-10-07)
-- [x] Přidat sdílený výběr nejlepšího výsledku a nejlepšího odevzdaného pokusu.
-- [x] Sjednotit čtení skóre v požadovaných přehledech bez změny uložených dat.
-- [x] Přepracovat statistiku na první pokus vs. nejlepší výsledek.
-- [x] Přidat souhrnný panel na Výsledky respektující filtry.
-- [x] Ověřit testy, sestavení a chování XP triggeru.
-
-## Krátké seznamy hodin (2026-10-12)
-- [x] Zobrazit pět hodin a nezávislé rozbalení s rolováním na obou stránkách.
-- [x] Zachovat měsíční rozsah a dávkové načítání jen viditelných plánů.
-- [x] Ověřit cílené testy a přehled v prohlížeči.
-
-## Čistý text v náhledech popisů (2026-10-13)
-- [x] Najít a opravit náhledy úkolů na učitelské i žákovské stránce předmětu bez změny uloženého obsahu.
-- [x] Ověřit regresní testy, sestavení a kartu „NÁVOD PRO KÁMOŠE - ICT“ v přihlášeném preview na počítači i mobilu.
-
-## Zalamování otázek v editoru pracovních listů (2026-10-13)
-- [x] Opravit šířku otázky po odstranění číslování a prověřit okolní textová pole.
-- [x] Ověřit šest regresních testů, sestavení a dlouhou otevřenou otázku v přihlášeném preview (Manipulativní techniky v médiích; znění o zapékání není v dostupných listech).
-
-## První strana tisku pracovního listu (2026-10-13)
-- [x] Opravit vložení QR do záhlaví a měření skutečné výšky bloků bez změny obsahu listu.
-- [x] Ověřit sedm regresních testů, sestavení a všechny čtyři strany PDF: ovce i „Použití a dělení dle jakosti“ jsou na první straně. Původní téměř prázdná strana se v aktuálních datech nereprodukovala; před opravou byl obrázek na druhé straně.
+## Otevřené z minula
+- [ ] Sjednotit délku platnosti zaváděcí ceny na webu (čeká na potvrzení majitelky)
+- [ ] Ověřit připínání aktivit v plánu v browseru
