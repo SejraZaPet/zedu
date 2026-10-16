@@ -241,7 +241,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
             <AvatarLayerStack layers={stackLayers} />
           </div>
         ) : (
-          <User className="w-1/2 h-1/2 text-muted-foreground" />
+          <User className="w-1/2 h-1/2 text-foreground/70" />
         )}
       </span>
       {showStreakBadge && profile?.badge_id && items.get(profile.badge_id) && (

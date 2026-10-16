@@ -61,6 +61,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        podium: { foreground: "hsl(var(--podium-foreground))" },
         brand: {
           purple: "hsl(var(--brand-purple))",
           lavender: "hsl(var(--brand-lavender))",
