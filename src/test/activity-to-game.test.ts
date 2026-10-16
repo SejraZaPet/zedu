@@ -35,9 +35,11 @@ describe("převod aktivity na živou hru", () => {
   });
 
   it("nehratelné typy mají důvod a v průvodci nejsou jako hra", () => {
-    expect(liveGameUnsupportedReason("ordering")).toBe("Tuto aktivitu nelze hrát jako živou hru");
+    expect(liveGameUnsupportedReason("flashcards")).toBe("Tuto aktivitu nelze hrát jako živou hru");
+    expect(liveGameUnsupportedReason("ordering")).toBeNull();
     expect(liveGameUnsupportedReason("true_false")).toBeNull();
     expect(WIZARD_TYPES.truefalse.liveGame).toBe(true);
-    expect(WIZARD_TYPES.ordering.liveGame).toBe(false);
+    expect(WIZARD_TYPES.ordering.liveGame).toBe(true);
+    expect(WIZARD_TYPES.flashcards.liveGame).toBe(false);
   });
 });
