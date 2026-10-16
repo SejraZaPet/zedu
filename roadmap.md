@@ -36,3 +36,12 @@
 - [x] Sdílená extrakce vnořených bloků a čistý kontext chatu
 - [x] Odmítnutí krátkého textu a srozumitelná hláška v procvičování
 - [x] Testy, nasazení funkcí a ověření Poživatin (439 testů; 4 otázky v náhledu)
+
+## Živé hry – sjednocení
+- [x] Etapa 1a: převod Pravda/Nepravda, spojování, doplňovačka, seřazení na otázky při spuštění (šablony, knihovna, Rychlá hra, prezentace)
+- [ ] Etapa 1b: prázdný projektor u starých jednosnímkových her, ověření v náhledu
+- [ ] Etapa 2: bodování podle režimu na serveru (submit-activity-response)
+- [ ] Etapa 3: jedno jádro pro obě cesty
+- [ ] Ostrá zkouška [TEST] her se 3 hráči, pak úklid
+## Bezli liga v1
+- [ ] Čeká na schválení plánu (migrace xp_events, add_xp, school_league_week, cron)

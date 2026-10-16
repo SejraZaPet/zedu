@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
@@ -317,7 +318,7 @@ const TeacherPresentations = () => {
         teacher_id: session.user.id,
         title,
         game_code: gameCode,
-        activity_data: slides as any,
+        activity_data: expandSlidesForLiveGame(slides) as any,
         settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
