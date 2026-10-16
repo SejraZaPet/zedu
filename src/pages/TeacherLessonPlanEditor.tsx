@@ -1207,14 +1207,120 @@ export default function TeacherLessonPlanEditor() {
         }
       }
       toast({ title: "Plán uložen" });
+      return resultId;
     } catch (e: any) {
       toast({
         title: "Chyba ukládání",
         description: e?.message || "Plán se nepodařilo uložit.",
         variant: "destructive",
       });
+      return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Uloží jen propojení vytvořeného obsahu (fáze + worksheet_ids), nic jiného nemění. */
+  async function persistCreatedRefs(
+    planId: string,
+    nextPhases: PhasesState,
+    nextWorksheetIds: string[],
+  ) {
+    const { data } = await supabase
+      .from("lesson_plans")
+      .select("input_data")
+      .eq("id", planId)
+      .maybeSingle();
+    const input = { ...(((data as any)?.input_data as any) ?? {}), phases: nextPhases };
+    await supabase
+      .from("lesson_plans")
+      .update({ input_data: input as any, worksheet_ids: nextWorksheetIds })
+      .eq("id", planId);
+  }
+
+  /** „Vytvořit z návrhu“ – AI předgeneruje obsah, uloží koncept a propojí s krokem. */
+  async function handleCreateFromSuggestion(phaseKey: string, index: number, act: SuggestedActivity) {
+    if (!user || creatingKey) return;
+    const key = `${phaseKey}:${index}`;
+    setCreatingKey(key);
+    try {
+      // Nový plán nejdřív uložíme, aby se propojení neztratilo.
+      const pid = planDbId ?? (await handleSave());
+      if (!pid) return;
+
+      const phaseDesc = phases[phaseKey]?.description ?? "";
+      const lessonCtx = selectedLesson
+        ? { lessonId: selectedLesson.id, lessonSource: selectedLesson.source }
+        : {};
+      const ctx = {
+        suggestionTitle: act.title,
+        lessonTitle: selectedLesson?.title ?? title,
+        lessonContent: selectedLesson?.content ?? "",
+        phaseDescription: phaseDesc,
+        subject: subject || undefined,
+        ...lessonCtx,
+      };
+
+      const isWorksheet = act.kind === "worksheet";
+      const createdId = isWorksheet
+        ? await createWorksheetFromSuggestion(ctx)
+        : await createGameFromSuggestion(ctx);
+      const ref: CreatedRef = { type: isWorksheet ? "worksheet" : "game_template", id: createdId };
+
+      const nextPhases: PhasesState = {
+        ...phases,
+        [phaseKey]: {
+          ...phases[phaseKey],
+          activities: (phases[phaseKey]?.activities ?? []).map((a, i) =>
+            i === index ? { ...a, created: ref } : a,
+          ),
+        },
+      };
+      const nextWsIds =
+        isWorksheet && !worksheetIds.includes(createdId)
+          ? [...worksheetIds, createdId]
+          : worksheetIds;
+      setPhases(nextPhases);
+      setWorksheetIds(nextWsIds);
+      await persistCreatedRefs(pid, nextPhases, nextWsIds);
+
+      toast({
+        title: isWorksheet ? "Pracovní list vytvořen" : "Hra vytvořena",
+        description: "Obsah je uložen jako koncept – žáci ho zatím nevidí.",
+      });
+      if (isWorksheet) navigate(createdHref(ref));
+      else navigate("/ucitel/hry");
+    } catch (e: any) {
+      toast({
+        title: "Nepodařilo se vytvořit",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingKey(null);
+    }
+  }
+
+  /** „Spustit živou hru“ u již vytvořené šablony. */
+  async function handleLaunchCreatedGame(templateId: string) {
+    setCreatingKey(`launch:${templateId}`);
+    try {
+      const { data, error } = await supabase
+        .from("teacher_game_templates" as any)
+        .select("*")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (error || !data) throw new Error("Šablonu hry se nepodařilo načíst.");
+      const sessionId = await launchTemplateSession(data as any);
+      navigate(`/live/ucitel/${sessionId}`);
+    } catch (e: any) {
+      toast({
+        title: "Nepodařilo se spustit hru",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingKey(null);
     }
   }
 
