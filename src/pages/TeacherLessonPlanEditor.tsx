@@ -75,6 +75,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import { useAuth } from "@/contexts/AuthContext";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
@@ -351,11 +352,12 @@ export default function TeacherLessonPlanEditor() {
     setLoadingTextbooks(true);
 
     (async () => {
+      const ownOr = await ownTextbooksOr(user!.id);
       const [ownRes, globalRes] = await Promise.all([
         supabase
           .from("teacher_textbooks")
           .select("id, title, subject")
-          .eq("teacher_id", user!.id)
+          .or(ownOr)
           .is("deleted_at", null)
           .order("title", { ascending: true }),
         supabase

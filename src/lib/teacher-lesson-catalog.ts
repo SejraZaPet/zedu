@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 
 export interface TeacherLessonOption {
   id: string;
@@ -25,7 +26,7 @@ export async function loadTeacherLessonOptions(uid: string): Promise<TeacherLess
   const { data: books, error: booksErr } = await supabase
     .from("teacher_textbooks")
     .select("id, title, subject")
-    .eq("teacher_id", uid)
+    .or(await ownTextbooksOr(uid))
     .is("deleted_at", null);
   if (booksErr) throw booksErr;
 

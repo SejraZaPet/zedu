@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -108,7 +109,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
       const { data: books } = await supabase
         .from("teacher_textbooks")
         .select("id, title, subject, subject_id")
-        .eq("teacher_id", uid)
+        .or(await ownTextbooksOr(uid))
         .is("deleted_at", null);
       const key = subject.trim().toLowerCase();
       const bookRows = ((books as any[]) || []).filter(

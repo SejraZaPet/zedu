@@ -2,6 +2,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import { useAuth } from "@/contexts/AuthContext";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import SiteHeader from "@/components/SiteHeader";
@@ -377,7 +378,7 @@ export default function WorksheetEditor() {
       const { data, error } = await (supabase as any)
         .from("teacher_textbooks")
         .select("subject")
-        .eq("teacher_id", user!.id)
+        .or(await ownTextbooksOr(user!.id))
         .is("deleted_at", null);
       if (error) throw error;
       const set = new Set<string>();
