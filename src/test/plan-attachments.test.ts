@@ -45,7 +45,7 @@ describe("attachedHref", () => {
 });
 
 describe("addAttached / removeAttached", () => {
-  const phase = { timeMin: "10", description: "d" };
+  const phase: { timeMin: string; description: string; attached?: AttachedItem[] } = { timeMin: "10", description: "d" };
   const ws: AttachedItem = { type: "worksheet", id: "w1", title: "List" };
 
   it("přidá položku k prázdné fázi", () => {
