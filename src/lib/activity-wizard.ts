@@ -141,6 +141,8 @@ export function buildBlock(
   }
   const props: Record<string, any> = { ...(aiProps ?? {}), activityType: info.activityType, ...ai };
   if (!props.title) props.title = title || "";
-  if (info.activityType === "fill_blanks") props.showWordBank = s.wordBank;
+  if (info.activityType === "fill_blanks") {
+    props.fillBlanks = { ...(props.fillBlanks ?? { text: "" }), showWordBank: s.wordBank };
+  }
   return { id: newId(), type: "activity", visible: true, props };
 }
