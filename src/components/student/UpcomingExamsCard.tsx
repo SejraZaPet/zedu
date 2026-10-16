@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { getExamTypeMeta } from "@/lib/exam-types";
+import { resolveLinkedLesson } from "@/lib/linked-lesson";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Sparkles } from "lucide-react";
 
@@ -12,6 +13,7 @@ interface UpcomingExam {
   exam_type: string | null;
   deadline: string | null;
   lesson_id: string | null;
+  lesson_source: string | null;
   subjectName: string | null;
 }
 
@@ -46,7 +48,7 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
 
       const { data: assignmentsData } = await supabase
         .from("assignments" as any)
-        .select("id, title, exam_type, deadline, lesson_id, subject_id")
+        .select("id, title, exam_type, deadline, lesson_id, lesson_source, subject_id")
         .eq("status", "published")
         .in("exam_type", EXAM_TYPES)
         .gte("deadline", now.toISOString())
