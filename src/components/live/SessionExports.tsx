@@ -162,7 +162,7 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
             <h3 className="font-bold text-sm mb-2 flex items-center gap-2">
               <BarChart3 className="w-4 h-4" /> Přehled session
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
                 { label: "Účastníci", value: report.sessionOverview.totalParticipants },
                 { label: "Slidy", value: report.sessionOverview.totalSlides },
