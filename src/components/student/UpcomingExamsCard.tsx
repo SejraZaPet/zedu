@@ -5,6 +5,8 @@ import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts
 import { getExamTypeMeta } from "@/lib/exam-types";
 import { resolveLinkedLesson } from "@/lib/linked-lesson";
 import { Button } from "@/components/ui/button";
+import { planLessons, type PlanLesson } from "@/lib/planned-assignment";
+import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
 import { CalendarClock, Sparkles } from "lucide-react";
 
 interface UpcomingExam {
@@ -15,6 +17,7 @@ interface UpcomingExam {
   lesson_id: string | null;
   lesson_source: string | null;
   subjectName: string | null;
+  lessons: PlanLesson[];
 }
 
 const EXAM_TYPES = ["ustni", "pisemne", "digitalni"];
@@ -48,7 +51,7 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
 
       const { data: assignmentsData } = await supabase
         .from("assignments" as any)
-        .select("id, title, exam_type, deadline, lesson_id, lesson_source, subject_id")
+        .select("id, title, exam_type, deadline, lesson_id, lesson_source, subject_id, settings")
         .eq("status", "published")
         .in("exam_type", EXAM_TYPES)
         .gte("deadline", now.toISOString())
@@ -91,6 +94,7 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
           lesson_id: a.lesson_id ?? null,
           lesson_source: a.lesson_source ?? null,
           subjectName: a.subject_id ? subjectNames.get(a.subject_id) ?? null : null,
+          lessons: planLessons(a),
         })),
       );
       setLoading(false);
@@ -148,9 +152,13 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
                     {days !== null ? daysLabel(days) : "bez termínu"}
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => handlePrepare(item)}>
-                  Připravit se
-                </Button>
+                {item.lessons.length > 1 ? (
+                  <PlanPrepareButton lessons={item.lessons} />
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => handlePrepare(item)}>
+                    Připravit se
+                  </Button>
+                )}
               </li>
             );
           })}

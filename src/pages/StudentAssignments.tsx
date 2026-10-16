@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentStatus } from "@/lib/assignment-status";
+import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
+import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { bestAttempt } from "@/lib/best-results";
@@ -132,7 +134,7 @@ const StudentAssignments = () => {
                               {new Date(a.deadline).toLocaleDateString("cs")}
                             </span>
                           )}
-                          {a.exam_type !== "ustni" && (
+                          {a.exam_type !== "ustni" && !isPlanWithoutContent(a) && (
                             <span>
                               {a.attempts.filter((att) => att.status === "submitted").length}/{a.max_attempts} pokusů
                             </span>
@@ -149,7 +151,15 @@ const StudentAssignments = () => {
                         )}
                       </div>
                       <div>
-                        {a.exam_type === "ustni" ? (
+                        {isPlanWithoutContent(a) ? (
+                          <div className="flex flex-col items-start gap-2 sm:items-end">
+                            <Badge variant="outline" className="text-xs">Naplánováno · zatím nic k odevzdání</Badge>
+                            <div className="flex flex-wrap gap-2">
+                              <PlanPrepareButton lessons={planLessons(a)} />
+                              <Button className="assignment-card-action" size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Detail</Button>
+                            </div>
+                          </div>
+                        ) : a.exam_type === "ustni" ? (
                           <Badge variant="outline" className="text-xs">Pouze pokyny</Badge>
                         ) : a.exam_type === "digitalni" && status !== "completed" && !deadlinePassed ? (
                           <Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
