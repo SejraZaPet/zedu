@@ -2381,6 +2381,11 @@ export default function TeacherLessonPlanEditor() {
                               : `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
                             : null
                           : meta?.href ?? null;
+                        const creatable = CREATABLE_KINDS.includes(act.kind);
+                        const busy = creatingKey === `${phase.key}:${i}`;
+                        const launching =
+                          act.created?.type === "game_template" &&
+                          creatingKey === `launch:${act.created.id}`;
 
                         return (
                           <li
@@ -2393,14 +2398,64 @@ export default function TeacherLessonPlanEditor() {
                                 {meta?.label ?? act.kind}
                               </div>
                             </div>
-                            {href && meta?.hrefLabel && (
-                              <a
-                                href={href}
-                                className="text-xs text-primary hover:underline shrink-0 whitespace-nowrap"
-                              >
-                                {meta.hrefLabel} →
-                              </a>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {act.created ? (
+                                act.created.type === "game_template" ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="default"
+                                      className="h-7 text-xs"
+                                      disabled={creatingKey !== null}
+                                      onClick={() => handleLaunchCreatedGame(act.created!.id)}
+                                    >
+                                      {launching && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                      Spustit živou hru
+                                    </Button>
+                                    <a
+                                      href={createdHref(act.created)}
+                                      className="text-xs text-primary hover:underline whitespace-nowrap"
+                                    >
+                                      Otevřít →
+                                    </a>
+                                  </>
+                                ) : (
+                                  <a
+                                    href={createdHref(act.created)}
+                                    className="text-xs text-primary hover:underline whitespace-nowrap"
+                                  >
+                                    Otevřít →
+                                  </a>
+                                )
+                              ) : creatable ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  disabled={creatingKey !== null}
+                                  onClick={() => handleCreateFromSuggestion(phase.key, i, act)}
+                                >
+                                  {busy ? (
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="w-3 h-3 mr-1" />
+                                  )}
+                                  Vytvořit z návrhu
+                                </Button>
+                              ) : (
+                                href &&
+                                meta?.hrefLabel && (
+                                  <a
+                                    href={href}
+                                    className="text-xs text-primary hover:underline whitespace-nowrap"
+                                  >
+                                    {meta.hrefLabel} →
+                                  </a>
+                                )
+                              )}
+                            </div>
                           </li>
                         );
                       })}
