@@ -31,7 +31,7 @@ async function runA(kind: string, mode: string, teams: boolean) {
   for (let qi = 0; qi < qs.length; qi++) {
     await rest(`game_sessions?id=eq.${s.id}`, "PATCH", { status: "playing", current_question_index: qi, question_started_at: new Date().toISOString() });
     for (let pi = 0; pi < 3; pi++) {
-      if (mode === "race") await fetch(`${URL}/rest/v1/game_players?id=eq.${pid(ps[pi])}`, { method: "PATCH", headers: H(), body: JSON.stringify({ student_index: qi }) });
+      if (mode === "race") await fetch(`${URL}/rest/v1/rpc/set_student_index`, { method: "POST", headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" }, body: JSON.stringify({ _join_token: tok(ps[pi]), _index: qi }) });
       const ci = qs[qi].answers.findIndex((a) => a.correct);
       const r = await fn("submit-answer", { joinToken: tok(ps[pi]), answerIndex: pick(pi, qi, ci, qs[qi].answers.length) });
       if (r.status !== 200 && !r.body?.retry) errors.push(`A submit ${kind}/${mode} ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`);
@@ -44,7 +44,7 @@ async function runB(kind: string, mode: string) {
   const slides = expandSlidesForLiveGame([{ slideId: "s", type: "activity", activitySpec: kind === "quiz" ? undefined : acts[kind] }].filter((x) => x.activitySpec));
   const r0 = await fn("create-live-session", { title: `[TEST] B ${kind} ${mode}`, slides }, T);
   if (r0.status !== 200) { errors.push(`B create ${kind} ${r0.status} ${JSON.stringify(r0.body).slice(0, 150)}`); return; }
-  const s = r0.body.session || r0.body; created.push(s.id);
+  const [s] = await rest(`game_sessions?id=eq.${r0.body.sessionId}&select=*`); created.push(s.id);
   await rest(`game_sessions?id=eq.${s.id}`, "PATCH", { settings: { ...(s.settings || {}), timePerQuestion: 20, gameMode: mode } });
   const ps = await players(s.game_code);
   for (let qi = 0; qi < slides.length; qi++) {
@@ -59,9 +59,8 @@ async function runB(kind: string, mode: string) {
   rows.push(`B | ${kind} | ${mode} | q=${slides.length} | ${final.map((f: any) => f.total_score).join("/")}`);
 }
 try {
-  for (const k of Object.keys(acts)) for (const m of ["standard", "race", "tower", "steal"]) await runA(k, m, false);
-  await runA("true_false", "steal", true);
+  for (const k of ["quiz","ordering"]) await runA(k, "race", false);
   for (const k of ["true_false", "matching", "fill_blanks", "ordering"]) for (const m of ["standard", "race", "tower", "steal"]) await runB(k, m);
 } catch (e) { errors.push(String(e)); }
 console.log(rows.join("\n")); console.log("ERRORS", errors.length, errors.slice(0, 15).join("\n"));
-require("fs").writeFileSync("/tmp/test-sessions.json", JSON.stringify(created));
+require("fs").writeFileSync("/tmp/test-sessions2.json", JSON.stringify(created));
