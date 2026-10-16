@@ -29,3 +29,4 @@
 - Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
 
 - Use pure `_shared/lesson-text.ts` for nested content and HTML cleanup, so practice, study helpers and chat share context without changing access checks.
+- Plan class/group tests from „Přidat úkol“ only as published `assignments` without content (`settings.plan` + `settings.lessons`) via `planned-assignment.ts`; students see no submission until content is attached, so student `published` filters and RLS stay unchanged.
