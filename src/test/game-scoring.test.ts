@@ -123,6 +123,6 @@ describe("integrace: celá hra se 3 hráči", () => {
     const s = play("steal", [{ id: "t1", members: ["ana", "ben"] }, { id: "t2", members: ["cyril"] }]);
     // Ana a Ben si nekradou; Cyril nemá body, takže se nekrade nic.
     expect(s.ana).toBe(4 * GAME_RULES.steal.base);
-    expect(s.ben).toBe(2 * GAME_RULES.steal.base);
+    expect(s.ben).toBe(0); // 200 za dvě správné, pak 2× −100 za chyby
   });
 });
