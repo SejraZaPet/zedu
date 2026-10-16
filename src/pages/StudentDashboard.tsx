@@ -105,10 +105,10 @@ const StudentDashboard = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex flex-wrap items-center gap-4">
           <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} />
 
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="font-heading text-3xl font-bold">
               Ahoj, {profile?.first_name || "studente"}! 👋
             </h1>
@@ -116,7 +116,17 @@ const StudentDashboard = () => {
           </div>
         </div>
 
+        {user && (
+          <PlayerProfileWidget
+            userId={user.id}
+            firstName={profile?.first_name}
+            lastName={profile?.last_name}
+          />
+        )}
+
         <TodayWidget role="student" />
+
+        {user && <UpcomingExamsCard userId={user.id} />}
 
 
         {user && (
