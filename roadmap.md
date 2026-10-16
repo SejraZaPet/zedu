@@ -40,11 +40,11 @@
 ## Živé hry – sjednocení
 - [x] Etapa 1a: převod Pravda/Nepravda, spojování, doplňovačka, seřazení na otázky při spuštění (šablony, knihovna, Rychlá hra, prezentace)
 - [x] Etapa 1b: převod i z plánu lekce; staré jednosnímkové hry se rozloží při spuštění
-- [ ] Etapa 1c: ověřit projektor v náhledu
+- [ ] Etapa 1c: ruční vizuální kontrola projektoru
 - [x] Etapa 2: bodování podle režimu na serveru, obě cesty, krádež + lupič + týmy (nasazeno)
 - [ ] Klíč aktivity do add_xp (spolu s migrací ligy)
-- [ ] Etapa 3: jedno jádro pro obě cesty
-- [ ] Ostrá zkouška [TEST] her se 3 hráči, pak úklid
+- [x] Etapa 3: jedno jádro pro obě cesty (live-game-core.ts)
+- [x] Ostrá zkouška [TEST] her se 3 hráči (40 her, 0 chyb), úklid hotový
 ## Bezli liga v1
 - [ ] Schváleno – po etapě 2: migrace xp_events, add_xp, school_league_week, cron, záložka Liga
 
@@ -54,5 +54,5 @@
 - [x] Lišta „Prohlížíš jako“ nezakrývá tlačítka (spodní odsazení)
 - [x] Průvodce: počet položek se dodrží (oříznutí výstupu AI)
 - [x] Výsledky po ukončení: přehled se načte hned, „Zatím žádné odpovědi“
-- [ ] Smazat „Charakteristika a rozdělení poživatin“ až po ostré zkoušce
-- [ ] Etapa 2 dokončení, etapa 3, ostrá zkouška [TEST], Bezli liga v1
+- [x] Smazána první kopie „Charakteristika…“; druhá (17:00) čeká na potvrzení
+- [ ] Bezli liga v1 (čeká na pokyn)
