@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureMyCourseNotebooks } from "@/lib/notebook";
 import { Button } from "@/components/ui/button";
-import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from "lucide-react";
+import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays, GraduationCap } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
@@ -11,6 +11,7 @@ import StudentProgressWidgets from "@/components/student/StudentProgressWidgets"
 import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import RecognitionWidget from "@/components/behavior/RecognitionWidget";
+import UpcomingExamsCard from "@/components/student/UpcomingExamsCard";
 
 import { useAuth } from "@/contexts/AuthContext";
 
