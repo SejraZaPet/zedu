@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -183,7 +184,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
         body: {
           lessonPlanId: lessonId,
           title: plan.title,
-          slides: plan.slides,
+          slides: expandSlidesForLiveGame(plan.slides),
         },
       });
       if (error) throw error;
