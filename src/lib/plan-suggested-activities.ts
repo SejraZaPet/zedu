@@ -125,7 +125,7 @@ export async function createWorksheetFromSuggestion(ctx: SuggestionContext): Pro
       ],
     },
   });
-  if (error) throw new Error(extractFnError(error));
+  if (error) throw new Error(await extractFnError(error));
   if (data?.error) throw new Error(data.error);
   if (!Array.isArray(data?.items) || data.items.length === 0) {
     throw new Error("AI nevygenerovala žádné bloky, zkuste to prosím znovu.");
@@ -175,7 +175,7 @@ export async function createGameFromSuggestion(ctx: SuggestionContext): Promise<
   const { data, error } = await supabase.functions.invoke("generate-lesson-quiz", {
     body: { topic, format: "mcq", count: 8 },
   });
-  if (error) throw new Error(extractFnError(error));
+  if (error) throw new Error(await extractFnError(error));
   if (data?.error) throw new Error(data.error);
 
   const slides = buildGameSlidesFromQuiz(data?.questions ?? []);
