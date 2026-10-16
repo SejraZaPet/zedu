@@ -170,15 +170,17 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function openInLesson() {
     if (!block || !targetLessonId) return;
+    const target = lessons.find((l) => l.id === targetLessonId);
+    const source = target?.source ?? "teacher_textbook_lessons";
     setBusy(true);
-    const { data, error } = await supabase.from("teacher_textbook_lessons")
+    const { data, error } = await (supabase.from(source) as any)
       .select("id, title, sort_order, status, blocks, hero_image_url, scheduled_publish_at, require_activities")
       .eq("id", targetLessonId).maybeSingle();
     setBusy(false);
     if (error || !data) { toast({ title: "Lekci se nepodařilo načíst", variant: "destructive" }); return; }
     const existing = Array.isArray((data as any).blocks) ? (data as any).blocks : [];
     // Nic se neukládá – blok je jen v konceptu editoru, dokud učitel lekci neuloží.
-    setEditorLesson({ ...(data as any), blocks: [...existing, block], source: "teacher_textbook_lessons" });
+    setEditorLesson({ ...(data as any), blocks: [...existing, block], source });
   }
 
   async function saveTemplate() {
@@ -244,23 +246,21 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
-                  <Label>Učebnice</Label>
-                  <Select value={textbookId} onValueChange={(v) => { setTextbookId(v); setPicked([]); }}>
-                    <SelectTrigger><SelectValue placeholder={textbooks.length ? "Vyberte učebnici" : "Nemáte vlastní učebnici"} /></SelectTrigger>
-                    <SelectContent>{textbooks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {lessons.length > 0 && (
-                    <fieldset className="space-y-1 max-h-56 overflow-y-auto border rounded-lg p-3">
-                      <legend className="text-sm font-medium px-1">Lekce (lze vybrat více)</legend>
-                      {lessons.map((l) => (
-                        <label key={l.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox checked={picked.includes(l.id)}
-                            onCheckedChange={(v) => setPicked((p) => (v ? [...p, l.id] : p.filter((x) => x !== l.id)))} />
-                          {l.title}
-                        </label>
-                      ))}
-                    </fieldset>
+                  {textbooks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nemáte vlastní učebnici.</p>
+                  ) : (
+                    <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
+                      onChange={(ids) => { setTextbookId(ids[0] ?? ""); setPicked([]); }}
+                      label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
                   )}
+                  {textbookId && (lessonsLoading ? (
+                    <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Načítám lekce…</p>
+                  ) : lessons.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Tato učebnice zatím nemá žádné lekce.</p>
+                  ) : (
+                    <SearchablePickList items={lessons} mode="multi" selected={picked} onChange={setPicked}
+                      label="Lekce (lze vybrat více)" searchPlaceholder="Hledat lekci" showCount />
+                  ))}
                 </TabsContent>
                 <TabsContent value="text" className="space-y-3">
                   <Label htmlFor="wiz-text">Text podkladu</Label>
@@ -361,14 +361,13 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
             <div className="space-y-5">
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Vložit do lekce</h3>
-                <Select value={textbookId} onValueChange={(v) => { setTextbookId(v); setTargetLessonId(""); }}>
-                  <SelectTrigger aria-label="Učebnice"><SelectValue placeholder="Vyberte učebnici" /></SelectTrigger>
-                  <SelectContent>{textbooks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={targetLessonId} onValueChange={setTargetLessonId} disabled={!allLessonsForTarget.length}>
-                  <SelectTrigger aria-label="Lekce"><SelectValue placeholder="Vyberte lekci" /></SelectTrigger>
-                  <SelectContent>{allLessonsForTarget.map((l) => <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
+                  onChange={(ids) => { setTextbookId(ids[0] ?? ""); setTargetLessonId(""); }}
+                  label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
+                {textbookId && (lessonsLoading
+                  ? <p className="text-sm text-muted-foreground">Načítám lekce…</p>
+                  : <SearchablePickList items={allLessonsForTarget} mode="single" selected={targetLessonId ? [targetLessonId] : []}
+                      onChange={(ids) => setTargetLessonId(ids[0] ?? "")} label="Lekce" searchPlaceholder="Hledat lekci" />)}
                 <p className="text-xs text-muted-foreground">Otevře se editor lekce s aktivitou na konci. Nic se neuloží, dokud lekci neuložíte.</p>
                 <Button onClick={openInLesson} disabled={!targetLessonId || busy}>Otevřít v editoru lekce</Button>
               </section>
