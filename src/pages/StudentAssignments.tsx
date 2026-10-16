@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentStatus } from "@/lib/assignment-status";
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { bestAttempt } from "@/lib/best-results";
 import { Button } from "@/components/ui/button";
@@ -59,10 +60,7 @@ const StudentAssignments = () => {
       if (!assignmentsData) { setAssignments([]); setLoading(false); return; }
 
       // Get student's attempts
-      const { data: attemptsData } = await supabase
-        .from("assignment_attempts" as any)
-        .select("*")
-        .eq("student_id", user.id);
+      const attemptsData = await loadStudentAssignmentAttempts(user.id, (assignmentsData as any[]).map((a) => a.id));
 
       const attemptsByAssignment: Record<string, any[]> = {};
       (attemptsData as any[] || []).forEach((a: any) => {
@@ -116,8 +114,7 @@ const StudentAssignments = () => {
 
               return (
                 <AssignmentStatusCard status={visualStatus} title={a.title}>
-                  <CardContent className="p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           
@@ -185,7 +182,6 @@ const StudentAssignments = () => {
                         )}
                       </div>
                     </div>
-                  </CardContent>
                 </AssignmentStatusCard>
               );
             }} />

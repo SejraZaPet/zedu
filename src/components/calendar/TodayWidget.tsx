@@ -1,4 +1,5 @@
 import { assignmentStatus, type StatusAttempt } from "@/lib/assignment-status";
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -177,9 +178,7 @@ const TodayWidget = ({ role }: Props) => {
       let visibleAssignmentRows = (assignmentsRes.data ?? []) as any[];
       if (role === "student" && user && visibleAssignmentRows.length > 0) {
         const assignmentIds = visibleAssignmentRows.map((assignment) => assignment.id);
-        const { data: submittedAttempts } = await supabase.from("assignment_attempts")
-          .select("assignment_id, status, score, max_score, submitted_at")
-          .eq("student_id", user.id).in("assignment_id", assignmentIds);
+        const submittedAttempts = await loadStudentAssignmentAttempts(user.id, assignmentIds);
         visibleAssignmentRows = visibleAssignmentRows.map((assignment) => ({ ...assignment,
           attempts: (submittedAttempts ?? []).filter((attempt) => attempt.assignment_id === assignment.id),
         }));

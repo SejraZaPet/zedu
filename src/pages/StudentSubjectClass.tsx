@@ -1,4 +1,5 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -357,14 +358,7 @@ export default function StudentSubjectClass() {
       setAssignments(_assignments);
 
       if (_assignments.length) {
-        const { data: aData } = await supabase
-          .from("assignment_attempts")
-          .select("id, assignment_id, status, score, max_score, submitted_at, teacher_feedback_text, teacher_feedback_emoji")
-          .eq("student_id", user.id)
-          .in(
-            "assignment_id",
-            _assignments.map((a) => a.id),
-          );
+        const aData = await loadStudentAssignmentAttempts(user.id, _assignments.map((a) => a.id));
         if (!cancelled) setAttempts((aData as AttemptRow[]) ?? []);
       } else {
         setAttempts([]);

@@ -1,6 +1,7 @@
 # Architecture rules
 
 - Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
+- Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
 
 - Keep lesson-list disclosure in page-local state and derive batched row-link loading from visible occurrences, so expanding lists never changes schedule data or permissions.
 
