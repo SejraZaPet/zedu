@@ -85,6 +85,14 @@ import { loadPlanLinks, type PlanLinks } from "@/lib/plan-links";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { loadPlanEquipment, savePlanEquipment, type PhaseEquipment } from "@/lib/lesson-plan-equipment";
+import {
+  CREATABLE_KINDS,
+  createdHref,
+  createGameFromSuggestion,
+  createWorksheetFromSuggestion,
+  type CreatedRef,
+} from "@/lib/plan-suggested-activities";
+import { launchTemplateSession } from "@/lib/game-templates";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 import {
   buildLessonUnits,
@@ -121,6 +129,8 @@ type ActivityKind =
 interface SuggestedActivity {
   kind: ActivityKind;
   title: string;
+  /** Odkaz na obsah vytvořený tlačítkem „Vytvořit z návrhu“. */
+  created?: CreatedRef;
 }
 
 interface PhaseValue {
@@ -130,7 +140,7 @@ interface PhaseValue {
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
-  quiz: { label: "Kvíz / interaktivní aktivita", href: "/ucitel/aktivity", hrefLabel: "Otevřít aktivity" },
+  quiz: { label: "Kvíz / interaktivní aktivita", href: "/aktivity", hrefLabel: "Otevřít aktivity" },
   worksheet: { label: "Pracovní list", href: "/ucitel/pracovni-listy", hrefLabel: "Pracovní listy" },
   live_game: { label: "Živá hra", href: "/ucitel/hry", hrefLabel: "Spustit živou hru" },
   lesson_block: { label: "Blok z učebnice", href: null, hrefLabel: "Otevřít lekci" },
@@ -203,6 +213,8 @@ export default function TeacherLessonPlanEditor() {
   const [customMinutes, setCustomMinutes] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Klíč „fáze:index“ návrhu, který se právě vytváří (nebo „launch:id“). */
+  const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
     aiGenerated: false,
     aiModifiedAt: null,
@@ -1197,14 +1209,120 @@ export default function TeacherLessonPlanEditor() {
         }
       }
       toast({ title: "Plán uložen" });
+      return resultId;
     } catch (e: any) {
       toast({
         title: "Chyba ukládání",
         description: e?.message || "Plán se nepodařilo uložit.",
         variant: "destructive",
       });
+      return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Uloží jen propojení vytvořeného obsahu (fáze + worksheet_ids), nic jiného nemění. */
+  async function persistCreatedRefs(
+    planId: string,
+    nextPhases: PhasesState,
+    nextWorksheetIds: string[],
+  ) {
+    const { data } = await supabase
+      .from("lesson_plans")
+      .select("input_data")
+      .eq("id", planId)
+      .maybeSingle();
+    const input = { ...(((data as any)?.input_data as any) ?? {}), phases: nextPhases };
+    await supabase
+      .from("lesson_plans")
+      .update({ input_data: input as any, worksheet_ids: nextWorksheetIds })
+      .eq("id", planId);
+  }
+
+  /** „Vytvořit z návrhu“ – AI předgeneruje obsah, uloží koncept a propojí s krokem. */
+  async function handleCreateFromSuggestion(phaseKey: string, index: number, act: SuggestedActivity) {
+    if (!user || creatingKey) return;
+    const key = `${phaseKey}:${index}`;
+    setCreatingKey(key);
+    try {
+      // Nový plán nejdřív uložíme, aby se propojení neztratilo.
+      const pid = planDbId ?? (await handleSave());
+      if (!pid) return;
+
+      const phaseDesc = phases[phaseKey]?.description ?? "";
+      const lessonCtx = selectedLesson
+        ? { lessonId: selectedLesson.id, lessonSource: selectedLesson.source }
+        : {};
+      const ctx = {
+        suggestionTitle: act.title,
+        lessonTitle: selectedLesson?.title ?? title,
+        lessonContent: selectedLesson?.content ?? "",
+        phaseDescription: phaseDesc,
+        subject: subject || undefined,
+        ...lessonCtx,
+      };
+
+      const isWorksheet = act.kind === "worksheet";
+      const createdId = isWorksheet
+        ? await createWorksheetFromSuggestion(ctx)
+        : await createGameFromSuggestion(ctx);
+      const ref: CreatedRef = { type: isWorksheet ? "worksheet" : "game_template", id: createdId };
+
+      const nextPhases: PhasesState = {
+        ...phases,
+        [phaseKey]: {
+          ...phases[phaseKey],
+          activities: (phases[phaseKey]?.activities ?? []).map((a, i) =>
+            i === index ? { ...a, created: ref } : a,
+          ),
+        },
+      };
+      const nextWsIds =
+        isWorksheet && !worksheetIds.includes(createdId)
+          ? [...worksheetIds, createdId]
+          : worksheetIds;
+      setPhases(nextPhases);
+      setWorksheetIds(nextWsIds);
+      await persistCreatedRefs(pid, nextPhases, nextWsIds);
+
+      toast({
+        title: isWorksheet ? "Pracovní list vytvořen" : "Hra vytvořena",
+        description: "Obsah je uložen jako koncept – žáci ho zatím nevidí.",
+      });
+      if (isWorksheet) navigate(createdHref(ref));
+      else navigate("/ucitel/hry");
+    } catch (e: any) {
+      toast({
+        title: "Nepodařilo se vytvořit",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingKey(null);
+    }
+  }
+
+  /** „Spustit živou hru“ u již vytvořené šablony. */
+  async function handleLaunchCreatedGame(templateId: string) {
+    setCreatingKey(`launch:${templateId}`);
+    try {
+      const { data, error } = await supabase
+        .from("teacher_game_templates" as any)
+        .select("*")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (error || !data) throw new Error("Šablonu hry se nepodařilo načíst.");
+      const sessionId = await launchTemplateSession(data as any);
+      navigate(`/live/ucitel/${sessionId}`);
+    } catch (e: any) {
+      toast({
+        title: "Nepodařilo se spustit hru",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingKey(null);
     }
   }
 
@@ -2263,6 +2381,11 @@ export default function TeacherLessonPlanEditor() {
                               : `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
                             : null
                           : meta?.href ?? null;
+                        const creatable = CREATABLE_KINDS.includes(act.kind);
+                        const busy = creatingKey === `${phase.key}:${i}`;
+                        const launching =
+                          act.created?.type === "game_template" &&
+                          creatingKey === `launch:${act.created.id}`;
 
                         return (
                           <li
@@ -2275,14 +2398,64 @@ export default function TeacherLessonPlanEditor() {
                                 {meta?.label ?? act.kind}
                               </div>
                             </div>
-                            {href && meta?.hrefLabel && (
-                              <a
-                                href={href}
-                                className="text-xs text-primary hover:underline shrink-0 whitespace-nowrap"
-                              >
-                                {meta.hrefLabel} →
-                              </a>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {act.created ? (
+                                act.created.type === "game_template" ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="default"
+                                      className="h-7 text-xs"
+                                      disabled={creatingKey !== null}
+                                      onClick={() => handleLaunchCreatedGame(act.created!.id)}
+                                    >
+                                      {launching && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                      Spustit živou hru
+                                    </Button>
+                                    <a
+                                      href={createdHref(act.created)}
+                                      className="text-xs text-primary hover:underline whitespace-nowrap"
+                                    >
+                                      Otevřít →
+                                    </a>
+                                  </>
+                                ) : (
+                                  <a
+                                    href={createdHref(act.created)}
+                                    className="text-xs text-primary hover:underline whitespace-nowrap"
+                                  >
+                                    Otevřít →
+                                  </a>
+                                )
+                              ) : creatable ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  disabled={creatingKey !== null}
+                                  onClick={() => handleCreateFromSuggestion(phase.key, i, act)}
+                                >
+                                  {busy ? (
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="w-3 h-3 mr-1" />
+                                  )}
+                                  Vytvořit z návrhu
+                                </Button>
+                              ) : (
+                                href &&
+                                meta?.hrefLabel && (
+                                  <a
+                                    href={href}
+                                    className="text-xs text-primary hover:underline whitespace-nowrap"
+                                  >
+                                    {meta.hrefLabel} →
+                                  </a>
+                                )
+                              )}
+                            </div>
                           </li>
                         );
                       })}
