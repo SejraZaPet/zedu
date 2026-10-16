@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
@@ -154,7 +155,7 @@ export function usePresentationLauncher() {
         teacher_id: session.user.id,
         title: lesson.title,
         game_code: gameCode,
-        activity_data: slides as any,
+        activity_data: expandSlidesForLiveGame(slides) as any,
         settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
@@ -213,7 +214,7 @@ export function usePresentationLauncher() {
       teacher_id: session.user.id,
       title: data.lesson.title,
       game_code: gameCode,
-      activity_data: data.slides as any,
+      activity_data: expandSlidesForLiveGame(data.slides) as any,
       settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
       status: "lobby",
       current_question_index: -1,

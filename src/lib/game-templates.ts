@@ -1,4 +1,5 @@
 import { subjectKeyFromLabel } from "@/lib/game-backgrounds";
+import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_GAME_SETTINGS, generateGameCode, type TeamMode } from "@/lib/game-types";
 import { getModeDef, type GameMode } from "@/lib/game-modes";
@@ -72,7 +73,7 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
       teacher_id: session.user.id,
       title: template.title,
       game_code: generateGameCode(),
-      activity_data: slides as any,
+      activity_data: expandSlidesForLiveGame(slides) as any,
       settings: {
         ...DEFAULT_GAME_SETTINGS,
         gameMode: mode,
