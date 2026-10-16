@@ -68,7 +68,7 @@ describe("snapshot automaticky hodnocených aktivit", () => {
     const inputs = screen.getAllByRole("combobox");
     fireEvent.change(inputs[0], { target: { value: "1" } });
     fireEvent.change(inputs[1], { target: { value: "0" } });
-    fireEvent.click(screen.getByRole("button", { name: /Zkontrolovat/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Ověřit odpovědi" }));
     expect(complete.mock.calls[0]?.[2]).toEqual([
       { index: 0, text: "A", studentAnswer: "Y", correctAnswer: "X", correct: false },
       { index: 1, text: "B", studentAnswer: "X", correctAnswer: "Y", correct: false },
