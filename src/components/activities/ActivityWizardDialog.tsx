@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,8 +80,11 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
   useEffect(() => {
     if (!open || !user) return;
-    supabase.from("teacher_textbooks").select("id, title, subject").eq("teacher_id", user.id).is("deleted_at", null)
-      .order("title").then(({ data }) => setTextbooks((data as TbRow[]) ?? []));
+    (async () => {
+      const f = await ownTextbooksOr(user.id);
+      const { data } = await supabase.from("teacher_textbooks").select("id, title, subject").or(f).is("deleted_at", null).order("title");
+      setTextbooks((data as TbRow[]) ?? []);
+    })();
   }, [open, user]);
 
   // Lekce učebnice se načítají stejně jako na stránce učebnice (TeacherTextbooks):

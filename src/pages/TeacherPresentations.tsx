@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -224,7 +225,7 @@ const TeacherPresentations = () => {
       const { data, error } = await supabase
         .from("teacher_textbooks")
         .select("id, title, updated_at, teacher_textbook_lessons(count)")
-        .eq("teacher_id", user.id)
+        .or(await ownTextbooksOr(user.id))
         .is("deleted_at", null)
         .order("updated_at", { ascending: false });
       if (error) throw error;
