@@ -1,0 +1,1 @@
+- Lesson-list disclosure is page-local; batch links from visible items.
