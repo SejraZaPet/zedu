@@ -129,14 +129,6 @@ const StudentDashboard = () => {
         {user && <UpcomingExamsCard userId={user.id} />}
 
 
-        {user && (
-          <PlayerProfileWidget
-            userId={user.id}
-            firstName={profile?.first_name}
-            lastName={profile?.last_name}
-          />
-        )}
-
         {user && <StudentProgressWidgets userId={user.id} />}
 
         {user && (
