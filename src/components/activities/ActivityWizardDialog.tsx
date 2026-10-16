@@ -43,8 +43,8 @@ const STEPS: { id: Step; label: string }[] = [
   { id: "use", label: "4. Použít" },
 ];
 
-interface TbRow { id: string; title: string }
-interface LessonRow { id: string; title: string; textbook_id: string; blocks: unknown; sort_order: number; status: string; hero_image_url: string | null; scheduled_publish_at: string | null; require_activities: boolean }
+interface TbRow { id: string; title: string; subject?: string | null }
+interface LessonRow { id: string; title: string; blocks: unknown; sort_order: number; status: string; hero_image_url: string | null; scheduled_publish_at: string | null; require_activities?: boolean; source: "textbook_lessons" | "teacher_textbook_lessons" }
 
 export default function ActivityWizardDialog({ catalogId, title, onOpenChange }: Props) {
   const { user } = useAuth();
@@ -58,6 +58,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   const [textbooks, setTextbooks] = useState<TbRow[]>([]);
   const [textbookId, setTextbookId] = useState("");
   const [lessons, setLessons] = useState<LessonRow[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [pasted, setPasted] = useState("");
   const [uploading, setUploading] = useState(false);
