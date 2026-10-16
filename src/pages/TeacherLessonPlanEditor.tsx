@@ -213,6 +213,8 @@ export default function TeacherLessonPlanEditor() {
   const [customMinutes, setCustomMinutes] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Klíč „fáze:index“ návrhu, který se právě vytváří (nebo „launch:id“). */
+  const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
     aiGenerated: false,
     aiModifiedAt: null,
