@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
-import { Clock, Check, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight } from "lucide-react";
+import { Clock, Check, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight, Hourglass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ASSIGNMENT_GROUPS, sortStatusAssignments, type AssignmentStatus, type StatusAssignment } from "@/lib/assignment-status";
 
-const ICONS = { pending: Clock, soon: Clock, submitted: Check, overdue: CircleAlert, graded: CircleCheck, preparing: CalendarClock };
+const ICONS = { pending: Clock, soon: Clock, submitted: Hourglass, overdue: CircleAlert, graded: CircleCheck, preparing: CalendarClock };
 export function AssignmentStateIcon({ status }: { status: AssignmentStatus }) {
   const Icon = ICONS[status.state];
   return <span className="assignment-state-icon"><Icon aria-hidden="true" className="h-5 w-5" /></span>;

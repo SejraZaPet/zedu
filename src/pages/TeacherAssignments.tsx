@@ -1742,7 +1742,7 @@ const TeacherAssignments = () => {
 
                                   {a.status === "published" && (
                                     <div className="space-y-1 pt-1 max-w-xs">
-                                      <div className="flex justify-between text-xs text-muted-foreground">
+                                      <div className="assignment-card-meta flex justify-between text-xs text-muted-foreground">
                                         <span>{prog.submitted}/{prog.total} odevzdáno</span>
                                         <span>{pct}%</span>
                                       </div>
@@ -1750,7 +1750,7 @@ const TeacherAssignments = () => {
                                     </div>
                                   )}
 
-                                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                                  <div className="assignment-card-meta flex items-center gap-4 text-xs text-muted-foreground pt-1">
                                     {a.deadline && (
                                       <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" />

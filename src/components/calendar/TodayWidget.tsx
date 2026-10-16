@@ -372,7 +372,7 @@ const TodayWidget = ({ role }: Props) => {
               storageKey="assignment-groups:student:dashboard" statusOf={(a) => assignmentStatus(a, a.attempts)}
               renderItem={(a, status) => <AssignmentStatusCard title={a.title} status={status}
                 actions={<Button size="sm" className="assignment-card-action" onClick={() => handleAssignmentClick(a)}>Otevřít</Button>}>
-                {a.deadline && <p className="text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
+                {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
               </AssignmentStatusCard>} />
             {visibleAssignments.filter((a) => a.kind === "todo").map((a) => <Button key={a.id} variant="ghost" onClick={() => handleAssignmentClick(a)}>{a.title} · Můj úkol</Button>)}
           </div>

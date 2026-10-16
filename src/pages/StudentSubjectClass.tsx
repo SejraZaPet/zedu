@@ -800,7 +800,7 @@ export default function StudentSubjectClass() {
                 renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
                   actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>
                   {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
-                  {a.deadline && <p className="text-xs">Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</p>}
+                  {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</p>}
                 </AssignmentStatusCard>} />
             )}
           </TabsContent>

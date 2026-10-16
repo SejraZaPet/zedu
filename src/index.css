@@ -323,41 +323,47 @@ body.a11y-line-height main .whitespace-pre-wrap {
   text-shadow: 0 2px 4px hsl(var(--scrim) / 0.85), 0 0 18px hsl(var(--scrim) / 0.6);
 }
 
-/* Assignment status palette: shared in both themes. A uniform scrim preserves
-   white-text AA contrast even at the brightest end of every gradient. */
+/* Assignment status palette: gradients are exact brand color surfaces (no scrim),
+   so they look identical in light and dark UI. Per-state foreground keeps text
+   readable — dark text on the light amber "soon" gradient, white elsewhere. */
 :root {
   --assignment-foreground: 0 0% 100%;
-  --assignment-scrim: 0 0% 0%;
-  --assignment-pending-from: 271.485 50.754% 39.02%;
-  --assignment-pending-mid: 266.786 47.059% 53.333%;
-  --assignment-pending-to: 185.128 48.954% 53.137%;
-  --assignment-soon-from: 31.049 100% 28.039%;
-  --assignment-soon-mid: 31.724 89.691% 38.039%;
-  --assignment-soon-to: 40.597 79.447% 49.608%;
-  --assignment-submitted-from: 267.541 39.869% 30%;
-  --assignment-submitted-mid: 265.806 39.914% 45.686%;
-  --assignment-submitted-to: 272.4 54.945% 64.314%;
-  --assignment-overdue-from: 2.679 68.293% 32.157%;
-  --assignment-overdue-mid: 3.971 58.12% 45.882%;
-  --assignment-overdue-to: 5.821 68.367% 61.569%;
-  --assignment-graded-from: 160 72.581% 24.314%;
-  --assignment-graded-mid: 163.009 64.571% 34.314%;
-  --assignment-graded-to: 159.633 50.698% 57.843%;
+  --assignment-pending-from: 269.26 48.99% 48.43%;   /* #7A3FB8 */
+  --assignment-pending-mid: 269.48 39.19% 61.18%;    /* #9B62D6 */
+  --assignment-pending-to: 184.44 35.64% 60%;        /* #63C7CF */
+  --assignment-pending-badge: 269.26 48.99% 48.43%;
+  --assignment-soon-from: 40.36 65.88% 67.06%;       /* #FFC857 */
+  --assignment-soon-mid: 32.7 69.8% 65.1%;           /* #FFAE4D */
+  --assignment-soon-to: 32.7 69.8% 65.1%;
+  --assignment-soon-foreground: 32.2 67.2% 11.96%;   /* #33200A */
+  --assignment-soon-badge: 32.61 100% 27.06%;        /* #8A4B00 */
+  --assignment-submitted-from: 217.32 68.91% 46.67%; /* #2563C9 */
+  --assignment-submitted-mid: 209.77 48.88% 69.22%;  /* #6FB1F2 */
+  --assignment-submitted-to: 209.77 48.88% 69.22%;
+  --assignment-submitted-badge: 217.61 69.79% 37.65%; /* #1D4FA3 */
+  --assignment-overdue-from: 357.6 66.7% 54.1%;      /* #D83C42 – o chlup tmavší start kvůli kontrastu bílého textu */
+  --assignment-overdue-mid: 7.91 50.59% 74.71%;      /* #FF8F7E */
+  --assignment-overdue-to: 7.91 50.59% 74.71%;
+  --assignment-overdue-badge: 357.84 63.47% 42.94%;  /* #B3282D */
+  --assignment-graded-from: 161.4 70% 30%;           /* #178261 – o chlup tmavší start kvůli kontrastu bílého textu */
+  --assignment-graded-mid: 158.35 33.33% 66.86%;     /* #7ADBB8 */
+  --assignment-graded-to: 158.35 33.33% 66.86%;
+  --assignment-graded-badge: 161.36 71.03% 28.43%;   /* #157C5C */
   --assignment-preparing-from: 216.923 19.118% 26.667%;
   --assignment-preparing-mid: 215 13.793% 34.118%;
   --assignment-preparing-to: 220 8.936% 46.078%;
+  --assignment-preparing-badge: 216.923 19.118% 26.667%;
 }
-.assignment-status-pending { --assignment-from: var(--assignment-pending-from); --assignment-mid: var(--assignment-pending-mid); --assignment-to: var(--assignment-pending-to); }
-.assignment-status-soon { --assignment-from: var(--assignment-soon-from); --assignment-mid: var(--assignment-soon-mid); --assignment-to: var(--assignment-soon-to); }
-.assignment-status-submitted { --assignment-from: var(--assignment-submitted-from); --assignment-mid: var(--assignment-submitted-mid); --assignment-to: var(--assignment-submitted-to); }
-.assignment-status-overdue { --assignment-from: var(--assignment-overdue-from); --assignment-mid: var(--assignment-overdue-mid); --assignment-to: var(--assignment-overdue-to); }
-.assignment-status-graded { --assignment-from: var(--assignment-graded-from); --assignment-mid: var(--assignment-graded-mid); --assignment-to: var(--assignment-graded-to); }
-.assignment-status-preparing { --assignment-from: var(--assignment-preparing-from); --assignment-mid: var(--assignment-preparing-mid); --assignment-to: var(--assignment-preparing-to); }
+.assignment-status-pending { --assignment-from: var(--assignment-pending-from); --assignment-mid: var(--assignment-pending-mid); --assignment-to: var(--assignment-pending-to); --assignment-badge-text: var(--assignment-pending-badge); }
+.assignment-status-soon { --assignment-from: var(--assignment-soon-from); --assignment-mid: var(--assignment-soon-mid); --assignment-to: var(--assignment-soon-to); --assignment-foreground: var(--assignment-soon-foreground); --assignment-badge-text: var(--assignment-soon-badge); }
+.assignment-status-submitted { --assignment-from: var(--assignment-submitted-from); --assignment-mid: var(--assignment-submitted-mid); --assignment-to: var(--assignment-submitted-to); --assignment-badge-text: var(--assignment-submitted-badge); }
+.assignment-status-overdue { --assignment-from: var(--assignment-overdue-from); --assignment-mid: var(--assignment-overdue-mid); --assignment-to: var(--assignment-overdue-to); --assignment-badge-text: var(--assignment-overdue-badge); }
+.assignment-status-graded { --assignment-from: var(--assignment-graded-from); --assignment-mid: var(--assignment-graded-mid); --assignment-to: var(--assignment-graded-to); --assignment-badge-text: var(--assignment-graded-badge); }
+.assignment-status-preparing { --assignment-from: var(--assignment-preparing-from); --assignment-mid: var(--assignment-preparing-mid); --assignment-to: var(--assignment-preparing-to); --assignment-badge-text: var(--assignment-preparing-badge); }
 
 .assignment-status-card {
   color: hsl(var(--assignment-foreground));
-  background-image: linear-gradient(hsl(var(--assignment-scrim) / .37), hsl(var(--assignment-scrim) / .37)),
-    linear-gradient(100deg, hsl(var(--assignment-from)), hsl(var(--assignment-mid)) 55%, hsl(var(--assignment-to)));
+  background-image: linear-gradient(100deg, hsl(var(--assignment-from)), hsl(var(--assignment-mid)) 55%, hsl(var(--assignment-to)));
   border: 0;
   border-radius: 8px;
   min-width: 0;
@@ -370,15 +376,17 @@ body.a11y-line-height main .whitespace-pre-wrap {
   align-items: center; justify-content: center; border-radius: 6px;
   background: hsl(var(--assignment-foreground) / .16);
 }
+.assignment-status-soon .assignment-state-icon { background: rgb(255 255 255 / .55); }
 .assignment-state-badge {
   display: inline-block; flex-shrink: 0; max-width: 100%; border-radius: 6px;
   padding: 4px 9px; font-size: 12px; font-weight: 700;
-  background: hsl(var(--assignment-foreground)); color: hsl(var(--assignment-from));
+  background: hsl(0 0% 100%); color: hsl(var(--assignment-badge-text));
 }
 .assignment-status-card .text-muted-foreground { color: inherit; }
+.assignment-card-meta { font-size: 14px; color: hsl(var(--assignment-foreground)); }
 .assignment-status-card button { max-width: 100%; white-space: normal; }
 .assignment-status-card .assignment-card-action {
-  background: hsl(var(--assignment-foreground)); color: hsl(var(--assignment-from));
+  background: hsl(0 0% 100%); color: hsl(var(--assignment-badge-text));
 }
 .assignment-status-card .assignment-card-action:hover { opacity: .9; }
 .assignment-status-card .assignment-card-outline {

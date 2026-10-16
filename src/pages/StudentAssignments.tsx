@@ -125,7 +125,7 @@ const StudentAssignments = () => {
                             {assignmentDescriptionToText(a.description)}
                           </p>
                         )}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <div className="assignment-card-meta flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                           {a.deadline && (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
