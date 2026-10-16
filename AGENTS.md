@@ -24,3 +24,5 @@
 - Store a student's own worksheet work outside assignments only in `student_worksheet_work` (one draft per student+worksheet+variant via partial unique index, submitted rows kept); assignment attempts never use it, so grading and assignment flows stay untouched.
 - Insert worksheets into notebooks only via `worksheet-notebook.ts` (`content.worksheet` ref; digital = link page, pen = locked background images) and attach pen pages to a submitted attempt as a snapshot in `assignment-uploads` under `answers._notebookSnapshot`, so answers are never copied and teachers read handwriting through existing storage policies.
 - Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
+
+- Use pure `_shared/lesson-text.ts` for nested content and HTML cleanup, so practice, study helpers and chat share context without changing access checks.

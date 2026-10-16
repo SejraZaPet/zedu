@@ -20,3 +20,8 @@
 ## Otevřené z minula
 - [ ] Sjednotit délku platnosti zaváděcí ceny na webu (čeká na potvrzení majitelky)
 - [ ] Ověřit připínání aktivit v plánu v browseru
+
+## Oprava textu lekce pro procvičování
+- [x] Sdílená extrakce vnořených bloků a čistý kontext chatu
+- [x] Odmítnutí krátkého textu a srozumitelná hláška v procvičování
+- [x] Testy, nasazení funkcí a ověření Poživatin (439 testů; 4 otázky v náhledu)

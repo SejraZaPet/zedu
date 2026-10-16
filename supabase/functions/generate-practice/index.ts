@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { blocksToText, cleanLessonText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
 
@@ -14,35 +15,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-
-// Extract plain text from a lesson's blocks JSON or content field.
-function blocksToText(blocks: unknown): string {
-  if (!Array.isArray(blocks)) return "";
-  const out: string[] = [];
-  const walk = (node: any) => {
-    if (!node) return;
-    if (typeof node === "string") {
-      out.push(node);
-      return;
-    }
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
-    }
-    if (typeof node === "object") {
-      if (typeof node.text === "string") out.push(node.text);
-      if (typeof node.content === "string") out.push(node.content);
-      if (typeof node.title === "string") out.push(node.title);
-      if (typeof node.heading === "string") out.push(node.heading);
-      if (Array.isArray(node.children)) walk(node.children);
-      if (Array.isArray(node.blocks)) walk(node.blocks);
-      if (Array.isArray(node.items)) walk(node.items);
-      if (node.data && typeof node.data === "object") walk(node.data);
-    }
-  };
-  walk(blocks);
-  return out.join("\n").trim();
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -103,11 +75,15 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (gLesson) {
           lessonTitle = gLesson.title ?? "";
-          lessonText = (gLesson.content ?? "").toString();
+          lessonText = cleanLessonText((gLesson.content ?? "").toString());
         } else {
           return json({ error: found.error }, found.status);
         }
       }
+    }
+
+    if (lesson_id && !hasEnoughLessonText(lessonText)) {
+      return json({ error: INSUFFICIENT_LESSON_TEXT }, 422);
     }
 
     if (lessonText.length > 8000) lessonText = lessonText.slice(0, 8000);
