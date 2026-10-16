@@ -213,7 +213,8 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
       (parsed as any).quiz = { questions: (parsed as any).questions };
     }
 
-    return json({ props: { ...parsed, activityType } });
+    const limited = itemCount && !questionCount && !cardCount ? limitActivityItems(parsed, itemCount) : parsed;
+    return json({ props: { ...limited, activityType } });
   } catch (e) {
     console.error("generate-activity-content error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
