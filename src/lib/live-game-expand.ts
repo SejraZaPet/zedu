@@ -72,14 +72,12 @@ export function expandSlide(s: any): any[] {
       const text = String(sp?.fillBlanks?.text || "");
       const sentences = text.split(/(?<=[.!?])\s+/);
       for (const sen of sentences) {
-        const re = /\{\{([^}]+)\}\}/g;
-        let m: RegExpExecArray | null;
-        while ((m = re.exec(sen))) {
-          const ans = clean(m[1].split("|")[0]);
+        const parts = [...sen.matchAll(/\{\{([^}]+)\}\}/g)].map((m) => clean(m[1].split("|")[0]));
+        parts.forEach((ans, j) => {
           let n = 0;
-          const shown = clean(sen.replace(/\{\{([^}]+)\}\}/g, (_x, g) => (n++ === blanks.filter((b) => b.sentence === sen).length ? "____" : clean(String(g).split("|")[0]))));
+          const shown = clean(sen.replace(/\{\{([^}]+)\}\}/g, (_x, g) => (n++ === j ? "____" : clean(String(g).split("|")[0]))));
           if (ans) blanks.push({ sentence: shown, answer: ans });
-        }
+        });
       }
     } else {
       const tokens: any[] = sp?.fillChoice?.tokens || [];
