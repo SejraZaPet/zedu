@@ -53,3 +53,13 @@ describe("živé MCQ se sdílenou obrazovkou", () => {
     expect(screen.getByText("fialová hvězda: 1 odpovědí")).toBeInTheDocument();
   });
 });
+describe("živé MCQ Pravda/Nepravda", () => {
+  it("ukáže žákovi dvě tlačítka s popisky Pravda a Nepravda", async () => {
+    const { render, screen } = await import("@testing-library/react");
+    const QuizActivity = (await import("@/components/activities/QuizActivity")).default;
+    render(<QuizActivity quiz={{ question: "Výrok", answers: [{ text: "Pravda", correct: true }, { text: "Nepravda", correct: false }] }} live={{ revealed: false, onSubmit: () => {} }} />);
+    expect(screen.getByRole("button", { name: /Pravda \(/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Nepravda/ })).toBeInTheDocument();
+    expect(screen.queryByText("Výrok")).not.toBeInTheDocument();
+  });
+});
