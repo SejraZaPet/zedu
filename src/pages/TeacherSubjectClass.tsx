@@ -1714,7 +1714,7 @@ export default function TeacherSubjectClass() {
                   const progress = assignmentClassProgress(rows, members.map((m) => m.user_id), assignmentGroupMembers);
                   return <AssignmentStatusCard status={status} title={a.title} actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}>Detail</Button>}>
                     {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
-                    <div className="flex flex-wrap gap-3 text-xs">
+                    <div className="assignment-card-meta flex flex-wrap gap-3 text-xs">
                       {a.deadline && <span>Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</span>}
                       <span>Odevzdáno {progress.submitted}/{progress.total}</span>
                       {progress.total > progress.submitted && <span>Chybí {progress.total - progress.submitted}</span>}
