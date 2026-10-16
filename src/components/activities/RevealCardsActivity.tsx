@@ -26,7 +26,10 @@ const RevealCardsActivity = ({ cards = [], onComplete }: Props) => {
 
   const reported = useRef(false);
   useEffect(() => {
-    if (allOpened && !reported.current) reported.current = true, onComplete?.(cards.length, cards.length);
+    if (allOpened && !reported.current) {
+      reported.current = true;
+      onComplete?.(cards.length, cards.length);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allOpened, cards.length]);
 
