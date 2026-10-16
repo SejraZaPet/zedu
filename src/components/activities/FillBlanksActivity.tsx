@@ -1,3 +1,4 @@
+import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,11 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
 
   const [answers, setAnswers] = useState<string[]>(() => blanks.map(() => ""));
   const [checked, setChecked] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
+  const complete: ActivityCompletion = (score, maxScore, items) => {
+    setReviewAnswers(items ?? []);
+    onComplete?.(score, maxScore, items);
+  };
   const [showSolution, setShowSolution] = useState(false);
 
   const results = useMemo(() => {
@@ -171,6 +177,8 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
         })}
       </div>
 
+      {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
+
       {/* Controls */}
       <div className="flex flex-wrap gap-2 pt-2">
         {!checked && (
@@ -182,7 +190,7 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
               const accepted = [blank.answer, ...blank.alternatives].map((a) => normalize(a, caseSensitive, diacriticSensitive));
               return accepted.includes(input);
             });
-            onComplete?.(blankResults.filter(Boolean).length, blanks.length, blanks.map((blank, i) => ({
+            complete(blankResults.filter(Boolean).length, blanks.length, blanks.map((blank, i) => ({
               index: i, text: segments.map((segment) => typeof segment === "string" ? segment : " […] ").join(""),
               studentAnswer: answers[i], correctAnswer: [blank.answer, ...blank.alternatives].join(" / "), correct: blankResults[i],
             })));

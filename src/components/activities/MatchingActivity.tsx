@@ -1,3 +1,4 @@
+import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { t } from "@/lib/t";
@@ -8,6 +9,11 @@ interface MatchingData { left: string[]; right: string[]; }
 const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: ActivityCompletion }) => {
   const [selections, setSelections] = useState<Record<number, number | null>>({});
   const [checked, setChecked] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
+  const complete: ActivityCompletion = (score, maxScore, items) => {
+    setReviewAnswers(items ?? []);
+    onComplete?.(score, maxScore, items);
+  };
 
   // Zamíchat pravou stranu při každém zobrazení aktivity (nikdy ne v pořadí zadání)
   const shuffledRight = useMemo(
@@ -29,7 +35,7 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
   const handleCheck = () => {
     setChecked(true);
     const correct = matching.left.filter((_, i) => selections[i] === i).length;
-    onComplete?.(correct, matching.left.length, matching.left.map((text, i) => ({ index: i, text, studentAnswer: matching.right[selections[i] ?? -1] ?? "", correctAnswer: matching.right[i] ?? "", correct: selections[i] === i })));
+    complete(correct, matching.left.length, matching.left.map((text, i) => ({ index: i, text, studentAnswer: matching.right[selections[i] ?? -1] ?? "", correctAnswer: matching.right[i] ?? "", correct: selections[i] === i })));
   };
 
   const handleReset = () => {
@@ -91,6 +97,8 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
           );
         })}
       </div>
+
+      {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
 
       {allPaired && !checked && (
         <button

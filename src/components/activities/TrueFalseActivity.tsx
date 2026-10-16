@@ -1,3 +1,4 @@
+import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,11 @@ const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
     statements.map(() => null)
   );
   const [checked, setChecked] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
+  const complete: ActivityCompletion = (score, maxScore, items) => {
+    setReviewAnswers(items ?? []);
+    onComplete?.(score, maxScore, items);
+  };
 
   const results = useMemo(() => {
     if (!checked) return null;
@@ -135,6 +141,8 @@ const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
         })}
       </div>
 
+      {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
+
       {/* Controls */}
       <div className="flex flex-wrap gap-2">
         {!checked && (
@@ -143,7 +151,7 @@ const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
             onClick={() => {
               setChecked(true);
               const correct = statements.filter((s, i) => answers[i] === s.isTrue).length;
-              onComplete?.(correct, statements.length, statements.map((s, i) => ({ index: i, text: s.text, studentAnswer: answers[i] ? "Pravda" : "Nepravda", correctAnswer: s.isTrue ? "Pravda" : "Nepravda", correct: answers[i] === s.isTrue, ...(s.explanation ? { explanation: s.explanation } : {}) })));
+              complete(correct, statements.length, statements.map((s, i) => ({ index: i, text: s.text, studentAnswer: answers[i] ? "Pravda" : "Nepravda", correctAnswer: s.isTrue ? "Pravda" : "Nepravda", correct: answers[i] === s.isTrue, ...(s.explanation ? { explanation: s.explanation } : {}) })));
             }}
             disabled={answers.some((a) => a === null)}
           >
