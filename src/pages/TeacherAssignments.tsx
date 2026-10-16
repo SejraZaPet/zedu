@@ -1773,6 +1773,7 @@ const TeacherAssignments = () => {
                               </div>
 
                               <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Button size="sm" variant="outline" className="assignment-card-action" onClick={() => setDetailAssignment(a)}>Detail</Button>
                                 {a.status === "published" && a.class_id && (
                                   <RemindButton
                                     mode="teacher"
