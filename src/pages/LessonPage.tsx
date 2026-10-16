@@ -13,7 +13,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
-import BezlaiTutorChat from "@/components/BezlaiTutorChat";
+import LessonStudyBar from "@/components/lesson/LessonStudyBar";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
 import { downloadLessonOfflineHtml } from "@/lib/lesson-offline-export";
