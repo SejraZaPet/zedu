@@ -1742,7 +1742,7 @@ const TeacherAssignments = () => {
 
                                   {a.status === "published" && (
                                     <div className="space-y-1 pt-1 max-w-xs">
-                                      <div className="flex justify-between text-xs text-muted-foreground">
+                                      <div className="assignment-card-meta flex justify-between text-xs text-muted-foreground">
                                         <span>{prog.submitted}/{prog.total} odevzdáno</span>
                                         <span>{pct}%</span>
                                       </div>
