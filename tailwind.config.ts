@@ -19,6 +19,7 @@ export default {
         body: ["Lato", "system-ui", "sans-serif"],
       },
       colors: {
+        "activity-correct": "hsl(var(--activity-correct))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

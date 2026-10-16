@@ -1,3 +1,4 @@
+import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ interface Props {
   tokens?: FillBlankToken[];
   caseSensitive?: boolean;
   diacriticSensitive?: boolean;
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: ActivityCompletion;
 }
 
 const normalize = (s: string, caseSensitive: boolean, diacriticSensitive: boolean) => {
@@ -181,7 +182,10 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
               const accepted = [blank.answer, ...blank.alternatives].map((a) => normalize(a, caseSensitive, diacriticSensitive));
               return accepted.includes(input);
             });
-            onComplete?.(blankResults.filter(Boolean).length, blanks.length);
+            onComplete?.(blankResults.filter(Boolean).length, blanks.length, blanks.map((blank, i) => ({
+              index: i, text: segments.map((segment) => typeof segment === "string" ? segment : " […] ").join(""),
+              studentAnswer: answers[i], correctAnswer: [blank.answer, ...blank.alternatives].join(" / "), correct: blankResults[i],
+            })));
           }} disabled={answers.some((a) => !a.trim())}>
             <CheckCircle2 className="w-4 h-4 mr-1" />
             Zkontrolovat

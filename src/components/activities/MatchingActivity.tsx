@@ -1,10 +1,11 @@
+import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { t } from "@/lib/t";
 import { shuffleNonIdentity } from "@/lib/shuffle";
 
 interface MatchingData { left: string[]; right: string[]; }
 
-const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: (score: number, maxScore: number) => void }) => {
+const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: ActivityCompletion }) => {
   const [selections, setSelections] = useState<Record<number, number | null>>({});
   const [checked, setChecked] = useState(false);
 
@@ -27,8 +28,8 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
 
   const handleCheck = () => {
     setChecked(true);
-    const correct = matching.left.filter((_, i) => selections[i] != null && isCorrectPair(i, selections[i]!)).length;
-    onComplete?.(correct, matching.left.length);
+    const correct = matching.left.filter((_, i) => selections[i] === i).length;
+    onComplete?.(correct, matching.left.length, matching.left.map((text, i) => ({ index: i, text, studentAnswer: matching.right[selections[i] ?? -1] ?? "", correctAnswer: matching.right[i] ?? "", correct: selections[i] === i })));
   };
 
   const handleReset = () => {
@@ -36,7 +37,7 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
     setSelections({});
   };
 
-  const allCorrect = checked && allPaired && matching.left.every((_, i) => isCorrectPair(i, selections[i]!));
+  const allCorrect = checked && allPaired && matching.left.every((_, i) => selections[i] === i);
 
   // Collect already-selected right indices so they can be shown as disabled
   const usedRight = new Set(Object.values(selections).filter((v): v is number => v != null));

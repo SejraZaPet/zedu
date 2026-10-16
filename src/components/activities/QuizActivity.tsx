@@ -1,4 +1,6 @@
+import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState } from "react";
+import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import { getQuizQuestions } from "@/lib/quiz-questions";
 import { Button } from "@/components/ui/button";
 import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
@@ -15,13 +17,14 @@ interface LiveMode {
   onSubmit: (isCorrect: boolean, selected: number[]) => void;
 }
 
-const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (score: number, maxScore: number) => void; live?: LiveMode }) => {
+const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: ActivityCompletion; live?: LiveMode }) => {
   const questions = getQuizQuestions(quiz);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<Set<number>>(() => new Set(live?.initialSelected ?? []));
   const [submitted, setSubmitted] = useState(!!live?.initialSelected);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [answerItems, setAnswerItems] = useState<ActivityAnswer[]>([]);
 
   if (questions.length === 0) return null;
 
@@ -56,6 +59,12 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
       return;
     }
     if (isCorrect) setScore((s) => s + 1);
+    setAnswerItems((previous) => [...previous.filter((answer) => answer.index !== index), {
+      index, text: current.question,
+      studentAnswer: current.answers.filter((_, i) => selected.has(i)).map((a) => a.text).join("; "),
+      correctAnswer: current.answers.filter((a) => a.correct).map((a) => a.text).join("; "),
+      correct: isCorrect, ...(current.explanation ? { explanation: current.explanation } : {}),
+    }].sort((a, b) => a.index - b.index));
   };
 
   if (live) {
@@ -119,7 +128,7 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
       setSubmitted(false);
     } else {
       setDone(true);
-      onComplete?.(score, questions.length);
+      onComplete?.(score, questions.length, answerItems);
     }
   };
 
@@ -129,6 +138,7 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
         <p className="text-foreground font-medium">
           Hotovo – {score} z {questions.length} správně.
         </p>
+        <ActivityAnswerReview answers={answerItems} />
         <button
           onClick={() => {
             setIndex(0);
@@ -136,6 +146,7 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: (sco
             setSubmitted(false);
             setScore(0);
             setDone(false);
+            setAnswerItems([]);
           }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >

@@ -1,3 +1,4 @@
+import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
@@ -5,11 +6,12 @@ import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 interface Statement {
   text: string;
   isTrue: boolean;
+  explanation?: string;
 }
 
 interface Props {
   statements: Statement[];
-  onComplete?: (score: number, maxScore: number) => void;
+  onComplete?: ActivityCompletion;
 }
 
 const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
@@ -141,7 +143,7 @@ const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
             onClick={() => {
               setChecked(true);
               const correct = statements.filter((s, i) => answers[i] === s.isTrue).length;
-              onComplete?.(correct, statements.length);
+              onComplete?.(correct, statements.length, statements.map((s, i) => ({ index: i, text: s.text, studentAnswer: answers[i] ? "Pravda" : "Nepravda", correctAnswer: s.isTrue ? "Pravda" : "Nepravda", correct: answers[i] === s.isTrue, ...(s.explanation ? { explanation: s.explanation } : {}) })));
             }}
             disabled={answers.some((a) => a === null)}
           >
