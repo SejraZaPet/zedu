@@ -7,6 +7,7 @@ import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
+import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 
 afterEach(cleanup);
@@ -47,6 +48,23 @@ describe("uložené odpovědi", () => {
 });
 
 describe("snapshot automaticky hodnocených aktivit", () => {
+  it("u neúplného starého zadání nevymyslí správnou odpověď ani nezmění skórování", () => {
+    const complete = vi.fn();
+    render(<TrueFalseActivity statements={[{ text: "Starý výrok", isFalse: false } as any]} onComplete={complete} />);
+    fireEvent.click(screen.getByRole("button", { name: "Nepravda" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zkontrolovat" }));
+    expect(complete.mock.calls[0]?.[0]).toBe(0);
+    expect(complete.mock.calls[0]?.[2][0].correctAnswer).toBe("V zadání není určena");
+  });
+  it("doplňování z nabídky uloží vybrané slovo a znění", () => {
+    const complete = vi.fn();
+    render(<FillChoiceActivity tokens={[{ type: "text", value: "Potravina: " }, { type: "blank", answer: "jablko" }]} options={["jablko"]} onComplete={complete} />);
+    fireEvent.click(screen.getByRole("button", { name: "jablko" }));
+    fireEvent.click(screen.getByRole("button", { name: "…" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zkontrolovat" }));
+    expect(complete.mock.calls[0]?.slice(0, 2)).toEqual([1, 1]);
+    expect(complete.mock.calls[0]?.[2][0]).toMatchObject({ text: "Potravina:  […] ", studentAnswer: "jablko", correctAnswer: "jablko", correct: true });
+  });
   it("pravda/nepravda zachová skóre a odpovědi včetně vysvětlení", () => {
     const complete = vi.fn();
     render(<TrueFalseActivity statements={[{ text: "Výrok", isTrue: true, explanation: "Proč" }]} onComplete={complete} />);

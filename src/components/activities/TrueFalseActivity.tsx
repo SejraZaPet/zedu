@@ -151,7 +151,7 @@ const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
             onClick={() => {
               setChecked(true);
               const correct = statements.filter((s, i) => answers[i] === s.isTrue).length;
-              complete(correct, statements.length, statements.map((s, i) => ({ index: i, text: s.text, studentAnswer: answers[i] ? "Pravda" : "Nepravda", correctAnswer: s.isTrue ? "Pravda" : "Nepravda", correct: answers[i] === s.isTrue, ...(s.explanation ? { explanation: s.explanation } : {}) })));
+              complete(correct, statements.length, statements.map((s, i) => ({ index: i, text: s.text, studentAnswer: answers[i] ? "Pravda" : "Nepravda", correctAnswer: typeof s.isTrue === "boolean" ? (s.isTrue ? "Pravda" : "Nepravda") : "V zadání není určena", correct: answers[i] === s.isTrue, ...(s.explanation ? { explanation: s.explanation } : {}) })));
             }}
             disabled={answers.some((a) => a === null)}
           >
