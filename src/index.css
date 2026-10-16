@@ -56,6 +56,15 @@
     --brand-blue: 199 52% 66%;
     --brand-turquoise: 184 52% 60%;
 
+    /* Live game podium blocks: dark brand shades, white text >= 5:1 in both themes. */
+    --podium-1-from: 273 51% 39%;
+    --podium-1-to: 270 49% 48%;
+    --podium-2-from: 186 59% 28%;
+    --podium-2-to: 186 56% 33%;
+    --podium-3-from: 266 48% 42%;
+    --podium-3-to: 270 48% 52%;
+    --podium-foreground: 0 0% 100%;
+
     /* Live MCQ answer colors; each is paired with a distinct shape. */
     --answer-red: 0 73% 52%;
     --answer-red-strong: 0 76% 38%;

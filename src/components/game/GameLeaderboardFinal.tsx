@@ -20,9 +20,9 @@ interface Props {
 
 // Podium slot styles keyed by rank (0 = 1st, 1 = 2nd, 2 = 3rd).
 const PODIUM_SLOTS = [
-  { label: "1", medal: "🥇", height: 160, blockColor: "hsl(var(--primary))", nameSize: "text-xl md:text-2xl" },
-  { label: "2", medal: "🥈", height: 120, blockColor: "hsl(var(--brand-turquoise))", nameSize: "text-lg md:text-xl" },
-  { label: "3", medal: "🥉", height: 90, blockColor: "hsl(var(--brand-purple))", nameSize: "text-base md:text-lg" },
+  { label: "1", medal: "🥇", height: 160, blockColor: "1", nameSize: "text-xl md:text-2xl" },
+  { label: "2", medal: "🥈", height: 120, blockColor: "2", nameSize: "text-lg md:text-xl" },
+  { label: "3", medal: "🥉", height: 90, blockColor: "3", nameSize: "text-base md:text-lg" },
 ];
 
 export const GameLeaderboardFinal = ({ session, players, responses, highlightPlayerId }: Props) => {
@@ -104,15 +104,15 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
               if (!player) return <div key={`empty-${rank}`} className={`flex-1 ${order}`} />;
               const isHighlighted = player.id === highlightPlayerId;
               return (
-                <div key={player.id} className={`flex-1 flex flex-col items-center animate-scale-in ${order}`} style={{ animationDelay: `${rank * 0.2}s` }}>
+                <div key={player.id} className={`flex-1 min-w-0 flex flex-col items-center animate-scale-in ${order}`} style={{ animationDelay: `${rank * 0.2}s` }}>
                   <div className={isHighlighted ? "drop-shadow-[0_0_16px_hsl(var(--primary)/0.6)]" : ""}>
                     <GameAvatarFigure userId={player.user_id} size={rank === 0 ? 140 : 108} crop="full" idleBounce idleDelaySec={rank * 0.4} />
                   </div>
-                  <div className="w-full rounded-t-xl border-2 border-b-0 border-primary-foreground/20 flex flex-col items-center justify-start pt-2 text-primary-foreground shadow-lg" style={{ height: slot.height, background: `linear-gradient(180deg, ${slot.blockColor}, ${slot.blockColor}CC)` }}>
+                  <div className="w-full rounded-t-xl border-2 border-b-0 border-podium-foreground/20 flex flex-col items-center justify-start pt-2 text-podium-foreground shadow-lg min-w-0" data-podium-rank={slot.label} style={{ height: slot.height, background: `linear-gradient(180deg, hsl(var(--podium-${slot.blockColor}-from)), hsl(var(--podium-${slot.blockColor}-to)))` }}>
                     <span className="text-2xl md:text-3xl" aria-hidden>{slot.medal}</span>
                     <span className="text-3xl md:text-4xl font-heading font-black leading-none">{slot.label}</span>
-                    <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`}>{player.nickname}</p>
-                    <p className="text-sm md:text-base font-mono font-bold opacity-90">{player.total_score} b.</p>
+                    <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`} title={player.nickname}>{player.nickname}</p>
+                    <p className="text-sm md:text-base font-mono font-bold">{player.total_score} b.</p>
                   </div>
                 </div>
               );
@@ -124,24 +124,24 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
           <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
             {rest.map((player, i) => (
               <div key={player.id} className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}>
-                <span className="text-sm font-bold text-muted-foreground w-6">{i + 4}.</span>
+                <span className="text-sm font-bold text-foreground w-6 shrink-0">{i + 4}.</span>
                 <GameAvatarFigure userId={player.user_id} size={32} crop="head" />
-                <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
-                <span className="font-mono font-bold text-primary text-sm">{player.total_score} b.</span>
+                <span className="flex-1 min-w-0 truncate font-medium text-foreground" title={player.nickname}>{player.nickname}</span>
+                <span className="shrink-0 font-mono font-bold text-foreground text-sm">{player.total_score} b.</span>
               </div>
             ))}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-primary">{totalQuestions}</p><p className="text-sm text-muted-foreground">otázek</p></div>
-          <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-primary">{classAccuracy}%</p><p className="text-sm text-muted-foreground">úspěšnost třídy</p></div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-foreground">{totalQuestions}</p><p className="text-sm text-muted-foreground">otázek</p></div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-foreground">{classAccuracy}%</p><p className="text-sm text-muted-foreground">úspěšnost třídy</p></div>
         </div>
     </>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4 pb-28 md:p-8 md:pb-28">
       <div className="w-full max-w-4xl space-y-8">
         {/* Title */}
         <div className="text-center space-y-2 animate-fade-in">
