@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { assignmentStatus } from "@/lib/assignment-status";
+import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { bestAttempt } from "@/lib/best-results";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,8 +106,7 @@ const StudentAssignments = () => {
             <p>Zatím nemáš žádné zadané úlohy.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {assignments.map((a) => {
+          <AssignmentStatusGroups items={assignments} storageKey="assignment-groups:student" statusOf={(a) => assignmentStatus(a, a.attempts)} renderItem={(a, visualStatus) => {
               const status = getAssignmentStatus(a);
               const deadlinePassed = isDeadlinePassed(a.deadline);
               const best = bestAttempt(a.attempts);
@@ -114,24 +115,13 @@ const StudentAssignments = () => {
               const inProgress = a.attempts.find((att) => att.status === "in_progress");
 
               return (
-                <Card key={a.id} className="hover:shadow-sm transition-shadow">
+                <AssignmentStatusCard status={visualStatus} title={a.title}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold">{a.title}</h3>
+                          
                           <ExamTypeBadge examType={a.exam_type} />
-                          {status === "completed" && (
-                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Hotovo
-                            </Badge>
-                          )}
-                          {status === "in_progress" && (
-                            <Badge variant="secondary" className="text-xs">Rozpracováno</Badge>
-                          )}
-                          {deadlinePassed && (
-                            <Badge variant="destructive" className="text-xs">Vypršelo</Badge>
-                          )}
                         </div>
                         {a.description && (
                           <p className="line-clamp-2 text-sm text-muted-foreground">
@@ -140,7 +130,7 @@ const StudentAssignments = () => {
                         )}
                         <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                           {a.deadline && (
-                            <span className={`flex items-center gap-1 ${deadlinePassed ? "text-destructive" : ""}`}>
+                            <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {new Date(a.deadline).toLocaleDateString("cs")}
                             </span>
@@ -165,29 +155,29 @@ const StudentAssignments = () => {
                         {a.exam_type === "ustni" ? (
                           <Badge variant="outline" className="text-xs">Pouze pokyny</Badge>
                         ) : a.exam_type === "digitalni" && status !== "completed" && !deadlinePassed ? (
-                          <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                          <Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
                             <Monitor className="w-3.5 h-3.5 mr-1" /> Spustit test
                             {a.lockdown_mode && <Lock className="w-3 h-3 ml-1" />}
                           </Button>
                         ) : (
                           <>
                             {status === "in_progress" && !deadlinePassed && (
-                              <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                              <Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
                                 <Play className="w-3.5 h-3.5 mr-1" /> Pokračovat
                               </Button>
                             )}
                             {status === "can_retry" && !deadlinePassed && (
-                              <Button size="sm" variant="outline" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                              <Button className="assignment-card-action" size="sm" variant="outline" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
                                 <RotateCcw className="w-3.5 h-3.5 mr-1" /> Nový pokus
                               </Button>
                             )}
                             {status === "not_started" && !deadlinePassed && (
-                              <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                              <Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
                                 <Play className="w-3.5 h-3.5 mr-1" /> Začít
                               </Button>
                             )}
                             {(status === "completed" || deadlinePassed) && (
-                              <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                              <Button className="assignment-card-action" size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
                                 Zobrazit
                               </Button>
                             )}
@@ -196,10 +186,9 @@ const StudentAssignments = () => {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </AssignmentStatusCard>
               );
-            })}
-          </div>
+            }} />
         )}
       </main>
       <SiteFooter />

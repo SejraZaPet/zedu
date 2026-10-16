@@ -1,3 +1,5 @@
+import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
+import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -177,11 +179,14 @@ interface AssignmentRow {
   created_at: string;
   lesson_id?: string | null;
   worksheet_id?: string | null;
+  exam_type?: string | null;
+  scheduled_publish_at?: string | null;
 }
 
 interface AttemptRow {
   assignment_id: string;
   student_id: string;
+  group_id?: string | null;
   status: string;
   score: number | null;
   max_score: number | null;
@@ -240,6 +245,7 @@ export default function TeacherSubjectClass() {
   const [plans, setPlans] = useState<LessonPlanRow[]>([]);
   const [planMethods, setPlanMethods] = useState<Record<string, { id: string; name: string }>>({});
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [assignmentGroupMembers, setAssignmentGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -283,7 +289,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id")
+        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at")
         .eq("teacher_id", user.id);
       if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
       else assignQuery = assignQuery.eq("class_id", classId);
@@ -451,11 +457,14 @@ export default function TeacherSubjectClass() {
       if (_assignments.length) {
         const { data: aData } = await supabase
           .from("assignment_attempts")
-          .select("assignment_id, student_id, status, score, max_score")
+          .select("assignment_id, student_id, group_id, status, score, max_score")
           .in(
             "assignment_id",
             _assignments.map((a) => a.id),
           );
+        const { data: groupRows } = await supabase.from("assignment_groups").select("id").in("assignment_id", _assignments.map((a) => a.id));
+        const { data: groupMembers } = groupRows?.length ? await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", groupRows.map((g) => g.id)) : { data: [] };
+        if (!cancelled) setAssignmentGroupMembers(groupMembers ?? []);
         if (!cancelled) setAttempts((aData as AttemptRow[]) ?? []);
       } else {
         setAttempts([]);
@@ -1698,50 +1707,20 @@ export default function TeacherSubjectClass() {
                 Zatím nejsou zadané žádné úkoly pro tuto třídu.
               </Card>
             ) : (
-              <div className="space-y-2">
-                {assignments.map((a) => {
-                  const subs = attempts.filter(
-                    (t) => t.assignment_id === a.id && t.status === "submitted",
-                  ).length;
-                  return (
-                    <Card key={a.id} className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium truncate">{a.title}</h3>
-                            <Badge variant={a.status === "published" ? "default" : "secondary"}>
-                              {a.status === "published" ? "Publikováno" : a.status}
-                            </Badge>
-                          </div>
-                          {a.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {assignmentDescriptionToText(a.description)}
-                            </p>
-                          )}
-                          <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-3">
-                            {a.deadline && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}
-                              </span>
-                            )}
-                            <span>
-                              Odevzdáno {subs}/{members.length}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}
-                        >
-                          Detail
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+              <AssignmentStatusGroups items={assignments} storageKey={`assignment-groups:teacher:${classId || groupId}`}
+                statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
+                renderItem={(a, status) => {
+                  const rows = attempts.filter((t) => t.assignment_id === a.id);
+                  const progress = assignmentClassProgress(rows, members.map((m) => m.user_id), assignmentGroupMembers);
+                  return <AssignmentStatusCard status={status} title={a.title} actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}>Detail</Button>}>
+                    {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      {a.deadline && <span>Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</span>}
+                      <span>Odevzdáno {progress.submitted}/{progress.total}</span>
+                      {progress.total > progress.submitted && <span>Chybí {progress.total - progress.submitted}</span>}
+                    </div>
+                  </AssignmentStatusCard>;
+                }} />
             )}
           </TabsContent>
 
