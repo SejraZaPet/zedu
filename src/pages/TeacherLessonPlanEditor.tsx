@@ -1322,6 +1322,37 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  /** Připne existující aktivity ke kroku (jen propojení, obsah se nemění). */
+  function handleAttachExisting(phaseKey: string, items: AttachedItem[]) {
+    if (!items.length) return;
+    setPhases((prev) => {
+      let phase = prev[phaseKey] ?? { timeMin: "", description: "" };
+      for (const item of items) phase = addAttached(phase, item);
+      return { ...prev, [phaseKey]: phase };
+    });
+    toast({ title: "Aktivita připnuta", description: "Uloží se s plánem." });
+  }
+
+  /** Přidá externí odkaz ke kroku. Povolené jsou jen http(s) adresy. */
+  function handleAddLink() {
+    if (!linkPhase) return;
+    const url = validateExternalUrl(linkUrl);
+    if (!url) {
+      toast({ title: "Neplatný odkaz", description: "Zadejte prosím adresu začínající http:// nebo https://.", variant: "destructive" });
+      return;
+    }
+    const title = linkTitle.trim() || url.replace(/^https?:\/\//, "").split("/")[0];
+    handleAttachExisting(linkPhase, [{ type: "link", url, title }]);
+    setLinkPhase(null);
+    setLinkUrl("");
+    setLinkTitle("");
+  }
+
+  /** Odebere jen propojení s krokem – samotná aktivita zůstává učiteli. */
+  function handleRemoveAttached(phaseKey: string, index: number) {
+    setPhases((prev) => ({ ...prev, [phaseKey]: removeAttached(prev[phaseKey] ?? { timeMin: "", description: "" }, index) }));
+  }
+
   /** „Spustit živou hru“ u již vytvořené šablony. */
   async function handleLaunchCreatedGame(templateId: string) {
     setCreatingKey(`launch:${templateId}`);
