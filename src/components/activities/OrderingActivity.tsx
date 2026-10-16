@@ -76,7 +76,7 @@ const SortableItem = ({
 };
 
 const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: (score: number, maxScore: number) => void }) => {
-  const correctOrder = ordering.items;
+  const correctOrder: string[] = ordering?.items ?? [];
 
   // Create shuffled order once
   const initialOrder = useMemo(() => {

@@ -577,10 +577,10 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
           }));
         } else if (at === "true_false" && p.trueFalse?.statements) {
           gameQuestions = p.trueFalse.statements.map((s: any) => ({
-            question: s.statement,
+            question: s.text ?? s.statement ?? "",
             answers: [
-              { text: "Pravda", correct: s.correct === true },
-              { text: "Nepravda", correct: s.correct === false },
+              { text: "Pravda", correct: (s.isTrue ?? s.correct) === true },
+              { text: "Nepravda", correct: (s.isTrue ?? s.correct) === false },
             ],
             type: "true_false" as const,
           }));

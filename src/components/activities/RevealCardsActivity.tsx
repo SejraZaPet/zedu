@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface RevealCard {
   title: string;
@@ -24,8 +24,12 @@ const RevealCardsActivity = ({ cards = [], onComplete }: Props) => {
 
   const allOpened = cards.length > 0 && opened.size === cards.length;
 
+  const reported = useRef(false);
   useEffect(() => {
-    if (allOpened) onComplete?.(cards.length, cards.length);
+    if (allOpened && !reported.current) {
+      reported.current = true;
+      onComplete?.(cards.length, cards.length);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allOpened, cards.length]);
 
