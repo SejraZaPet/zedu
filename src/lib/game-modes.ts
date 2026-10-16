@@ -22,8 +22,8 @@ export const GAME_MODES: GameModeDef[] = [
     id: "race",
     name: "Závod",
     emoji: "🏁",
-    description: "Kdo první správně odpoví, získává body. Avataři běží po trati.",
-    scoringHint: "+10 bodů pro prvního správného",
+    description: "Každý odpovídá svým tempem, za správnou odpověď postoupí. Avataři běží po trati.",
+    scoringHint: "+10 bodů za správnou odpověď",
     themes: [
       { id: "f1", name: "Formule", emoji: "🏎️" },
       { id: "forest", name: "Lesní stezka", emoji: "🌲" },
@@ -46,8 +46,8 @@ export const GAME_MODES: GameModeDef[] = [
     id: "steal",
     name: "Krádež bodů",
     emoji: "🏴‍☠️",
-    description: "Správně = ukradni 5 bodů soupeři. Špatně = ztratíš 3 vlastní.",
-    scoringHint: "+5 / −3, krádež soupeři",
+    description: "Správně = 100 bodů a krádež 10 % bodů vedoucímu soupeři (50–300). Špatně = −100. Tři správně v řadě = lupič, krade dvojnásobek. Spoluhráčům se nekrade.",
+    scoringHint: "+100 a krádež, chyba −100",
     themes: [
       { id: "pirate", name: "Piráti", emoji: "🏴‍☠️" },
       { id: "thief", name: "Lupiči", emoji: "🦝" },

@@ -17,6 +17,7 @@ import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
 import CrosswordActivity from "@/components/activities/CrosswordActivity";
 import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
+import { activityToCoreQuestions, coreToGameQuestions, isLiveGameActivity } from "@/lib/live-game-core";
 import type { GameQuestion } from "@/lib/game-types";
 import { getSlideIcon } from "@/lib/slide-icons";
 import { imageAlignClass, imageIconSize, imageWidthClass } from "@/lib/image-block-layout";
@@ -565,7 +566,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
       };
 
       // Build game questions for live game support
-      const supportsLiveGame = ["quiz", "true_false", "fill_choice", "matching"].includes(at);
+      // Jedno jádro her: stejný převod jako /live (každá položka = otázka).
+      const supportsLiveGame = isLiveGameActivity(at);
       let gameQuestions: GameQuestion[] = [];
       if (supportsLiveGame) {
         if (at === "quiz" && p.quiz) {
@@ -575,23 +577,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
             type: "quiz" as const,
             explanation: q.explanation,
           }));
-        } else if (at === "true_false" && p.trueFalse?.statements) {
-          gameQuestions = p.trueFalse.statements.map((s: any) => ({
-            question: s.text ?? s.statement ?? "",
-            answers: [
-              { text: "Pravda", correct: (s.isTrue ?? s.correct) === true },
-              { text: "Nepravda", correct: (s.isTrue ?? s.correct) === false },
-            ],
-            type: "true_false" as const,
-          }));
-        } else if (at === "fill_choice" && p.fillChoice) {
-          gameQuestions = [{
-            question: "Doplňte správné odpovědi",
-            answers: (p.fillChoice.options || []).map((o: any, i: number) => ({
-              text: o, correct: i === 0,
-            })),
-            type: "fill_choice" as const,
-          }];
+        } else {
+          gameQuestions = coreToGameQuestions(activityToCoreQuestions(p));
         }
       }
 
