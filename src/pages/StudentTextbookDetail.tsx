@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
 import TextbookSearch from "@/components/textbook/TextbookSearch";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
+import LessonStudyBar from "@/components/lesson/LessonStudyBar";
 import { filterReadingBlocks } from "@/lib/reading-blocks";
 
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
