@@ -127,6 +127,19 @@ než ${cardCount}, vytvoř méně kartiček – ale nikdy nezůstávej u zlomku 
         }`
       : "";
 
+    // Nepovinná nastavení z průvodce /aktivity (bez nich se chování nemění).
+    const rawItems = Number(body?.itemCount);
+    const itemCount = Number.isFinite(rawItems) && rawItems > 0 ? Math.min(12, Math.max(4, Math.round(rawItems))) : null;
+    const difficulty = ["easy", "medium", "hard"].includes(body?.difficulty) ? body.difficulty : null;
+    const rawOpts = Number(body?.optionCount);
+    const optionCount = activityType === "quiz" && Number.isFinite(rawOpts) ? Math.min(5, Math.max(2, Math.round(rawOpts))) : null;
+    const diffLabel: Record<string, string> = { easy: "snadná (základní fakta)", medium: "střední", hard: "náročná (souvislosti, aplikace)" };
+    const wizardPart = [
+      itemCount && !questionCount && !cardCount ? `\n\nPOČET POLOŽEK: vytvoř ${itemCount} položek (otázek/tvrzení/párů/kroků/vět), pokud na to podklad stačí.` : "",
+      difficulty ? `\n\nOBTÍŽNOST: ${diffLabel[difficulty]}.` : "",
+      optionCount ? `\n\nPOČET MOŽNOSTÍ: každá otázka má přesně ${optionCount} možností, z toho přesně 1 správnou (přepiš pravidlo o 4 možnostech).` : "",
+    ].join("");
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
