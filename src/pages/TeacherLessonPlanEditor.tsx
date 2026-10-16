@@ -39,6 +39,9 @@ import {
   Wand2,
   Pencil,
   Printer,
+  Paperclip,
+  Link2,
+  ExternalLink,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -93,6 +96,15 @@ import {
   type CreatedRef,
 } from "@/lib/plan-suggested-activities";
 import { launchTemplateSession } from "@/lib/game-templates";
+import AttachExistingDialog from "@/components/lesson-plan/AttachExistingDialog";
+import {
+  addAttached,
+  attachedHref,
+  ATTACHED_TYPE_LABEL,
+  removeAttached,
+  validateExternalUrl,
+  type AttachedItem,
+} from "@/lib/plan-attachments";
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 import {
   buildLessonUnits,
@@ -137,6 +149,8 @@ interface PhaseValue {
   timeMin: string;
   description: string;
   activities?: SuggestedActivity[];
+  /** Aktivity připnuté učitelem ke kroku (existující obsah nebo externí odkaz). */
+  attached?: AttachedItem[];
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
