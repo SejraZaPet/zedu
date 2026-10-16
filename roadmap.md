@@ -39,9 +39,11 @@
 
 ## Živé hry – sjednocení
 - [x] Etapa 1a: převod Pravda/Nepravda, spojování, doplňovačka, seřazení na otázky při spuštění (šablony, knihovna, Rychlá hra, prezentace)
-- [ ] Etapa 1b: prázdný projektor u starých jednosnímkových her, ověření v náhledu
-- [ ] Etapa 2: bodování podle režimu na serveru (submit-activity-response)
+- [x] Etapa 1b: převod i z plánu lekce; staré jednosnímkové hry se rozloží při spuštění
+- [ ] Etapa 1c: ověřit projektor v náhledu
+- [x] Etapa 2: bodování podle režimu na serveru, obě cesty, krádež + lupič + týmy (nasazeno)
+- [ ] Klíč aktivity do add_xp (spolu s migrací ligy)
 - [ ] Etapa 3: jedno jádro pro obě cesty
 - [ ] Ostrá zkouška [TEST] her se 3 hráči, pak úklid
 ## Bezli liga v1
-- [ ] Čeká na schválení plánu (migrace xp_events, add_xp, school_league_week, cron)
+- [ ] Schváleno – po etapě 2: migrace xp_events, add_xp, school_league_week, cron, záložka Liga
