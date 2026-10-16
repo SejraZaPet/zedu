@@ -37,6 +37,8 @@ export function useGameSession(
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lightPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionRef = useRef<GameSession | null>(null);
   const mountedRef = useRef(true);
 
   // Brání souběžným stahováním: pomalá síť jinak hromadila dotazy každé 2 s
