@@ -20,7 +20,6 @@ describe("Bezli liga – pravidla", () => {
   it("postup top 5, sestup posledních 5 ve skupině od 10", () => {
     expect(weekResult(5, 30, 40, 0)).toBe("promoted");
     expect(weekResult(1, 30, 0, 0)).toBe("stay");
-    expect(weekResult(1, 30, 99, 3)).toBe("promoted" === weekResult(1, 30, 99, 3) ? "promoted" : "stay");
     expect(weekResult(26, 30, 5, 1)).toBe("demoted");
     expect(weekResult(26, 30, 5, 0)).toBe("stay");
     expect(weekResult(9, 9, 0, 2)).toBe("stay");
