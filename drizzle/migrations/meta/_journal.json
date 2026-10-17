@@ -428,6 +428,13 @@
       "when": 1792232991002,
       "tag": "0060_league_week_no_temp",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792239549851,
+      "tag": "0061_class_leaderboard_privacy",
+      "breakpoints": true
     }
   ]
 }

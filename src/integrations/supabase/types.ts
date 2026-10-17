@@ -8543,6 +8543,19 @@ export type Database = {
           total_xp: number
         }[]
       }
+      class_leaderboard_student: {
+        Args: { _class_id: string }
+        Returns: {
+          avatar_user_id: string
+          badge_count: number
+          display_name: string
+          is_me: boolean
+          level: number
+          rank: number
+          student_id: string
+          xp: number
+        }[]
+      }
       class_league_week: {
         Args: never
         Returns: {
