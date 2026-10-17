@@ -3,8 +3,8 @@
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.
 - Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
 
-- Derive assignment display states and roster-level completion only through assignment-status.ts; keep grouping/disclosure presentational and session-scoped so grading, deadlines and permissions remain authoritative.
-- Read student assignment attempts through student-assignment-attempts.ts with existing RLS, including their assignment-group memberships, so teammate submissions are reflected consistently without new access rights.
+- Assignment states/completion use assignment-status.ts; grouping is session-scoped and presentational so grading/deadlines/permissions stay authoritative.
+- Read attempts via student-assignment-attempts.ts with existing RLS and group memberships so teammate submissions need no new access rights.
 
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
@@ -30,4 +30,5 @@
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
+- Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.

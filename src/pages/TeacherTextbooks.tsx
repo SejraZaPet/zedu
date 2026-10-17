@@ -44,6 +44,8 @@ import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 import { useAuth } from "@/contexts/AuthContext";
 import { softDeleteTextbook } from "@/lib/textbook-trash";
+import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
+import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 
 
 interface Textbook {
@@ -60,6 +62,7 @@ interface Textbook {
   copied_from_textbook_id?: string | null;
   language?: string | null;
   difficulty_level?: string | null;
+  is_demo_seed?: boolean;
 }
 
 
@@ -187,14 +190,14 @@ const TeacherTextbooks = () => {
       setLoading(false);
       return;
     }
-    // „Moje učebnice“ = výhradně vlastní obsah. Filtr na vlastníka je zde nutný,
-    // protože RLS pouští adminům čtení všech učitelských učebnic.
+    // Demo adds shared read-only seed books; regular accounts remain owner-scoped.
+    const ownerFilter = await ownTextbooksOr(user.id);
     // Smazané učebnice (deleted_at) se zobrazují jen v Koši.
     const [{ data }, { data: trashed }] = await Promise.all([
       supabase
         .from("teacher_textbooks")
         .select("*")
-        .eq("teacher_id", user.id)
+        .or(ownerFilter)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
@@ -216,6 +219,20 @@ const TeacherTextbooks = () => {
 
   const fetchDetail = useCallback(async (tb: Textbook) => {
     setDetailLoading(true);
+
+    if (tb.is_demo_seed) {
+      const { data, error } = await supabase.from("teacher_textbook_lessons")
+        .select("id, title, blocks, sort_order, status, hero_image_url")
+        .eq("textbook_id", tb.id).order("sort_order");
+      setEnrollments([]);
+      setGradeGroups([{ grade: 0, label: "Lekce", topics: [{
+        id: tb.id, title: "Lekce", sort_order: 0,
+        lessons: (data ?? []).map((lesson) => ({ ...lesson, blocks: (lesson.blocks ?? []) as unknown as Block[], source: "teacher_textbook_lessons" as const })),
+      }] }]);
+      if (error) toast({ title: "Lekce se nepodařilo načíst", description: "Zkuste učebnici otevřít znovu.", variant: "destructive" });
+      setDetailLoading(false);
+      return;
+    }
 
     // Load enrollments
     const { data: enrollData } = await supabase
@@ -328,7 +345,7 @@ const TeacherTextbooks = () => {
 
     setGradeGroups(groups);
     setDetailLoading(false);
-  }, [subjects]);
+  }, [subjects, toast]);
 
   // Výchozí ročník mapy: z URL (?rocnik=, předává stránka Předmět/Třída),
   // jinak první ročník, který v učebnici reálně obsahuje lekce.
@@ -674,6 +691,33 @@ const TeacherTextbooks = () => {
   };
 
   // === DETAIL VIEW ===
+  if (selectedTextbook?.is_demo_seed) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 container mx-auto px-4 pt-28 pb-12 max-w-4xl">
+          <Button variant="ghost" size="sm" className="mb-4 gap-2" onClick={() => { setSelectedTextbook(null); navigate("/ucitel/ucebnice"); }}>
+            <ArrowLeft className="w-4 h-4" /> Zpět na učebnice
+          </Button>
+          <div><Badge variant="secondary">Ukázková učebnice</Badge></div>
+          <h1 className="mt-3 font-heading text-2xl font-bold break-words">{selectedTextbook.title}</h1>
+          {selectedTextbook.description && <p className="mt-2 text-muted-foreground">{selectedTextbook.description}</p>}
+          <h2 className="mt-8 mb-3 font-heading text-lg font-semibold">Lekce</h2>
+          {detailLoading ? <p className="text-muted-foreground">Načítání obsahu…</p> : (
+            <ul className="divide-y divide-border">
+              {gradeGroups.flatMap((g) => g.topics.flatMap((t) => t.lessons)).map((lesson) => (
+                <li key={lesson.id} className="py-4 flex items-center justify-between gap-3">
+                  <span className="min-w-0 break-words font-medium">{lesson.title}</span>
+                  <LessonPreviewDialog title={lesson.title} heroImageUrl={lesson.hero_image_url ?? null} blocks={lesson.blocks} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
   if (selectedTextbook) {
     const matchedSubject = subjects?.find(s => s.slug === selectedTextbook.subject);
     const totalLessons = gradeGroups.reduce((sum, g) =>

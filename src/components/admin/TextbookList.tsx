@@ -43,6 +43,7 @@ export interface Textbook {
   archived?: boolean;
   order_index?: number;
   deleted_at?: string | null;
+  is_demo_seed?: boolean;
 }
 
 /** Viditelný stav sdílení učebnice — vždy je jasné, kdo ji vidí. */
@@ -193,7 +194,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
     );
   }
 
-  const isManual = sortBy === "manual" && !isTrash;
+  const isManual = sortBy === "manual" && !isTrash && !textbooks.some((tb) => tb.is_demo_seed);
 
   const Toolbar = (
     <div className="flex flex-wrap items-center gap-2 mb-4 bg-card border border-border rounded-lg p-3">
@@ -243,7 +244,11 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
     </div>
   );
 
-  const renderActions = (tb: Textbook) => (
+  const renderActions = (tb: Textbook) => tb.is_demo_seed ? (
+    <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpen(tb); }} title="Otevřít ukázkovou učebnici">
+      <Eye className="w-4 h-4" />
+    </Button>
+  ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
         <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
@@ -293,7 +298,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
               )}
               <h3 className="font-heading font-semibold text-lg truncate">{tb.title}</h3>
               {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
-              <VisibilityBadge visibility={tb.visibility} />
+              {tb.is_demo_seed ? <Badge variant="secondary">Ukázková učebnice</Badge> : <VisibilityBadge visibility={tb.visibility} />}
             </div>
             {matchedSubject && (
               <div className="flex gap-1 mt-1 flex-wrap">
@@ -340,7 +345,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
         <div className="text-sm text-muted-foreground hidden sm:block">{matchedSubject?.label ?? tb.subject}</div>
         <div className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded">{tb.access_code}</div>
         {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
-        <VisibilityBadge visibility={tb.visibility} />
+        {tb.is_demo_seed ? <Badge variant="secondary">Ukázková učebnice</Badge> : <VisibilityBadge visibility={tb.visibility} />}
         {renderActions(tb)}
       </div>
     );
