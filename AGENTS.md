@@ -20,7 +20,7 @@
 - Issue demo sessions only server-side (create-demo-session, demo-switch, demo-restore via generateLink + verifyOtp); demo_pairs is service-role only and clients read just their own code via `get_my_demo_pair()`, so no password or pair data ever leaves the server.
 - Isolate demo visitors only via RESTRICTIVE `demo_iso` policies backed by SECURITY DEFINER `demo_can_see_*` helpers over `demo_pairs` + `demo_shared_users`, so non-demo users' access never changes.
 - Gate every AI edge function for demo users only via `_shared/demo-ai-guard.ts` (atomic `demo_ai_reserve` with limits in `demo_config`), so regular users are never metered and limits change in one place.
-- Store new assignment attachments in private bucket `assignment-uploads` (type allowlist via RESTRICTIVE storage policy) and read via `getStudentAttachmentSignedUrl` with fallback to legacy `student-attachments`, because the legacy bucket MIME list cannot be changed on this platform.
+- New assignment attachments go to private `assignment-uploads` (read via `getStudentAttachmentSignedUrl`, fallback legacy `student-attachments`), because legacy MIME list is fixed.
 - Store worksheet item images as permanent public URLs in `lesson-images` via `WorksheetImageField`/`worksheet-images.ts` (same path as presentations), never 1-hour signed `teacher-media` URLs, so students, print and PDF always see them.
 - Create student course notebooks only via `ensure_my_course_notebooks()` / membership triggers (one per owner+group or owner+class+subject_id, enforced by partial unique indexes), so automatic creation stays idempotent and never touches teachers or shared demo profiles.
 - Store a student's own worksheet work outside assignments only in `student_worksheet_work` (one draft per student+worksheet+variant via partial unique index, submitted rows kept); assignment attempts never use it, so grading and assignment flows stay untouched.
@@ -30,4 +30,4 @@
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
-- Award XP only via `add_xp(student, amount, source, source_key)` (not client-callable); league reads only via SECURITY DEFINER RPCs (`school_league_week`, `class_league_week`), rules mirrored in `league-rules.ts`, so caps and privacy live server-side.
+- XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
