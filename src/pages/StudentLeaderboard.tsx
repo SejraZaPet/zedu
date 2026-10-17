@@ -24,6 +24,8 @@ interface ClassRow {
 }
 
 interface Row {
+  rank: number;
+  avatar_user_id: string | null;
   user_id: string;
   display: string;
   isMe: boolean;
@@ -67,54 +69,17 @@ const StudentLeaderboard = () => {
     }
     setLoading(true);
     (async () => {
-      const { data: members } = await supabase
-        .from("class_members")
-        .select("user_id")
-        .eq("class_id", classId);
-      const ids = (members ?? []).map((m: any) => m.user_id);
-      if (ids.length === 0) { setRows([]); setLoading(false); return; }
-
-      const [{ data: profiles }, { data: board }, { data: baselines }] = await Promise.all([
-        supabase.from("profiles").select("id, first_name, last_name").in("id", ids),
-        supabase.rpc("class_leaderboard", { _class_id: classId }),
-        supabase.from("class_leaderboard_baselines").select("student_id, baseline_xp").eq("class_id", classId),
-      ]);
-
-      const baseMap = new Map<string, number>();
-      (baselines ?? []).forEach((b: any) => baseMap.set(b.student_id, b.baseline_xp ?? 0));
-      const xpMap = new Map<string, { total: number; level: number }>();
-      const badgeCount = new Map<string, number>();
-      (board ?? []).forEach((r: any) => {
-        xpMap.set(r.student_id, { total: r.total_xp ?? 0, level: r.level ?? 1 });
-        badgeCount.set(r.student_id, Number(r.badge_count ?? 0));
-      });
-
-
-      const anon = !!currentClass?.leaderboard_anonymous;
-
-      const built: Row[] = ids.map((id) => {
-        const prof = (profiles ?? []).find((p: any) => p.id === id);
-        const xp = xpMap.get(id);
-        const total = (xp?.total ?? 0) - (baseMap.get(id) ?? 0);
-        const isMe = id === user.id;
-        const name = prof ? `${prof.first_name ?? ""} ${prof.last_name ?? ""}`.trim() : "—";
-        return {
-          user_id: id,
-          display: anon && !isMe ? "Anonymní žák" : (name || "—"),
-          isMe,
-          level: xp?.level ?? 1,
-          xp: Math.max(0, total),
-          badges: badgeCount.get(id) ?? 0,
-        };
-
-      }).sort((a, b) => b.xp - a.xp);
-
-      setRows(built);
+      const { data: board } = await supabase.rpc("class_leaderboard_student", { _class_id: classId });
+      setRows((board ?? []).map((r) => ({
+        rank: r.rank, user_id: r.student_id, avatar_user_id: r.avatar_user_id,
+        display: r.display_name || "Žák", isMe: r.is_me,
+        level: r.level, xp: r.xp, badges: Number(r.badge_count),
+      })));
       setLoading(false);
     })();
   }, [classId, user, currentClass]);
 
-  const myRank = rows.findIndex((r) => r.isMe);
+  const myRank = rows.find((r) => r.isMe)?.rank;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -166,8 +131,8 @@ const StudentLeaderboard = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center justify-between">
                     <span>{currentClass?.name}</span>
-                    {myRank >= 0 && (
-                      <Badge variant="secondary">Tvé pořadí: {myRank + 1}.</Badge>
+                    {myRank !== undefined && (
+                      <Badge variant="secondary">Tvé pořadí: {myRank}.</Badge>
                     )}
                   </CardTitle>
                 </CardHeader>
@@ -178,15 +143,16 @@ const StudentLeaderboard = () => {
                     <p className="text-sm text-muted-foreground py-6 text-center">Zatím žádná data.</p>
                   ) : (
                     <ol className="space-y-1.5">
-                      {rows.map((r, i) => {
+                      {rows.map((r) => {
+                        const i = r.rank - 1;
                         const medal = i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground";
                         return (
                           <li
                             key={r.user_id}
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${r.isMe ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
                           >
-                            <span className={`w-7 text-right font-bold ${medal}`}>{i + 1}.</span>
-                            <ProfileAvatarBubble userId={r.isMe || r.display !== "Anonymní žák" ? r.user_id : null} size={36} editable={false} crop="head" />
+                            <span className={`w-7 text-right font-bold ${medal}`}>{r.rank}.</span>
+                            <ProfileAvatarBubble userId={r.avatar_user_id} size={36} editable={false} crop="head" />
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">
                                 {r.display}{r.isMe && <span className="ml-1 text-xs text-primary">(ty)</span>}
