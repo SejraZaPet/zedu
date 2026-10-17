@@ -11,12 +11,13 @@ import { Gamepad2, Trash2, Plus, Play, Pencil, Library, Copy, Zap } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { getModeDef, getThemeDef } from "@/lib/game-modes";
 import {
-  fetchGameTemplates, launchTemplateSession, purposeLabel,
+  fetchGameTemplates, launchTemplateSession, purposeLabel, gameTemplateCopy,
   GAME_PURPOSES, type GameTemplate,
 } from "@/lib/game-templates";
 import { GameTemplateEditorDialog } from "@/components/game/GameTemplateEditorDialog";
 import { QuickGameDialog } from "@/components/game/QuickGameDialog";
 import { gameLibraryType, countQuestions, LIBRARY_TYPE_LABEL, type LibraryType } from "@/lib/quick-game";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 const TYPE_EMOJI: Record<LibraryType, string> = { mcq: "❓", true_false: "✅", matching: "🔗", mixed: "🧩", presentation: "🖼️" };
 
@@ -93,15 +94,15 @@ const TeacherGames = () => {
   };
 
   const deleteTemplate = async (id: string) => {
-    await supabase.from("teacher_game_templates" as any).delete().eq("id", id);
+    const { error } = await supabase.from("teacher_game_templates" as any).delete().eq("id", id);
+    if (error) { toast({ title: "Hru se nepodařilo smazat", description: error.message, variant: "destructive" }); return; }
     setTemplates((prev) => prev.filter((t) => t.id !== id));
     toast({ title: "Hra odstraněna z knihovny" });
   };
 
   const duplicateTemplate = async (t: GameTemplate) => {
-    const { id, created_at, updated_at, ...rest } = t as any;
     const { error } = await supabase.from("teacher_game_templates" as any)
-      .insert({ ...rest, title: `${t.title} (kopie)` });
+      .insert(gameTemplateCopy(t));
     if (error) { toast({ title: "Nepodařilo se duplikovat", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Kopie vytvořena", description: "Upravte ji pro jinou třídu nebo skupinu." });
     loadTemplates();
@@ -239,6 +240,7 @@ const TeacherGames = () => {
                         </div>
                         <CardContent className="flex-1 flex flex-col gap-2 pt-4">
                           <h3 className="font-semibold text-foreground line-clamp-2">{t.title}</h3>
+                          <AiContentBadge aiGenerated={slides.some((slide) => slide.ai_generated)} />
                           <div className="flex flex-wrap gap-1.5 text-xs">
                             <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                               {TYPE_EMOJI[lt]} {LIBRARY_TYPE_LABEL[lt]}
@@ -253,15 +255,15 @@ const TeacherGames = () => {
                             <Button size="sm" className="gap-1.5 flex-1" onClick={() => launch(t)}>
                               <Play className="w-3.5 h-3.5" /> Spustit
                             </Button>
-                            <Button size="icon" variant="ghost" onClick={() => { setEditing(t); setEditorOpen(true); }} aria-label="Upravit" title="Upravit">
+                            {!t.demo_seed_key && <Button size="icon" variant="ghost" onClick={() => { setEditing(t); setEditorOpen(true); }} aria-label="Upravit" title="Upravit">
                               <Pencil className="w-4 h-4" />
-                            </Button>
+                            </Button>}
                             <Button size="icon" variant="ghost" onClick={() => duplicateTemplate(t)} aria-label="Duplikovat" title="Duplikovat">
                               <Copy className="w-4 h-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTemplate(t.id)} aria-label="Smazat" title="Smazat">
+                            {!t.demo_seed_key && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTemplate(t.id)} aria-label="Smazat" title="Smazat">
                               <Trash2 className="w-4 h-4" />
-                            </Button>
+                            </Button>}
                           </div>
                         </CardContent>
                       </Card>

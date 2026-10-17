@@ -442,6 +442,13 @@
       "when": 1792239693264,
       "tag": "0062_demo_showcase_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792240197278,
+      "tag": "0063_demo_reset_snapshot_columns",
+      "breakpoints": true
     }
   ]
 }

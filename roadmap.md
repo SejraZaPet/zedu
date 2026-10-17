@@ -40,22 +40,22 @@
 ## Živé hry – sjednocení
 - [x] Etapa 1a: převod Pravda/Nepravda, spojování, doplňovačka, seřazení na otázky při spuštění (šablony, knihovna, Rychlá hra, prezentace)
 - [x] Etapa 1b: převod i z plánu lekce; staré jednosnímkové hry se rozloží při spuštění
-- [ ] Etapa 1c: ruční vizuální kontrola projektoru
+- [x] Etapa 1c: ruční vizuální kontrola projektoru (ukázkový kvíz: jedna otázka, výsledky v %)
 - [x] Etapa 2: bodování podle režimu na serveru, obě cesty, krádež + lupič + týmy (nasazeno)
 - [x] Klíč aktivity do add_xp (spolu s migrací ligy)
 - [x] Etapa 3: jedno jádro pro obě cesty (live-game-core.ts)
 - [x] Ostrá zkouška [TEST] her se 3 hráči (40 her, 0 chyb), úklid hotový
 ## Bezli liga v1
 - [x] xp_events, add_xp (strop, opakování, série), skupiny 30, Bronz–Diamant, cron, soutěž tříd, záložka Liga, odznaky
-- [ ] Ruční kontrola záložky Liga v prohlížeči (po zapnutí ligy ve škole)
-- [ ] Dokončit kontrolu původního class_leaderboard: celé pořadí a anonymizace pouze v aplikaci; nápravu RPC předložit ke schválení.
+- [x] Ruční kontrola záložky Liga v prohlížeči (vlastní [TEST] škola, opt-out a soukromí)
+- [x] Dokončit kontrolu původního class_leaderboard: bezpečný žákovský RPC, top 10 + vlastní pozice, skryté cizí identifikátory; schválená migrace 0061.
 
 ## Naplnění dema ukázkami
 - [x] Diagnostika učebnic, knihovny her, seed/reset a úklidu
 - [x] Aplikace: ukázkové učebnice v Moje učebnice, štítek a otevření lekcí pouze ke čtení
-- [ ] Ověřit učebnice v náhledu jako demo učitel
-- [ ] Tři ukázkové hry, idempotentní doplnění párů a reset — čeká na schválení migrace a změny demo_seed_pair
-- [ ] Ověřit izolaci dvou párů, kvíz s [TEST] hráčem, projektor a úspěšnost v %, uklidit jen vlastní testovací data
+- [x] Ověřit učebnice v náhledu jako demo učitel (dvě knihy, otevření lekce pouze ke čtení)
+- [x] Tři ukázkové hry, idempotentní doplnění párů a reset — schválené migrace 0062–0063; pět původních párů má po třech hrách
+- [x] Ověřit izolaci dvou párů, kvíz s [TEST] hráčem, projektor a úspěšnost v %, uklidit jen vlastní testovací data (osm vlastních párů a 16 účtů odstraněno; 525 testů prošlo)
 
 ## Etapa 1 – nálezy z testu na bezli.cz (16. 10.)
 - [x] Telefon: Pravda/Nepravda velká tlačítka s popisky (ověřeno v náhledu)
