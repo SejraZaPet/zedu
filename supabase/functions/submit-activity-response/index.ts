@@ -139,6 +139,8 @@ serve(async (req) => {
         const { error: xpErr } = await admin.rpc("add_xp", {
           _student: p.user_id,
           _amount: xp,
+          _source: "live_game",
+          _source_key: `${sessionId}:${questionIndex ?? ""}`,
         });
         if (xpErr) console.error("add_xp failed:", xpErr);
       }
