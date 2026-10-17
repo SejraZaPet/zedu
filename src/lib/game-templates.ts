@@ -22,9 +22,17 @@ export interface GameTemplate {
   background_url?: string | null;
   default_team_count?: number | null;
   team_scoring?: string | null;
+  demo_pair_id?: string | null;
+  demo_seed_key?: string | null;
 
   created_at: string;
   updated_at: string;
+}
+
+/** Copies are ordinary owner content, never another reference to a protected seed. */
+export function gameTemplateCopy(t: GameTemplate) {
+  const { id, created_at, updated_at, demo_pair_id, demo_seed_key, ...content } = t;
+  return { ...content, title: `${t.title} (kopie)` };
 }
 
 export const GAME_PURPOSES: { id: string; label: string; emoji: string }[] = [
