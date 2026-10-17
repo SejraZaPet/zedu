@@ -2398,6 +2398,57 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_game_sources: {
+        Row: {
+          activity_data: Json
+          background_url: string | null
+          created_at: string
+          default_game_mode: string
+          default_team_count: number
+          default_team_mode: string
+          description: string | null
+          id: string
+          purpose: string | null
+          seed_key: string
+          subject: string | null
+          team_scoring: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_data: Json
+          background_url?: string | null
+          created_at?: string
+          default_game_mode?: string
+          default_team_count?: number
+          default_team_mode?: string
+          description?: string | null
+          id?: string
+          purpose?: string | null
+          seed_key: string
+          subject?: string | null
+          team_scoring?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_data?: Json
+          background_url?: string | null
+          created_at?: string
+          default_game_mode?: string
+          default_team_count?: number
+          default_team_mode?: string
+          description?: string | null
+          id?: string
+          purpose?: string | null
+          seed_key?: string
+          subject?: string | null
+          team_scoring?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       demo_pairs: {
         Row: {
           created_at: string
@@ -7016,6 +7067,8 @@ export type Database = {
           default_game_mode: string
           default_team_count: number
           default_team_mode: string
+          demo_pair_id: string | null
+          demo_seed_key: string | null
           description: string | null
           id: string
           purpose: string | null
@@ -7035,6 +7088,8 @@ export type Database = {
           default_game_mode?: string
           default_team_count?: number
           default_team_mode?: string
+          demo_pair_id?: string | null
+          demo_seed_key?: string | null
           description?: string | null
           id?: string
           purpose?: string | null
@@ -7054,6 +7109,8 @@ export type Database = {
           default_game_mode?: string
           default_team_count?: number
           default_team_mode?: string
+          demo_pair_id?: string | null
+          demo_seed_key?: string | null
           description?: string | null
           id?: string
           purpose?: string | null
@@ -7077,6 +7134,13 @@ export type Database = {
             columns: ["curriculum_topic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_game_templates_demo_pair_id_fkey"
+            columns: ["demo_pair_id"]
+            isOneToOne: false
+            referencedRelation: "demo_pairs"
             referencedColumns: ["id"]
           },
           {
@@ -8608,6 +8672,7 @@ export type Database = {
           teacher_user_id: string
         }[]
       }
+      demo_fill_game_templates: { Args: { _pair_id: string }; Returns: number }
       demo_pair_storage_objects: {
         Args: { _pair_id: string }
         Returns: {
