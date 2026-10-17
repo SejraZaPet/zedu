@@ -42,11 +42,12 @@
 - [x] Etapa 1b: převod i z plánu lekce; staré jednosnímkové hry se rozloží při spuštění
 - [ ] Etapa 1c: ruční vizuální kontrola projektoru
 - [x] Etapa 2: bodování podle režimu na serveru, obě cesty, krádež + lupič + týmy (nasazeno)
-- [ ] Klíč aktivity do add_xp (spolu s migrací ligy)
+- [x] Klíč aktivity do add_xp (spolu s migrací ligy)
 - [x] Etapa 3: jedno jádro pro obě cesty (live-game-core.ts)
 - [x] Ostrá zkouška [TEST] her se 3 hráči (40 her, 0 chyb), úklid hotový
 ## Bezli liga v1
-- [ ] Schváleno – po etapě 2: migrace xp_events, add_xp, school_league_week, cron, záložka Liga
+- [x] xp_events, add_xp (strop, opakování, série), skupiny 30, Bronz–Diamant, cron, soutěž tříd, záložka Liga, odznaky
+- [ ] Ruční kontrola záložky Liga v prohlížeči (po zapnutí ligy ve škole)
 
 ## Etapa 1 – nálezy z testu na bezli.cz (16. 10.)
 - [x] Telefon: Pravda/Nepravda velká tlačítka s popisky (ověřeno v náhledu)
@@ -55,4 +56,4 @@
 - [x] Průvodce: počet položek se dodrží (oříznutí výstupu AI)
 - [x] Výsledky po ukončení: přehled se načte hned, „Zatím žádné odpovědi“
 - [x] Smazána první kopie „Charakteristika…“; druhá (17:00) čeká na potvrzení
-- [ ] Bezli liga v1 (čeká na pokyn)
+- [x] Bezli liga v1

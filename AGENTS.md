@@ -30,3 +30,4 @@
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
+- Award XP only via `add_xp(student, amount, source, source_key)` (not client-callable); league reads only via SECURITY DEFINER RPCs (`school_league_week`, `class_league_week`), rules mirrored in `league-rules.ts`, so caps and privacy live server-side.
