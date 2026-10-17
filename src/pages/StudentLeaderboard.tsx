@@ -11,6 +11,8 @@ import {
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { Trophy, Lock, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LeagueTab } from "@/components/student/LeagueTab";
 
 interface ClassRow {
   id: string;
@@ -126,6 +128,13 @@ const StudentLeaderboard = () => {
           </div>
         </div>
 
+        <Tabs defaultValue="class">
+          <TabsList className="mb-4">
+            <TabsTrigger value="class">Třída</TabsTrigger>
+            <TabsTrigger value="league">Liga</TabsTrigger>
+          </TabsList>
+          <TabsContent value="league"><LeagueTab /></TabsContent>
+          <TabsContent value="class">
         {classes.length === 0 ? (
           <Card><CardContent className="py-10 text-center text-muted-foreground">
             Zatím nejsi v žádné třídě. Připoj se kódem od učitele.
@@ -204,6 +213,8 @@ const StudentLeaderboard = () => {
             </p>
           </>
         )}
+          </TabsContent>
+        </Tabs>
       </main>
       <SiteFooter />
     </div>

@@ -4,7 +4,7 @@ export interface BadgeDef {
   emoji: string;
   description: string;
   howTo: string;
-  category: "xp" | "level" | "streak";
+  category: "xp" | "level" | "streak" | "league";
 }
 
 export const BADGES: BadgeDef[] = [
@@ -27,6 +27,13 @@ export const BADGES: BadgeDef[] = [
     description: "Učil/a ses 7 dní v řadě.", howTo: "Uč se 7 dní v řadě." },
   { slug: "streak_30", name: "Měsíční série", emoji: "💎", category: "streak",
     description: "Učil/a ses 30 dní v řadě.", howTo: "Uč se 30 dní v řadě." },
+  // Liga
+  { slug: "league_gold", name: "Vítěz ligy", emoji: "🥇", category: "league",
+    description: "Skončil/a jsi 1. v týdenní lize.", howTo: "Buď první ve své ligové skupině na konci týdne." },
+  { slug: "league_silver", name: "Stříbro v lize", emoji: "🥈", category: "league",
+    description: "Skončil/a jsi 2. v týdenní lize.", howTo: "Buď druhý/á ve své ligové skupině." },
+  { slug: "league_bronze", name: "Bronz v lize", emoji: "🥉", category: "league",
+    description: "Skončil/a jsi 3. v týdenní lize.", howTo: "Buď třetí ve své ligové skupině." },
 ];
 
 export const getBadge = (slug: string): BadgeDef | undefined =>

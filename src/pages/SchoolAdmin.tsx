@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SchoolLeagueCard } from "@/components/school/SchoolLeagueCard";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -413,6 +414,7 @@ const SchoolAdmin = () => {
           </TabsContent>
           <TabsContent value="students">
             <MembersTable rows={students} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="user" />
+            <SchoolLeagueCard schoolId={school.id} />
           </TabsContent>
 
           <TabsContent value="import">

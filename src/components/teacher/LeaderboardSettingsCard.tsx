@@ -20,6 +20,7 @@ export const LeaderboardSettingsCard = ({ classId }: Props) => {
   const { toast } = useToast();
   const [enabled, setEnabled] = useState(true);
   const [anonymous, setAnonymous] = useState(false);
+  const [league, setLeague] = useState(true);
   const [period, setPeriod] = useState<ResetPeriod>("never");
   const [resetAt, setResetAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -29,19 +30,20 @@ export const LeaderboardSettingsCard = ({ classId }: Props) => {
     (async () => {
       const { data } = await supabase
         .from("classes")
-        .select("leaderboard_enabled, leaderboard_anonymous, leaderboard_reset_period, leaderboard_reset_at")
+        .select("leaderboard_enabled, leaderboard_anonymous, leaderboard_reset_period, leaderboard_reset_at, league_enabled")
         .eq("id", classId)
         .maybeSingle();
       if (data) {
         setEnabled(data.leaderboard_enabled ?? true);
         setAnonymous(data.leaderboard_anonymous ?? false);
+        setLeague(data.league_enabled ?? true);
         setPeriod((data.leaderboard_reset_period as ResetPeriod) ?? "never");
         setResetAt(data.leaderboard_reset_at);
       }
     })();
   }, [classId]);
 
-  const save = async (patch: Partial<{ leaderboard_enabled: boolean; leaderboard_anonymous: boolean; leaderboard_reset_period: ResetPeriod }>) => {
+  const save = async (patch: Partial<{ leaderboard_enabled: boolean; leaderboard_anonymous: boolean; leaderboard_reset_period: ResetPeriod; league_enabled: boolean }>) => {
     setSaving(true);
     const { error } = await supabase.from("classes").update(patch).eq("id", classId);
     setSaving(false);
@@ -83,6 +85,14 @@ export const LeaderboardSettingsCard = ({ classId }: Props) => {
             id="lb-anon"
             checked={anonymous}
             onCheckedChange={(v) => { setAnonymous(v); save({ leaderboard_anonymous: v }); }}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="lb-league" className="text-sm">Zapojit třídu do soutěže tříd</Label>
+          <Switch
+            id="lb-league"
+            checked={league}
+            onCheckedChange={(v) => { setLeague(v); save({ league_enabled: v }); }}
           />
         </div>
         <div className="space-y-1.5">
