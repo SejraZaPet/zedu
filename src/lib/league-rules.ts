@@ -57,6 +57,10 @@ export function visibleRows<T extends { rank: number; xp: number; isMe: boolean 
 /** Konec ligového týdne = příští pondělí 00:00 v Praze. */
 export function weekEnd(weekStart: string): Date {
   const [y, m, d] = weekStart.split("-").map(Number);
-  // Pondělí 00:00 Praha ~ neděle 22/23 UTC; pro odpočet stačí UTC hranice s +1 h tolerancí.
-  return new Date(Date.UTC(y, m - 1, d + 7, -1));
+  const midnight = Date.UTC(y, m - 1, d + 7);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Prague", hour: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(midnight));
+  const offsetHours = Number(parts.find((part) => part.type === "hour")?.value ?? 1);
+  return new Date(midnight - offsetHours * 3600000);
 }

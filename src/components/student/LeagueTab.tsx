@@ -23,6 +23,11 @@ export const LeagueTab = () => {
   const [rows, setRows] = useState<LeagueRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, refreshCountdown] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => refreshCountdown((n) => n + 1), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
