@@ -48,6 +48,14 @@
 ## Bezli liga v1
 - [x] xp_events, add_xp (strop, opakování, série), skupiny 30, Bronz–Diamant, cron, soutěž tříd, záložka Liga, odznaky
 - [ ] Ruční kontrola záložky Liga v prohlížeči (po zapnutí ligy ve škole)
+- [ ] Dokončit kontrolu původního class_leaderboard: celé pořadí a anonymizace pouze v aplikaci; nápravu RPC předložit ke schválení.
+
+## Naplnění dema ukázkami
+- [x] Diagnostika učebnic, knihovny her, seed/reset a úklidu
+- [x] Aplikace: ukázkové učebnice v Moje učebnice, štítek a otevření lekcí pouze ke čtení
+- [ ] Ověřit učebnice v náhledu jako demo učitel
+- [ ] Tři ukázkové hry, idempotentní doplnění párů a reset — čeká na schválení migrace a změny demo_seed_pair
+- [ ] Ověřit izolaci dvou párů, kvíz s [TEST] hráčem, projektor a úspěšnost v %, uklidit jen vlastní testovací data
 
 ## Etapa 1 – nálezy z testu na bezli.cz (16. 10.)
 - [x] Telefon: Pravda/Nepravda velká tlačítka s popisky (ověřeno v náhledu)

@@ -15,7 +15,7 @@ export function isDemoAccount(uid: string): Promise<boolean> {
       .catch(() => false);
     demoCache.set(uid, p);
   }
-  return p!;
+  return p;
 }
 
 /** PostgREST `or` filtr: vlastní učebnice, u dema i ukázkové. */
