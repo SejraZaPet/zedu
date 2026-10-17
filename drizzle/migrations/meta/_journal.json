@@ -421,6 +421,13 @@
       "when": 1792232970309,
       "tag": "0059_bezli_league_v1",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792232991002,
+      "tag": "0060_league_week_no_temp",
+      "breakpoints": true
     }
   ]
 }
