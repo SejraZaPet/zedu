@@ -1692,6 +1692,7 @@ export type Database = {
           leaderboard_enabled: boolean
           leaderboard_reset_at: string | null
           leaderboard_reset_period: string
+          league_enabled: boolean
           name: string
           school: string
           school_id: string | null
@@ -1714,6 +1715,7 @@ export type Database = {
           leaderboard_enabled?: boolean
           leaderboard_reset_at?: string | null
           leaderboard_reset_period?: string
+          league_enabled?: boolean
           name: string
           school?: string
           school_id?: string | null
@@ -1736,6 +1738,7 @@ export type Database = {
           leaderboard_enabled?: boolean
           leaderboard_reset_at?: string | null
           leaderboard_reset_period?: string
+          league_enabled?: boolean
           name?: string
           school?: string
           school_id?: string | null
@@ -3106,6 +3109,84 @@ export type Database = {
           section_type?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      league_memberships: {
+        Row: {
+          tier: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          tier?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          tier?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      league_opt_outs: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      league_weeks: {
+        Row: {
+          created_at: string
+          grade: number
+          group_no: number
+          group_size: number
+          id: string
+          rank: number
+          result: string
+          school_id: string
+          tier: number
+          user_id: string
+          week_start: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          grade: number
+          group_no: number
+          group_size: number
+          id?: string
+          rank: number
+          result: string
+          school_id: string
+          tier: number
+          user_id: string
+          week_start: string
+          xp: number
+        }
+        Update: {
+          created_at?: string
+          grade?: number
+          group_no?: number
+          group_size?: number
+          id?: string
+          rank?: number
+          result?: string
+          school_id?: string
+          tier?: number
+          user_id?: string
+          week_start?: string
+          xp?: number
         }
         Relationships: []
       }
@@ -5514,6 +5595,8 @@ export type Database = {
           custom_welcome_text: string | null
           id: string
           is_demo: boolean
+          league_enabled: boolean
+          league_name_mode: string
           name: string
           registration_code: string
           subdomain: string | null
@@ -5529,6 +5612,8 @@ export type Database = {
           custom_welcome_text?: string | null
           id?: string
           is_demo?: boolean
+          league_enabled?: boolean
+          league_name_mode?: string
           name: string
           registration_code?: string
           subdomain?: string | null
@@ -5544,6 +5629,8 @@ export type Database = {
           custom_welcome_text?: string | null
           id?: string
           is_demo?: boolean
+          league_enabled?: boolean
+          league_name_mode?: string
           name?: string
           registration_code?: string
           subdomain?: string | null
@@ -8050,6 +8137,39 @@ export type Database = {
           },
         ]
       }
+      xp_events: {
+        Row: {
+          amount: number
+          base_amount: number
+          created_at: string
+          day: string
+          id: string
+          source: string
+          source_key: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          base_amount?: number
+          created_at?: string
+          day?: string
+          id?: string
+          source?: string
+          source_key?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          base_amount?: number
+          created_at?: string
+          day?: string
+          id?: string
+          source?: string
+          source_key?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       zedstart_prompts: {
         Row: {
           category: string | null
@@ -8279,10 +8399,17 @@ export type Database = {
           teachers_completed: number
         }[]
       }
-      add_xp: {
-        Args: { _amount: number; _student: string }
-        Returns: undefined
-      }
+      add_xp:
+        | { Args: { _amount: number; _student: string }; Returns: undefined }
+        | {
+            Args: {
+              _amount: number
+              _source: string
+              _source_key: string
+              _student: string
+            }
+            Returns: number
+          }
       calculate_all_subscription_shares: {
         Args: { _period_month: string }
         Returns: number
@@ -8416,7 +8543,18 @@ export type Database = {
           total_xp: number
         }[]
       }
+      class_league_week: {
+        Args: never
+        Returns: {
+          active_members: number
+          avg_xp: number
+          class_name: string
+          is_mine: boolean
+          rank: number
+        }[]
+      }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
+      close_league_week: { Args: { _week?: string }; Returns: number }
       compute_textbook_visibility: {
         Args: { _textbook_id: string }
         Returns: string
@@ -8715,6 +8853,23 @@ export type Database = {
         Args: { _code: string; _user_id: string }
         Returns: string
       }
+      league_display_name: {
+        Args: { _mode: string; _user: string }
+        Returns: string
+      }
+      league_week_standings: {
+        Args: { _school: string; _week: string }
+        Returns: {
+          grade: number
+          group_no: number
+          group_size: number
+          rank: number
+          tier: number
+          user_id: string
+          xp: number
+        }[]
+      }
+      league_week_start: { Args: { _ts?: string }; Returns: string }
       link_parent_by_student_code: {
         Args: { _code: string }
         Returns: {
@@ -8771,6 +8926,14 @@ export type Database = {
         Returns: string
       }
       messenger_participant_count: { Args: { _conv: string }; Returns: number }
+      my_league_status: {
+        Args: never
+        Returns: {
+          opted_out: boolean
+          school_enabled: boolean
+          tier: number
+        }[]
+      }
       my_school_sale_settings: {
         Args: never
         Returns: {
@@ -8860,6 +9023,20 @@ export type Database = {
         Args: { _school_id: string }
         Returns: Json
       }
+      school_league_week: {
+        Args: never
+        Returns: {
+          avatar_user_id: string
+          display_name: string
+          group_size: number
+          is_me: boolean
+          rank: number
+          status: string
+          tier: number
+          week_start: string
+          xp: number
+        }[]
+      }
       school_license_usage: {
         Args: { _school_id: string }
         Returns: {
@@ -8922,6 +9099,7 @@ export type Database = {
             }
             Returns: Json
           }
+      set_league_opt_out: { Args: { _opt_out: boolean }; Returns: boolean }
       set_login_password: {
         Args: { _password: string; _profile_id: string }
         Returns: Json

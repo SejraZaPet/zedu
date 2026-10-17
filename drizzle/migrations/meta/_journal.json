@@ -414,6 +414,13 @@
       "when": 1792147821570,
       "tag": "0058_student_activity_answers",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792232970309,
+      "tag": "0059_bezli_league_v1",
+      "breakpoints": true
     }
   ]
 }
