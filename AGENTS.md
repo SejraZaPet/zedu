@@ -24,7 +24,7 @@
 - Store worksheet item images as permanent public URLs in `lesson-images` via `WorksheetImageField`/`worksheet-images.ts` (same path as presentations), never 1-hour signed `teacher-media` URLs, so students, print and PDF always see them.
 - Create student course notebooks only via `ensure_my_course_notebooks()` / membership triggers (one per owner+group or owner+class+subject_id, enforced by partial unique indexes), so automatic creation stays idempotent and never touches teachers or shared demo profiles.
 - Store a student's own worksheet work outside assignments only in `student_worksheet_work` (one draft per student+worksheet+variant via partial unique index, submitted rows kept); assignment attempts never use it, so grading and assignment flows stay untouched.
-- Insert worksheets into notebooks only via `worksheet-notebook.ts` (`content.worksheet` ref; digital = link page, pen = locked background images) and attach pen pages to a submitted attempt as a snapshot in `assignment-uploads` under `answers._notebookSnapshot`, so answers are never copied and teachers read handwriting through existing storage policies.
+- Notebook worksheets use `worksheet-notebook.ts`: digital links, locked pen backgrounds; submissions snapshot pen pages to `assignment-uploads` via `answers._notebookSnapshot`, preserving answers and storage permissions.
 - Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
 
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).
@@ -32,3 +32,4 @@
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
 - Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
+- Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
