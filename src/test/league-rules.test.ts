@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { awardedXp, weekResult, classAverage, visibleRows, tierName } from "@/lib/league-rules";
+import { awardedXp, weekResult, classAverage, visibleRows, tierName, weekEnd } from "@/lib/league-rules";
 
 const base = { previousSameToday: 0, todaySum: 0, streak: 1, firstEventToday: false };
 
 describe("Bezli liga – pravidla", () => {
+  it("týden končí v pondělí o půlnoci v Praze i při změně času", () => {
+    expect(weekEnd("2026-10-12").toISOString()).toBe("2026-10-18T22:00:00.000Z");
+    expect(weekEnd("2026-10-19").toISOString()).toBe("2026-10-25T23:00:00.000Z");
+  });
   it("denní strop 150 XP", () => {
     expect(awardedXp({ ...base, base: 20, todaySum: 140 })).toBe(10);
     expect(awardedXp({ ...base, base: 20, todaySum: 150 })).toBe(0);
