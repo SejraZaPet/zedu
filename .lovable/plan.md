@@ -1,73 +1,45 @@
-# Dočasné změny rozvrhu – diagnostika a návrh ke schválení
+# První etapa: schválení změn databáze pro jednorázové přesuny a rušení
 
-**Stav:** diagnostika pouze čtením; žádné změny aplikace/databáze. Nástroje a demo jsou dokončené. Etapa B zůstává neschválená.
+## Připraveno a ověřeno
+- Izolované výpočty v `schedule-exceptions.ts`: jednorázový přesun, zrušení, návrat, původní a nový termín, stabilní identita hodiny, vazba plánu a kolize.
+- 17 nových testů, všech **557 testů prošlo**. České časy ověřeny i při použití z jiného časového pásma, včetně přechodů 29. 3. a 25. 10. 2026.
+- Žádná změna stávajících obrazovek, ukládání rozvrhu nebo databáze. Funkce zatím není dostupná uživatelům. Nebyla vytvořena žádná testovací data v databázi.
 
-## 1. Co existuje dnes
+## Rozsah migrace ke schválení
+Přidat pouze tabulky a funkce první etapy. Žádné přepisování existujících rozvrhů, plánů či oprávnění.
 
-### Dva odlišné rozvrhy
-- **Osobní rozvrh:** `teacher_schedules`: `user_id` PK, `data` JSON, časová razítka. Hodiny mají `id`, den, pořadí, předmět, `classId`, místnost, `validFrom`/`validTo`, paritu a případný `mirrorKey`. JSON obsahuje zvonění, přestávky a oddělené seznamy týdnů. Nemá vazbu na skupinu. Databáze je účetní kopie, localStorage cache s historickým fallbackem.
-- **Třídní/skupinový rozvrh:** `class_schedule_slots`: `id`, `class_id` XOR `group_id`, `day_of_week`, `start_time`/`end_time`, `week_parity`, `valid_from`/`valid_to`, `created_by`, `subject_id` i text, místnost a odkazy na učebnici/školní zdroj.
-- A/B dnes odpovídá **lichému/sudému ISO týdnu**, nikoli školou nastavenému střídání A/B. Platnost od–do je včetně obou krajních dnů.
+### Nové tabulky
+1. **`schedule_exceptions`** — jednorázová změna: ID, vlastník, druh zdroje, ID třídní hodiny nebo logické ID osobní hodiny, původní datum, zrušení/přesun, nové datum a čas, stav aktivní/vrácená, revize, ověřená třída/skupina, viditelnost, veřejný důvod a časy změn.
+2. **`schedule_exception_notes`** — soukromá poznámka ve zvláštní tabulce, přístupná výhradně vlastníkovi; žák ji nedostane ani přes čtení veřejné změny.
+3. **`schedule_plan_occurrence_links`** — doplňková vazba vlastního plánu na zdroj a původní datum; při zrušení nepřiřazení nebo potvrzená další hodina. Nezmění obsah, zveřejnění ani staré údaje plánu.
 
-### Kde se zobrazují
-Kalendář učitele spojuje oba zdroje; žákovský čte třídní/skupinové hodiny. „Dnes“ dnes rozvíjí pouze `class_schedule_slots`, ne osobní JSON. Rozvrh žáka a rodiče je týdenní šablona podle členství, nikoli datovaný týden; přehled tříd rovněž ukazuje opakující se hodiny. Výběr termínu plánu i exporty nemají výjimky.
+Dávky a školní kalendář bez výuky nyní nevytvářet. Trvalé změny ani živé nástroje Etapy B neimplementovat.
 
-Kalendáře používají `expandScheduleSlots`, osobní zdroj `expandTeacherSchedule`. Některé dotazy spoléhají na RLS, jiné filtrují členství. Shodná osobní a třídní hodina nemá společné ID; nespojovat je automaticky podle názvu/času.
+### Kontroly a indexy
+- Oddělené unikátní indexy zajistí jednu aktivní výjimku na zdroj a původní datum; revize chrání před přepsáním souběžné změny.
+- Indexy původního/nového data, vlastníka, třídy/skupiny a plánu pro datované čtení.
+- Kontroly správného zdroje, cíle a typu; přesun vyžaduje datum i oba časy a konec po začátku.
+- Na serveru ověřit, že původní výskyt skutečně existuje v platnosti a paritě zdrojové hodiny. Osobní identitu ověřit proti vlastnímu účtu a zrcadlené hodiny svázat logickým klíčem.
 
-### Plány a dny bez výuky
-`lesson_plans.input_data` ukládá `linkedDate`/`linkedTime`/`linkedSlots` jako datum, čas a cíl, bez ID hodiny. Fázové souhrny jsou navíc v `lesson_plan_phases`, někdy bez `lesson_plan_id`; shoda předmět+datum+čas nemusí být jednoznačná. Nejde pouze o lokální cache.
-Nebyla nalezena tabulka výjimek ani rušení/přesouvání výskytů. Školní události nemají ověřený význam „svátek/prázdniny“ a výuku nevynechávají.
+### Funkce
+- Oprávněné čtení změn podle původního **nebo nového** data v rozsahu, aby přesun z jiného měsíce nezmizel.
+- Atomické uložení/úprava/vrácení změny a vazby plánu; kontrola vlastníka, přístupu ke zdroji, revize a opakovaných požadavků.
+- Žákovský výstup obsahuje pouze veřejnou změnu pro vlastní třídu/skupinu; nikdy osobní rozvrh, poznámky ani obsah cizích plánů.
 
-## 2. Doporučené chování
+## Oprávnění a demo
+- Každá nová veřejná tabulka dostane výslovný GRANT, poté RLS a politiky v jedné migraci. `anon` žádný přístup; přihlášení jen nutné čtení, zápisy přes ověřující funkce; servisní role pro údržbu.
+- Funkce s pevným `search_path`, omezeným EXECUTE a ověřením `auth.uid()`. Role zůstávají v existujícím chráněném systému.
+- Výjimku mění jen vlastník. U třídního zdroje vyžadovat současné oprávnění i jednoznačné vlastnictví; `created_by IS NULL` ani cizí vlastník se automaticky nepřivlastní.
+- Ověřené demo helpery `demo_can_see_class`, `demo_can_see_group`, `demo_can_see_owned` a `is_demo_user` doplnit additive RESTRICTIVE politikami. **Samotné `demo_can_see_owned` není dostatečné**, dovoluje také běžné vlastníky: u demo uživatele explicitně omezit nová data na vlastní pár přes `demo_visible_user_ids`, stejně i v zapisujících funkcích.
+- `demo_guard_*` dovolí jen vlastní nové změny a ověřený párový cíl. Žádné uvolnění starých politik, zásah do sdílených ukázek nebo cizího obsahu. Úklid nových záznamů navázat pouze na vlastní pár.
 
-### Přesun
-- **Jen tentokrát:** z detailu datované hodiny vybrat nové datum a čas; původní termín zůstane označen „Přesunuto na …“, nový „Přesunuto z …“. Výuka a připojený plán jsou jen v novém termínu.
-- **Dočasně od–do:** vybrat období původních hodin a nový den/čas. Před uložením ukázat všechny jednotlivé přesuny, vynechané dny a konflikty. Platnost a parita se vyhodnotí podle původní hodiny; přesun do jiného ISO týdne její výskyt nezruší. Pokud původní nebo cílový den není vyučovací, řádek se přeskočí a zobrazí proč; nic se samo neposouvá na jiný den. Jedna dávka dovolí úpravu i vrácení celku.
-- **Trvale od data:** doporučuji **později**. U třídních hodin lze ukončit staré pravidlo a vytvořit navazující platnost, ale osobní JSON, zrcadlené A/B hodiny a staré plány potřebují bezpečné verzování. To už mění základ, nikoli výjimku, a vyžaduje samostatné schválení.
+## Co následuje po schválení
+1. Připravit a aplikovat tuto aditivní migraci; ověřit granty, oprávnění, jedinečnost a dvě oddělená dema.
+2. Zapojit „Přesunout“, „Zrušit“, „Vrátit“ do datovaného detailu učitele, kalendářů a Dnes; zrušený/původní přesunutý termín nezapočítávat jako výuku.
+3. Připojený plán následuje zdrojový výskyt; staré vazby dopárovat jen jednoznačně nebo po výběru učitele. Nedotýkat se generování, ukládání obsahu ani termínů úkolů/testů.
+4. Ověřit přihlášenou cestu přesun → uložení → obnovení → žákovské zobrazení → návrat; jen vlastní `[TEST]` data. Výjimky nezapínat v exportu, dokud není správný.
 
-### Zrušení a návrat
-- Jedna hodina nebo období od–do: vybrané vlastní hodiny, třídy/skupiny, dny týdne a důvod; před uložením přesný seznam dotčených termínů. Listopad znamená jen vybraný listopad, ne každý listopad.
-- Vrácení jedné změny či celé dávky obnoví základní výskyt bez přepisování rozvrhu. Již upravené řádky jiné dávkou nepřepsat; zobrazit konflikt a vyžádat rozhodnutí.
-- Při kolizi s vlastní výukou, hodinou cílové třídy/skupiny nebo dostupnou rezervací místnosti ukázat varování; učitel může potvrdit. Nepřístupné rozvrhy neodhalovat ani tvrdit, že žádná kolize neexistuje. Přesun automaticky nemění rezervaci místnosti.
+## Rollback
+Vypnout nové ovládání a čtení; původní rozvrh zůstal nedotčený. Nové tabulky a vazby ponechat pro obnovu, nic destruktivně nemazat. Vypnutí zruší účinek výjimek a musí být učiteli zřetelné.
 
-### Viditelnost a zprávy
-- Osobní pohled vždy ukazuje účinné změny. U skutečné třídní/skupinové hodiny doporučuji **automatickou viditelnost členům**; jinak učitel a žáci uvidí různé rozvrhy.
-- U změny pouze osobního JSON rozvrhu je výchozí stav soukromý. Sdílení je možné jen po ověření oprávněné cílové třídy a výslovném potvrzení; pouhý napsaný název nestačí. Skupinu osobní zdroj zatím nezná.
-- „Zrušeno“ / původní přesunutý termín nesmí být započítán jako další výuka ani nabídnut pro spuštění plánu. Nový termín se zobrazí normálně s označením přesunu.
-- Zpráva třídě/skupině jen volitelné nezaškrtnuté pole, současným systémem zpráv/oznámení. Důvod pro žáky oddělit od soukromé poznámky učitele.
-- Týdenní šablony zůstanou šablonami; doplnit datovaný pohled „Tento týden“, ne vydávat trvalý rozvrh za listopadové výjimky.
-
-### Plán následuje konkrétní výskyt
-- Nová přiřazení dostanou zdroj a původní datum. Účinný termín se odvodí z výjimky; obsah, fáze, nástroje a podmínky zveřejnění se nemění.
-- Staré vazby dopárovat pouze při jednoznačné shodě; při více kandidátech učitel vybere, ručně datované plány se automaticky nehýbou. Hromadné přepisování `input_data` není součástí návrhu.
-- Při zrušení nabídnout „Nepřiřazený“ / „Použít v další hodině“. Další hodina = následující nezrušený vyučovací výskyt stejného zdroje; ukázat datum a případně obsazený plán. Neobsadit jej bez potvrzení.
-- Přesunout jen dotčené přiřazení vícekrát použitého plánu. Návrat obnoví původní vazbu, pokud ji mezitím učitel nezměnil; jinak vyžádá rozhodnutí. Staré fázové souhrny řešit společným čtením, nikoli nebezpečným mazáním podle času.
-
-## 3. Technický návrh a bezpečnost (až po schválení)
-
-- **`schedule_exceptions`:** ID, učitel, zdroj DB/osobní, ID hodiny (u zrcadlení logické `mirrorKey`), původní místní datum, cancelled/moved, nové datum a čas, oprávněný cíl, veřejný důvod, soukromá poznámka, dávka, stav aktivní/vrácená, revize a razítka.
-- **`schedule_exception_batches`:** vlastník, typ, rozsah, filtry, pravidlo přesunu a revize; nikoli kopie rozvrhu.
-- **`schedule_plan_occurrence_links`:** vlastník, plán, zdroj+původní datum, stav a přesměrování po zrušení. Stabilní vazba bez přepsání starých plánů.
-- **`school_non_teaching_periods`:** škola, rozsah, typ, územní působnost a ověřený zdroj; spravuje škola. České svátky a prázdniny ověřit podle roku/okresu. Bez potvrzeného kalendáře dávku nepovolit; nadpis běžné události není pravidlo.
-- Spojení až při čtení: základ → konkrétní výskyty → výjimky → účinné vazby plánů. Dotaz hledá **původní NEBO nové datum v intervalu**, jinak přesun z minulého měsíce zmizí. Přesun zůstává identitou původního výskytu, nikdy se rekurzivně neaplikuje na cílové datum.
-- Atomické serverové operace pro uložení/úpravu/vrácení dávky a změnu vazeb; kontrola revize a opakování požadavku bez duplikace. Ověřit existenci původního výskytu a neměnit zdroj, vlastníka či třídu podvrženým požadavkem.
-- Jedna aktivní výjimka na zdroj a původní datum: oddělené částečné unikátní indexy pro DB a osobní zdroj; další indexy vlastník+původní datum, vlastník+nové datum, cíl+obě data, dávka, plán+výskyt. Kontroly cílového XOR, typu, platného rozsahu, času a souladu dávky/vlastníka.
-- **RLS:** zápis/úprava/vrácení jen vlastník se serverově ověřeným přístupem ke zdroji; spolu-učitel nesmí měnit cizí výjimku. `created_by` u starých DB hodin může být NULL a současná pravidla umožňují více učitelů: nepřivlastňovat je automaticky. Nejednoznačné vlastnictví před spuštěním výslovně vyřešit, jinak výjimku nenabídnout.
-- Žáci čtou jen zveřejněné změny svých aktuálních tříd/skupin. Soukromá poznámka ani osobní rozvrh se neposkytne: bezpečný výstup s vybranými sloupci, ne SELECT celé tabulky s pouhou RLS. Vazby plánů a dávky jsou pro vlastníka; dny bez výuky čtou členové školy, zapisuje oprávněný správce školy.
-- **GRANT:** každá nová public tabulka musí dostat výslovné granty ve stejné migraci před RLS/politikami. Pro auth jen nutná čtení; zápisy atomickými RPC s kontrolou vlastníka, `service_role` pro údržbu. `anon` žádný přístup. Definer funkce s pevným search_path, kontrolou auth.uid(), cíle a omezeným EXECUTE.
-- **Demo:** RLS je zapnuté; izolace závisí také na vlastnictví a chráněném členství. Nové tabulky musí mít additive RESTRICTIVE `demo_iso`/`demo_guard_*` s existujícími helpery a kontrolou páru v RPC. Sdílené ukázky neměnit, reset/purge jen vlastnímu páru; staré politiky neuvolňovat.
-
-## 4. Dopady, testy a rollback
-
-**Beze změny:** základní rozvrh, obsah/generování/ukládání plánů, lekce, hry, XP, hodnocení, pokusy, úkoly a jejich termíny, termíny testů, viditelnost obsahu, rezervace i živé nástroje Etapy B. Při přesunu lze upozornit na související test/úkol, nikdy automaticky posunout deadline.
-
-**Testy:** nulové výjimky = stejné dnešní výsledky; jednorázový přesun/zrušení/návrat; dávky s krajními daty, konflikty a souběžnými úpravami; A/B, ISO týden 53 a přelom roku; původní/nový termín mimo zobrazovaný interval; osobní zrcadlené hodiny; třída/skupina; jednoznačné i nejednoznačné staré plány; více vazeb a návrat bez ztráty pozdějších úprav; svátek 17. 11. a ověřené regionální prázdniny. Časová zóna Europe/Prague, místní datum/čas, ne UTC řez toISOString: přechody 29. 3. a 25. 10. 2026, týdenní čas 08:00 stále 08:00; neexistující/nejednoznačný čas vyžaduje odmítnutí či explicitní volbu. Dávku negenerovat přičítáním 168 hodin.
-
-**Ověření a rollback:** otestovat cizího vlastníka, podvržený zdroj/cíl, žáka bez členství, soukromé poznámky a dva demo páry. Projít kalendáře, Dnes, plány a export po obnovení relace. ICS musí respektovat výjimky (EXDATE/RECURRENCE-ID nebo export účinných výskytů); již stažený kalendář se sám nezmění. Pilot a vypínač funkce; návrat k základu nesmaže výjimky, ale vypne jejich účinek. Tabulky/vazby zachovat, odeslané zprávy nelze odvolat. Čistit jen vlastní `[TEST]` data.
-
-## 5. Etapy a doporučení
-1. **Jednorázové změny:** bezpečné vlastnictví/identity, výjimky, stabilní vazba plánu, přesun/zrušení/návrat, osobní a žákovské datované zobrazení, testy a pilot. Migraci nejdřív předložit ke schválení.
-2. **Období a dávky:** ověřený kalendář bez výuky, dočasné přesuny, zrušení období, úprava/vrácení celku, volitelná zpráva a korektní exporty. Nezapínat neúplné exporty v etapě 1.
-3. **Trvalá změna:** až zvláštní návrh verzování stálého rozvrhu, ne součást první realizace.
-
-**Doporučení:** nejprve etapa 1, dávky po potvrzení školního kalendáře. Realizace čeká na souhlas.
+**Schválení tohoto plánu dovolí migraci a dokončení první etapy. Dávky, trvalé změny a Etapa B zůstávají mimo rozsah. Nic nebylo zveřejněno.**
