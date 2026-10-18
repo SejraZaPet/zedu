@@ -24,6 +24,9 @@ interface Props {
   event: CalendarEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Teacher-owned timetable lesson: one-off move / cancel / revert. */
+  onScheduleAction?: (mode: "move" | "cancel" | "revert") => void;
+  onOpenSubject?: () => void;
 }
 
 /**
@@ -31,7 +34,7 @@ interface Props {
  * required for the teacher calendar: open textbook, open lesson plan,
  * launch live presentation.
  */
-export default function CalendarEventDetailDialog({ event, open, onOpenChange }: Props) {
+export default function CalendarEventDetailDialog({ event, open, onOpenChange, onScheduleAction, onOpenSubject }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { subjects } = useTeacherSubjects();
@@ -168,6 +171,18 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
         </DialogHeader>
 
         <div className="space-y-2 text-sm">
+          {event.scheduleStatus && (
+            <div role="status" className="rounded-md border border-border bg-muted/50 px-3 py-2">
+              <span className="font-medium">
+                {event.scheduleStatus === "cancelled" && "Zrušeno"}
+                {event.scheduleStatus === "moved_from" && event.movedStart &&
+                  `Přesunuto na ${format(event.movedStart, "EEEE d. M.", { locale: cs })} ${formatTime(event.movedStart)}`}
+                {event.scheduleStatus === "moved_to" && event.originalStart &&
+                  `Přesunuto z ${format(event.originalStart, "EEEE d. M.", { locale: cs })} ${formatTime(event.originalStart)}`}
+              </span>
+              {event.publicReason && <span className="text-muted-foreground"> · {event.publicReason}</span>}
+            </div>
+          )}
           {event.className && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="h-4 w-4" />
@@ -214,6 +229,26 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
         })()}
 
         <div className="grid gap-2 mt-2">
+          {onScheduleAction && (
+            <div className="grid grid-cols-2 gap-2">
+              {event.scheduleStatus ? (
+                <Button variant="outline" className="col-span-2 h-11" onClick={() => onScheduleAction("revert")}>
+                  Vrátit zpět
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" className="h-11" onClick={() => onScheduleAction("move")}>Přesunout</Button>
+                  <Button variant="outline" className="h-11" onClick={() => onScheduleAction("cancel")}>Zrušit</Button>
+                </>
+              )}
+            </div>
+          )}
+          {onOpenSubject && (
+            <Button variant="outline" onClick={onOpenSubject} className="justify-start">
+              <Users className="h-4 w-4 mr-2" />
+              Otevřít třídu / skupinu
+            </Button>
+          )}
           <Button variant="outline" onClick={openTextbook} className="justify-start">
             <BookOpen className="h-4 w-4 mr-2" />
             Otevřít učebnici
