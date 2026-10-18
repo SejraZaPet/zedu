@@ -5,7 +5,7 @@ import { PhaseCountdownButton } from "@/components/classroom/PhaseCountdownButto
 import { ClassroomToolsOverlay, type ClassroomToolRequest } from "@/components/classroom/ClassroomToolsOverlay";
 
 vi.mock("@/components/classroom/PeopleTools", () => ({ PeopleTool: () => null }));
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 function PlanHarness() {
   const [text, setText] = useState("Rozepsaný plán");
@@ -31,7 +31,7 @@ describe("plan tools", () => {
   it("does not exit the underlying teacher fullscreen when closed", () => {
     const underlying = document.createElement("div");
     document.body.append(underlying);
-    vi.spyOn(document, "fullscreenElement", "get").mockReturnValue(underlying);
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => underlying });
     const exit = vi.fn();
     Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exit });
     const close = vi.fn();
@@ -39,6 +39,8 @@ describe("plan tools", () => {
     fireEvent.click(screen.getByRole("button", { name: "Zavřít" }));
     expect(close).toHaveBeenCalledTimes(1);
     expect(exit).not.toHaveBeenCalled();
+    Reflect.deleteProperty(document, "fullscreenElement");
+    Reflect.deleteProperty(document, "exitFullscreen");
     underlying.remove();
   });
 });
