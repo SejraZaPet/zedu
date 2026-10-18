@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchExceptionRows, mergeExceptions, ownedSource, type Expander } from "@/lib/schedule-exception-store";
+import ScheduleExceptionDialog from "@/components/calendar/ScheduleExceptionDialog";
 import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -78,6 +80,8 @@ const TodayWidget = ({ role }: Props) => {
   const [upcomingAssignments, setUpcomingAssignments] = useState<UpcomingAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [expander, setExpander] = useState<Expander>(() => () => []);
+  const [exceptionAction, setExceptionAction] = useState<{ event: CalendarEvent; mode: "move" | "cancel" | "revert" } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
   const [addForm, setAddForm] = useState({ assignee: "me", title: "", due_date: "", priority: "normal" });
@@ -166,9 +170,20 @@ const TodayWidget = ({ role }: Props) => {
         if (slot.group_id) targets[slot.id] = `/ucitel/vyuka/${subject}/skupina/${slot.group_id}`;
         else if (slot.class_id) targets[slot.id] = `/ucitel/vyuka/${subject}/trida/${slot.class_id}`;
       }
-      const lessons = expandScheduleSlots(slots, from, to).sort(
+      let lessons = expandScheduleSlots(slots, from, to).sort(
         (a, b) => a.start.getTime() - b.start.getTime(),
       );
+      if (role === "teacher") {
+        // Teacher-only one-off exceptions, merged at display time.
+        const { data: { user: me } } = await supabase.auth.getUser();
+        if (me) {
+          const expand: Expander = (f, t) => expandScheduleSlots(slots, f, t);
+          const rows = await fetchExceptionRows(from, to);
+          lessons = mergeExceptions(lessons, rows, me.id, { from, to }, expand)
+            .sort((a, b) => a.start.getTime() - b.start.getTime());
+          if (mounted) setExpander(() => expand);
+        }
+      }
 
       const fromIso = new Date().toISOString();
       const toIso = addDays(today, 7).toISOString();
@@ -293,7 +308,8 @@ const TodayWidget = ({ role }: Props) => {
               const status = lessonStatus(ev);
               const isCurrent = status === "current";
               const isPast = status === "past";
-              const target = lessonTargets[ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
+              const target = lessonTargets[ev.scheduleSource?.slotId ?? ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
+              const canChange = role === "teacher" && !!user && !!ownedSource(ev, user.id);
               return (
                 <li
                   key={ev.id}
@@ -319,7 +335,7 @@ const TodayWidget = ({ role }: Props) => {
                   <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
-                  <span className="flex-1 truncate">
+                  <span className={`flex-1 truncate ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
                     {ev.title}
                     {ev.groupId && ev.className && (
                       <span className="text-xs text-muted-foreground"> · {ev.className}</span>
@@ -333,8 +349,31 @@ const TodayWidget = ({ role }: Props) => {
                       právě probíhá
                     </Badge>
                   )}
-                  {isPast && (
+                  {isPast && !ev.scheduleStatus && (
                     <span className="text-xs text-muted-foreground shrink-0">proběhlo</span>
+                  )}
+                  {ev.scheduleStatus === "cancelled" && (
+                    <Badge variant="outline" className="shrink-0" title={ev.publicReason}>Zrušeno</Badge>
+                  )}
+                  {ev.scheduleStatus === "moved_from" && ev.movedStart && (
+                    <Badge variant="outline" className="shrink-0">
+                      Přesunuto na {format(ev.movedStart, "d. M.")} {formatTime(ev.movedStart)}
+                    </Badge>
+                  )}
+                  {ev.scheduleStatus === "moved_to" && (
+                    <Badge variant="outline" className="shrink-0">přesunuto</Badge>
+                  )}
+                  {canChange && (
+                    <span className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      {ev.scheduleStatus ? (
+                        <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "revert" })}>Vrátit zpět</Button>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "move" })}>Přesunout</Button>
+                          <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "cancel" })}>Zrušit</Button>
+                        </>
+                      )}
+                    </span>
                   )}
                 </li>
               );
@@ -533,6 +572,14 @@ const TodayWidget = ({ role }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ScheduleExceptionDialog
+        event={exceptionAction?.event ?? null}
+        mode={exceptionAction?.mode ?? null}
+        onClose={() => setExceptionAction(null)}
+        events={todayLessons}
+        expand={expander}
+        onSaved={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 };

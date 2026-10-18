@@ -297,6 +297,10 @@ export function expandTeacherSchedule(
         subject: l.subject || undefined,
         color: l.color || style?.color,
         abbreviation: l.abbreviation || style?.abbreviation,
+        scheduleSource: {
+          kind: "personal",
+          slotId: l.mirrorBoth && l.mirrorKey ? `mirror:${l.mirrorKey}` : l.id,
+        },
       });
     }
   }

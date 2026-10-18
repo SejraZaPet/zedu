@@ -158,14 +158,16 @@ const CalendarWeekGrid = ({
                   >
                     <button
                       onClick={() => onEventClick?.(ev)}
-                      className="w-full h-full rounded-md text-left px-2 py-1 overflow-hidden border-l-4 border text-xs hover:opacity-90 transition-opacity"
+                      className={`w-full h-full rounded-md text-left px-2 py-1 overflow-hidden border-l-4 border text-xs hover:opacity-90 transition-opacity ${
+                        ev.scheduleStatus === "cancelled" ? "line-through opacity-60" : ev.scheduleStatus === "moved_from" ? "opacity-60 border-dashed" : ""
+                      }`}
                       style={{
                         backgroundColor: bg,
                         borderColor: border,
                         borderLeftColor: border,
                         color: defaults.text,
                       }}
-                      title={ev.title}
+                      title={ev.scheduleStatus === "cancelled" ? `Zrušeno: ${ev.title}${ev.publicReason ? ` (${ev.publicReason})` : ""}` : ev.title}
                     >
                       <div className="leading-tight flex items-center gap-1 pr-4">
                         {ExamIcon && <ExamIcon className="w-3 h-3 shrink-0" style={{ color: customColor }} />}
@@ -191,6 +193,14 @@ const CalendarWeekGrid = ({
                         {ev.className ? ` · ${ev.className}` : ""}
                         {ev.room ? ` · ${ev.room}` : ""}
                       </div>
+                      {ev.scheduleStatus && (
+                        <div className="text-[10px] font-semibold truncate no-underline">
+                          {ev.scheduleStatus === "cancelled" && `Zrušeno${ev.publicReason ? ` · ${ev.publicReason}` : ""}`}
+                          {ev.scheduleStatus === "moved_from" && ev.movedStart &&
+                            `Přesunuto na ${ev.movedStart.getDate()}. ${ev.movedStart.getMonth() + 1}. ${formatTime(ev.movedStart)}`}
+                          {ev.scheduleStatus === "moved_to" && "přesunuto"}
+                        </div>
+                      )}
                     </button>
                     {showReflectionBadge && (
                       <button
