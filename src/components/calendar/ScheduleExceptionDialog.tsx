@@ -73,14 +73,17 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
       const start = resolvePragueTime(newDate, newStart);
       const end = resolvePragueTime(newDate, newEnd);
       if (end <= start) return [];
-      const teaching = events
+      const ids = new Set(events.map((e) => e.id));
+      const sameDay = (e: CalendarEvent) => format(e.start, "yyyy-MM-dd") === newDate;
+      const raw = expand(new Date(`${newDate}T00:00:00`), new Date(`${newDate}T23:59:59`)).filter((e) => !ids.has(e.id));
+      const teaching = [...events.filter(sameDay), ...raw]
         .filter((e) => e.type === "lesson" && e.scheduleStatus !== "cancelled" && e.scheduleStatus !== "moved_from")
         .map((e) => ({ ...e, isTeachingOccurrence: true, source: ownedSource(e, user!.id) ?? { kind: "class_slot", ownerId: "", slotId: e.id, originalDate: "" } })) as EffectiveScheduleOccurrence[];
       return scheduleTimeConflicts({ start, end }, teaching, source);
     } catch {
       return [];
     }
-  }, [mode, source, newDate, newStart, newEnd, events, user]);
+  }, [mode, source, newDate, newStart, newEnd, events, user, expand]);
 
   useEffect(() => setConfirmConflict(false), [newDate, newStart, newEnd]);
 
