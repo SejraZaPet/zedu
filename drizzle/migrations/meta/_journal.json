@@ -449,6 +449,13 @@
       "when": 1792240197278,
       "tag": "0063_demo_reset_snapshot_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792345539619,
+      "tag": "0064_schedule_single_occurrence_exceptions",
+      "breakpoints": true
     }
   ]
 }
