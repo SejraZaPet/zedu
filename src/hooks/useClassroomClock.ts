@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Wall-clock delta keeps timers correct after background tab throttling. */
-export function useClassroomClock(duration: number | null, onEnd?: () => void) {
+export function useClassroomClock(duration: number | null, onEnd?: () => void, autoStart = false) {
   const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(autoStart);
   const base = useRef(0);
-  const start = useRef(0);
+  const start = useRef(autoStart ? Date.now() : 0);
   const end = useRef(onEnd);
   end.current = onEnd;
   const read = useCallback(() => base.current + (start.current ? Date.now() - start.current : 0), []);

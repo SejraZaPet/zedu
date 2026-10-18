@@ -2,6 +2,24 @@ import { shuffleArray } from "@/lib/shuffle";
 
 export interface ClassroomPerson { id: string; name: string }
 
+export interface ClassroomTarget { classId?: string | null; groupId?: string | null; targetId?: string | null }
+
+/** Invalid/empty phases cannot start a timer; preserve fractional minute durations. */
+export function phaseCountdownDuration(timeMin: unknown): number | null {
+  if (typeof timeMin !== "string" && typeof timeMin !== "number") return null;
+  const minutes = Number(timeMin);
+  return Number.isFinite(minutes) && minutes > 0 && minutes <= 999 ? Math.round(minutes * 60000) : null;
+}
+
+/** Preselection never grants access: only already authorized options can be selected. */
+export function classroomTargetSource(target: ClassroomTarget | undefined, classes: readonly { id: string }[], groups: readonly { id: string }[]): string {
+  if (!target) return "manual";
+  const groupId = target.groupId || target.targetId;
+  if (groupId && groups.some(g => g.id === groupId)) return `group:${groupId}`;
+  const classId = target.classId || target.targetId;
+  return classId && classes.some(c => c.id === classId) ? `class:${classId}` : "manual";
+}
+
 export function parseClassroomNames(text: string): ClassroomPerson[] {
   return text.split(/\r?\n/).map((name, index) => ({ id: `manual-${index}`, name: name.trim() })).filter(p => p.name);
 }

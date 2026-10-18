@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dices, RotateCcw, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { supabase } from "@/integrations/supabase/client";
-import { drawClassroomPerson, parseClassroomNames, splitClassroomGroups, type ClassroomPerson } from "@/lib/classroom-tools";
+import { classroomTargetSource, drawClassroomPerson, parseClassroomNames, splitClassroomGroups, type ClassroomPerson, type ClassroomTarget } from "@/lib/classroom-tools";
 
-function PeopleSource({ onPeople }: { onPeople: (people: ClassroomPerson[]) => void }) {
+function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: ClassroomPerson[]) => void; initialTarget?: ClassroomTarget }) {
   const { myClasses, loading: classesLoading } = useTeacherClasses();
   const { groups, loading: groupsLoading } = useSubjectGroups();
   const [source, setSource] = useState("manual");
@@ -18,6 +18,12 @@ function PeopleSource({ onPeople }: { onPeople: (people: ClassroomPerson[]) => v
   const [people, setPeople] = useState<ClassroomPerson[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const preselected = useRef(false);
+  useEffect(() => {
+    if (preselected.current || classesLoading || groupsLoading) return;
+    preselected.current = true;
+    setSource(classroomTargetSource(initialTarget, myClasses, groups));
+  }, [classesLoading, groupsLoading, initialTarget, myClasses, groups]);
   const manualPeople = useMemo(() => parseClassroomNames(manual), [manual]);
   useEffect(() => {
     let active = true;
@@ -50,7 +56,7 @@ function PeopleSource({ onPeople }: { onPeople: (people: ClassroomPerson[]) => v
   </div>;
 }
 
-export function PeopleTool({ grouping = false }: { grouping?: boolean }) {
+export function PeopleTool({ grouping = false, initialTarget }: { grouping?: boolean; initialTarget?: ClassroomTarget }) {
   const [people, setPeople] = useState<ClassroomPerson[]>([]);
   const [drawn, setDrawn] = useState<string[]>([]);
   const [selected, setSelected] = useState<ClassroomPerson | null>(null);
@@ -62,7 +68,7 @@ export function PeopleTool({ grouping = false }: { grouping?: boolean }) {
   const exhausted = noRepeat && people.length > 0 && drawn.length >= people.length;
   const valid = Number.isInteger(Number(value)) && Number(value) >= 1;
   return <div className="classroom-tool-body">
-    <div className="mx-auto w-full max-w-xl"><PeopleSource onPeople={setPeople} /></div>
+    <div className="mx-auto w-full max-w-xl"><PeopleSource onPeople={setPeople} initialTarget={initialTarget} /></div>
     {grouping ? <>
       <div className="flex flex-wrap items-end justify-center gap-3"><label className="space-y-2"><span>Rozdělit podle</span><Select value={mode} onValueChange={v => setMode(v as "count" | "size")}><SelectTrigger aria-label="Rozdělit podle"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="count">Počtu skupin</SelectItem><SelectItem value="size">Počtu lidí ve skupině</SelectItem></SelectContent></Select></label><label>{mode === "count" ? "Počet skupin" : "Lidí ve skupině"}<Input type="number" min={1} className="w-28" value={value} onChange={e => setValue(e.target.value)} /></label><Button size="lg" disabled={!people.length || !valid} onClick={() => setResult(splitClassroomGroups(people, mode, Number(value)))}><Shuffle />{result.length ? "Rozdělit znovu" : "Rozdělit"}</Button></div>
       <div className="classroom-groups" aria-live="polite">{result.map((g, i) => <section key={i} className="border-t-4 border-primary pt-4"><h3 className="text-xl">Skupina {i + 1}</h3><ul>{g.map(p => <li className="classroom-person" key={p.id}>{p.name}</li>)}</ul></section>)}</div>

@@ -1,6 +1,8 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
 ## Nástroje do hodiny
+- [ ] Nástroje v editoru a spuštění plánu: sdílený překryv, čas fáze a předvýběr třídy/skupiny bez ukládání
+- [ ] Ověřit zachování neuloženého plánu, testy předvyplnění a návrat z nástroje; dodat rollback
 - [x] Diagnostika navigace, seznamů žáků, projektoru a živé infrastruktury bez změn
 - [x] Etapa A: šest lokálních nástrojů, navigace a karta přehledu
 - [x] Testy logiky a přihlášená kontrola na telefonu/projektoru (532 testů; šest cest, fullscreen, oprávněná třída a vlastní izolované demo; zkouška uklizena)

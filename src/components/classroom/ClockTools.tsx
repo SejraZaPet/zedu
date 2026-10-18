@@ -10,13 +10,17 @@ function ClockButtons({ running, toggle, reset }: { running: boolean; toggle: ()
   return <div className="flex flex-wrap justify-center gap-3"><Button size="lg" onClick={toggle}>{running ? <Pause /> : <Play />}{running ? "Pozastavit" : "Spustit"}</Button><Button size="lg" variant="outline" onClick={reset}><RotateCcw />Resetovat</Button></div>;
 }
 
-export function CountdownTool() {
-  const [duration, setDuration] = useState(300000);
-  const [minutes, setMinutes] = useState("5");
-  const [seconds, setSeconds] = useState("0");
+export function CountdownTool({ initialDuration = 300000, autoStart = false }: { initialDuration?: number; autoStart?: boolean }) {
+  const [duration, setDuration] = useState(initialDuration);
+  const [minutes, setMinutes] = useState(String(Math.floor(initialDuration / 60000)));
+  const [seconds, setSeconds] = useState(String(initialDuration / 1000 % 60));
   const [sound, setSound] = useState(true);
   const [finished, setFinished] = useState(false);
   const audio = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    if (!autoStart) return;
+    try { audio.current ??= new AudioContext(); void audio.current.resume().catch(() => {}); } catch { /* Visual timer works without audio permission. */ }
+  }, [autoStart]);
   useEffect(() => () => { void audio.current?.close(); }, []);
   const clock = useClassroomClock(duration, () => {
     setFinished(true);
@@ -28,7 +32,7 @@ export function CountdownTool() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
     oscillator.connect(gain); gain.connect(ctx.destination);
     oscillator.start(); oscillator.stop(ctx.currentTime + 0.8);
-  });
+  }, autoStart);
   const reset = () => { clock.reset(); setFinished(false); };
   const selectTime = (ms: number) => { reset(); setDuration(ms); setMinutes(String(Math.floor(ms / 60000))); setSeconds(String(ms / 1000 % 60)); };
   const valid = Number.isInteger(Number(minutes)) && Number.isInteger(Number(seconds)) && Number(minutes) >= 0 && Number(seconds) >= 0 && Number(seconds) <= 59 && Number(minutes) * 60 + Number(seconds) > 0 && Number(minutes) <= 999;
