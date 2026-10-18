@@ -1,5 +1,8 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Kalendář: vlastní záznam a hodina navíc
+- [ ] Pouze diagnostika UI/polí, historie a oprávnění bez databázových zápisů; určit příčinu a nejmenší samostatnou opravu, realizace vyžaduje výslovné schválení
+
 ## Dočasné změny rozvrhu
 - [x] Diagnostika a schválený návrh etap
 - [x] Izolované jádro jednorázových výjimek bez zapojení do obrazovek; 17 nových testů, všech 557 testů prošlo; ověřeno i jiné časové pásmo
