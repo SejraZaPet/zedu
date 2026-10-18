@@ -4,7 +4,7 @@
 - Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
 
 - Assignment states use assignment-status.ts; grouping is session-only presentation, never grading, deadlines or permissions.
-- Read attempts via student-assignment-attempts.ts with existing RLS and group memberships so teammate submissions need no new access rights.
+- Read attempts via student-assignment-attempts.ts and existing group RLS, avoiding new teammate access rights.
 
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
@@ -14,7 +14,7 @@
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
-- Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
+- Slide backgrounds use centered `contain` on the canonical 16:9 stage, not the viewport, to match editor/projector.
 - Store live drafts only in `live_session_drafts`; atomic `publish_live_draft` cannot insert before the current slide, so projectors never see drafts.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
 - Issue demo sessions only server-side (create-demo-session, demo-switch, demo-restore via generateLink + verifyOtp); demo_pairs is service-role only and clients read just their own code via `get_my_demo_pair()`, so no password or pair data ever leaves the server.
@@ -34,4 +34,6 @@
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
-- Merge dashboard order via teacher-dashboard-order to keep old positions.
+- Merge dashboard order via teacher-dashboard-order to preserve positions.
+
+- Schedule exceptions use source identity and Prague time to preserve recurrence; UI/persistence waits for migration approval.
