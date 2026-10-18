@@ -1,22 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { transpileModule, ScriptTarget, ModuleKind } from "typescript";
 
 const mocks = vi.hoisted(() => ({ countRecent: vi.fn(), recordEvent: vi.fn(), serve: vi.fn(), schoolLookup: vi.fn() }));
-vi.mock("npm:@supabase/supabase-js@2/cors", () => ({ corsHeaders: {} }));
-vi.mock("../../supabase/functions/_shared/demo.ts", () => ({
+const dependencies = {
+  Deno: { serve: mocks.serve }, corsHeaders: {},
   adminClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: mocks.schoolLookup }) }) }) }) }),
   countRecent: mocks.countRecent,
   recordEvent: mocks.recordEvent,
   ipHash: async () => "test-ip-hash",
   DEMO_EMAIL_DOMAIN: "unused", DEMO_SCHOOL_NAME: "unused",
   generateReturnCode: vi.fn(), issueSession: vi.fn(), randomToken: vi.fn(),
-}));
+};
+// Compile the actual Deno handler, injecting only local stubs for its imports.
+// Avoid pulling Deno/npm: modules into the browser's TypeScript dependency graph.
+const source = readFileSync("supabase/functions/create-demo-session/index.ts", "utf8")
+  .replace(/^import[\s\S]*?;\r?\n/gm, "");
+const { outputText } = transpileModule(source, {
+  compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.None },
+});
+const register = new Function(...Object.keys(dependencies), outputText);
 
 async function request(eventTag: unknown, hourlyCount: number, dailyCount = 0) {
-  vi.resetModules();
   mocks.serve.mockClear();
   mocks.countRecent.mockReset();
   mocks.countRecent.mockResolvedValueOnce(hourlyCount).mockResolvedValueOnce(dailyCount);
-  await import("../../supabase/functions/create-demo-session/index.ts");
+  register(...Object.values(dependencies));
   const handler = mocks.serve.mock.calls[0]?.[0];
   if (!handler) throw new Error("Demo handler not registered");
   return handler(new Request("https://example.test", {
@@ -27,7 +36,6 @@ async function request(eventTag: unknown, hourlyCount: number, dailyCount = 0) {
 describe("demo creation limits without real accounts or database calls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("Deno", { serve: mocks.serve });
     // Stop after rate checks; never reach account creation.
     mocks.schoolLookup.mockResolvedValue({ data: null });
   });
