@@ -20,8 +20,9 @@ export default function LessonWorksheets({ lessonId }: { lessonId: string }) {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("worksheets" as any)
-        .select("id, title, status, show_in_lesson, scheduled_publish_at, source_lesson_id")
+        .select("id, title, status, show_in_lesson, scheduled_publish_at, source_lesson_id, created_at")
         .eq("source_lesson_id", lessonId)
+        .order("created_at", { ascending: true })
         .eq("show_in_lesson", true)
         .eq("status", "published");
       if (error) return { worksheets: [], assignments: [] };
