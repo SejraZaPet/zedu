@@ -25,21 +25,42 @@ export function ClassroomToolsOverlay({ request, onClose, target }: { request: C
   const [error, setError] = useState("");
   const stage = useRef<HTMLDivElement>(null);
   const hadFullscreen = useRef(false);
+  const latestClose = useRef(onClose);
+  latestClose.current = onClose;
+  const closing = useRef(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+  useEffect(() => {
+    if (!request) return;
+    closing.current = false;
+    setError("");
+    // A portal must stay inside the teacher's fullscreen element to remain visible.
+    setPortalContainer(document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : undefined);
+  }, [request]);
   useEffect(() => {
     const changed = () => {
-      const isFull = Boolean(document.fullscreenElement);
+      const isFull = Boolean(stage.current && document.fullscreenElement === stage.current);
       setFull(isFull);
-      if (hadFullscreen.current && !isFull) onClose();
+      if (hadFullscreen.current && !isFull && !closing.current) {
+        closing.current = true;
+        latestClose.current();
+      }
       hadFullscreen.current = isFull;
     };
     document.addEventListener("fullscreenchange", changed);
     return () => document.removeEventListener("fullscreenchange", changed);
   }, []);
-  const close = () => { onClose(); if (document.fullscreenElement) void document.exitFullscreen().catch(() => {}); };
+  const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    const ownsFullscreen = stage.current && document.fullscreenElement === stage.current;
+    hadFullscreen.current = false;
+    latestClose.current();
+    if (ownsFullscreen) void document.exitFullscreen().catch(() => {});
+  };
   const fullscreen = async () => {
     setError("");
     try {
-      if (document.fullscreenElement) { hadFullscreen.current = false; await document.exitFullscreen(); }
+      if (stage.current && document.fullscreenElement === stage.current) { hadFullscreen.current = false; await document.exitFullscreen(); }
       else if (stage.current?.requestFullscreen) await stage.current.requestFullscreen();
       else setError("Tento prohlížeč nepodporuje celou obrazovku. Nástroj můžete používat v tomto velkém zobrazení.");
     } catch { setError("Celou obrazovku se nepodařilo zapnout. Zkuste tlačítko znovu."); }
@@ -47,13 +68,13 @@ export function ClassroomToolsOverlay({ request, onClose, target }: { request: C
   const tool = classroomTools.find(t => t.id === request?.id);
   return (
     <Dialog open={Boolean(request)} onOpenChange={open => { if (!open) close(); }}>
-      <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={stage} aria-describedby={undefined} className="classroom-stage fixed inset-0 z-[100] bg-background text-foreground" onEscapeKeyDown={close}>
+      <DialogPortal container={portalContainer}><DialogOverlay /><DialogPrimitive.Content ref={stage} aria-describedby={undefined} className="classroom-stage fixed inset-0 z-[100] bg-background text-foreground" onEscapeKeyDown={event => { event.preventDefault(); close(); }}>
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
           <DialogTitle className="text-xl font-heading">{tool?.name}</DialogTitle>
           <div className="flex gap-2"><Button variant="outline" onClick={() => void fullscreen()}>{full ? <Minimize /> : <Maximize />}{full ? "Zmenšit" : "Celá obrazovka"}</Button><DialogClose asChild><Button variant="ghost" size="icon" title="Zavřít" aria-label="Zavřít"><X /></Button></DialogClose></div>
         </header>
         {error && <p role="status">{error}</p>}
-        {request?.id === "countdown" && <CountdownTool initialDuration={request?.duration} autoStart={request?.autoStart} />}
+        {request?.id === "countdown" && <CountdownTool key={`${request.duration}-${request.autoStart}`} initialDuration={request?.duration} autoStart={request?.autoStart} />}
         {request?.id === "stopwatch" && <StopwatchTool />}
         {request?.id === "draw" && <PeopleTool initialTarget={target} />}
         {request?.id === "groups" && <PeopleTool grouping initialTarget={target} />}
