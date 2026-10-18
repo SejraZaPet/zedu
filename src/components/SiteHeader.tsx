@@ -164,6 +164,7 @@ const SiteHeader = () => {
         { label: "Kalendář", href: "/ucitel/kalendar", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
+        { label: "Nástroje", href: "/ucitel/nastroje", icon: Monitor },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
