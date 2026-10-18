@@ -2,7 +2,7 @@
 
 ## Dočasné změny rozvrhu
 - [x] Diagnostika a schválený návrh etap
-- [ ] Izolované jádro jednorázových výjimek a testy bez změny stávajících obrazovek
+- [x] Izolované jádro jednorázových výjimek bez zapojení do obrazovek; 17 nových testů, všech 557 testů prošlo; ověřeno i jiné časové pásmo
 - [ ] Migrace první etapy — předložit konkrétní změny ke schválení podle plánu
 - [ ] Po schválení migrace: přesun/zrušení/návrat, vazby plánů a datované pohledy; ověřit oprávnění i demo
 - [ ] Dávky — čekají na potvrzený školní kalendář; trvalé změny nejsou součástí první etapy
