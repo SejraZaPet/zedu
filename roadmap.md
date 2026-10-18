@@ -1,5 +1,9 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Úzká úprava limitu vstupu do dema
+- [x] Allowlist akce: 80/h pro dalkove-ucitele, jinak 20/h, denní 500 beze změny; 7 lokálních testů limitů bez účtů prošlo
+- [x] Čtením ověřeno předání akce a rizika 50 souběžných vstupů; kapacita hostované služby neověřena, žádná ostrá zkouška ani další změny
+
 ## Kalendář: vlastní záznam a hodina navíc
 - [ ] Pouze diagnostika UI/polí, historie a oprávnění bez databázových zápisů; určit příčinu a nejmenší samostatnou opravu, realizace vyžaduje výslovné schválení
 
