@@ -17,7 +17,7 @@
 - Slide backgrounds use centered `contain` on the canonical 16:9 stage, not the viewport, to match editor/projector.
 - Store live drafts only in `live_session_drafts`; atomic `publish_live_draft` cannot insert before the current slide, so projectors never see drafts.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
-- Issue demo sessions only server-side (create-demo-session, demo-switch, demo-restore via generateLink + verifyOtp); demo_pairs is service-role only and clients read just their own code via `get_my_demo_pair()`, so no password or pair data ever leaves the server.
+- Issue demo sessions server-side via generateLink + verifyOtp; demo_pairs is service-only, clients read own code via `get_my_demo_pair()`. Elevated creation caps require one exact-match event allowlist after cleanup; unknown tags retain the ordinary cap.
 - Isolate demo visitors only via RESTRICTIVE `demo_iso` policies backed by SECURITY DEFINER `demo_can_see_*` helpers over `demo_pairs` + `demo_shared_users`, so non-demo users' access never changes.
 - Gate AI edge functions for demo users only via `_shared/demo-ai-guard.ts` (limits in `demo_config`), so regular users are never metered.
 - New assignment attachments go to private `assignment-uploads` (read via `getStudentAttachmentSignedUrl`, fallback legacy `student-attachments`), because legacy MIME list is fixed.

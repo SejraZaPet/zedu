@@ -14,6 +14,9 @@ const cleanTag = (v: unknown): string | null => {
   return s || null;
 };
 
+// Vyšší hodinový limit platí jen pro přesně uvedené štítky po cleanTag.
+const HIGH_CAPACITY_EVENT_TAGS: ReadonlySet<string> = new Set(["dalkove-ucitele"]);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Metoda není povolena." }, 405);
@@ -21,11 +24,12 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const role = body?.role === "student" ? "student" : "teacher";
   const eventTag = cleanTag(body?.event_tag);
+  const hourlyLimit = eventTag && HIGH_CAPACITY_EVENT_TAGS.has(eventTag) ? 80 : 20;
 
   const db = adminClient();
   const hash = await ipHash(req);
 
-  if ((await countRecent(db, "create", 60 * 60 * 1000, hash)) >= 20) {
+  if ((await countRecent(db, "create", 60 * 60 * 1000, hash)) >= hourlyLimit) {
     return json({ error: "Z tohoto připojení už vzniklo hodně testovacích účtů. Zkuste to prosím za hodinu." }, 429);
   }
   if ((await countRecent(db, "create", 24 * 60 * 60 * 1000)) >= 500) {
