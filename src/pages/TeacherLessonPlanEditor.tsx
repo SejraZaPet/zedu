@@ -111,6 +111,7 @@ import {
 import { flattenLessonBlocks } from "@/lib/lesson-content-splitter";
 import {
   buildLessonUnits,
+  countHiddenLessonUnits,
   clampLessonMinutes,
   DEFAULT_LESSON_MINUTES,
   LESSON_MINUTES_PRESETS,
@@ -420,6 +421,19 @@ export default function TeacherLessonPlanEditor() {
   const textbookSubjectSlug = selectedTextbook?.subject ?? "";
 
   const [lessons, setLessons] = useState<LessonOption[]>([]);
+  // Po návratu do okna (např. z editoru lekce) znovu načíst uložené lekce, ať jsou celky aktuální.
+  const [lessonsReloadKey, setLessonsReloadKey] = useState(0);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setLessonsReloadKey((k) => k + 1);
+    };
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   useEffect(() => {
     if (!textbookId) {
       setLessons([]);
@@ -477,7 +491,7 @@ export default function TeacherLessonPlanEditor() {
     return () => {
       cancelled = true;
     };
-  }, [textbookId, activeTextbookType, textbookSubjectSlug]);
+  }, [textbookId, activeTextbookType, textbookSubjectSlug, lessonsReloadKey]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
@@ -487,6 +501,10 @@ export default function TeacherLessonPlanEditor() {
   /** Celky vybrané lekce; `selectedBlockIds === null` = celá lekce (výchozí / staré plány). */
   const lessonUnits = useMemo(
     () => (selectedLesson ? buildLessonUnits(selectedLesson.blocks) : []),
+    [selectedLesson],
+  );
+  const hiddenUnitCount = useMemo(
+    () => (selectedLesson ? countHiddenLessonUnits(selectedLesson.blocks) : 0),
     [selectedLesson],
   );
   const isUnitSelected = (u: LessonUnit) =>
@@ -1825,6 +1843,16 @@ export default function TeacherLessonPlanEditor() {
                     );
                   })}
                 </ul>
+                {hiddenUnitCount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {hiddenUnitCount === 1
+                      ? "1 celek je v lekci skrytý, a proto se v plánu nenabízí."
+                      : hiddenUnitCount < 5
+                        ? `${hiddenUnitCount} celky jsou v lekci skryté, a proto se v plánu nenabízejí.`
+                        : `${hiddenUnitCount} celků je v lekci skrytých, a proto se v plánu nenabízejí.`}
+                    {" "}Zobrazíte je v editoru lekce (ikona oka) a uložením.
+                  </p>
+                )}
               </fieldset>
             )}
           </div>
