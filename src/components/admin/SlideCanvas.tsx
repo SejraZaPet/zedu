@@ -9,6 +9,7 @@ import SlideDrawingLayer, { type DrawingStroke } from "@/components/admin/SlideD
 import { READABLE_SCALE_FLOOR } from "@/lib/blocks-to-slides";
 
 import { STAGE_W, STAGE_H } from "@/lib/slide-stage";
+import { fitCardGrid } from "@/lib/slide-card-grid-fit";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
@@ -1113,6 +1114,44 @@ function EditableBlockInner({
             + Přidat kartu
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Karty při promítání: velké písmo podle množství obsahu, karty vyplní výšku snímku.
+  if (block.type === "card_grid" && !editable) {
+    const cards: Array<{ title?: string; text?: string; mode?: string; items?: string[] }> =
+      Array.isArray(block.props?.cards) ? block.props.cards : [];
+    const fit = fitCardGrid(cards, Number(block.props?.columns));
+    return (
+      <div
+        data-slide-card-grid="true"
+        className="grid w-full gap-6"
+        style={{ gridTemplateColumns: `repeat(${fit.columns}, minmax(0, 1fr))` }}
+      >
+        {cards.map((card, i) => (
+          <div
+            key={i}
+            className="flex flex-col rounded-lg border border-border bg-card p-8"
+            style={{ minHeight: fit.cardMinHeight }}
+          >
+            <h4
+              className="font-heading mb-4 font-semibold leading-tight text-card-foreground"
+              style={{ fontSize: `${fit.titleRem}rem` }}
+            >
+              {card.title}
+            </h4>
+            {card.mode === "bullets" ? (
+              <ul className="list-disc space-y-3 pl-[1.2em] leading-snug text-card-foreground" style={{ fontSize: `${fit.bodyRem}rem` }}>
+                {(card.items || []).map((item, ii) => <li key={ii}>{item}</li>)}
+              </ul>
+            ) : card.text ? (
+              <p className="whitespace-pre-wrap leading-snug text-card-foreground" style={{ fontSize: `${fit.bodyRem}rem` }}>
+                {card.text}
+              </p>
+            ) : null}
+          </div>
+        ))}
       </div>
     );
   }

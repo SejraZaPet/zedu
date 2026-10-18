@@ -10,6 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { Check, ChevronsUpDown, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { hasPlacementConflict, PLACEMENT_CONFLICT_HINT } from "@/lib/lesson-placement-conflict";
 
 type Audience = "grade" | "class" | "group";
 
@@ -83,9 +84,7 @@ const AssignmentRow = ({
     ...(assignment.grade ? [assignment.grade] : []),
   ])).sort((a, b) => a - b);
 
-  const isDuplicate = allAssignments.some(
-    (a, i) => i !== index && a.topic_id === assignment.topic_id && a.topic_id !== ""
-  );
+  const isDuplicate = hasPlacementConflict(allAssignments, index);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -161,7 +160,11 @@ const AssignmentRow = ({
           </Select>
         </div>
 
-        {isDuplicate && <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
+        {isDuplicate && (
+          <span title={PLACEMENT_CONFLICT_HINT} aria-label={PLACEMENT_CONFLICT_HINT} role="img" className="shrink-0">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+          </span>
+        )}
 
         <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={onRemove}>
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
