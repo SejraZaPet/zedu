@@ -2,9 +2,10 @@
 
 ## Nástroje do hodiny
 - [x] Diagnostika navigace, seznamů žáků, projektoru a živé infrastruktury bez změn
-- [ ] Etapa A: šest lokálních nástrojů, navigace a karta přehledu
-- [ ] Testy logiky a přihlášená kontrola na telefonu/projektoru
-- [ ] Etapa B: návrh hlasování a moderovaných nápadů; implementace čeká na schválení
+- [x] Etapa A: šest lokálních nástrojů, navigace a karta přehledu
+- [x] Testy logiky a přihlášená kontrola na telefonu/projektoru (532 testů; šest cest, fullscreen, oprávněná třída a vlastní izolované demo; zkouška uklizena)
+- [x] Etapa B: návrh hlasování a moderovaných nápadů
+- [ ] Etapa B: implementace a migrace čekají na výslovné schválení plánu
 
 ## Banka slov v doplňování
 - [x] Banka slov, vracení slov, kliknutí a přetahování včetně dotyku
