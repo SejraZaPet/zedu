@@ -7,11 +7,13 @@ Schválena je pouze učitelská etapa bez migrace. Kontrola pouze čtením odhal
 - `save_schedule_exception` při zdroji `class_slot` nastavuje `visible_to_students = true` i při `_share = false`. Samotné skrytí žákovského rozhraní nezabrání dostupnosti záznamu přes existující čtení.
 - Politika `schedule_exceptions_read` dovoluje čtení zveřejněné výjimky i jinému učiteli stejné třídy/skupiny. To odporuje požadovanému ověření, že jiný učitel výjimku nevidí.
 - Politika `schedule_links_read` dovoluje žákům čtení vazeb zveřejněných plánů nezávisle na soukromosti samotné výjimky.
+- `schedule_source_occurrence` čte osobní rozvrh bez doplnění výchozích časů, které používá současné zobrazení. Zobrazená hodina tak může být funkcí odmítnuta; zároveň funkce neověřuje úplný platný začátek/konec a osobní víkendové hodiny, které kalendář vůbec nezobrazuje.
 
 ## Návrh úzké databázové opravy — není schválený
 Případný samostatný souhlas by se vztahoval pouze na:
 1. Úpravu `save_schedule_exception`, aby nové nebo upravené výjimky v této učitelské etapě zůstaly soukromé (`visible_to_students = false`), bez změny ostatní logiky funkce.
 2. Omezení běžného čtení `schedule_exceptions` a `schedule_plan_occurrence_links` na vlastníka. Stávající RESTRICTIVE demo politiky a granty 0065 zachovat; servisní přístup neměnit.
+3. Sjednocení výpočtu osobní zdrojové hodiny v `schedule_source_occurrence` se současným zobrazením: doplnění shodných výchozích časů pouze při čtení, kontrola platného začátku/konce a odmítnutí víkendových osobních hodin. JSON v `teacher_schedules` nepřepisovat.
 
 Soukromé poznámky již mají čtení jen pro vlastníka. Žádné přepisování existujících dat, změny základního rozvrhu, dalších tabulek, dávky, trvalé změny ani živé nástroje Etapy B nejsou součástí návrhu. Přesné SQL předložit před provedením. Po případném selhání neopakovat migraci bez konzultace.
 
