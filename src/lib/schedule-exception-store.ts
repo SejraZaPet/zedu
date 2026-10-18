@@ -34,7 +34,7 @@ const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : undefined);
 /** Only sources the signed-in teacher owns may carry exceptions. */
 export function ownedSource(event: CalendarEvent, userId: string): ScheduleOccurrenceSource | null {
   const s = event.scheduleSource;
-  if (event.type !== "lesson" || !s || event.scheduleStatus === "moved_to") return null;
+  if (event.type !== "lesson" || !s) return null;
   if (s.kind === "class_slot" && s.createdBy !== userId) return null;
   return { kind: s.kind, ownerId: userId, slotId: s.slotId, originalDate: format(event.originalStart ?? event.start, "yyyy-MM-dd") };
 }
