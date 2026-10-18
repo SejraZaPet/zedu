@@ -36,4 +36,4 @@
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
 - Merge dashboard order via teacher-dashboard-order to preserve positions.
 
-- Schedule exceptions use source identity and Prague time, merged only at display via `schedule-exception-store.ts` (owner-only, never shared with students), so the recurring timetable is never rewritten.
+- Schedule exceptions: source identity + Prague time, owner-only, merged at display (`schedule-exception-store.ts`), so timetables stay unrewritten.
