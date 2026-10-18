@@ -15,7 +15,7 @@
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
 - Render composed slide background images as centered `contain` media on the canonical 16:9 stage; never duplicate them across the fullscreen viewport, so editor and projector framing stay identical.
-- Keep live-session slide drafts in `live_session_drafts` (never in game_sessions) and publish only via the `publish_live_draft` RPC, so projectors never see drafts and publishing is one atomic update that cannot insert before the current slide.
+- Store live drafts only in `live_session_drafts`; atomic `publish_live_draft` cannot insert before the current slide, so projectors never see drafts.
 - Enforce demo-mode write protection only via additive RESTRICTIVE RLS policies (`demo_guard_*`) using `is_demo_user()`, so non-demo users' permissions never change.
 - Issue demo sessions only server-side (create-demo-session, demo-switch, demo-restore via generateLink + verifyOtp); demo_pairs is service-role only and clients read just their own code via `get_my_demo_pair()`, so no password or pair data ever leaves the server.
 - Isolate demo visitors only via RESTRICTIVE `demo_iso` policies backed by SECURITY DEFINER `demo_can_see_*` helpers over `demo_pairs` + `demo_shared_users`, so non-demo users' access never changes.
@@ -34,3 +34,4 @@
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
+- Merge dashboard order via teacher-dashboard-order to keep old positions.

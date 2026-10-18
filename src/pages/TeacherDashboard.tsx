@@ -46,6 +46,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { mergeTeacherDashboardOrder } from "@/lib/teacher-dashboard-order";
 
 interface Profile {
   first_name: string;
@@ -134,11 +135,7 @@ const TeacherDashboard = () => {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const saved: string[] = JSON.parse(raw);
-        // Merge: keep saved order, append any new ids
-        const merged = [
-          ...saved.filter((id) => DEFAULT_ORDER.includes(id)),
-          ...DEFAULT_ORDER.filter((id) => !saved.includes(id)),
-        ];
+        const merged = mergeTeacherDashboardOrder(saved, DEFAULT_ORDER);
         setOrder(merged);
       }
     } catch {}
