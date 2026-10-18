@@ -81,6 +81,8 @@ import AiContentBadge from "@/components/ai/AiContentBadge";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
+import { ClassroomToolsBar, ClassroomToolsOverlay, type ClassroomToolRequest } from "@/components/classroom/ClassroomToolsOverlay";
+import { PhaseCountdownButton } from "@/components/classroom/PhaseCountdownButton";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import PlanWorksheetsSection from "@/components/lesson-plan/PlanWorksheetsSection";
 import { parsePlanWorksheetIds } from "@/lib/plan-worksheets";
@@ -208,6 +210,7 @@ export default function TeacherLessonPlanEditor() {
   /** Pomůcky ke každé fázi – jen pro učitele (lesson_plan_phases.equipment). */
   const [equipment, setEquipment] = useState<PhaseEquipment>({});
   const [phases, setPhases] = useState<PhasesState>(emptyPhases);
+  const [toolRequest, setToolRequest] = useState<ClassroomToolRequest | null>(null);
   const [subject, setSubject] = useState<string>(searchParams.get("subject") ?? "");
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [linkedDate, setLinkedDate] = useState<string>(searchParams.get("date") ?? "");
@@ -1456,6 +1459,7 @@ export default function TeacherLessonPlanEditor() {
             )}
           </div>
 
+          <ClassroomToolsBar onOpen={setToolRequest} />
           <PlanLinksPanel links={planLinks} onChanged={() => setPlanLinksTick((t) => t + 1)} />
 
           <div className="space-y-4">
@@ -1465,8 +1469,9 @@ export default function TeacherLessonPlanEditor() {
               if (!hasContent) return null;
               return (
                 <div key={p.key} className="bg-card border border-border rounded-xl p-5 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="font-semibold">{p.title}</h2>
+                    <PhaseCountdownButton timeMin={v?.timeMin} onOpen={setToolRequest} />
                     {v?.timeMin && (
                       <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
@@ -1506,6 +1511,7 @@ export default function TeacherLessonPlanEditor() {
           </div>
         </main>
         <SiteFooter />
+        <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={{ targetId: classId }} />
       </div>
     );
   }
@@ -2352,6 +2358,7 @@ export default function TeacherLessonPlanEditor() {
         </div>
 
         {/* Fáze hodiny */}
+        <ClassroomToolsBar onOpen={setToolRequest} />
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Fáze hodiny</h2>
 
@@ -2373,7 +2380,8 @@ export default function TeacherLessonPlanEditor() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PhaseCountdownButton timeMin={value.timeMin} onOpen={setToolRequest} />
                     <Label
                       htmlFor={`time-${phase.key}`}
                       className="text-xs text-muted-foreground whitespace-nowrap"
@@ -2863,6 +2871,7 @@ export default function TeacherLessonPlanEditor() {
       </Dialog>
 
       <SiteFooter />
+      <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={{ targetId: classId }} />
     </div>
   );
 }
