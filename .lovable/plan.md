@@ -1,77 +1,73 @@
-# Nástroje do hodiny – hotová Etapa A a návrh Etapy B
+# Dočasné změny rozvrhu – diagnostika a návrh ke schválení
 
-## Co je hotové
-- Stránka `/ucitel/nastroje`, odkaz v učitelské navigaci a karta přehledu.
-- Odpočet s předvolbami, vlastním časem, pauzou, resetem, ubývajícím barevným pruhem a vypínatelným zvukem.
-- Stopky s mezičasy; losování bez opakování; náhodné skupiny podle počtu skupin nebo lidí.
-- Megatext s automatickou velikostí a barevnými volbami; lokální měřič hlasitosti s citlivostí a prahem.
-- Velké zobrazení, celá obrazovka a zavření Escape. Jména ani zvuk nástroje neukládají; zvuk nikam neposílají.
-- Plán hodiny zůstal beze změn. Nebyla provedena žádná migrace ani změna stávajících herních funkcí nebo oprávnění.
+**Stav:** diagnostika pouze čtením; žádné změny aplikace/databáze. Nástroje a demo jsou dokončené. Etapa B zůstává neschválená.
 
-**Ověření:** všech 532 testů prošlo; přihlášená učitelka použila šest nástrojů na velké obrazovce i v rozměrech telefonu. Ověřeno načtení oprávněné třídy, losování, skupiny, mezičasy, konec odpočtu, celá obrazovka a Escape. Mikrofon vyzkoušen se simulovaným vstupem prohlížeče. Vlastní označené demo vidělo jedinou vlastní třídu a losování fungovalo; po zkoušce odstraněn pouze vlastní pár, jeho obsah a dva účty. Žádné osobní údaje nebyly vypisovány.
+## 1. Co existuje dnes
 
-**Ručně vyzkoušejte:** telefon a skutečný projektor, čitelnost z poslední lavice, slyšitelnost koncového zvuku, povolení i odmítnutí skutečného mikrofonu, losování z Vaší třídy a skupiny, zavření Escape. Skutečný mikrofon ani fyzický projektor zatím nejsou ověřeny.
+### Dva odlišné rozvrhy
+- **Osobní rozvrh:** `teacher_schedules`: `user_id` PK, `data` JSON, časová razítka. Hodiny mají `id`, den, pořadí, předmět, `classId`, místnost, `validFrom`/`validTo`, paritu a případný `mirrorKey`. JSON obsahuje zvonění, přestávky a oddělené seznamy týdnů. Nemá vazbu na skupinu. Databáze je účetní kopie, localStorage cache s historickým fallbackem.
+- **Třídní/skupinový rozvrh:** `class_schedule_slots`: `id`, `class_id` XOR `group_id`, `day_of_week`, `start_time`/`end_time`, `week_parity`, `valid_from`/`valid_to`, `created_by`, `subject_id` i text, místnost a odkazy na učebnici/školní zdroj.
+- A/B dnes odpovídá **lichému/sudému ISO týdnu**, nikoli školou nastavenému střídání A/B. Platnost od–do je včetně obou krajních dnů.
 
-## Diagnostika pro živou etapu
-Využitelné jsou kód a lokální QR, `join-game`, `game_sessions`, `game_players`, stávající živé přenosy s obnovou a `/live/projektor/:sessionId`. Existují také základní zobrazení hlasování a nástěnky. Nový paralelní systém relací, připojování nebo projektoru není potřeba.
+### Kde se zobrazují
+Kalendář učitele spojuje oba zdroje; žákovský čte třídní/skupinové hodiny. „Dnes“ dnes rozvíjí pouze `class_schedule_slots`, ne osobní JSON. Rozvrh žáka a rodiče je týdenní šablona podle členství, nikoli datovaný týden; přehled tříd rovněž ukazuje opakující se hodiny. Výběr termínu plánu i exporty nemají výjimky.
 
-Chybí samostatné rychlé spuštění, atomické omezení hlasů, bezpečné opětovné připojení hosta, moderace jednotlivých nápadů a uložení pouze souhrnu ke třídě. Současný `join-game` dovoluje hostovi opakované připojení a sám nemá kontrolu demo páru; Etapa B ji musí doplnit pouze pro nové nástroje, bez změny chování existujících her.
+Kalendáře používají `expandScheduleSlots`, osobní zdroj `expandTeacherSchedule`. Některé dotazy spoléhají na RLS, jiné filtrují členství. Shodná osobní a třídní hodina nemá společné ID; nespojovat je automaticky podle názvu/času.
 
-## Etapa B – navržené chování
-### Rychlé hlasování
-1. Učitel zadá otázku a 2–6 možností nebo zvolí Ano/Ne.
-2. Spustí jednu nebodovanou aktivitu ve stávající živé relaci; zobrazí se kód a QR bez jmen.
-3. Žák bez účtu odešle jeden hlas; opětovné odeslání stejného hlasu nic nezdvojí. Návrh: hlas po odeslání nelze měnit.
-4. Projektor ukazuje sloupce, počty a procenta ze skutečně přijatých hlasů, včetně stavu bez hlasů.
-5. Ukončení na serveru zastaví další příjem. Učitel uloží anonymní souhrn ke své třídě nebo hlasování zahodí.
+### Plány a dny bez výuky
+`lesson_plans.input_data` ukládá `linkedDate`/`linkedTime`/`linkedSlots` jako datum, čas a cíl, bez ID hodiny. Fázové souhrny jsou navíc v `lesson_plan_phases`, někdy bez `lesson_plan_id`; shoda předmět+datum+čas nemusí být jednoznačná. Nejde pouze o lokální cache.
+Nebyla nalezena tabulka výjimek ani rušení/přesouvání výskytů. Školní události nemají ověřený význam „svátek/prázdniny“ a výuku nevynechávají.
 
-### Nápady a slovní oblak
-- Jedna otázka; krátké odpovědi, navržený limit 120 znaků, nejvýše 3 nápady na účastníka.
-- Nové nápady nejdřív čekají na schválení učitelem. Na projektoru nejsou nikdy vidět před schválením.
-- Učitel schválí nebo skryje jednotlivé odpovědi; skrytí odebere odpověď i z oblaku a jeho četností.
-- Výstup je prostý text bez HTML. Žádná AI moderace ani AI generování; AI štítky nejsou potřeba.
+## 2. Doporučené chování
 
-## Technický návrh k výslovnému schválení
-### Společná infrastruktura, nikoli druhý herní systém
-- Rozšířit `create-live-session` o explicitní nebodovaný typ nástroje; otázka/možnosti v `game_sessions.activity_data`. Použít současné stavové přechody a projektor.
-- `join-game` zachová současnou herní větev. Jen u nových nástrojů přidat kontrolu hosta, kapacity a demo páru.
-- Zachovat `game_players` a serverové expirované join tokeny. Žádné XP, série ani zásah do herního skórování.
-- Nové odesílání půjde bezpečnou větví funkce pro odpovědi; ověří relaci, stav, token, typ nástroje a platnou možnost.
+### Přesun
+- **Jen tentokrát:** z detailu datované hodiny vybrat nové datum a čas; původní termín zůstane označen „Přesunuto na …“, nový „Přesunuto z …“. Výuka a připojený plán jsou jen v novém termínu.
+- **Dočasně od–do:** vybrat období původních hodin a nový den/čas. Před uložením ukázat všechny jednotlivé přesuny, vynechané dny a konflikty. Platnost a parita se vyhodnotí podle původní hodiny; přesun do jiného ISO týdne její výskyt nezruší. Pokud původní nebo cílový den není vyučovací, řádek se přeskočí a zobrazí proč; nic se samo neposouvá na jiný den. Jedna dávka dovolí úpravu i vrácení celku.
+- **Trvale od data:** doporučuji **později**. U třídních hodin lze ukončit staré pravidlo a vytvořit navazující platnost, ale osobní JSON, zrcadlené A/B hodiny a staré plány potřebují bezpečné verzování. To už mění základ, nikoli výjimku, a vyžaduje samostatné schválení.
 
-### Navrhované tabulky
-**`game_tool_responses`**: identifikátor, `session_id`, `player_id`, index otázky, typ (hlas/nápad), volba nebo prostý text, stav moderace, čas vytvoření. Pro hlas unikátní klíč relace + otázka + hráč; pro nápady transakčně hlídaná kvóta. Oddělená odpovědní tabulka chrání stávající `game_responses` a bodování, ale používá stejné relace a účastníky.
+### Zrušení a návrat
+- Jedna hodina nebo období od–do: vybrané vlastní hodiny, třídy/skupiny, dny týdne a důvod; před uložením přesný seznam dotčených termínů. Listopad znamená jen vybraný listopad, ne každý listopad.
+- Vrácení jedné změny či celé dávky obnoví základní výskyt bez přepisování rozvrhu. Již upravené řádky jiné dávkou nepřepsat; zobrazit konflikt a vyžádat rozhodnutí.
+- Při kolizi s vlastní výukou, hodinou cílové třídy/skupiny nebo dostupnou rezervací místnosti ukázat varování; učitel může potvrdit. Nepřístupné rozvrhy neodhalovat ani tvrdit, že žádná kolize neexistuje. Přesun automaticky nemění rezervaci místnosti.
 
-**`game_tool_results`**: učitel, volitelná oprávněná třída, otázka a možnosti, anonymní počty hlasů/počet účastníků, čas uložení. Bez player ID, jmen, tokenů, otisků zařízení nebo neschválených nápadů. V první verzi ukládat jen výsledky hlasování; nápady zůstanou dočasné.
+### Viditelnost a zprávy
+- Osobní pohled vždy ukazuje účinné změny. U skutečné třídní/skupinové hodiny doporučuji **automatickou viditelnost členům**; jinak učitel a žáci uvidí různé rozvrhy.
+- U změny pouze osobního JSON rozvrhu je výchozí stav soukromý. Sdílení je možné jen po ověření oprávněné cílové třídy a výslovném potvrzení; pouhý napsaný název nestačí. Skupinu osobní zdroj zatím nezná.
+- „Zrušeno“ / původní přesunutý termín nesmí být započítán jako další výuka ani nabídnut pro spuštění plánu. Nový termín se zobrazí normálně s označením přesunu.
+- Zpráva třídě/skupině jen volitelné nezaškrtnuté pole, současným systémem zpráv/oznámení. Důvod pro žáky oddělit od soukromé poznámky učitele.
+- Týdenní šablony zůstanou šablonami; doplnit datovaný pohled „Tento týden“, ne vydávat trvalý rozvrh za listopadové výjimky.
 
-**`game_tool_join_limits`**: neveřejné krátkodobé záznamy limitů připojení/odeslání, relace + serverový hash; nikdy jména ani surová IP. Přesný rozsah a úklid projdou bezpečnostní kontrolou před migrací.
+### Plán následuje konkrétní výskyt
+- Nová přiřazení dostanou zdroj a původní datum. Účinný termín se odvodí z výjimky; obsah, fáze, nástroje a podmínky zveřejnění se nemění.
+- Staré vazby dopárovat pouze při jednoznačné shodě; při více kandidátech učitel vybere, ručně datované plány se automaticky nehýbou. Hromadné přepisování `input_data` není součástí návrhu.
+- Při zrušení nabídnout „Nepřiřazený“ / „Použít v další hodině“. Další hodina = následující nezrušený vyučovací výskyt stejného zdroje; ukázat datum a případně obsazený plán. Neobsadit jej bez potvrzení.
+- Přesunout jen dotčené přiřazení vícekrát použitého plánu. Návrat obnoví původní vazbu, pokud ji mezitím učitel nezměnil; jinak vyžádá rozhodnutí. Staré fázové souhrny řešit společným čtením, nikoli nebezpečným mazáním podle času.
 
-Žádná nová tabulka relací. Nové tabulky dostanou explicitní GRANT, RLS a potřebná omezení ve stejné migraci. SQL se připraví a provede až po schválení tohoto plánu.
+## 3. Technický návrh a bezpečnost (až po schválení)
 
-### Přístup a ochrana soukromí
-- Host nesmí přímo číst ani zapisovat odpovědní tabulku; komunikuje pouze přes funkci ověřující join token. Join token není v URL ani protokolech.
-- Učitel čte a moderuje jen vlastní relace. Uložený souhrn je jen pro vlastníka; samotné členství ve třídě nezpřístupní další osobní data.
-- Projektor dostává pouze agregované hlasování a schválené nápady. Přenos změn využije současné připojení s odstraněním odběru při zavření; moderované texty nebudou veřejně přenášeny syrovým odběrem celé tabulky.
-- Souhrn ke třídě uloží server až po ověření současného oprávnění učitele ke třídě. Zahodit lze jen vlastní relaci označenou jako nástroj, nikoli existující hru.
-- Dočasné odpovědi a limity se odstraní při zahození nebo po navržených 24 hodinách; uložený anonymní souhrn zůstává, dokud jej učitel nesmaže. Nápady mohou obsahovat údaje napsané žákem: nebudou v analytice, URL ani logu.
+- **`schedule_exceptions`:** ID, učitel, zdroj DB/osobní, ID hodiny (u zrcadlení logické `mirrorKey`), původní místní datum, cancelled/moved, nové datum a čas, oprávněný cíl, veřejný důvod, soukromá poznámka, dávka, stav aktivní/vrácená, revize a razítka.
+- **`schedule_exception_batches`:** vlastník, typ, rozsah, filtry, pravidlo přesunu a revize; nikoli kopie rozvrhu.
+- **`schedule_plan_occurrence_links`:** vlastník, plán, zdroj+původní datum, stav a přesměrování po zrušení. Stabilní vazba bez přepsání starých plánů.
+- **`school_non_teaching_periods`:** škola, rozsah, typ, územní působnost a ověřený zdroj; spravuje škola. České svátky a prázdniny ověřit podle roku/okresu. Bez potvrzeného kalendáře dávku nepovolit; nadpis běžné události není pravidlo.
+- Spojení až při čtení: základ → konkrétní výskyty → výjimky → účinné vazby plánů. Dotaz hledá **původní NEBO nové datum v intervalu**, jinak přesun z minulého měsíce zmizí. Přesun zůstává identitou původního výskytu, nikdy se rekurzivně neaplikuje na cílové datum.
+- Atomické serverové operace pro uložení/úpravu/vrácení dávky a změnu vazeb; kontrola revize a opakování požadavku bez duplikace. Ověřit existenci původního výskytu a neměnit zdroj, vlastníka či třídu podvrženým požadavkem.
+- Jedna aktivní výjimka na zdroj a původní datum: oddělené částečné unikátní indexy pro DB a osobní zdroj; další indexy vlastník+původní datum, vlastník+nové datum, cíl+obě data, dávka, plán+výskyt. Kontroly cílového XOR, typu, platného rozsahu, času a souladu dávky/vlastníka.
+- **RLS:** zápis/úprava/vrácení jen vlastník se serverově ověřeným přístupem ke zdroji; spolu-učitel nesmí měnit cizí výjimku. `created_by` u starých DB hodin může být NULL a současná pravidla umožňují více učitelů: nepřivlastňovat je automaticky. Nejednoznačné vlastnictví před spuštěním výslovně vyřešit, jinak výjimku nenabídnout.
+- Žáci čtou jen zveřejněné změny svých aktuálních tříd/skupin. Soukromá poznámka ani osobní rozvrh se neposkytne: bezpečný výstup s vybranými sloupci, ne SELECT celé tabulky s pouhou RLS. Vazby plánů a dávky jsou pro vlastníka; dny bez výuky čtou členové školy, zapisuje oprávněný správce školy.
+- **GRANT:** každá nová public tabulka musí dostat výslovné granty ve stejné migraci před RLS/politikami. Pro auth jen nutná čtení; zápisy atomickými RPC s kontrolou vlastníka, `service_role` pro údržbu. `anon` žádný přístup. Definer funkce s pevným search_path, kontrolou auth.uid(), cíle a omezeným EXECUTE.
+- **Demo:** RLS je zapnuté; izolace závisí také na vlastnictví a chráněném členství. Nové tabulky musí mít additive RESTRICTIVE `demo_iso`/`demo_guard_*` s existujícími helpery a kontrolou páru v RPC. Sdílené ukázky neměnit, reset/purge jen vlastnímu páru; staré politiky neuvolňovat.
 
-### Jeden hlas na zařízení a omezení zneužití
-- Atomická unikátnost zajistí jeden hlas na účastnickou identitu; paralelní požadavky nemohou zdvojit hlas.
-- Náhodný návratový údaj uložený jen v prohlížeči umožní znovupřipojení ke stejnému hráči; server nepřijme klientem zvolený player ID jako důkaz identity.
-- **Bez účtu nelze absolutně zaručit jeden hlas na fyzické zařízení:** smazání úložiště, jiný prohlížeč nebo anonymní okno vytvoří novou identitu. Nepoužívat invazivní fingerprinting; toto omezení nezakrývat.
-- Navržené limity: 200 účastníků/relaci, 5 nových připojení/minutu na serverový hash připojení a relaci (nutno ověřit na školní společné síti), 10 požadavků/minutu na token, nejvýše 3 nápady a 120 znaků/nápad. Sdílenou školní síť neblokovat globálním tvrdým limitem IP.
-- Učitel může zamknout vstup, odebrat účastníka a ukončit hlasování. Limity, kvóty a ukončení vynucuje server, ne jen telefon.
+## 4. Dopady, testy a rollback
 
-### Demo
-- Etapa A beze změn funguje v prohlížeči a čte jen existující oprávněné seznamy.
-- V živých nástrojích demo učitele se smí připojit pouze přihlášený žák stejného demo páru; anonymní vstup i cizí pár budou odmítnuty. Tato nezbytná výjimka se týká pouze dema; běžní žáci zůstávají bez účtu.
-- Nové tabulky mají od začátku additive RESTRICTIVE `demo_iso` a příslušné `demo_guard_*` s `is_demo_user()`; staré politiky se neuvolňují ani neodstraňují.
-- Každá serverová operace, včetně té se zvýšeným oprávněním, kontroluje vztah k relaci a demo pár výslovně. RLS není náhradou těchto kontrol.
-- Úklid nových dočasných záznamů navázat na současný purge/reset jen vlastního páru; sdílené učebnice, ukázkové hry a návštěvníkova ostatní data zůstanou nedotčeny.
+**Beze změny:** základní rozvrh, obsah/generování/ukládání plánů, lekce, hry, XP, hodnocení, pokusy, úkoly a jejich termíny, termíny testů, viditelnost obsahu, rezervace i živé nástroje Etapy B. Při přesunu lze upozornit na související test/úkol, nikdy automaticky posunout deadline.
 
-## Ověření před dokončením Etapy B
-- Jednotkové testy: 2 a 6 možností, atomický jeden hlas, procenta při nule a zaokrouhlování, limity nápadů a moderace.
-- Bezpečnostní testy: cizí učitel, neplatný/expirovaný token, ukončená relace, cizí/demo-anonymní návštěvník, dva demo páry, nulová změna běžných her a XP.
-- Skutečná cesta se dvěma telefony a projektorem: připojení, hlas, živý souhrn, uzavření, uložení a znovunačtení; nápad před schválením není vidět, skrytý zmizí.
-- Pouze vlastní označená testovací data; po ověření úklid jen těchto dat.
+**Testy:** nulové výjimky = stejné dnešní výsledky; jednorázový přesun/zrušení/návrat; dávky s krajními daty, konflikty a souběžnými úpravami; A/B, ISO týden 53 a přelom roku; původní/nový termín mimo zobrazovaný interval; osobní zrcadlené hodiny; třída/skupina; jednoznačné i nejednoznačné staré plány; více vazeb a návrat bez ztráty pozdějších úprav; svátek 17. 11. a ověřené regionální prázdniny. Časová zóna Europe/Prague, místní datum/čas, ne UTC řez toISOString: přechody 29. 3. a 25. 10. 2026, týdenní čas 08:00 stále 08:00; neexistující/nejednoznačný čas vyžaduje odmítnutí či explicitní volbu. Dávku negenerovat přičítáním 168 hodin.
 
-**Nyní čeká na schválení pouze Etapa B. Nic z tohoto živého návrhu ani jeho migrací nebylo provedeno a aplikace nebyla zveřejněna.**
+**Ověření a rollback:** otestovat cizího vlastníka, podvržený zdroj/cíl, žáka bez členství, soukromé poznámky a dva demo páry. Projít kalendáře, Dnes, plány a export po obnovení relace. ICS musí respektovat výjimky (EXDATE/RECURRENCE-ID nebo export účinných výskytů); již stažený kalendář se sám nezmění. Pilot a vypínač funkce; návrat k základu nesmaže výjimky, ale vypne jejich účinek. Tabulky/vazby zachovat, odeslané zprávy nelze odvolat. Čistit jen vlastní `[TEST]` data.
+
+## 5. Etapy a doporučení
+1. **Jednorázové změny:** bezpečné vlastnictví/identity, výjimky, stabilní vazba plánu, přesun/zrušení/návrat, osobní a žákovské datované zobrazení, testy a pilot. Migraci nejdřív předložit ke schválení.
+2. **Období a dávky:** ověřený kalendář bez výuky, dočasné přesuny, zrušení období, úprava/vrácení celku, volitelná zpráva a korektní exporty. Nezapínat neúplné exporty v etapě 1.
+3. **Trvalá změna:** až zvláštní návrh verzování stálého rozvrhu, ne součást první realizace.
+
+**Doporučení:** nejprve etapa 1, dávky po potvrzení školního kalendáře. Realizace čeká na souhlas.
