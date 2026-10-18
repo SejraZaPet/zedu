@@ -5026,6 +5026,195 @@ export type Database = {
           },
         ]
       }
+      schedule_exception_notes: {
+        Row: {
+          exception_id: string
+          note: string
+          owner_id: string
+        }
+        Insert: {
+          exception_id: string
+          note?: string
+          owner_id: string
+        }
+        Update: {
+          exception_id?: string
+          note?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_exception_notes_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: true
+            referencedRelation: "schedule_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_exception_notes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_exceptions: {
+        Row: {
+          action: string
+          class_id: string | null
+          class_slot_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          new_date: string | null
+          new_end: string | null
+          new_start: string | null
+          original_date: string
+          owner_id: string
+          public_reason: string
+          request_id: string
+          revision: number
+          source_id: string
+          source_kind: string
+          state: string
+          updated_at: string
+          visible_to_students: boolean
+        }
+        Insert: {
+          action: string
+          class_id?: string | null
+          class_slot_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          new_date?: string | null
+          new_end?: string | null
+          new_start?: string | null
+          original_date: string
+          owner_id: string
+          public_reason?: string
+          request_id: string
+          revision?: number
+          source_id: string
+          source_kind: string
+          state?: string
+          updated_at?: string
+          visible_to_students?: boolean
+        }
+        Update: {
+          action?: string
+          class_id?: string | null
+          class_slot_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          new_date?: string | null
+          new_end?: string | null
+          new_start?: string | null
+          original_date?: string
+          owner_id?: string
+          public_reason?: string
+          request_id?: string
+          revision?: number
+          source_id?: string
+          source_kind?: string
+          state?: string
+          updated_at?: string
+          visible_to_students?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_exceptions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_exceptions_class_slot_id_fkey"
+            columns: ["class_slot_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedule_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_exceptions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_exceptions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_plan_occurrence_links: {
+        Row: {
+          anchor: Json
+          effective_date: string | null
+          effective_end: string | null
+          effective_start: string | null
+          exception_id: string
+          id: string
+          owner_id: string
+          plan_id: string
+          revision: number
+          state: string
+        }
+        Insert: {
+          anchor: Json
+          effective_date?: string | null
+          effective_end?: string | null
+          effective_start?: string | null
+          exception_id: string
+          id?: string
+          owner_id: string
+          plan_id: string
+          revision?: number
+          state: string
+        }
+        Update: {
+          anchor?: Json
+          effective_date?: string | null
+          effective_end?: string | null
+          effective_start?: string | null
+          exception_id?: string
+          id?: string
+          owner_id?: string
+          plan_id?: string
+          revision?: number
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_plan_occurrence_links_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_plan_occurrence_links_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_plan_occurrence_links_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_calendar_event_attendees: {
         Row: {
           created_at: string
@@ -9046,6 +9235,36 @@ export type Database = {
         Args: { _join_token: string; _raised: boolean }
         Returns: undefined
       }
+      read_schedule_exceptions: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          action: string
+          class_id: string | null
+          class_slot_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          new_date: string | null
+          new_end: string | null
+          new_start: string | null
+          original_date: string
+          owner_id: string
+          public_reason: string
+          request_id: string
+          revision: number
+          source_id: string
+          source_kind: string
+          state: string
+          updated_at: string
+          visible_to_students: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "schedule_exceptions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       reap_stale_export_jobs: { Args: never; Returns: number }
       record_marketplace_usage: {
         Args: {
@@ -9086,6 +9305,60 @@ export type Database = {
       resource_in_my_school: {
         Args: { _resource_id: string }
         Returns: boolean
+      }
+      save_schedule_exception: {
+        Args: {
+          _action: string
+          _expected_revision: number
+          _kind: string
+          _new_date: string
+          _new_end: string
+          _new_start: string
+          _next_date?: string
+          _note: string
+          _original_date: string
+          _plan_action?: string
+          _plan_ids?: string[]
+          _reason: string
+          _request_id: string
+          _share: boolean
+          _source_id: string
+        }
+        Returns: {
+          action: string
+          class_id: string | null
+          class_slot_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          new_date: string | null
+          new_end: string | null
+          new_start: string | null
+          original_date: string
+          owner_id: string
+          public_reason: string
+          request_id: string
+          revision: number
+          source_id: string
+          source_kind: string
+          state: string
+          updated_at: string
+          visible_to_students: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "schedule_exceptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      schedule_demo_access: {
+        Args: { _class: string; _group: string; _owner: string }
+        Returns: boolean
+      }
+      schedule_source_occurrence: {
+        Args: { _date: string; _id: string; _kind: string }
+        Returns: Json
       }
       school_directory: {
         Args: never

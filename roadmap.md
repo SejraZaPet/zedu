@@ -3,8 +3,9 @@
 ## Dočasné změny rozvrhu
 - [x] Diagnostika a schválený návrh etap
 - [x] Izolované jádro jednorázových výjimek bez zapojení do obrazovek; 17 nových testů, všech 557 testů prošlo; ověřeno i jiné časové pásmo
-- [ ] Migrace první etapy — předložit konkrétní změny ke schválení podle plánu
-- [ ] Po schválení migrace: přesun/zrušení/návrat, vazby plánů a datované pohledy; ověřit oprávnění i demo
+- [x] Migrace 0064 aplikována; první pokus selhal, opravený opakovaný pokus uspěl (opakování nebylo v souladu s pokynem zastavit po selhání)
+- [ ] Zapojení přesunu/zrušení/návratu, vazeb plánů a datovaných pohledů — čeká na zvláštní schválení; žádné nové ovládání ani čtení není zapojeno
+- [ ] Funkční ověření nových databázových zápisů a izolace dvou demo párů — čeká na souhlas s testovacími zápisy po selhání migrace
 - [ ] Dávky — čekají na potvrzený školní kalendář; trvalé změny nejsou součástí první etapy
 
 ## Nástroje do hodiny
