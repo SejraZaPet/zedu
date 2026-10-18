@@ -3,6 +3,9 @@ import { ChevronDown, Clock, StickyNote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ClassroomToolsBar, ClassroomToolsOverlay, type ClassroomToolRequest } from "@/components/classroom/ClassroomToolsOverlay";
+import { PhaseCountdownButton } from "@/components/classroom/PhaseCountdownButton";
+import type { ClassroomTarget } from "@/lib/classroom-tools";
 
 /**
  * Časování a poznámky podle plánu hodiny – POUZE pro ovládací zobrazení učitele.
@@ -22,6 +25,7 @@ interface PhaseInfo {
   key: string;
   title: string;
   minutes: number;
+  timeMin: unknown;
   description: string;
 }
 
@@ -35,6 +39,8 @@ interface Props {
 const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }: Props) => {
   const [phases, setPhases] = useState<PhaseInfo[] | null>(null);
   const [planTitle, setPlanTitle] = useState<string>("");
+  const [toolRequest, setToolRequest] = useState<ClassroomToolRequest | null>(null);
+  const [toolTarget, setToolTarget] = useState<ClassroomTarget>();
   const [now, setNow] = useState(() => Date.now());
   const [phaseStartedAt, setPhaseStartedAt] = useState<number>(() => Date.now());
 
@@ -56,7 +62,7 @@ const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }:
 
       const { data } = await supabase
         .from("lesson_plans")
-        .select("id, title, input_data")
+        .select("id, title, input_data, class_id, group_id")
         .eq("teacher_id", teacherId)
         .order("updated_at", { ascending: false })
         .limit(50);
@@ -73,11 +79,13 @@ const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }:
         key: p.key,
         title: p.title,
         minutes: parseInt(String(raw[p.key]?.timeMin ?? ""), 10) || 0,
+        timeMin: raw[p.key]?.timeMin,
         description: String(raw[p.key]?.description || "").trim(),
       })).filter((p) => p.minutes > 0 || p.description);
 
       if (list.length === 0) return;
       setPlanTitle(String(plan.title || ""));
+      setToolTarget({ classId: plan.class_id || plan.input_data?.classId, groupId: plan.group_id || plan.input_data?.groupId, targetId: plan.input_data?.targetId });
       setPhases(list);
     })();
 
@@ -141,6 +149,9 @@ const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }:
         </Badge>
       </div>
 
+      <ClassroomToolsBar onOpen={setToolRequest} />
+      <PhaseCountdownButton timeMin={activePhase.timeMin} onOpen={setToolRequest} />
+
       <div className="flex flex-wrap gap-1">
         {mapping.map((p) => (
           <span
@@ -170,6 +181,7 @@ const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }:
           </CollapsibleContent>
         </Collapsible>
       )}
+      <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={toolTarget} />
     </div>
   );
 };

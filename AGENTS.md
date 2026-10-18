@@ -33,4 +33,4 @@
 - Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
-- Classroom tools use component memory, authenticated membership/profile reads and local Web Audio without recording or transport, so names and audio never persist.
+- Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.

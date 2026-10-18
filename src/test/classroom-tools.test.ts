@@ -1,8 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { drawClassroomPerson, formatClassroomTime, parseClassroomNames, splitClassroomGroups } from "@/lib/classroom-tools";
+import { classroomTargetSource, phaseCountdownDuration, drawClassroomPerson, formatClassroomTime, parseClassroomNames, splitClassroomGroups } from "@/lib/classroom-tools";
 
 const pupils = parseClassroomNames("Anna\nBoris\nCyril\nDana\nEva\nFilip\nGita");
 describe("classroom tools", () => {
+  it("prefills the timer from phase minutes, preserving fractional minutes", () => {
+    expect(phaseCountdownDuration("5")).toBe(300000);
+    expect(phaseCountdownDuration(1.5)).toBe(90000);
+    expect(phaseCountdownDuration("0.5")).toBe(30000);
+  });
+  it("does not start a phase timer for missing, zero or invalid time", () => {
+    for (const value of [undefined, null, "", 0, -1, "abc", Infinity, 1000]) {
+      expect(phaseCountdownDuration(value)).toBeNull();
+    }
+  });
+  it("preselects only an authorized plan class or group", () => {
+    const classes = [{ id: "class-1" }];
+    const groups = [{ id: "group-1" }];
+    expect(classroomTargetSource({ classId: "class-1" }, classes, groups)).toBe("class:class-1");
+    expect(classroomTargetSource({ groupId: "group-1" }, classes, groups)).toBe("group:group-1");
+    expect(classroomTargetSource({ targetId: "group-1" }, classes, groups)).toBe("group:group-1");
+    expect(classroomTargetSource({ classId: "other-class" }, classes, groups)).toBe("manual");
+    expect(classroomTargetSource(undefined, classes, groups)).toBe("manual");
+  });
   it("never draws an already drawn pupil with no-repeat enabled", () => {
     const drawn: string[] = [];
     for (let i = 0; i < pupils.length; i++) {
