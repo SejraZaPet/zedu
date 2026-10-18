@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import { nextLessonWorksheetTitle } from "@/lib/lesson-worksheets";
 import WorksheetsForLessonDialog, {
   type WorksheetForLessonItem,
 } from "@/components/admin/WorksheetsForLessonDialog";
@@ -179,12 +180,8 @@ export default function TeacherWorksheets() {
         navigate(`/ucitel/pracovni-listy/${id}?${params.toString()}`, { replace: true });
       };
 
-      if (ownWorksheets.length === 1) {
-        navigateToEditor(ownWorksheets[0].id);
-        return;
-      }
-
-      if (ownWorksheets.length >= 2) {
+      // Už existuje list → nabídnout otevření stávajícího i vytvoření dalšího.
+      if (ownWorksheets.length >= 1) {
         setLessonTitle(title);
         setWorksheetsForLesson(ownWorksheets);
         setPendingLessonCtx({
@@ -225,7 +222,7 @@ export default function TeacherWorksheets() {
   async function handleCreateNewForLesson() {
     const ctx = pendingLessonCtx;
     if (!user || !ctx) return;
-    const newTitle = `Pracovní list – ${lessonTitle || "Lekce"}`;
+    const newTitle = nextLessonWorksheetTitle(lessonTitle || "Lekce", worksheetsForLesson.length);
     const spec = emptyWorksheetSpec({ title: newTitle });
     const { data: created, error } = await supabase
       .from("worksheets" as any)

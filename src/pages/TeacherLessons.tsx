@@ -196,7 +196,12 @@ const TeacherLessons = () => {
                     onClick={async () => {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
-                      const title = `Pracovní list – ${lesson.title}`;
+                      const { count } = await supabase
+                        .from("worksheet_lessons" as any)
+                        .select("id", { count: "exact", head: true })
+                        .eq("lesson_id", lesson.id)
+                        .eq("lesson_type", "teacher");
+                      const title = nextLessonWorksheetTitle(lesson.title, count ?? 0);
                       const spec = emptyWorksheetSpec({ title });
                       const { data, error } = await supabase
                         .from("worksheets" as any)

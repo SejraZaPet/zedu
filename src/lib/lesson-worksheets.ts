@@ -50,3 +50,14 @@ export function formatDeadline(iso: string | null): string {
   const d = new Date(iso);
   return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
+
+/** Název nového listu k lekci: první bez čísla, další s pořadovým číslem. */
+export function nextLessonWorksheetTitle(lessonTitle: string, existingCount: number): string {
+  const base = lessonTitle?.trim() || "Lekce";
+  return existingCount > 0 ? `Pracovní list ${existingCount + 1} – ${base}` : `Pracovní list – ${base}`;
+}
+
+/** Stabilní pořadí listů u lekce: od nejstaršího. */
+export function sortLessonWorksheets<T extends { created_at?: string | null }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+}
