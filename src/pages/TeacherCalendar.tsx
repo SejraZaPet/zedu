@@ -23,6 +23,8 @@ import {
   getWeekRange,
 } from "@/lib/calendar-utils";
 import { expandTeacherSchedule, loadSchedule, hydrateScheduleFromRemote } from "@/lib/teacher-schedule-store";
+import { fetchExceptionRows, mergeExceptions, ownedSource, type Expander } from "@/lib/schedule-exception-store";
+import ScheduleExceptionDialog from "@/components/calendar/ScheduleExceptionDialog";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
 import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
@@ -46,11 +48,14 @@ const TeacherCalendar = () => {
   /** Map of YYYY-MM-DD|subject|classId → present|missing */
   const [reflectionMap, setReflectionMap] = useState<Record<string, "missing" | "present">>({});
   const [reflectionVersion, setReflectionVersion] = useState(0);
+  const [expander, setExpander] = useState<Expander>(() => () => []);
+  const [exceptionAction, setExceptionAction] = useState<{ event: CalendarEvent; mode: "move" | "cancel" | "revert" } | null>(null);
 
   async function reloadReflections(evts: CalendarEvent[]) {
     if (!user) return;
     const lessonEvents = evts.filter(
-      (e) => e.type === "lesson" && e.end < new Date() && e.subject && e.classId,
+      (e) => e.type === "lesson" && e.end < new Date() && e.subject && e.classId &&
+        e.scheduleStatus !== "cancelled" && e.scheduleStatus !== "moved_from",
     );
     if (!lessonEvents.length) {
       setReflectionMap({});
@@ -135,6 +140,17 @@ const TeacherCalendar = () => {
         ? await hydrateScheduleFromRemote(user.id).catch(() => loadSchedule())
         : loadSchedule();
       const personalEvents = expandTeacherSchedule(personalSchedule, from, to);
+      const slotRows = ((slotsRes.data as any[]) ?? []) as any;
+      const expand: Expander = (f, t) => [
+        ...expandScheduleSlots(slotRows, f, t),
+        ...expandTeacherSchedule(personalSchedule, f, t),
+      ];
+      const exceptionRows = await fetchExceptionRows(from, to);
+      if (cancelled) return;
+      setExpander(() => expand);
+      const effectiveLessons = mergeExceptions(
+        [...lessonEvents, ...personalEvents], exceptionRows, user.id, { from, to }, expand,
+      );
 
       const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {
@@ -165,7 +181,7 @@ const TeacherCalendar = () => {
         },
       );
 
-      const merged = [...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents];
+      const merged = [...effectiveLessons, ...assignmentEvents, ...todoEvents];
       setEvents(merged);
       setLoading(false);
       reloadReflections(merged);
@@ -178,7 +194,9 @@ const TeacherCalendar = () => {
 
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === "lesson") {
-      if (event.groupId && event.subject) {
+      if (user && ownedSource(event, user.id)) {
+        setDetailEvent(event);
+      } else if (event.groupId && event.subject) {
         navigate(
           `/ucitel/predmet/${encodeURIComponent(event.subject)}/skupina/${event.groupId}`,
         );
@@ -251,7 +269,7 @@ const TeacherCalendar = () => {
 
           <div className="flex items-center gap-2">
             <CalendarExportMenu
-              events={events.map((e) => toExportEvent(e as any))}
+              events={events.filter((e) => e.scheduleStatus !== "cancelled" && e.scheduleStatus !== "moved_from").map((e) => toExportEvent(e as any))}
               filename={`Bezli-kalendar-${format(weekStart, "yyyy-MM-dd")}.ics`}
               calName="Bezli – kalendář učitele"
             />
@@ -349,6 +367,26 @@ const TeacherCalendar = () => {
         event={detailEvent}
         open={!!detailEvent}
         onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+        onScheduleAction={user && detailEvent && ownedSource(detailEvent, user.id)
+          ? (mode) => { const ev = detailEvent; setDetailEvent(null); setExceptionAction({ event: ev, mode }); }
+          : undefined}
+        onOpenSubject={detailEvent?.subject && (detailEvent.classId || detailEvent.groupId)
+          ? () => {
+              const ev = detailEvent;
+              setDetailEvent(null);
+              navigate(ev.groupId
+                ? `/ucitel/predmet/${encodeURIComponent(ev.subject!)}/skupina/${ev.groupId}`
+                : `/ucitel/predmet/${encodeURIComponent(ev.subject!)}/trida/${ev.classId}`);
+            }
+          : undefined}
+      />
+      <ScheduleExceptionDialog
+        event={exceptionAction?.event ?? null}
+        mode={exceptionAction?.mode ?? null}
+        onClose={() => setExceptionAction(null)}
+        events={events}
+        expand={expander}
+        onSaved={() => setReflectionVersion((v) => v + 1)}
       />
       <SiteFooter />
     </div>
