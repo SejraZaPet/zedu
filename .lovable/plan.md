@@ -1,6 +1,6 @@
 # Dočasné změny rozvrhu – diagnostika a návrh ke schválení
 
-**Stav:** pouze čtení aplikace a struktury databáze. Žádný aplikační kód, data, oprávnění ani migrace nebyly změněny. Předchozí práce na nástrojích a demu je v roadmapě dokončená; Etapa B živých nástrojů zůstává neschválená. Tento plán nic nezveřejňuje.
+**Stav:** diagnostika pouze čtením; žádné změny aplikace/databáze. Nástroje a demo jsou dokončené. Etapa B zůstává neschválená.
 
 ## 1. Co existuje dnes
 
@@ -14,11 +14,9 @@ Kalendář učitele spojuje oba zdroje; žákovský čte třídní/skupinové ho
 
 Kalendáře používají `expandScheduleSlots`, osobní zdroj `expandTeacherSchedule`. Některé dotazy spoléhají na RLS, jiné filtrují členství. Shodná osobní a třídní hodina nemá společné ID; nespojovat je automaticky podle názvu/času.
 
-### Plány, zrušení a prázdniny
-- `lesson_plans` ukládá vlastníka, třídu/skupinu, obsah a zveřejnění. `linkedDate`, `linkedTime`, `linkedSlots` jsou v `input_data`: datum, čas a cílová třída/skupina, **bez stabilního ID zdrojové hodiny**. Staré jedno přiřazení a více přiřazení se čtou vedle sebe.
-- Fázový přehled je navíc v `lesson_plan_phases`: učitel, předmět, datum, začátek/konec a fáze. `lesson-phase-plans.ts` jej skutečně ukládá do databáze; komentář v editoru o lokálním uložení je zastaralý. Část těchto řádků nemá `lesson_plan_id`; shoda předmět + datum + čas nemusí být jednoznačná.
-- Nebyla nalezena tabulka výjimek ani funkce, která by v těchto cestách rušila/přesouvala jednotlivé hodiny.
-- `school_calendar_events` a `staff_calendar_events` jsou běžné události, včetně celodenních/opakovaných. Nemají ověřený typ „svátek/prázdniny“ a jejich zobrazení výuku nevynechává. Nadpis události nesmí sloužit jako automatické pravidlo.
+### Plány a dny bez výuky
+`lesson_plans.input_data` ukládá `linkedDate`/`linkedTime`/`linkedSlots` jako datum, čas a cíl, bez ID hodiny. Fázové souhrny jsou navíc v `lesson_plan_phases`, někdy bez `lesson_plan_id`; shoda předmět+datum+čas nemusí být jednoznačná. Nejde pouze o lokální cache.
+Nebyla nalezena tabulka výjimek ani rušení/přesouvání výskytů. Školní události nemají ověřený význam „svátek/prázdniny“ a výuku nevynechávají.
 
 ## 2. Doporučené chování
 
