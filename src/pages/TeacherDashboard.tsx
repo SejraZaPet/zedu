@@ -19,6 +19,7 @@ import {
   Award,
   BookMarked,
   ClipboardList,
+  Monitor,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -57,6 +58,7 @@ const STORAGE_KEY = "teacher-dashboard-widget-order-v1";
 
 const DEFAULT_ORDER = [
   "today",
+  "classroom-tools",
   "subjects",
   "textbooks",
   "activities",
@@ -187,6 +189,14 @@ const TeacherDashboard = () => {
   const isLektor = role === "lektor";
 
   const cards: Record<string, CardConfig> = {
+    "classroom-tools": {
+      id: "classroom-tools",
+      icon: Monitor,
+      title: "Nástroje do hodiny",
+      description: "Odpočet, stopky, losování, skupiny, megatext a měřič hlasitosti.",
+      button: "Otevřít nástroje",
+      onClick: () => navigate("/ucitel/nastroje"),
+    },
     textbooks: {
       id: "textbooks",
       icon: GraduationCap,

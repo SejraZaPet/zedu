@@ -3,14 +3,14 @@
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.
 - Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
 
-- Assignment states/completion use assignment-status.ts; grouping is session-scoped and presentational so grading/deadlines/permissions stay authoritative.
+- Assignment states use assignment-status.ts; grouping is session-only presentation, never grading, deadlines or permissions.
 - Read attempts via student-assignment-attempts.ts with existing RLS and group memberships so teammate submissions need no new access rights.
 
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
 - Worksheet item editors emit patches to WorksheetEditor; never persist.
-- Insert print-header additions through an explicit template marker and paginate after fonts load using block bounds, not trailing margins, so print previews share stable page geometry.
-- Keep lesson-linked presentation edits teacher-scoped in `teacher_presentations`; global lesson rows are source content, never shared storage for one teacher's slide edits.
+- Print headers use an explicit marker; paginate font-loaded block bounds, not margins, for stable previews.
+- Lesson slide edits belong in teacher-scoped `teacher_presentations`, never global source lesson rows, to isolate teachers.
 - Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
@@ -33,3 +33,4 @@
 - Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
+- Classroom tools use component memory, authenticated membership/profile reads and local Web Audio without recording or transport, so names and audio never persist.

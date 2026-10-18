@@ -26,6 +26,7 @@ import LessonPage from "./pages/LessonPage";
 import PodcastDetailPage from "./pages/PodcastDetailPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherClassroomTools from "./pages/TeacherClassroomTools";
 import TextbooksPage from "./pages/TextbooksPage";
 import ProfilePage from "./pages/ProfilePage";
 import TeacherTextbooks from "./pages/TeacherTextbooks";
@@ -137,6 +138,7 @@ const App = () => (
             <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/ucitel/nastroje" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherClassroomTools /></ProtectedRoute>} />
             <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
             <Route path="/rodic/zpravy" element={<ProtectedRoute><ParentMessages /></ProtectedRoute>} />
             <Route path="/ucitel/zpravy-rodicu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherParentMessages /></ProtectedRoute>} />

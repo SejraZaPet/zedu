@@ -1,5 +1,11 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Nástroje do hodiny
+- [x] Diagnostika navigace, seznamů žáků, projektoru a živé infrastruktury bez změn
+- [ ] Etapa A: šest lokálních nástrojů, navigace a karta přehledu
+- [ ] Testy logiky a přihlášená kontrola na telefonu/projektoru
+- [ ] Etapa B: návrh hlasování a moderovaných nápadů; implementace čeká na schválení
+
 ## Banka slov v doplňování
 - [x] Banka slov, vracení slov, kliknutí a přetahování včetně dotyku
 - [x] Nastavení editoru, výchozí zapnuto, falešná slova
