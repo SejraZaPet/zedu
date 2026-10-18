@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatTime, type CalendarEvent } from "@/lib/calendar-utils";
-import { resolvePragueTime, scheduleTimeConflicts, scheduleOccurrenceKey, type EffectiveScheduleOccurrence } from "@/lib/schedule-exceptions";
+import { resolvePragueTime, scheduleTimeConflicts, type EffectiveScheduleOccurrence } from "@/lib/schedule-exceptions";
 import {
   findLinkedPlans, nextOccurrenceDate, ownedSource, saveException, type Expander,
 } from "@/lib/schedule-exception-store";
@@ -226,4 +226,3 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
   );
 }
 
-export { scheduleOccurrenceKey };
