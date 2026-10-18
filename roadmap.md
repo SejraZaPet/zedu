@@ -4,8 +4,9 @@
 - [x] Diagnostika a schválený návrh etap
 - [x] Izolované jádro jednorázových výjimek bez zapojení do obrazovek; 17 nových testů, všech 557 testů prošlo; ověřeno i jiné časové pásmo
 - [x] Migrace 0064 aplikována; první pokus selhal, opravený opakovaný pokus uspěl (opakování nebylo v souladu s pokynem zastavit po selhání)
-- [ ] Zapojení přesunu/zrušení/návratu, vazeb plánů a datovaných pohledů — čeká na zvláštní schválení; žádné nové ovládání ani čtení není zapojeno
-- [ ] Funkční ověření nových databázových zápisů a izolace dvou demo párů — čeká na souhlas s testovacími zápisy po selhání migrace
+- [x] Úzce schválená migrace 0065 oprávnění: anon žádná práva, authenticated CRUD; EXECUTE bez PUBLIC/anon, RLS beze změny
+- [ ] Schválené učitelské UI jednorázových výjimek — blokuje 0064: třídní výjimky automaticky zveřejňuje a dovoluje čtení spolu-učitelům; bez nové migrace nelze splnit soukromost, žádné UI není zapojeno
+- [ ] Funkční ověření nových databázových zápisů a izolace dvou demo párů — povoleno jen na vlastních nových [TEST] demo účtech; čeká na vyřešení uvedené překážky a zvláštní schválení databázové opravy
 - [ ] Dávky — čekají na potvrzený školní kalendář; trvalé změny nejsou součástí první etapy
 
 ## Nástroje do hodiny
