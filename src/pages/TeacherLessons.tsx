@@ -18,6 +18,7 @@ import {
   Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText, MonitorPlay
 } from "lucide-react";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import { nextLessonWorksheetTitle } from "@/lib/lesson-worksheets";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 
 interface Lesson {
