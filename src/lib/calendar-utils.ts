@@ -9,6 +9,7 @@ import {
   getSubjectColor,
   getSubjectName,
 } from "./subject-appearance";
+import type { ScheduleOccurrenceSource } from "./schedule-exceptions";
 
 
 export type CalendarEvent = {
@@ -29,12 +30,21 @@ export type CalendarEvent = {
   color?: string;
   abbreviation?: string;
   weekParity?: "every" | "odd" | "even";
+  source?: ScheduleOccurrenceSource;
+  scheduleStatus?: "cancelled" | "moved_from" | "moved_to";
+  exceptionId?: string;
+  exceptionRevision?: number;
+  isTeachingOccurrence?: boolean;
+  originalStart?: Date;
+  movedStart?: Date;
+  publicReason?: string;
   examType?: "ustni" | "pisemne" | "digitalni" | "projekt" | "prace_v_hodine" | null;
 };
 
 export type ScheduleSlotInput = {
   id: string;
   class_id: string | null;
+  created_by?: string | null;
   /** Skupina předmětu – alternativa ke class_id (vyplněno jen jedno z nich). */
   group_id?: string | null;
   day_of_week: number;
@@ -124,6 +134,8 @@ export function expandScheduleSlots(
         abbreviation,
 
         weekParity: slot.week_parity,
+        source: { kind: "class_slot", ownerId: slot.created_by ?? "", slotId: slot.id,
+          originalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` },
       });
     }
   }

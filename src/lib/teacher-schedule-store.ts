@@ -238,6 +238,7 @@ export function expandTeacherSchedule(
   schedule: TeacherScheduleData,
   fromDate: Date,
   toDate: Date,
+  ownerId?: string,
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const days = eachDayOfInterval({ start: fromDate, end: toDate });
@@ -297,6 +298,9 @@ export function expandTeacherSchedule(
         subject: l.subject || undefined,
         color: l.color || style?.color,
         abbreviation: l.abbreviation || style?.abbreviation,
+        source: ownerId ? { kind: "personal", ownerId,
+          slotId: l.mirrorBoth && l.mirrorKey ? `mirror:${l.mirrorKey}` : l.id,
+          originalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` } : undefined,
       });
     }
   }
