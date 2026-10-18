@@ -30,6 +30,13 @@ export type CalendarEvent = {
   abbreviation?: string;
   weekParity?: "every" | "odd" | "even";
   examType?: "ustni" | "pisemne" | "digitalni" | "projekt" | "prace_v_hodine" | null;
+  /** Stable timetable source (only for recurring lessons); never parsed from `id`. */
+  scheduleSource?: { kind: "class_slot" | "personal"; slotId: string; createdBy?: string | null };
+  /** Display-only one-off exception state (teacher view only). */
+  scheduleStatus?: "cancelled" | "moved_from" | "moved_to";
+  publicReason?: string;
+  movedStart?: Date;
+  originalStart?: Date;
 };
 
 export type ScheduleSlotInput = {
@@ -47,6 +54,7 @@ export type ScheduleSlotInput = {
   room: string;
   color?: string | null;
   abbreviation?: string | null;
+  created_by?: string | null;
   classes?: { name: string } | null;
   subject_groups?: { name?: string | null } | null;
   /** Kanonický katalog předmětů – zdroj barvy/zkratky, když hodina svou nemá. */
@@ -124,6 +132,7 @@ export function expandScheduleSlots(
         abbreviation,
 
         weekParity: slot.week_parity,
+        scheduleSource: { kind: "class_slot", slotId: slot.id, createdBy: slot.created_by ?? null },
       });
     }
   }
