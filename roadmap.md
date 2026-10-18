@@ -1,7 +1,7 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
 ## Nástroje do hodiny
-- [ ] Viditelnost v demu: přímý odkaz, nová karta ve starém pořadí; ověřit nové/obnovené demo, předvýběr a uklidit jen vlastní testovací pár
+- [x] Viditelnost v demu: přímý odkaz, nová karta ve starém pořadí; nové/obnovené demo a šest nástrojů ověřeny; 540 testů, předvýběr skutečné třídy, 3 vlastní páry/6 účtů uklizeny
 - [x] Nástroje v editoru/náhledu a učitelském časování plánu: sdílený překryv, čas fáze a předvýběr třídy/skupiny bez ukládání
 - [x] Ověřit zachování neuloženého plánu, odpočty a návrat (537 testů; přihlášený editor i uložený náhled, telefon/fullscreen); rollback v docs/classroom-plan-tools.md
 - [x] Diagnostika navigace, seznamů žáků, projektoru a živé infrastruktury bez změn

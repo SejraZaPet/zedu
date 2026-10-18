@@ -20,6 +20,7 @@
 ## Ověření
 - Všech 540 testů ve 113 souborech prošlo; kontrola sestavení OK.
 - Přihlášená učitelka: nový rozepsaný plán, všechny nástroje, automatický dvouminutový odpočet, Escape, celá obrazovka a zachování textu/času bez uložení.
+- Skutečná oprávněná třída vybraná v rozepsaném plánu se automaticky předvybrala v Losování i Skupinách, bez uložení plánu.
 - Existující uložený plán: otevření a zavření nástroje v náhledu bez zápisu.
 - Telefon 390 × 844: lišta i odpočet čitelné bez vlastního vodorovného přesahu; žádné chyby běhu.
 - Celý původní editor má na telefonu přesah mimo nové nástroje; tento malý úkol jeho ostatní rozložení neměnil.
