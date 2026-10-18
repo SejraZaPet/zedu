@@ -70,4 +70,4 @@ Nebyla nalezena tabulka výjimek ani rušení/přesouvání výskytů. Školní 
 2. **Období a dávky:** ověřený kalendář bez výuky, dočasné přesuny, zrušení období, úprava/vrácení celku, volitelná zpráva a korektní exporty. Nezapínat neúplné exporty v etapě 1.
 3. **Trvalá změna:** až zvláštní návrh verzování stálého rozvrhu, ne součást první realizace.
 
-**Doporučení:** schválit nejprve etapu 1; etapu 2 doplnit po potvrzení školního kalendáře a pilotu. Žádná etapa nyní není implementována ani migrována.
+**Doporučení:** nejprve etapa 1, dávky po potvrzení školního kalendáře. Realizace čeká na souhlas.
