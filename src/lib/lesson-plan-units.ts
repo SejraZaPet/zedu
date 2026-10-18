@@ -111,3 +111,19 @@ export function buildLessonUnits(blocks: unknown): LessonUnit[] {
   }
   return units;
 }
+
+/** Počet skrytých nadpisů (celků), které plán hodiny nenabízí, protože je nevidí ani žáci. */
+export function countHiddenLessonUnits(blocks: unknown): number {
+  let n = 0;
+  const walk = (list: unknown, hiddenParent: boolean) => {
+    if (!Array.isArray(list)) return;
+    for (const b of list as any[]) {
+      if (!b || typeof b !== "object") continue;
+      const hidden = hiddenParent || b.visible === false;
+      if (b.type === "heading" && hidden) n++;
+      walk(b.props?.blocks ?? b.props?.children ?? b.children, hidden);
+    }
+  };
+  walk(blocks, false);
+  return n;
+}
