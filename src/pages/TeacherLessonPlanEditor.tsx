@@ -1511,7 +1511,7 @@ export default function TeacherLessonPlanEditor() {
           </div>
         </main>
         <SiteFooter />
-        <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={{ targetId: classId }} />
+        <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={selectedTarget?.kind === "group" ? { groupId: classId } : selectedTarget?.kind === "class" ? { classId } : { targetId: classId }} />
       </div>
     );
   }
@@ -2871,7 +2871,7 @@ export default function TeacherLessonPlanEditor() {
       </Dialog>
 
       <SiteFooter />
-      <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={{ targetId: classId }} />
+      <ClassroomToolsOverlay request={toolRequest} onClose={() => setToolRequest(null)} target={selectedTarget?.kind === "group" ? { groupId: classId } : selectedTarget?.kind === "class" ? { classId } : { targetId: classId }} />
     </div>
   );
 }

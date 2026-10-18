@@ -18,13 +18,20 @@
 - `AGENTS.md` a `roadmap.md`: sdílená struktura a stav úkolu.
 
 ## Ověření
-- Všech 537 testů ve 112 souborech prošlo; kontrola sestavení OK.
+- Všech 540 testů ve 113 souborech prošlo; kontrola sestavení OK.
 - Přihlášená učitelka: nový rozepsaný plán, všechny nástroje, automatický dvouminutový odpočet, Escape, celá obrazovka a zachování textu/času bez uložení.
 - Existující uložený plán: otevření a zavření nástroje v náhledu bez zápisu.
 - Telefon 390 × 844: lišta i odpočet čitelné bez vlastního vodorovného přesahu; žádné chyby běhu.
 - Celý původní editor má na telefonu přesah mimo nové nástroje; tento malý úkol jeho ostatní rozložení neměnil.
 - Nová cesta v učitelském panelu živé prezentace a předvýběr skutečné připojené skupiny nebyly v prohlížeči end-to-end vyzkoušeny; čistá pravidla předvýběru jsou otestována.
-- Žádný testovací plán nebyl uložen, žádná data nebyla smazána.
+- Žádný testovací plán nebyl uložen. Tři vlastní označené demo páry a šest jejich účtů po zkoušce uklizeny; ostatní data nedotčena.
+
+## Viditelnost v demu
+- Diagnostika nepotvrdila blokování cesty, role ani demo ochrany: zveřejněná aplikace již obsahovala stránku a nástroje v plánu. Odkaz byl schovaný v rozbalovacím menu; staré uložené pořadí přehledu přidávalo novou kartu až na konec.
+- `SiteHeader.tsx` nyní nabízí přímé Nástroje; `TeacherDashboard.tsx` používá `teacher-dashboard-order.ts`, aby novou kartu přidal za Dnes a zachoval již uložené pořadí ostatních karet i záměrně přesunutých nástrojů.
+- `teacher-dashboard-order.test.ts` ověřuje staré pořadí, záměrně přesunutou kartu a odstranění duplicit/zastaralých položek.
+- Nové i obnovené vlastní demo: karta, přímá navigace, všech šest nástrojů, vlastní demo třída, odpočet a zachování neuloženého textu/času ověřeny. Mobilní stránka bez vodorovného přesahu.
+- Pro veřejný web je nutné kliknout na Publish; Etapa B nadále neschválena.
 
 ## Ručně vyzkoušejte
 1. V plánu změňte text bez uložení, spusťte odpočet fáze, zavřete Escape a ověřte text i místo návratu.
