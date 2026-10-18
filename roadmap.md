@@ -1,5 +1,9 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Dočasné změny rozvrhu
+- [ ] Diagnostika rozvrhů, vazeb plánů, kalendářů a návrh etap (jen čtení aplikace a databáze)
+- [ ] Implementace výjimek a migrace — blokováno výslovným schválením návrhu
+
 ## Nástroje do hodiny
 - [x] Viditelnost v demu: přímý odkaz, nová karta ve starém pořadí; nové/obnovené demo a šest nástrojů ověřeny; 540 testů, předvýběr skutečné třídy, 3 vlastní páry/6 účtů uklizeny
 - [x] Nástroje v editoru/náhledu a učitelském časování plánu: sdílený překryv, čas fáze a předvýběr třídy/skupiny bez ukládání
