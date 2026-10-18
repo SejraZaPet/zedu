@@ -5,22 +5,14 @@
 ## 1. Co existuje dnes
 
 ### Dva odlišné rozvrhy
-- **Osobní rozvrh:** `teacher_schedules` má `user_id` (primární klíč), `data` JSON, `created_at`, `updated_at`. JSON obsahuje vyučovací hodiny, časy zvonění, přestávky, seznamy společných/lichých/sudých týdnů a režim týdnů. Hodina má vlastní `id`, den, pořadí hodiny, předmět, volitelnou třídu (`classId`), místnost, `validFrom`/`validTo`, paritu a případný `mirrorKey` dvou kopií. Nemá samostatnou vazbu na skupinu. Účetní kopie je v databázi; localStorage je cache s historickým fallbackem. Není to stejný zdroj jako rozvrh třídy.
-- **Rozvrh tříd/skupin:** `class_schedule_slots` má stabilní `id`, právě jednu z vazeb `class_id` / `group_id`, `day_of_week` 1–7, `start_time` / `end_time`, `week_parity` every/odd/even, `valid_from` / `valid_to`, `created_by`, předmět (`subject_id` i starší text), místnost a volitelné odkazy na učebnici, zvonění a školní zdroj. Databáze kontroluje cílovou vazbu XOR, konec po začátku a pořadí platnosti.
+- **Osobní rozvrh:** `teacher_schedules`: `user_id` PK, `data` JSON, časová razítka. Hodiny mají `id`, den, pořadí, předmět, `classId`, místnost, `validFrom`/`validTo`, paritu a případný `mirrorKey`. JSON obsahuje zvonění, přestávky a oddělené seznamy týdnů. Nemá vazbu na skupinu. Databáze je účetní kopie, localStorage cache s historickým fallbackem.
+- **Třídní/skupinový rozvrh:** `class_schedule_slots`: `id`, `class_id` XOR `group_id`, `day_of_week`, `start_time`/`end_time`, `week_parity`, `valid_from`/`valid_to`, `created_by`, `subject_id` i text, místnost a odkazy na učebnici/školní zdroj.
 - A/B dnes odpovídá **lichému/sudému ISO týdnu**, nikoli školou nastavenému střídání A/B. Platnost od–do je včetně obou krajních dnů.
 
 ### Kde se zobrazují
-| Obrazovka | Dnešní zdroj a chování |
-|---|---|
-| Kalendář učitele | Spojuje třídní/skupinové hodiny a osobní rozvrh; úkoly a osobní úlohy přidává samostatně. |
-| Kalendář žáka | Třídní/skupinové hodiny dostupné přes současná oprávnění; zveřejněné úkoly a osobní úlohy zvlášť. |
-| „Dnes“ učitele/žáka | Rozvíjí `class_schedule_slots` pro dnešní datum; osobní JSON rozvrh dnes nepřidává. |
-| Rozvrh učitele | Osobní rozvrh i oprávněné třídní/skupinové hodiny. |
-| Rozvrh žáka a rodičovský přehled | Týdenní šablona podle členství, nikoli konkrétní datovaný týden; žák má filtr parity. |
-| Rozvrh třídy / Hodiny z mých tříd | Editace nebo přehled opakujících se hodin, nikoli výjimek konkrétního týdne. |
-| Výběr termínu plánu a exporty | Vycházejí ze základního rozvrhu, bez výjimek. |
+Kalendář učitele spojuje oba zdroje; žákovský čte třídní/skupinové hodiny. „Dnes“ dnes rozvíjí pouze `class_schedule_slots`, ne osobní JSON. Rozvrh žáka a rodiče je týdenní šablona podle členství, nikoli datovaný týden; přehled tříd rovněž ukazuje opakující se hodiny. Výběr termínu plánu i exporty nemají výjimky.
 
-Kalendáře používají společné `expandScheduleSlots`; osobní zdroj má `expandTeacherSchedule`. Některé dotazy spoléhají na RLS, jiné výslovně filtrují členství. Stejná osobní a třídní hodina nemá společné ID; automaticky je spojovat podle názvu/času by bylo nebezpečné.
+Kalendáře používají `expandScheduleSlots`, osobní zdroj `expandTeacherSchedule`. Některé dotazy spoléhají na RLS, jiné filtrují členství. Shodná osobní a třídní hodina nemá společné ID; nespojovat je automaticky podle názvu/času.
 
 ### Plány, zrušení a prázdniny
 - `lesson_plans` ukládá vlastníka, třídu/skupinu, obsah a zveřejnění. `linkedDate`, `linkedTime`, `linkedSlots` jsou v `input_data`: datum, čas a cílová třída/skupina, **bez stabilního ID zdrojové hodiny**. Staré jedno přiřazení a více přiřazení se čtou vedle sebe.
@@ -65,7 +57,7 @@ Kalendáře používají společné `expandScheduleSlots`; osobní zdroj má `ex
 - **RLS:** zápis/úprava/vrácení jen vlastník se serverově ověřeným přístupem ke zdroji; spolu-učitel nesmí měnit cizí výjimku. `created_by` u starých DB hodin může být NULL a současná pravidla umožňují více učitelů: nepřivlastňovat je automaticky. Nejednoznačné vlastnictví před spuštěním výslovně vyřešit, jinak výjimku nenabídnout.
 - Žáci čtou jen zveřejněné změny svých aktuálních tříd/skupin. Soukromá poznámka ani osobní rozvrh se neposkytne: bezpečný výstup s vybranými sloupci, ne SELECT celé tabulky s pouhou RLS. Vazby plánů a dávky jsou pro vlastníka; dny bez výuky čtou členové školy, zapisuje oprávněný správce školy.
 - **GRANT:** každá nová public tabulka musí dostat výslovné granty ve stejné migraci před RLS/politikami. Pro auth jen nutná čtení; zápisy atomickými RPC s kontrolou vlastníka, `service_role` pro údržbu. `anon` žádný přístup. Definer funkce s pevným search_path, kontrolou auth.uid(), cíle a omezeným EXECUTE.
-- **Demo:** současné RLS je zapnuté; na kontrolovaných tabulkách rozvrhů/plánů nejsou vlastní pojmenované `demo_iso`/`demo_guard_*` politiky. To samo nedokazuje únik: přístup závisí také na chráněných třídách/členství a vlastnících. Nové tabulky však musí mít od začátku additive RESTRICTIVE izolaci a ochranu zápisů pomocí existujících helperů, včetně kontroly páru v RPC. Sdílené ukázky neměnit; nové záznamy vlastnímu páru, reset/purge pouze k němu. Staré politiky neuvolňovat.
+- **Demo:** RLS je zapnuté; izolace závisí také na vlastnictví a chráněném členství. Nové tabulky musí mít additive RESTRICTIVE `demo_iso`/`demo_guard_*` s existujícími helpery a kontrolou páru v RPC. Sdílené ukázky neměnit, reset/purge jen vlastnímu páru; staré politiky neuvolňovat.
 
 ## 4. Dopady, testy a rollback
 
