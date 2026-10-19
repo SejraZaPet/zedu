@@ -1,5 +1,12 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Živý kvíz — schválená etapa 1
+- [x] Dokončena diagnostika živého kvízu a úprav AI návrhu; AI editor není součástí této opravy
+- [ ] Čerstvé konečné výsledky, obnova hráčů, pokles skóre a shody pořadí bez rozšíření oprávnění
+- [ ] Přezdívky výchozí v přehledu, samostatná výchozí pseudonymizace exportů
+- [ ] Kontrastní odpočet a telefonní otázky/odpovědi bez zmenšeného snímku
+- [ ] Testy a ověření; bez publikování, migrací, změn RLS, časů či bodování
+
 ## Úzká úprava limitu vstupu do dema
 - [x] Allowlist akce: 80/h pro dalkove-ucitele, jinak 20/h, denní 500 beze změny; 7 lokálních testů limitů bez účtů prošlo
 - [x] Čtením ověřeno předání akce a rizika 50 souběžných vstupů; kapacita hostované služby neověřena, žádná ostrá zkouška ani další změny

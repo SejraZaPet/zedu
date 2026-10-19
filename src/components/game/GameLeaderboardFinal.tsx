@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuickGameDialog } from "@/components/game/QuickGameDialog";
 import { weakSpotGameTopic } from "@/lib/assignment-difficulty";
 import { computeGameQuestionResults, computePersonalGameSummary } from "@/lib/game-results";
+import { rankGamePlayers } from "@/lib/game-ranking";
 
 
 interface Props {
@@ -30,18 +31,9 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
   const [gameTopic, setGameTopic] = useState<string | null>(null);
 
   const isRaceMode = (session.settings as any)?.gameMode === "race";
-  const sortedPlayers = useMemo(() => {
-    if (isRaceMode) {
-      // In race mode, farthest on the track wins; total_score is tiebreaker.
-      return [...players].sort((a, b) => {
-        const ai = typeof a.student_index === "number" ? a.student_index : 0;
-        const bi = typeof b.student_index === "number" ? b.student_index : 0;
-        if (bi !== ai) return bi - ai;
-        return (b.total_score || 0) - (a.total_score || 0);
-      });
-    }
-    return [...players].sort((a, b) => b.total_score - a.total_score);
-  }, [players, isRaceMode]);
+  const rankedPlayers = useMemo(() => rankGamePlayers(players, isRaceMode), [players, isRaceMode]);
+  const sortedPlayers = useMemo(() => rankedPlayers.map((row) => row.player), [rankedPlayers]);
+  const rankFor = (id: string) => rankedPlayers.find((row) => row.player.id === id)?.rank;
 
 
 
@@ -110,7 +102,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                   </div>
                   <div className="w-full rounded-t-xl border-2 border-b-0 border-podium-foreground/20 flex flex-col items-center justify-start pt-2 text-podium-foreground shadow-lg min-w-0" data-podium-rank={slot.label} style={{ height: slot.height, background: `linear-gradient(180deg, hsl(var(--podium-${slot.blockColor}-from)), hsl(var(--podium-${slot.blockColor}-to)))` }}>
                     <span className="text-2xl md:text-3xl" aria-hidden>{slot.medal}</span>
-                    <span className="text-3xl md:text-4xl font-heading font-black leading-none">{slot.label}</span>
+                    <span className="text-3xl md:text-4xl font-heading font-black leading-none">{rankFor(player.id)}</span>
                     <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`} title={player.nickname}>{player.nickname}</p>
                     <p className="text-sm md:text-base font-mono font-bold">{player.total_score} b.</p>
                   </div>
@@ -124,7 +116,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
           <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
             {rest.map((player, i) => (
               <div key={player.id} className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}>
-                <span className="text-sm font-bold text-foreground w-6 shrink-0">{i + 4}.</span>
+                <span className="text-sm font-bold text-foreground w-6 shrink-0">{rankFor(player.id)}.</span>
                 <GameAvatarFigure userId={player.user_id} size={32} crop="head" />
                 <span className="flex-1 min-w-0 truncate font-medium text-foreground" title={player.nickname}>{player.nickname}</span>
                 <span className="shrink-0 font-mono font-bold text-foreground text-sm">{player.total_score} b.</span>
@@ -160,7 +152,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 <p className="text-sm font-medium text-muted-foreground">Tvůj výsledek</p>
                 <div className="mt-2 flex items-end justify-center gap-8">
                   <div><p className="text-4xl font-heading font-bold text-primary">{highlightedPlayer.total_score}</p><p className="text-xs text-muted-foreground">bodů</p></div>
-                  <div><p className="text-4xl font-heading font-bold text-foreground">{highlightedRank + 1}.</p><p className="text-xs text-muted-foreground">místo</p></div>
+                  <div><p className="text-4xl font-heading font-bold text-foreground">{rankFor(highlightedPlayer.id)}.</p><p className="text-xs text-muted-foreground">místo</p></div>
                 </div>
               </section>
             )}
