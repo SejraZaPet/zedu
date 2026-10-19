@@ -24,7 +24,7 @@
 - Store worksheet item images as permanent public URLs in `lesson-images` via `WorksheetImageField`/`worksheet-images.ts` (same path as presentations), never 1-hour signed `teacher-media` URLs, so students, print and PDF always see them.
 - Create student course notebooks only via `ensure_my_course_notebooks()` / membership triggers (one per owner+group or owner+class+subject_id, enforced by partial unique indexes), so automatic creation stays idempotent and never touches teachers or shared demo profiles.
 - Store a student's own worksheet work outside assignments only in `student_worksheet_work` (one draft per student+worksheet+variant via partial unique index, submitted rows kept); assignment attempts never use it, so grading and assignment flows stay untouched.
-- Notebook worksheets use `worksheet-notebook.ts`: digital links, locked pen backgrounds; submissions snapshot pen pages to `assignment-uploads` via `answers._notebookSnapshot`, preserving answers and storage permissions.
+- Notebook worksheets: `worksheet-notebook.ts` resumes by pageIndex/pageCount after print readiness; image recovery is view-only, export/snapshots require backgrounds (thumbs unchanged), keeping answers and private snapshot storage.
 - Worksheet kind stays separate from AI focus (worksheet-kinds.ts); server section counts use _shared/worksheet-sections.ts for consistent generation/exports.
 
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).

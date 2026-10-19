@@ -42,7 +42,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import LayoutBlockItem from "@/components/worksheet-items/LayoutBlockItem";
 import { scoreWorksheet, isItemAnswered, MANUAL_ITEM_TYPES } from "@/components/WorksheetPlayer";
-import { insertWorksheetIntoNotebook, snapshotPenPagesForAttempt, readSnapshot, SNAPSHOT_KEY } from "@/lib/worksheet-notebook";
+import { insertWorksheetIntoNotebook, isPenInsertionComplete, snapshotPenPagesForAttempt, readSnapshot, SNAPSHOT_KEY } from "@/lib/worksheet-notebook";
 import { normalizeContent } from "@/lib/notebook";
 import { buildStudentWorksheetHtml } from "@/lib/worksheet-pdf-export";
 import { WORKSHEET_SPEC_EXAMPLE } from "@/lib/worksheet-spec";
@@ -108,6 +108,40 @@ describe("vložení do sešitu", () => {
     expect(res.pages).toHaveLength(1);
     expect(c.worksheet).toMatchObject({ mode: "digital", assignmentId: "as1" });
     expect(c.strokes).toEqual([]);
+  });
+
+  it("doplní pouze chybějící stránku a nepřepíše uložené tahy", async () => {
+    const render = vi.fn(async () => [new Blob(["a"]), new Blob(["b"])]);
+    await insertWorksheetIntoNotebook({ notebook: nb, worksheetId: "ws1", mode: "pen", render });
+    db.pages.pop();
+    db.pages[0].content.strokes = [{ id: "saved-stroke", points: [[0.1, 0.1], [0.2, 0.2]] }];
+    const before = JSON.stringify(db.pages[0]);
+    db.uploads = [];
+    expect(isPenInsertionComplete(db.pages as any)).toBe(false);
+    const result = await insertWorksheetIntoNotebook({ notebook: nb, worksheetId: "ws1", mode: "pen", render });
+    expect(result.existed).toBe(false);
+    expect(db.uploads).toHaveLength(1);
+    expect(db.pages).toHaveLength(2);
+    expect(JSON.stringify(db.pages[0])).toBe(before);
+    expect(result.pages.map((page) => page.content.worksheet?.pageIndex)).toEqual([0, 1]);
+    expect(isPenInsertionComplete(result.pages)).toBe(true);
+  });
+
+  it("nedoplní jinak stránkovaný list přes existující zápisky", async () => {
+    const render = async () => [new Blob(["a"]), new Blob(["b"])];
+    await insertWorksheetIntoNotebook({ notebook: nb, worksheetId: "ws1", mode: "pen", render });
+    db.pages.pop();
+    const before = JSON.stringify(db.pages);
+    await expect(insertWorksheetIntoNotebook({ notebook: nb, worksheetId: "ws1", mode: "pen", render: async () => [new Blob(["a"])] })).rejects.toThrow("změnil");
+    expect(JSON.stringify(db.pages)).toBe(before);
+  });
+
+  it("neodevzdá částečně vložený list ani nevytvoří snapshot", async () => {
+    await insertWorksheetIntoNotebook({ notebook: nb, worksheetId: "ws1", mode: "pen", render: async () => [new Blob(["a"]), new Blob(["b"])] });
+    db.pages.pop();
+    const rasterize = vi.fn(async () => new Blob(["x"]));
+    await expect(snapshotPenPagesForAttempt({ worksheetId: "ws1", assignmentId: "as1", studentId: "s1", attemptId: "at1", pages: db.pages as any, rasterize })).rejects.toThrow("chybí stránky");
+    expect(rasterize).not.toHaveBeenCalled();
   });
 
   it("snapshot při odevzdání: kopie do složky úkolu/žáka", async () => {

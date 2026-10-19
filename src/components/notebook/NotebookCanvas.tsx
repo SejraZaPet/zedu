@@ -5,13 +5,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
+import NotebookImageContent from "@/components/notebook/NotebookImageContent";
 import { NB_FONT_FAMILY, NB_LINE_HEIGHT, sizeToCqw, textBoxHtml } from "@/lib/notebook-rich-text";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   BackgroundStyle, NB_H, NB_W, NOTEBOOK_COLORS, NOTEBOOK_WIDTHS, NotebookImage,
   NotebookPageContent, NotebookTextBox, NotebookTool, Stroke,
-  backgroundCss, renderStroke, signNotebookImages, uploadNotebookImage,
+  backgroundCss, renderStroke, uploadNotebookImage,
 } from "@/lib/notebook";
 
 interface Props {
@@ -55,7 +56,6 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null);
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
 
   const strokes = content.strokes;
@@ -67,15 +67,6 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     [textBoxes, selectedId],
   );
 
-  /* --- podepsané URL obrázků --- */
-  const imagePaths = useMemo(() => images.map((i) => i.path).join("|"), [images]);
-  useEffect(() => {
-    const paths = imagePaths ? imagePaths.split("|") : [];
-    const missing = paths.filter((p) => p && !imageUrls[p]);
-    if (missing.length === 0) return;
-    signNotebookImages(missing).then((m) => setImageUrls((prev) => ({ ...prev, ...m })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imagePaths]);
 
   /* --- velikost plátna --- */
   useEffect(() => {
@@ -495,16 +486,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               }}
               onPointerDown={(e) => startElementDrag(e, "image", img.id, "move")}
             >
-              {imageUrls[img.path] ? (
-                <img
-                  src={imageUrls[img.path]}
-                  alt={img.locked ? "Stránka pracovního listu" : "Vložený obrázek v sešitu"}
-                  className="h-full w-full select-none object-contain"
-                  draggable={false}
-                />
-              ) : (
-                <div className="h-full w-full animate-pulse rounded bg-muted" />
-              )}
+              <NotebookImageContent path={img.path} locked={img.locked} />
               {mode === "select" && selectedId === img.id && !readOnly && (
                 <span
                   role="presentation"

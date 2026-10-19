@@ -245,13 +245,35 @@ export async function uploadNotebookImage(ownerId: string, file: File): Promise<
   return path;
 }
 
-export async function signNotebookImages(paths: string[]): Promise<Record<string, string>> {
+export async function signNotebookImages(paths: string[], options: { strict?: boolean } = {}): Promise<Record<string, string>> {
   const unique = Array.from(new Set(paths.filter(Boolean)));
   if (unique.length === 0) return {};
-  const { data } = await supabase.storage.from(NOTEBOOK_BUCKET).createSignedUrls(unique, 3600);
+  const { data, error } = await supabase.storage.from(NOTEBOOK_BUCKET).createSignedUrls(unique, 3600);
+  if (options.strict && error) throw new Error("Obrázek sešitu není dostupný. Zkus načtení znovu.");
   const map: Record<string, string> = {};
-  for (const row of data ?? []) if (row.path && row.signedUrl) map[row.path] = row.signedUrl;
+  for (const row of data ?? []) if (row.path && row.signedUrl && (!options.strict || !row.error)) map[row.path] = row.signedUrl;
+  if (options.strict && unique.some((path) => !map[path])) throw new Error("Obrázek sešitu není dostupný. Zkus načtení znovu.");
   return map;
+}
+
+/** Fresh images for exports/submission; URLs never enter saved content. */
+export async function loadNotebookImage(path: string): Promise<HTMLImageElement> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const urls = await signNotebookImages([path], { strict: true });
+      return await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        const timer = window.setTimeout(() => { image.onload = null; image.onerror = null; reject(new Error("Image timeout")); }, 20_000);
+        image.onload = () => { window.clearTimeout(timer); resolve(image); };
+        image.onerror = () => { window.clearTimeout(timer); reject(new Error("Image load failed")); };
+        image.src = urls[path];
+      });
+    } catch {
+      if (attempt === 1) throw new Error("Podklad stránky se nenačetl. Export ani odevzdání nejsou dokončené. Zkus načtení znovu v sešitě.");
+    }
+  }
+  throw new Error("Podklad stránky se nenačetl.");
 }
 
 /* ------------------------------------------------------------------ */
@@ -401,13 +423,15 @@ export function upsertClassRosterTextBox(
 export async function renderPageToCanvas(
   page: Pick<NotebookPage, "background_style" | "content">,
   scale = 1,
+  options: { requireImages?: boolean } = {},
 ): Promise<HTMLCanvasElement> {
   const w = Math.round(NB_W * scale);
   const h = Math.round(NB_H * scale);
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Stránku se nepodařilo vykreslit.");
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
@@ -439,6 +463,16 @@ export async function renderPageToCanvas(
   const content = normalizeContent(page.content);
 
   // obrázky
+  if (options.requireImages) {
+    if (content.worksheet?.mode === "pen" && !content.images.some((image) => image.locked && image.path)) {
+      throw new Error("Chybí podklad pracovního listu. Export ani odevzdání nejsou dokončené. Vlož list do sešitu znovu.");
+    }
+    const loaded = await Promise.all(content.images.map((image) => loadNotebookImage(image.path)));
+    loaded.forEach((image, index) => {
+      const placement = content.images[index];
+      ctx.drawImage(image, placement.x * w, placement.y * h, placement.w * w, placement.h * h);
+    });
+  } else {
   const urls = await signNotebookImages(content.images.map((i) => i.path));
   await Promise.all(
     content.images.map(
@@ -457,6 +491,8 @@ export async function renderPageToCanvas(
         }),
     ),
   );
+
+  }
 
   // kresba
   for (const s of content.strokes) renderStroke(ctx, s, w, h);
@@ -544,7 +580,7 @@ export async function exportNotebookToPdf(
   }
 
   for (let i = 0; i < pages.length; i++) {
-    const canvas = await renderPageToCanvas(pages[i], 1.5);
+    const canvas = await renderPageToCanvas(pages[i], 1.5, { requireImages: true });
     const data = canvas.toDataURL("image/jpeg", 0.92);
     if (added > 0) pdf.addPage();
     pdf.addImage(data, "JPEG", 0, 0, pageW, pageH);
@@ -567,7 +603,7 @@ export async function addPageToPortfolio(
   page: NotebookPage,
   pageNumber: number,
 ): Promise<void> {
-  const canvas = await renderPageToCanvas(page, 1.5);
+  const canvas = await renderPageToCanvas(page, 1.5, { requireImages: true });
   const blob: Blob = await new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Nepodařilo se vyrenderovat stránku."))), "image/png"),
   );
