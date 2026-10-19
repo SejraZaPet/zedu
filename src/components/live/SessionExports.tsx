@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, FileDown, FileText, BarChart3, Award, AlertTriangle, Lightbulb, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { sortParticipants } from "@/lib/session-participants-sort";
+import { DEFAULT_SCREEN_NAME_MODE, DEFAULT_EXPORT_NAME_MODE, type ResultNameMode } from "../../../supabase/functions/_shared/session-display-name";
 
 interface Props {
   sessionId: string;
@@ -59,7 +60,8 @@ const textTone = (r: number) => (r >= 70 ? "text-green-700 dark:text-green-400" 
 type SortKey = "success" | "name" | "score";
 
 const SessionExports = ({ sessionId, sessionTitle }: Props) => {
-  const [anonymization, setAnonymization] = useState("pseudonymous");
+  const [anonymization, setAnonymization] = useState<ResultNameMode>(DEFAULT_SCREEN_NAME_MODE);
+  const [exportNameMode, setExportNameMode] = useState<ResultNameMode>(DEFAULT_EXPORT_NAME_MODE);
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -83,7 +85,7 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session?.access_token}`,
           },
-          body: JSON.stringify({ sessionId, anonymizationMode: anonymization, includeAnswerKey }),
+          body: JSON.stringify({ sessionId, anonymizationMode: exportNameMode, includeAnswerKey }),
         }
       );
 
@@ -134,10 +136,23 @@ const SessionExports = ({ sessionId, sessionTitle }: Props) => {
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-4 p-4 border border-border rounded-lg bg-muted/30">
         <div>
-          <Label className="text-xs">Anonymizace</Label>
-          <Select value={anonymization} onValueChange={setAnonymization}>
-            <SelectTrigger className="w-40 mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+          <Label className="text-xs">Jména v přehledu</Label>
+          <Select value={anonymization} onValueChange={(value) => setAnonymization(value as ResultNameMode)}>
+            <SelectTrigger aria-label="Jména v přehledu" className="w-40 mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="nickname">Přezdívky</SelectItem>
+              <SelectItem value="named">Se jmény</SelectItem>
+              <SelectItem value="pseudonymous">Pseudonymní</SelectItem>
+              <SelectItem value="anonymous">Anonymní</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Jména v exportu</Label>
+          <Select value={exportNameMode} onValueChange={(value) => setExportNameMode(value as ResultNameMode)}>
+            <SelectTrigger aria-label="Jména v exportu" className="w-40 mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nickname">Přezdívky</SelectItem>
               <SelectItem value="named">Se jmény</SelectItem>
               <SelectItem value="pseudonymous">Pseudonymní</SelectItem>
               <SelectItem value="anonymous">Anonymní</SelectItem>

@@ -4,14 +4,14 @@
 - Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
 
 - Assignment states use assignment-status.ts; grouping is session-only presentation, never grading, deadlines or permissions.
-- Read attempts via student-assignment-attempts.ts and existing group RLS, avoiding new teammate access rights.
+- Attempts use student-assignment-attempts.ts and existing group RLS; no new teammate rights.
 
 
 - Worksheet pagination only regroups existing IDs into A4 pages; mutate through WorksheetEditor `updateSpec` to preserve undo, metadata, autosave, scoring and print/PDF.
 - Worksheet item editors emit patches to WorksheetEditor; never persist.
 - Print headers use an explicit marker; paginate font-loaded block bounds, not margins, for stable previews.
 - Lesson slide edits belong in teacher-scoped `teacher_presentations`, never global source lesson rows, to isolate teachers.
-- Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
+- Assignment descriptions use sanitized limited HTML, a shared renderer and plain-text previews/speech/AI to keep legacy and formatted instructions consistent without tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
 - Slide backgrounds use centered `contain` on the canonical 16:9 stage, not the viewport, to match editor/projector.
@@ -25,7 +25,7 @@
 - Create student course notebooks only via `ensure_my_course_notebooks()` / membership triggers (one per owner+group or owner+class+subject_id, enforced by partial unique indexes), so automatic creation stays idempotent and never touches teachers or shared demo profiles.
 - Store a student's own worksheet work outside assignments only in `student_worksheet_work` (one draft per student+worksheet+variant via partial unique index, submitted rows kept); assignment attempts never use it, so grading and assignment flows stay untouched.
 - Notebook worksheets use `worksheet-notebook.ts`: digital links, locked pen backgrounds; submissions snapshot pen pages to `assignment-uploads` via `answers._notebookSnapshot`, preserving answers and storage permissions.
-- Keep worksheet kind (`header.worksheetMode` / `worksheet_mode`) separate from AI focus, defined only in `worksheet-kinds.ts`, and enforce AI section counts server-side in `_shared/worksheet-sections.ts`, so print, PDF titles, filters and generation stay consistent.
+- Worksheet kind stays separate from AI focus (worksheet-kinds.ts); server section counts use _shared/worksheet-sections.ts for consistent generation/exports.
 
 - Lesson text cleanup only in `_shared/lesson-text.ts` (shared context).
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
@@ -37,3 +37,5 @@
 - Merge dashboard order via teacher-dashboard-order to preserve positions.
 
 - Schedule exceptions: owner-only, Prague time, merged at display (`schedule-exception-store.ts`); timetables never rewritten.
+
+- Final results use fresh authorized player-view snapshots and shared game-ranking ranks; session-display-name separates screen/export defaults for privacy.

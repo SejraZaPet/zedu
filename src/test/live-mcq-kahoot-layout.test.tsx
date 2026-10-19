@@ -13,11 +13,10 @@ const answers = [
 ];
 
 describe("živé MCQ se sdílenou obrazovkou", () => {
-  it("žákovi skryje texty a zpřístupní i pátou tvarovou volbu", () => {
+  it("odesílá stejný index i s texty a pátou tvarovou volbou", () => {
     const onSubmit = vi.fn();
     render(<QuizActivity quiz={{ question: "Hlavní město?", answers }} live={{ revealed: false, onSubmit }} />);
 
-    expect(screen.queryByText("Praha")).not.toBeInTheDocument();
     expect(screen.queryByText("Hlavní město?")).not.toBeInTheDocument();
     const choices = screen.getAllByRole("button", { name: /Možnost/ });
     expect(choices).toHaveLength(5);

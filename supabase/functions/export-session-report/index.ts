@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { answerDistribution, classSuccessSummary, computeParticipantStats, isGradedSlide, pct } from "../_shared/session-participants.ts";
+import { sessionDisplayName } from "../_shared/session-display-name.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,9 +147,7 @@ serve(async (req) => {
     });
 
     // Participant success (correct / graded answers)
-    const nameFor = (p: any, i: number) =>
-      anonymizationMode === "named" ? (p.user_id && profileMap[p.user_id]) || p.nickname
-        : anonymizationMode === "pseudonymous" ? `Student_${i + 1}` : `Účastník ${i + 1}`;
+    const nameFor = (p: any, i: number) => sessionDisplayName(p, i, anonymizationMode, profileMap);
     const participantStats = computeParticipantStats(slides, players || [], (responses || []) as any);
     const participants = participantStats.map((st, i) => ({ ...st, name: nameFor((players || [])[i], i) }));
     const successSummary = classSuccessSummary(participantStats);

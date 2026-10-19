@@ -4,6 +4,7 @@ import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { syncClock, getClockOffset } from "@/lib/clock-sync";
 import { applyLightSessionState, extractLightState, rowSlidesLength } from "@/lib/game-session-sync";
+import { applyPlayerUpdate } from "@/lib/game-ranking";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -47,6 +48,20 @@ export function useGameSession(
   const inFlightRef = useRef(false);
   const connectedRef = useRef(false);
   const lastPollRef = useRef(0);
+
+  // Same authorized projection as initial load; no additional opponent access.
+  // Latest request wins so a slow periodic response cannot overwrite final data.
+  const playersRequestRef = useRef(0);
+  const refreshPlayers = useCallback(async (): Promise<GamePlayer[]> => {
+    if (!sessionId) throw new Error("Hra nebyla nalezena.");
+    const request = ++playersRequestRef.current;
+    const { data, error } = await supabase.from("game_players_public").select("*")
+      .eq("session_id", sessionId).order("total_score", { ascending: false });
+    if (error || !data) throw new Error("Výsledky se nepodařilo načíst.");
+    const fresh = data as GamePlayer[];
+    if (mountedRef.current && request === playersRequestRef.current) setPlayers(fresh);
+    return fresh;
+  }, [sessionId]);
 
   // Full data fetch (used for initial load and resync)
   const fetchData = useCallback(async (resyncClock = false) => {
@@ -217,15 +232,7 @@ export function useGameSession(
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {
         const updated = payload.new as GamePlayer;
-        setPlayers((prev) => {
-          const next = prev.map((p) => {
-            if (p.id !== updated.id) return p;
-            // Only accept if score is >= current (guards against out-of-order events)
-            return updated.total_score >= p.total_score ? updated : { ...p, total_score: Math.max(p.total_score, updated.total_score) };
-          });
-          // Re-sort by authoritative total_score descending
-          return next.sort((a, b) => b.total_score - a.total_score);
-        });
+        setPlayers((prev) => applyPlayerUpdate(prev, updated));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_responses", filter: `session_id=eq.${sessionId}` }, (payload) => {
         setResponses((prev) => {
@@ -283,15 +290,14 @@ export function useGameSession(
         // o připojení se mohou ztratit, dotaz na hráče je malý.
         if (playersSafetyPollMs > 0 && Date.now() - lastPlayersPollRef.current >= playersSafetyPollMs) {
           lastPlayersPollRef.current = Date.now();
-          supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false })
-            .then(({ data }) => { if (mountedRef.current && data) setPlayers(data as GamePlayer[]); });
+          void refreshPlayers().catch(() => { /* final retry UI handles failure separately */ });
         }
         return;
       }
       if (Date.now() - lastPollRef.current < 1900) return;
       fetchData();
     }, 2000);
-  }, [sessionId, fetchData, playersSafetyPollMs]);
+  }, [sessionId, fetchData, playersSafetyPollMs, refreshPlayers]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -365,7 +371,7 @@ export function useGameSession(
     };
   }, [fetchData, subscribe, refetchTrigger, lightPoll, reconnect]);
 
-  return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
+  return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers, refreshPlayers };
 }
 
 export function useTeacherGameControls(sessionId: string | undefined) {

@@ -10,6 +10,8 @@ import { TeamsSlideStudent } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideStudent } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameStudent } from "@/components/game/EscapeGameSlide";
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { useFinalGameResults } from "@/hooks/useFinalGameResults";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
@@ -46,7 +48,8 @@ const StudentGamePlay = () => {
   }, [sessionId]);
 
   const [fetchAttempts, setFetchAttempts] = useState(0);
-  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts, joinToken);
+  const { session, players, responses, loading, connectionStatus, reconnect, refreshPlayers } = useGameSession(sessionId, fetchAttempts, joinToken, { playersSafetyPollMs: 4000 });
+  const { result: finalResults, retry: loadFinalResults } = useFinalGameResults(sessionId, session?.status, playerId, refreshPlayers);
   const { user } = useAuth();
 
   const myPlayer = players.find((p) => p.id === playerId);
@@ -252,7 +255,14 @@ const StudentGamePlay = () => {
   }
 
   if (session.status === "finished") {
-    return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
+    if (!finalResults || finalResults.sessionId !== sessionId || finalResults.state !== "ready") {
+      const failed = finalResults?.sessionId === sessionId && finalResults.state === "error";
+      return <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <p role="status">{failed ? "Výsledky se nepodařilo načíst. Zkus to znovu." : "Načítám výsledky"}</p>
+        {failed && <Button onClick={() => void loadFinalResults()}>Zkusit znovu</Button>}
+      </div>;
+    }
+    return <GameLeaderboardFinal session={session} players={finalResults.players} responses={responses} highlightPlayerId={playerId} />;
   }
 
   const anonymousAnswers = !!(session.settings as any)?.anonymousAnswers;
@@ -333,6 +343,8 @@ const StudentGamePlay = () => {
 
   if (isSlideFormat) {
     const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
+    const isPhoneMcq = isActivity && currentSlideData.activitySpec?.activityType === "mcq";
+    const mcqImage = currentSlideData.activitySpec?.imageUrl || currentSlideData.projector?.assetRefs?.[0];
     return (
       <>
         <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
@@ -393,7 +405,12 @@ const StudentGamePlay = () => {
 
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky.
               Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
-          <div className="px-3 pt-3">
+          {isPhoneMcq ? (
+            <section className="live-game-surface mx-3 mt-28 rounded-lg p-4 space-y-3">
+              <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">{currentSlideData.activitySpec?.question || currentSlideData.projector?.headline}</h1>
+              {mcqImage && <img src={mcqImage} alt="Obrázek k otázce" className="max-h-64 w-full object-contain" />}
+            </section>
+          ) : <div className="px-3 pt-3">
             <div className="relative overflow-hidden rounded-xl aspect-video w-full">
               <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
                 <SlideCanvas key={qi} slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
@@ -422,7 +439,7 @@ const StudentGamePlay = () => {
                 );
               })()}
             </div>
-          </div>
+          </div>}
 
 
           {/* Vlastní tempo — navigace mezi slidy */}
@@ -617,7 +634,7 @@ const StudentGamePlay = () => {
                   const revealed = isMcqRevealed(liveSettings, qIdx) || isMcqRevealed(session?.settings, qIdx);
                   return (
                     <div className="space-y-4">
-                    {!revealed && <McqCountdown session={session} active={session?.status === "playing"} />}
+                    {!revealed && <McqCountdown session={session} active={session?.status === "playing"} size="lg" />}
                     <QuizActivity
                       key={`live-mcq-${qIdx}`}
                       quiz={quiz}
@@ -693,8 +710,8 @@ const StudentGamePlay = () => {
 
           {/* Instrukce + progress */}
           {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
-            <div className="mx-3 sm:mx-4 mt-2 p-2.5 sm:p-3 bg-white/10 border border-white/20 rounded-lg backdrop-blur">
-              <p className="text-xs sm:text-sm font-medium text-white">{currentSlideData.device.instructions}</p>
+            <div className="live-game-surface mx-3 sm:mx-4 mt-2 p-3 rounded-lg">
+              <p className="text-base font-medium">{currentSlideData.device.instructions}</p>
             </div>
           )}
           <div className="px-3 sm:px-4 pb-3 sm:pb-4 mt-3 sm:mt-4">
