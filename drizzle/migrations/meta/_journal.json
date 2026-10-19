@@ -470,6 +470,13 @@
       "when": 1792349471760,
       "tag": "0066_schedule_exceptions_owner_only_private",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792439445257,
+      "tag": "0067_system_textbook_flag",
+      "breakpoints": true
     }
   ]
 }

@@ -7629,6 +7629,7 @@ export type Database = {
           id: string
           is_demo_seed: boolean
           is_for_sale: boolean
+          is_system: boolean
           language: string
           order_index: number
           price: number | null
@@ -7654,6 +7655,7 @@ export type Database = {
           id?: string
           is_demo_seed?: boolean
           is_for_sale?: boolean
+          is_system?: boolean
           language?: string
           order_index?: number
           price?: number | null
@@ -7679,6 +7681,7 @@ export type Database = {
           id?: string
           is_demo_seed?: boolean
           is_for_sale?: boolean
+          is_system?: boolean
           language?: string
           order_index?: number
           price?: number | null
