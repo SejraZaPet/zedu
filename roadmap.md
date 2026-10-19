@@ -2,10 +2,11 @@
 
 ## Živý kvíz — schválená etapa 1
 - [x] Dokončena diagnostika živého kvízu a úprav AI návrhu; AI editor není součástí této opravy
-- [ ] Čerstvé konečné výsledky, obnova hráčů, pokles skóre a shody pořadí bez rozšíření oprávnění
-- [ ] Přezdívky výchozí v přehledu, samostatná výchozí pseudonymizace exportů
-- [ ] Kontrastní odpočet a telefonní otázky/odpovědi bez zmenšeného snímku
-- [ ] Testy a ověření; bez publikování, migrací, změn RLS, časů či bodování
+- [x] Čerstvé konečné výsledky, obnova hráčů, pokles skóre a shody pořadí bez rozšíření oprávnění
+- [x] Přezdívky výchozí v přehledu, samostatná výchozí pseudonymizace exportů; funkce přehledu/exportu čekají na nasazení
+- [x] Kontrastní odpočet a telefonní otázky/odpovědi bez zmenšeného snímku
+- [x] 600 testů a lokální ověření tří šířek telefonů/tabletu; bez publikování, migrací, změn RLS, časů či bodování
+- [ ] Ověření skutečné hry na třech telefonech a tabletu s přihlášenými účastníky; lokální ověření použilo simulované odpovědi služby
 
 ## Úzká úprava limitu vstupu do dema
 - [x] Allowlist akce: 80/h pro dalkove-ucitele, jinak 20/h, denní 500 beze změny; 7 lokálních testů limitů bez účtů prošlo
