@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import GameAvatarFigure from "@/components/game/GameAvatarFigure";
+import { Button } from "@/components/ui/button";
+import { getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
 interface Props {
   question: GameQuestion;
@@ -102,7 +104,7 @@ export const StudentGameQuestion = ({
         <span className="text-sm font-medium text-muted-foreground">
           {questionIndex + 1} / {totalQuestions}
         </span>
-        <span className={`text-2xl font-bold font-mono ${countdown <= 5 ? "text-destructive animate-pulse" : "text-primary"}`}>
+        <span className={`text-4xl font-bold font-mono ${countdown <= 5 ? "text-destructive animate-pulse" : "text-primary"}`}>
           {countdown}
         </span>
       </div>
@@ -115,16 +117,17 @@ export const StudentGameQuestion = ({
       </div>
 
       {/* Answers */}
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 content-start">
         {(Array.isArray(question.answers) ? question.answers : []).map((answer, i) => (
-          <button
+          <Button
             key={i}
+            variant="ghost"
             onClick={() => onAnswer(i)}
-            className={`${ANSWER_COLORS[i % 4]} rounded-2xl p-6 flex items-center gap-4 transition-transform active:scale-95 min-h-[80px]`}
+            className={`live-phone-choice ${getMcqOptionStyle(i)} rounded-lg border-b-4 p-5 h-auto flex items-center justify-start gap-4 transition-transform active:scale-95 min-h-20 text-primary-foreground`}
           >
-            <span className="text-2xl text-white/80">{ANSWER_ICONS[i % 4]}</span>
-            <span className="text-lg font-semibold text-white text-left">{answer?.text}</span>
-          </button>
+            <McqOptionIcon index={i} className="h-7 w-7 shrink-0" />
+            <span className="text-lg font-semibold text-left whitespace-normal [overflow-wrap:anywhere]">{answer?.text}</span>
+          </Button>
         ))}
         {!Array.isArray(question.answers) || question.answers.length === 0 ? (
           <p className="col-span-full text-center text-muted-foreground">

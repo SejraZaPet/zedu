@@ -101,7 +101,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                     <GameAvatarFigure userId={player.user_id} size={rank === 0 ? 140 : 108} crop="full" idleBounce idleDelaySec={rank * 0.4} />
                   </div>
                   <div className="w-full rounded-t-xl border-2 border-b-0 border-podium-foreground/20 flex flex-col items-center justify-start pt-2 text-podium-foreground shadow-lg min-w-0" data-podium-rank={slot.label} style={{ height: slot.height, background: `linear-gradient(180deg, hsl(var(--podium-${slot.blockColor}-from)), hsl(var(--podium-${slot.blockColor}-to)))` }}>
-                    <span className="text-2xl md:text-3xl" aria-hidden>{slot.medal}</span>
+                    <span className="text-2xl md:text-3xl" aria-hidden>{PODIUM_SLOTS[(rankFor(player.id) ?? 1) - 1]?.medal ?? slot.medal}</span>
                     <span className="text-3xl md:text-4xl font-heading font-black leading-none">{rankFor(player.id)}</span>
                     <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`} title={player.nickname}>{player.nickname}</p>
                     <p className="text-sm md:text-base font-mono font-bold">{player.total_score} b.</p>
