@@ -10,6 +10,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import { waitForWorksheetRender } from "@/lib/worksheet-render-ready";
 import {
   EMPTY_CONTENT, NOTEBOOK_BUCKET, createNotebookPage, normalizeContent, renderPageToCanvas,
   type Notebook, type NotebookImage, type NotebookPage, type NotebookPageContent,
@@ -62,19 +63,21 @@ export async function loadInsertableWorksheets(): Promise<InsertableWorksheet[]>
 export async function findInsertedPages(
   notebookId: string, worksheetId: string, mode: WorksheetInsertMode,
 ): Promise<NotebookPage[]> {
-  const { data } = await (supabase.from("notebook_pages" as any) as any)
+  const { data, error } = await (supabase.from("notebook_pages" as any) as any)
     .select("*")
     .eq("notebook_id", notebookId)
     .eq("content->worksheet->>worksheetId", worksheetId)
     .eq("content->worksheet->>mode", mode)
     .order("page_order", { ascending: true });
+  if (error) throw new Error("Stránky sešitu se nepodařilo načíst. Zkus to znovu.");
   return ((data ?? []) as any[]).map((p) => ({ ...p, content: normalizeContent(p.content) })) as NotebookPage[];
 }
 
 async function nextPageOrder(notebookId: string): Promise<number> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notebook_pages").select("page_order").eq("notebook_id", notebookId)
     .order("page_order", { ascending: false }).limit(1);
+  if (error) throw new Error("Pořadí stránek sešitu se nepodařilo načíst. Zkus vložení znovu.");
   const top = (data as any[])?.[0]?.page_order;
   return typeof top === "number" ? top + 1 : 0;
 }
@@ -104,19 +107,16 @@ export const renderStudentWorksheetPages: PageRenderer = async (spec, worksheetI
   iframe.setAttribute("aria-hidden", "true");
   document.body.appendChild(iframe);
   try {
-    const doc = iframe.contentDocument!;
-    await new Promise<void>((resolve) => {
-      iframe.addEventListener("load", () => resolve(), { once: true });
-      doc.open(); doc.write(html); doc.close();
-      if (doc.readyState === "complete") setTimeout(resolve, 0);
-    });
-    await new Promise((r) => setTimeout(r, 400)); // stránkovací skript + obrázky
-    const pages = Array.from(doc.querySelectorAll<HTMLElement>(".ws-page"));
+    const doc = iframe.contentDocument;
+    if (!doc) throw new Error("Stránky listu se nepodařilo připravit.");
+    doc.open(); doc.write(html); doc.close();
+    const pages = await waitForWorksheetRender(doc);
     const out: Blob[] = [];
     for (const el of pages) {
       const canvas: HTMLCanvasElement = await html2canvas(el, { scale: 1.4, backgroundColor: "#ffffff", useCORS: true, logging: false });
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.82));
-      if (blob) out.push(blob);
+      if (!blob) throw new Error("Stránku listu se nepodařilo převést. Zkus vložení znovu.");
+      out.push(blob);
     }
     return out;
   } finally {
@@ -132,6 +132,15 @@ async function loadSpec(worksheetId: string): Promise<{ spec: WorksheetSpec; tit
 
 export interface InsertResult { pages: NotebookPage[]; existed: boolean }
 
+export function isPenInsertionComplete(pages: NotebookPage[]): boolean {
+  if (!pages.length) return false;
+  const count = pages[0].content.worksheet?.pageCount;
+  if (!count || !Number.isInteger(count) || count < 1) return false;
+  const indices = new Set(pages.map((page) => page.content.worksheet?.pageIndex));
+  return pages.every((page) => page.content.worksheet?.pageCount === count)
+    && Array.from({ length: count }, (_, index) => index).every((index) => indices.has(index));
+}
+
 /** Vloží list do sešitu; když je už vložený stejným způsobem, vrátí existující stránky. */
 export async function insertWorksheetIntoNotebook(input: {
   notebook: Pick<Notebook, "id" | "owner_id" | "subject">;
@@ -142,7 +151,7 @@ export async function insertWorksheetIntoNotebook(input: {
 }): Promise<InsertResult> {
   const { notebook, worksheetId, mode } = input;
   const existing = await findInsertedPages(notebook.id, worksheetId, mode);
-  if (existing.length > 0) return { pages: existing, existed: true };
+  if (existing.length > 0 && (mode === "digital" || isPenInsertionComplete(existing))) return { pages: existing, existed: true };
 
   const { spec, title, subject } = await loadSpec(worksheetId);
   const section = notebook.subject || subject || null;
@@ -159,8 +168,15 @@ export async function insertWorksheetIntoNotebook(input: {
 
   const blobs = await (input.render ?? renderStudentWorksheetPages)(spec, worksheetId);
   if (blobs.length === 0) throw new Error("List se nepodařilo převést na stránky.");
-  const pages: NotebookPage[] = [];
+  if (existing.some((page) => page.content.worksheet?.pageCount !== blobs.length
+    || !Number.isInteger(page.content.worksheet?.pageIndex))) {
+    throw new Error("List se od původního vložení změnil. Chybějící stránky nelze bezpečně doplnit; tvoje zápisky zůstávají zachované.");
+  }
+  const indices = new Set(existing.map((page) => page.content.worksheet?.pageIndex));
+  const pages: NotebookPage[] = [...existing];
+  try {
   for (let i = 0; i < blobs.length; i++) {
+    if (indices.has(i)) continue;
     const path = `${notebook.owner_id}/ws-${worksheetId}-${crypto.randomUUID()}.jpg`;
     const { error } = await supabase.storage.from(NOTEBOOK_BUCKET)
       .upload(path, blobs[i], { upsert: false, contentType: "image/jpeg" });
@@ -174,23 +190,28 @@ export async function insertWorksheetIntoNotebook(input: {
       content: buildPenPageContent(path, ref),
     }));
   }
+  } catch {
+    throw new Error(`Vložených je ${pages.length} z ${blobs.length} stran. Zkus vložení znovu — doplní se jen chybějící stránky a tvoje zápisky zůstanou.`);
+  }
+  pages.sort((a, b) => (a.content.worksheet?.pageIndex ?? 0) - (b.content.worksheet?.pageIndex ?? 0));
   return { pages, existed: false };
 }
 
 /** Všechny stránky „PDF pro pero“ daného listu ve vlastních sešitech žáka. */
 export async function loadMyPenPages(worksheetId: string): Promise<NotebookPage[]> {
-  const { data } = await (supabase.from("notebook_pages" as any) as any)
+  const { data, error } = await (supabase.from("notebook_pages" as any) as any)
     .select("*")
     .eq("content->worksheet->>worksheetId", worksheetId)
     .eq("content->worksheet->>mode", "pen")
     .order("page_order", { ascending: true });
+  if (error) throw new Error("Stránky sešitu se nepodařilo načíst. Odevzdání není dokončené. Zkus to znovu.");
   return ((data ?? []) as any[]).map((p) => ({ ...p, content: normalizeContent(p.content) })) as NotebookPage[];
 }
 
 export type PageRasterizer = (page: NotebookPage) => Promise<Blob>;
 
 const defaultRasterizer: PageRasterizer = async (page) => {
-  const canvas = await renderPageToCanvas(page, 1.2);
+  const canvas = await renderPageToCanvas(page, 1.2, { requireImages: true });
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.82));
   if (!blob) throw new Error("Stránku se nepodařilo uložit.");
   return blob;
@@ -206,6 +227,16 @@ export async function snapshotPenPagesForAttempt(input: {
 }): Promise<NotebookSnapshot | null> {
   const pages = input.pages ?? (await loadMyPenPages(input.worksheetId));
   if (pages.length === 0) return null;
+  const groups = new Map<string, NotebookPage[]>();
+  for (const page of pages) {
+    if (page.content.worksheet?.mode !== "pen") continue;
+    const group = groups.get(page.notebook_id) ?? [];
+    group.push(page);
+    groups.set(page.notebook_id, group);
+  }
+  if ([...groups.values()].some((group) => !isPenInsertionComplete(group))) {
+    throw new Error("V sešitě chybí stránky pracovního listu. Zkus list vložit znovu; odevzdání zatím není dokončené.");
+  }
   const rasterize = input.rasterize ?? defaultRasterizer;
   const stamp = Date.now();
   const out: NotebookSnapshot["pages"] = [];

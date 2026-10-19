@@ -1,5 +1,11 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
+## Pracovní list v sešitu — schválená úzká oprava
+- [ ] Viditelná chyba a opakování načtení podkladu včetně obnovy podepsaného odkazu
+- [ ] Čekat na dokončené vykreslení; doplnit jen chybějící stránky při opakovaném vložení
+- [ ] Zastavit export/odevzdání při chybějícím podkladu; miniatury a odpovědi beze změny
+- [ ] Cílené testy a ověření v prohlížeči; posoudit tabulku pouze v malém bezpečném rozsahu
+
 ## Živý kvíz — schválená etapa 1
 - [x] Dokončena diagnostika živého kvízu a úprav AI návrhu; AI editor není součástí této opravy
 - [x] Čerstvé konečné výsledky, obnova hráčů, pokles skóre a shody pořadí bez rozšíření oprávnění

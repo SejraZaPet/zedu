@@ -80,12 +80,14 @@ async function buildPrintHtml(
 
   const previewScript = `<script>
 window.addEventListener("load", async function () {
+  document.body.dataset.wsRenderState = "loading";
+  try {
   // Rozdělovat až po finálních rozměrech obrázků a písma.
-  await document.fonts.ready;
+  if (document.fonts) await document.fonts.ready;
   var sourcePage = document.querySelector(".ws-page");
   var sourceContent = sourcePage && sourcePage.querySelector(":scope > .ws-content");
   var sourceItems = sourceContent && sourceContent.querySelector(":scope > .ws-items");
-  if (!sourcePage || !sourceContent || !sourceItems) return;
+  if (!sourcePage || !sourceContent || !sourceItems) throw new Error("Missing worksheet page");
 
   document.body.classList.add("ws-preview-paginated");
   var items = Array.from(sourceItems.children);
@@ -117,6 +119,8 @@ window.addEventListener("load", async function () {
       current.list.appendChild(item);
     }
   });
+  document.body.dataset.wsRenderState = "ready";
+  } catch (_) { document.body.dataset.wsRenderState = "error"; }
 });
 </script>`;
 

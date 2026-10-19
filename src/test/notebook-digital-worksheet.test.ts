@@ -23,6 +23,7 @@ vi.mock("@/lib/lesson-activity-index", () => ({ fetchLessonActivities: async () 
 
 import { decideAttempt, loadOrCreateIndividualAttempt, submitWorksheetAttempt } from "@/lib/worksheet-attempt";
 import { pageDisplayTitle } from "@/lib/notebook-toc";
+import { snapshotPenPagesForAttempt } from "@/lib/worksheet-notebook";
 
 const future = new Date(Date.now() + 86400000).toISOString();
 const past = new Date(Date.now() - 86400000).toISOString();
@@ -78,6 +79,18 @@ describe("digitální list v sešitu", () => {
     });
     expect(res).toMatchObject({ ok: false, title: "Termín vypršel" });
     expect(calls).toHaveLength(0);
+  });
+
+  it("chybějící podklad zastaví odevzdání bez přepsání odpovědí", async () => {
+    vi.mocked(snapshotPenPagesForAttempt).mockRejectedValueOnce(new Error("Podklad se nenačetl"));
+    const answers = { wl1: "Uložený text" };
+    const result = await submitWorksheetAttempt({
+      assignment: { id: "as", deadline: future, max_attempts: 1, worksheet_id: "ws" },
+      attemptId: "a1", studentId: "stu", answers, score: 0, maxScore: 0, gate: async () => true,
+    });
+    expect(result).toMatchObject({ ok: false });
+    expect(calls).toHaveLength(0);
+    expect(answers).toEqual({ wl1: "Uložený text" });
   });
 
   it("nesplněné povinné aktivity zastaví odevzdání", async () => {

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { loadNotebooks, type Notebook, type NotebookPage } from "@/lib/notebook";
 import {
-  findInsertedPages, insertWorksheetIntoNotebook, loadInsertableWorksheets,
+  findInsertedPages, insertWorksheetIntoNotebook, isPenInsertionComplete, loadInsertableWorksheets,
   type InsertableWorksheet, type WorksheetInsertMode,
 } from "@/lib/worksheet-notebook";
 
@@ -92,7 +92,7 @@ export default function InsertWorksheetButton({
 
   const run = async (mode: WorksheetInsertMode) => {
     if (!targetNotebook || !wsId) return;
-    if (existing[mode].length > 0) return openIn(targetNotebook.id, existing[mode]);
+    if (existing[mode].length > 0 && (mode === "digital" || isPenInsertionComplete(existing[mode]))) return openIn(targetNotebook.id, existing[mode]);
     setBusy(mode);
     try {
       const res = await insertWorksheetIntoNotebook({
@@ -170,7 +170,8 @@ export default function InsertWorksheetButton({
 
               <div className="grid gap-2 sm:grid-cols-2">
                 {MODES.map(({ mode, title, desc, Icon }) => {
-                  const has = existing[mode].length > 0;
+                  const has = existing[mode].length > 0 && (mode === "digital" || isPenInsertionComplete(existing[mode]));
+                  const partial = mode === "pen" && existing.pen.length > 0 && !has;
                   return (
                     <Button
                       key={mode}
@@ -181,9 +182,9 @@ export default function InsertWorksheetButton({
                     >
                       <span className="flex items-center gap-1.5 font-semibold">
                         {busy === mode ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-                        {has ? `Otevřít v sešitě · ${title}` : title}
+                        {has ? `Otevřít v sešitě · ${title}` : partial ? "Doplnit chybějící stránky" : title}
                       </span>
-                      <span className="text-xs font-normal text-muted-foreground">{has ? "Už je vložený, nic se nezdvojí." : desc}</span>
+                      <span className="text-xs font-normal text-muted-foreground">{has ? "Už je vložený, nic se nezdvojí." : partial ? "Uložené stránky a zápisky zůstanou zachované." : desc}</span>
                     </Button>
                   );
                 })}
