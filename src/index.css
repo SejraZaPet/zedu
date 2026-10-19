@@ -419,3 +419,4 @@ body.a11y-line-height main .whitespace-pre-wrap {
 .live-countdown-track { background: hsl(var(--live-track)); }
 .live-countdown-fill { background: hsl(var(--live-accent)); }
 .live-countdown-fill.live-countdown-urgent { background: hsl(var(--live-urgent)); }
+.live-phone-choice { --answer-yellow: 38 95% 30%; --answer-orange: 24 85% 37%; --answer-green: 142 61% 30%; --answer-teal: 174 72% 28%; }

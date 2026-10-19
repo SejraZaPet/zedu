@@ -9,8 +9,9 @@ import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner
 import { TeamsSlideStudent } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideStudent } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameStudent } from "@/components/game/EscapeGameSlide";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useFinalGameResults } from "@/hooks/useFinalGameResults";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
@@ -48,25 +49,7 @@ const StudentGamePlay = () => {
 
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect, refreshPlayers } = useGameSession(sessionId, fetchAttempts, joinToken, { playersSafetyPollMs: 4000 });
-  const [finalResults, setFinalResults] = useState<{ sessionId: string; state: "loading" | "ready" | "error"; players: GamePlayer[] } | null>(null);
-  const finalRequestRef = useRef(0);
-  const loadFinalResults = useCallback(async () => {
-    if (!sessionId) return;
-    const request = ++finalRequestRef.current;
-    setFinalResults({ sessionId, state: "loading", players: [] });
-    try {
-      const fresh = await refreshPlayers();
-      if (!fresh.some((p) => p.id === playerId)) throw new Error("Chybí vlastní výsledek.");
-      if (request === finalRequestRef.current) setFinalResults({ sessionId, state: "ready", players: fresh });
-    } catch {
-      if (request === finalRequestRef.current) setFinalResults({ sessionId, state: "error", players: [] });
-    }
-  }, [sessionId, playerId, refreshPlayers]);
-  useEffect(() => {
-    if (session?.status === "finished") void loadFinalResults();
-    else setFinalResults(null);
-    return () => { finalRequestRef.current += 1; };
-  }, [session?.status, loadFinalResults]);
+  const { result: finalResults, retry: loadFinalResults } = useFinalGameResults(sessionId, session?.status, playerId, refreshPlayers);
   const { user } = useAuth();
 
   const myPlayer = players.find((p) => p.id === playerId);

@@ -86,10 +86,10 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
                 disabled={submitted || live.revealed}
                 aria-label={`Možnost ${i + 1}: ${a.text ? `${a.text} (${optionName})` : optionName}`}
                 aria-pressed={selected.has(i)}
-                className={`relative h-auto min-h-20 justify-start gap-3 px-4 py-4 border-b-4 text-primary-foreground text-base shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
+                className={`live-phone-choice relative h-auto min-h-20 justify-start gap-3 px-4 py-4 border-b-4 text-primary-foreground text-base shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
                 <McqOptionIcon index={i} className="!h-7 !w-7 shrink-0" />
-                {a.text ? <span className="min-w-0 text-left text-base font-bold leading-snug whitespace-normal break-words">{a.text}</span> : <span className="sr-only">{optionName}</span>}
+                {a.text ? <span className="min-w-0 text-left text-base font-bold leading-snug whitespace-normal [overflow-wrap:anywhere]">{a.text}</span> : <span className="sr-only">{optionName}</span>}
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>
             );
