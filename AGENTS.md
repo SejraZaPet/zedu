@@ -11,7 +11,7 @@
 - Worksheet item editors emit patches to WorksheetEditor; never persist.
 - Print headers use an explicit marker; paginate font-loaded block bounds, not margins, for stable previews.
 - Lesson slide edits belong in teacher-scoped `teacher_presentations`, never global source lesson rows, to isolate teachers.
-- Assignment descriptions use sanitized limited HTML, one shared renderer and plain-text conversion for previews, speech and AI, keeping legacy and formatted instructions consistent without visible tags.
+- Assignment descriptions use sanitized limited HTML, a shared renderer and plain-text previews/speech/AI to keep legacy and formatted instructions consistent without tags.
 - Keep notebook text boxes as sanitized limited HTML in `html` plus plain `text`, rendered by one shared canvas drawer (notebook-rich-text) for PDF, portfolio and thumbnails, so exports match the screen.
 - Live MCQ: one look mapping; activity→questions (/hra+/live) only via `live-game-core.ts`; scoring only in `_shared/game-scoring.ts` (server); slides expand at launch (`live-game-expand.ts`).
 - Slide backgrounds use centered `contain` on the canonical 16:9 stage, not the viewport, to match editor/projector.
@@ -38,4 +38,4 @@
 
 - Schedule exceptions: owner-only, Prague time, merged at display (`schedule-exception-store.ts`); timetables never rewritten.
 
-- Final results use fresh authorized player-view snapshots and game-ranking shared ranks; session-display-name separates screen/export defaults for privacy.
+- Final results use fresh authorized player-view snapshots and shared game-ranking ranks; session-display-name separates screen/export defaults for privacy.
