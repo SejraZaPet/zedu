@@ -251,7 +251,7 @@ export async function signNotebookImages(paths: string[], options: { strict?: bo
   const { data, error } = await supabase.storage.from(NOTEBOOK_BUCKET).createSignedUrls(unique, 3600);
   if (options.strict && error) throw new Error("Obrázek sešitu není dostupný. Zkus načtení znovu.");
   const map: Record<string, string> = {};
-  for (const row of data ?? []) if (row.path && row.signedUrl && !row.error) map[row.path] = row.signedUrl;
+  for (const row of data ?? []) if (row.path && row.signedUrl && (!options.strict || !row.error)) map[row.path] = row.signedUrl;
   if (options.strict && unique.some((path) => !map[path])) throw new Error("Obrázek sešitu není dostupný. Zkus načtení znovu.");
   return map;
 }
