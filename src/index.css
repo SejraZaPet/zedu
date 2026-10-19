@@ -404,3 +404,18 @@ body.a11y-line-height main .whitespace-pre-wrap {
   border-color: hsl(var(--assignment-foreground) / .55);
   background: hsl(var(--assignment-foreground) / .12);
 }
+
+/* Live question surfaces do not inherit application light/dark foregrounds. */
+:root {
+  --live-surface: 228 18% 12%;
+  --live-foreground: 0 0% 100%;
+  --live-track: 228 10% 32%;
+  --live-accent: 183 75% 72%;
+  --live-urgent: 40 100% 74%;
+}
+.live-game-surface { background: hsl(var(--live-surface)); color: hsl(var(--live-foreground)); }
+.live-countdown-number { color: hsl(var(--live-foreground)); }
+.live-countdown-urgent { color: hsl(var(--live-urgent)); }
+.live-countdown-track { background: hsl(var(--live-track)); }
+.live-countdown-fill { background: hsl(var(--live-accent)); }
+.live-countdown-fill.live-countdown-urgent { background: hsl(var(--live-urgent)); }

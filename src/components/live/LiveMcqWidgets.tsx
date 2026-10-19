@@ -37,14 +37,14 @@ export const McqCountdown = ({
   const pct = (cd.remainingMs / cd.limitMs) * 100;
   const urgent = sec <= 5;
   return (
-    <div className="w-full space-y-1.5" role="timer" aria-live="off" aria-label={`Zbývá ${sec} sekund`}>
-      <div className={`flex items-center justify-center gap-2 font-bold tabular-nums ${size === "lg" ? "text-4xl" : "text-2xl"} ${urgent ? "text-destructive" : "text-foreground"}`}>
+    <div className="live-game-surface w-full rounded-lg p-3 space-y-2" role="timer" aria-live="off" aria-label={`Zbývá ${sec} sekund`}>
+      <div className={`live-countdown-number flex items-center justify-center gap-2 font-bold tabular-nums ${size === "lg" ? "text-5xl" : "text-4xl"} ${urgent ? "live-countdown-urgent" : ""}`}>
         <Timer className={size === "lg" ? "h-9 w-9" : "h-6 w-6"} aria-hidden />
         {sec} s
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+      <div className="live-countdown-track h-2 w-full overflow-hidden rounded-full">
         <div
-          className={`h-full transition-[width] duration-200 ease-linear ${urgent ? "bg-destructive" : "bg-primary"}`}
+          className={`live-countdown-fill h-full transition-[width] duration-200 ease-linear ${urgent ? "live-countdown-urgent" : ""}`}
           style={{ width: `${pct}%` }}
         />
       </div>

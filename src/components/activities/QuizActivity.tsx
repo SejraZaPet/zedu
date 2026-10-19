@@ -70,12 +70,12 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
   if (live) {
     const show = submitted && live.revealed;
     // Pravda/Nepravda: popisky nejsou obsah otázky, takže je telefon ukáže přímo na tlačítkách.
-    const tfLabels = current.answers.length === 2 && current.answers.every((a) => /^(pravda|nepravda)$/i.test(a.text.trim()));
+    const longAnswers = current.answers.some((a) => a.text.length > 48);
     return (
       <div className="space-y-4">
         <p className="sr-only">Odpověz podle možností zobrazených na společné obrazovce.</p>
-        {isMulti && <p className="text-sm text-muted-foreground">Vyber všechny odpovídající tvary a potom odpověď odešli.</p>}
-        <div className="grid grid-cols-2 gap-3" aria-label="Možnosti odpovědi">
+        {isMulti && <p className="live-game-surface rounded-lg p-3 text-base">Vyber všechny odpovídající možnosti a potom odpověď odešli.</p>}
+        <div className={`grid ${longAnswers ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2"} gap-3`} aria-label="Možnosti odpovědi">
           {current.answers.map((a, i) => {
             const optionName = getMcqOptionName(i);
             return (
@@ -84,16 +84,12 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
                 variant="ghost"
                 onClick={() => toggle(i)}
                 disabled={submitted || live.revealed}
-                aria-label={tfLabels ? `Možnost ${i + 1}: ${a.text} (${optionName})` : `Možnost ${i + 1}: ${optionName}`}
+                aria-label={`Možnost ${i + 1}: ${a.text ? `${a.text} (${optionName})` : optionName}`}
                 aria-pressed={selected.has(i)}
-                className={`relative h-24 min-h-11 border-b-4 text-primary-foreground shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
+                className={`relative h-auto min-h-20 justify-start gap-3 px-4 py-4 border-b-4 text-primary-foreground text-base shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
-                <McqOptionIcon index={i} className={tfLabels ? "!h-8 !w-8 shrink-0" : "!h-12 !w-12"} />
-                {tfLabels ? (
-                  <span className="ml-2 text-left text-lg font-bold leading-tight whitespace-normal break-words">{a.text}</span>
-                ) : (
-                  <span className="sr-only">{optionName}</span>
-                )}
+                <McqOptionIcon index={i} className="!h-7 !w-7 shrink-0" />
+                {a.text ? <span className="min-w-0 text-left text-base font-bold leading-snug whitespace-normal break-words">{a.text}</span> : <span className="sr-only">{optionName}</span>}
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>
             );
@@ -107,18 +103,18 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
           </Button>
         )}
         {submitted && !live.revealed && (
-          <div className="rounded-lg p-3 text-sm bg-muted text-muted-foreground" role="status" aria-live="polite">
+          <div className="live-game-surface rounded-lg p-3 text-base" role="status" aria-live="polite">
             ✓ Odpověď odeslána. Počkej na výsledky.
           </div>
         )}
         {show && (
-          <div role="status" aria-live="polite" className={`rounded-lg p-3 text-sm ${isCorrect ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>
+          <div role="status" aria-live="polite" className="live-game-surface rounded-lg p-3 text-base">
             {isCorrect ? "✓ Správně!" : "✗ Špatně."}
-            {current.explanation && <p className="mt-2 text-muted-foreground">{current.explanation}</p>}
+            {current.explanation && <p className="mt-2">{current.explanation}</p>}
           </div>
         )}
         {live.revealed && !submitted && (
-          <div className="rounded-lg p-3 text-sm bg-muted text-muted-foreground" role="status">
+          <div className="live-game-surface rounded-lg p-3 text-base" role="status">
             Výsledky už jsou zveřejněné.
           </div>
         )}

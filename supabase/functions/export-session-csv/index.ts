@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { classSuccessSummary, computeParticipantStats } from "../_shared/session-participants.ts";
+import { sessionDisplayName } from "../_shared/session-display-name.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,13 +95,7 @@ serve(async (req) => {
     const playerIdentifiers: Record<string, string> = {};
     if (players) {
       players.forEach((p, i) => {
-        if (anonymizationMode === "named") {
-          playerIdentifiers[p.id] = p.user_id && profileMap[p.user_id]
-            ? profileMap[p.user_id]
-            : p.nickname;
-        } else if (anonymizationMode === "pseudonymous") {
-          playerIdentifiers[p.id] = `Student_${i + 1}`;
-        }
+        if (anonymizationMode !== "anonymous") playerIdentifiers[p.id] = sessionDisplayName(p, i, anonymizationMode, profileMap);
         // anonymous: no identifier
       });
     }
