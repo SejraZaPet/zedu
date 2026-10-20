@@ -1,13 +1,14 @@
 /**
- * TableItem — Read-only renderer pro typ "table".
+ * TableItem — tabulka v pracovním listu.
  *
- * Tabulka převzatá 1:1 z lekce. Žák do ní nic nezapisuje (v online verzi),
- * slouží jako podklad k dalším úlohám. `value` se nepoužívá, `onChange` se nevolá.
+ * Pevné buňky jsou jen text; buňky „k vyplnění“ mají běžné textarea
+ * (klávesnice i rozpoznání rukopisu perem). Odpověď = string[] bez hlavičky.
  */
 
 import type { WorksheetItemProps } from "./types";
+import { isTableCellEditable, setTableCellAnswer, tableCellAnswer } from "@/lib/worksheet-table";
 
-export default function TableItem({ item }: WorksheetItemProps) {
+export default function TableItem({ item, value, onChange, disabled }: WorksheetItemProps) {
   const rows = item.tableRows ?? [];
   if (rows.length === 0) return null;
   const [head, ...rest] = rows;
@@ -28,11 +29,24 @@ export default function TableItem({ item }: WorksheetItemProps) {
           <tbody>
             {rest.map((row, ri) => (
               <tr key={ri} className="h-[10mm]">
-                {row.map((cell, ci) => (
-                  <td key={ci} className="h-[10mm] min-w-0 break-words border border-border px-3 py-[2mm] align-top text-foreground">
-                    {cell}
-                  </td>
-                ))}
+                {row.map((cell, ci) => {
+                  const r = ri + 1;
+                  const editable = isTableCellEditable(item, r, ci);
+                  return (
+                    <td key={ci} className="h-[10mm] min-w-0 break-words border border-border px-3 py-[2mm] align-top text-foreground">
+                      {editable ? (
+                        <textarea
+                          rows={1}
+                          value={tableCellAnswer(item, value, r, ci)}
+                          disabled={disabled}
+                          aria-label={`Řádek ${r}, sloupec ${ci + 1}${head[ci] ? ` (${head[ci]})` : ""}`}
+                          onChange={(e) => onChange(setTableCellAnswer(item, value, r, ci, e.target.value))}
+                          className="block min-h-11 w-full min-w-[6rem] resize-y rounded border border-input bg-background px-2 py-1 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-80"
+                        />
+                      ) : cell}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

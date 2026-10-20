@@ -11,6 +11,7 @@
  *   - Progress bar + item navigation
  */
 
+import { hasEditableTableCells } from "@/lib/worksheet-table";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,7 @@ const WRITING_TYPES = new Set(["write_lines", "two_boxes", "blank_box"]);
 /** Je položka zodpovězená? Psací bloky jen tehdy, když obsahují text. */
 export function isItemAnswered(item: WorksheetItem, value: unknown): boolean {
   if (WRITING_TYPES.has(item.type)) return hasWrittenText(value);
+  if (item.type === "table") return Array.isArray(value) && value.some((v) => String(v ?? "").trim() !== "");
   return value !== undefined && value !== "" && value !== null;
 }
 
@@ -88,7 +90,8 @@ export function scoreWorksheet(
   answerKey: AnswerKeyEntry[],
 ): { score: number; maxScore: number; perItem: Record<string, { correct: boolean; points: number }> } {
   let score = 0;
-  const maxScore = items.reduce((s, it) => s + it.points, 0);
+  // Tabulky se nikdy automaticky nebodují (jen uložení + ruční hodnocení učitele).
+  const maxScore = items.reduce((s, it) => s + (it.type === "table" ? 0 : it.points), 0);
   const perItem: Record<string, { correct: boolean; points: number }> = {};
 
   const keyMap = new Map(answerKey.map((k) => [k.itemId, k]));
@@ -96,7 +99,7 @@ export function scoreWorksheet(
   for (const item of items) {
     const key = keyMap.get(item.id);
     const answer = answers[item.id];
-    if (WRITING_TYPES.has(item.type)) {
+    if (WRITING_TYPES.has(item.type) || item.type === "table") {
       perItem[item.id] = { correct: false, points: 0 };
       continue;
     }
@@ -253,7 +256,8 @@ export default function WorksheetPlayer({
     !!it.tags?.includes("section_heading") ||
     !!it.tags?.includes("instruction") ||
     !!it.tags?.includes("lesson_visual") ||
-    ["section_header", "instruction_box", "table", "image", "image_text", "gallery", "callout"].includes(it.type);
+    (it.type === "table" && !hasEditableTableCells(it)) ||
+    ["section_header", "instruction_box", "image", "image_text", "gallery", "callout"].includes(it.type);
 
   const items = allItems.filter((it) => !isNonInteractive(it));
   const item = items[currentIndex];

@@ -2,7 +2,7 @@
  * TableFieldsEditor — editace tabulkového bloku v editoru pracovního listu.
  *
  * Umožňuje přidat/smazat řádek i sloupec a upravit text v libovolné buňce.
- * Ve žákovském zobrazení (WorksheetPlayer) a v tisku zůstává tabulka read-only.
+ * Buňky mimo hlavičku lze označit „k vyplnění“ — žák je vyplní v digitálním listu.
  */
 
 import { Plus, Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { WorksheetItem } from "@/lib/worksheet-spec";
+import { isTableCellEditable } from "@/lib/worksheet-table";
 
 const EMPTY: string[][] = [["Sloupec 1", "Sloupec 2"], ["", ""]];
 
@@ -33,8 +34,19 @@ export default function TableFieldsEditor({
       return copy.slice(0, cols);
     });
 
-  const setRows = (next: string[][], cols = colCount) =>
-    onUpdate({ tableRows: normalize(next, cols) });
+  // Explicitní mapa „k vyplnění“ se přepočítá jen když ji učitel už nastavil.
+  const setRows = (next: string[][], cols = colCount) => {
+    const tableRows = normalize(next, cols);
+    onUpdate(item.tableEditable
+      ? { tableRows, tableEditable: tableRows.map((r, ri) => r.map((_, ci) => ri > 0 && (item.tableEditable?.[ri]?.[ci] ?? r[ci].trim() === ""))) }
+      : { tableRows });
+  };
+
+  const toggleEditable = (ri: number, ci: number, on: boolean) => {
+    const map = rows.map((r, r2) => r.map((_, c2) => isTableCellEditable(item, r2, c2)));
+    map[ri][ci] = on;
+    onUpdate({ tableEditable: map });
+  };
 
   const setCell = (ri: number, ci: number, value: string) => {
     const next = rows.map((r) => [...r]);
@@ -63,7 +75,7 @@ export default function TableFieldsEditor({
   return (
     <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
       <div className="flex items-center justify-between gap-2">
-        <Label className="text-xs">Tabulka (první řádek je hlavička)</Label>
+        <Label className="text-xs">Tabulka (první řádek je hlavička; žák vyplňuje buňky „k vyplnění“)</Label>
         <div className="flex gap-1">
           <Button type="button" size="sm" variant="outline" onClick={addRow}>
             <Plus className="w-3.5 h-3.5 mr-1" /> Řádek
@@ -120,6 +132,16 @@ export default function TableFieldsEditor({
                       className={`h-8 min-w-0 text-sm ${ri === 0 ? "font-semibold" : ""}`}
                       placeholder={ri === 0 ? `Sloupec ${ci + 1}` : ""}
                     />
+                    {ri > 0 && (
+                      <label className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={isTableCellEditable(item, ri, ci)}
+                          onChange={(e) => toggleEditable(ri, ci, e.target.checked)}
+                        />
+                        k vyplnění
+                      </label>
+                    )}
                   </td>
                 ))}
               </tr>
