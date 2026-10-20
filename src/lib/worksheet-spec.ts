@@ -1042,3 +1042,5 @@ export const WORKSHEET_FILE_SPEC = {
   worksheetSpecSchema: WORKSHEET_SPEC_JSON_SCHEMA,
   exampleWorksheetSpec: WORKSHEET_SPEC_EXAMPLE,
 } as const;
+
+export { isTableCellEditable, hasEditableTableCells, tableCellAnswer, setTableCellAnswer } from "@/lib/worksheet-table";
