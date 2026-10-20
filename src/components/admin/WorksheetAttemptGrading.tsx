@@ -70,6 +70,7 @@ interface Row {
   correct: boolean | null;
   unknown?: boolean;
   choices?: string[];
+  tableRows?: string[][];
 }
 
 const isEmpty = (v: unknown) =>
@@ -90,6 +91,17 @@ function checkCorrect(item: any, answer: unknown, key: any): boolean | null {
 
 function formatAnswer(row: Row): string {
   const a = row.answer;
+  if (row.type === "table" && Array.isArray(a) && row.tableRows?.length) {
+    const head = row.tableRows[0];
+    const cols = Math.max(1, ...row.tableRows.map((r) => r.length));
+    const lines: string[] = [];
+    row.tableRows.slice(1).forEach((r, ri) => {
+      const cells = Array.from({ length: cols }, (_, c) => String(a[ri * cols + c] ?? "").trim());
+      const filled = cells.map((v, c) => (v ? `${head[c] || `Sloupec ${c + 1}`}: ${v}` : "")).filter(Boolean);
+      if (filled.length) lines.push(`Řádek ${ri + 1} – ${filled.join(" · ")}`);
+    });
+    return lines.join("\n");
+  }
   if (Array.isArray(a)) return a.map((x) => String(x ?? "")).join(" · ");
   if (row.type === "true_false") return a === "true" ? "Pravda" : a === "false" ? "Nepravda" : String(a);
   if (row.type === "mcq" && typeof a === "string" && a.length === 1 && row.choices) {
@@ -149,6 +161,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
         answer: ans[it.id],
         correct: checkCorrect(it, ans[it.id], keys.get(it.id)),
         choices: Array.isArray(it.choices) ? it.choices : undefined,
+        tableRows: Array.isArray(it.tableRows) ? it.tableRows : undefined,
       });
     }
     for (const id of Object.keys(ans)) {

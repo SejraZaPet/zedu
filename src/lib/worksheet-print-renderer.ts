@@ -11,6 +11,7 @@ import { worksheetKindPrintLabel, worksheetDocumentTitle } from "@/lib/worksheet
  *   - AAA print contrast
  */
 
+import { isTableCellEditable, tableCellAnswer } from "@/lib/worksheet-table";
 import { qrSvgDataUrl } from "@/lib/qr-inline";
 import { seededShuffleNonIdentity } from "@/lib/shuffle";
 import type {
@@ -1073,9 +1074,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       const thead = `<thead><tr>${head
         .map((c) => `<th>${esc(c)}</th>`)
         .join("")}</tr></thead>`;
+      const tableAns = printAnswers?.[item.id];
       const tbody = `<tbody>${rest
-        .map((r) => `<tr>${r
-          .map((c) => `<td>${esc(c)}</td>`)
+        .map((r, ri) => `<tr>${r
+          .map((c, ci) => {
+            const filled = isTableCellEditable(item, ri + 1, ci) ? tableCellAnswer(item, tableAns, ri + 1, ci).trim() : "";
+            return `<td>${esc(filled || c)}</td>`;
+          })
           .join("")}</tr>`)
         .join("")}</tbody>`;
       return `<div style="margin:10px 0;page-break-inside:avoid;">
