@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { hasEditableTableCells } from "@/lib/worksheet-table";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,6 +153,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
     for (const it of (variant?.items ?? []) as any[]) {
       seen.add(it.id);
       if (LAYOUT_TYPES.has(it.type) && !(it.id in ans)) continue;
+      if (it.type === "table" && !hasEditableTableCells(it) && !(it.id in ans)) continue;
       const pts = Number(it.points);
       out.push({
         id: it.id,
