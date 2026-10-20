@@ -251,6 +251,8 @@ export interface WorksheetItem {
   tableRows?: string[][];
   /** Popisek tabulky pod / nad tabulkou. */
   tableCaption?: string;
+  /** Které buňky žák vyplňuje (stejný tvar jako tableRows). Bez pole: prázdné buňky mimo hlavičku. */
+  tableEditable?: boolean[][];
 
   // ─── v1.4 — Vizuální bloky reprodukované z lekce (read-only) ───
   /** Šířka samostatného obrázku. */
