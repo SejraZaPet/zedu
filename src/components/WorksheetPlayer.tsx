@@ -90,8 +90,7 @@ export function scoreWorksheet(
   answerKey: AnswerKeyEntry[],
 ): { score: number; maxScore: number; perItem: Record<string, { correct: boolean; points: number }> } {
   let score = 0;
-  // Tabulky se nikdy automaticky nebodují (jen uložení + ruční hodnocení učitele).
-  const maxScore = items.reduce((s, it) => s + (it.type === "table" ? 0 : it.points), 0);
+  const maxScore = items.reduce((s, it) => s + it.points, 0);
   const perItem: Record<string, { correct: boolean; points: number }> = {};
 
   const keyMap = new Map(answerKey.map((k) => [k.itemId, k]));
@@ -99,7 +98,7 @@ export function scoreWorksheet(
   for (const item of items) {
     const key = keyMap.get(item.id);
     const answer = answers[item.id];
-    if (WRITING_TYPES.has(item.type) || item.type === "table") {
+    if (WRITING_TYPES.has(item.type)) {
       perItem[item.id] = { correct: false, points: 0 };
       continue;
     }

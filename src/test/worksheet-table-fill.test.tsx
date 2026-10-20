@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import TableItem from "@/components/worksheet-items/TableItem";
 import { isItemAnswered, scoreWorksheet } from "@/components/WorksheetPlayer";
-import { hasEditableTableCells, isTableCellEditable, setTableCellAnswer, tableCellAnswer } from "@/lib/worksheet-table";
+import { hasEditableTableCells, isTableCellEditable, setTableCellAnswer, tableCellAnswer } from "@/lib/worksheet-spec";
 import type { WorksheetItem } from "@/lib/worksheet-spec";
 
 const base = (over: Partial<WorksheetItem>): WorksheetItem => ({
@@ -32,10 +32,10 @@ describe("vyplnitelná tabulka", () => {
     expect(isItemAnswered(t, v)).toBe(true);
     expect(isItemAnswered(t, ["", ""])).toBe(false);
   });
-  it("tabulka nemění skóre ani maximum", () => {
-    const r = scoreWorksheet([base({})], { t: ["", "x"] }, []);
-    expect(r.maxScore).toBe(0);
+  it("tabulka nedostane automatické body", () => {
+    const r = scoreWorksheet([base({ points: 0 })], { t: ["", "x"] }, []);
     expect(r.score).toBe(0);
+    expect(r.perItem.t.points).toBe(0);
   });
   it("buňka je textarea bez blokování dotyku", () => {
     const html = renderToStaticMarkup(<TableItem item={base({})} value={["", "x"]} onChange={() => {}} disabled={false} showResults={false} />);
