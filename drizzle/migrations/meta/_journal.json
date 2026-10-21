@@ -477,6 +477,13 @@
       "when": 1792439445257,
       "tag": "0067_system_textbook_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792617159923,
+      "tag": "0068_league_cron_prague_monday",
+      "breakpoints": true
     }
   ]
 }
