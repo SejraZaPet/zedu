@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import { WifiOff, Wifi, Loader2 } from "lucide-react";
+import { WifiOff, Loader2 } from "lucide-react";
 import { UI_COPY } from "@/lib/ui-microcopy";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { ConnectionStatus } from "@/hooks/useGameSession";
+import { shouldAnnounceRestore } from "@/lib/connection-notice";
 
 interface ConnectionStatusBannerProps {
   status: ConnectionStatus;
@@ -12,18 +13,22 @@ interface ConnectionStatusBannerProps {
 
 export function ConnectionStatusBanner({ status, onReconnect }: ConnectionStatusBannerProps) {
   const { toast } = useToast();
-  const prevStatus = useRef<ConnectionStatus>(status);
+  const outageStartRef = useRef<number | null>(null);
 
-  // Toast on status transitions
+  // „Připojeno“ jen po skutečném (delším) výpadku, ne při každém novém kanálu.
   useEffect(() => {
-    if (prevStatus.current !== status) {
-      if (status === "connected" && (prevStatus.current === "reconnecting" || prevStatus.current === "disconnected")) {
+    if (status === "reconnecting" || status === "disconnected") {
+      if (outageStartRef.current == null) outageStartRef.current = Date.now();
+      return;
+    }
+    if (status === "connected") {
+      if (shouldAnnounceRestore(outageStartRef.current, Date.now())) {
         toast({
           title: UI_COPY.student.toasts.connectionRestored.title,
           description: UI_COPY.student.toasts.connectionRestored.description,
         });
       }
-      prevStatus.current = status;
+      outageStartRef.current = null;
     }
   }, [status, toast]);
 

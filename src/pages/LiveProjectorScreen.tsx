@@ -25,7 +25,7 @@ const LiveProjectorScreen = () => {
     if (window.opener) window.close();
     else navigate(-1);
   };
-  const CloseButton = () => (
+  const renderCloseButton = () => (
     <>
     <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <Button
@@ -52,7 +52,7 @@ const LiveProjectorScreen = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <CloseButton />
+        {renderCloseButton()}
         <p className="text-2xl text-muted-foreground">Načítání...</p>
       </div>
     );
@@ -61,7 +61,7 @@ const LiveProjectorScreen = () => {
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <CloseButton />
+        {renderCloseButton()}
         <p className="text-2xl text-muted-foreground">Prezentace nenalezena</p>
       </div>
     );
@@ -89,7 +89,7 @@ const LiveProjectorScreen = () => {
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={gameBackgroundStyle(backgroundUrl)}>
-        <CloseButton />
+        {renderCloseButton()}
         <h1 className="text-6xl font-bold text-center">{session.title}</h1>
         <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
         <div className="bg-white rounded-3xl p-8 mb-10 shadow-2xl">
@@ -108,7 +108,7 @@ const LiveProjectorScreen = () => {
   if (session.status === "finished") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-12">
-        <CloseButton />
+        {renderCloseButton()}
         <div className="text-center space-y-6">
           <p className="text-9xl">🎉</p>
           <h1 className="text-6xl font-bold text-foreground">Prezentace dokončena</h1>
@@ -123,7 +123,7 @@ const LiveProjectorScreen = () => {
   if (adaptive?.showProjector) {
     return (
       <>
-        <CloseButton />
+        {renderCloseButton()}
         <AdaptiveReviewProjector
           slides={slides}
           responses={responses}
@@ -144,7 +144,7 @@ const LiveProjectorScreen = () => {
         className="min-h-screen flex flex-col p-6 md:p-10 gap-6 text-white"
         style={gameBackgroundStyle(backgroundUrl)}
       >
-        <CloseButton />
+        {renderCloseButton()}
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm md:text-base uppercase tracking-widest text-white/60">
@@ -178,7 +178,7 @@ const LiveProjectorScreen = () => {
   if (!currentSlide) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={gameBackgroundStyle(backgroundUrl)}>
-        <CloseButton />
+        {renderCloseButton()}
       </div>
     );
   }
@@ -195,7 +195,7 @@ const LiveProjectorScreen = () => {
   if ((currentSlide as any)?.activitySpec?.activityType === "teams") {
     return (
       <div className="relative">
-        <CloseButton />
+        {renderCloseButton()}
         <TeamsSlideProjector session={session} players={players} slide={currentSlide} />
       </div>
     );
@@ -204,7 +204,7 @@ const LiveProjectorScreen = () => {
   if ((currentSlide as any)?.activitySpec?.activityType === "differentiated") {
     return (
       <div className="relative">
-        <CloseButton />
+        {renderCloseButton()}
         <DifferentiatedSlideProjector session={session} players={players} slide={currentSlide} />
       </div>
     );
@@ -213,7 +213,7 @@ const LiveProjectorScreen = () => {
   if ((currentSlide as any)?.activitySpec?.activityType === "escape") {
     return (
       <div className="relative">
-        <CloseButton />
+        {renderCloseButton()}
         <EscapeGameProjector slide={currentSlide} />
       </div>
     );
@@ -222,7 +222,7 @@ const LiveProjectorScreen = () => {
 
   return (
     <div className="relative">
-      <CloseButton />
+      {renderCloseButton()}
       <ProjectorSlideView
         sessionId={sessionId!}
         session={session}
