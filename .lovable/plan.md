@@ -1,4 +1,36 @@
-# Bannery na přehledech (návrh, nic neprovedeno)
+# Část A – Bezli liga: diagnostika (jen čtení, nic neprovedeno)
+
+## 1. Co je hotové
+- Žák: záložka „Liga“ v `src/pages/StudentLeaderboard.tsx:101` → `src/components/student/LeagueTab.tsx` (liga, soutěž tříd přes `school_league_week`/`class_league_week` ř. 35–36, odhlášení `set_league_opt_out` ř. 48). Na přehledu žáka (`StudentDashboard.tsx`) liga přímo vidět není – jen přes stránku žebříčku.
+- Vedení školy: `src/components/school/SchoolLeagueCard.tsx` (zapnout ligu, způsob jména přezdívka/iniciála), vloženo v `SchoolAdmin.tsx:417`.
+- Učitel: přepínač soutěže tříd v `src/components/teacher/LeaderboardSettingsCard.tsx:95`, vloženo v `TeacherClassDetail.tsx:669`.
+- Server: `add_xp` (strop, opakování, série), `close_league_week` (uzávěr, postup/sestup, odznaky `league_gold/silver/bronze`), cron `close-league-week` neděle 22:05 a 23:05 UTC. Pravidla zrcadlí `src/lib/league-rules.ts`.
+
+## 2. Co chybí / rozpracované
+- Žádná škola ligu nemá zapnutou (0 škol, pilot Žatec `league_enabled=false`, jména `nickname`).
+- Liga není vidět na přehledu žáka (žádná karta „Moje liga“).
+- Skutečný týdenní uzávěr nikdy neproběhl, takže není ověřeno, že odznaky a postup fungují naostro.
+- XP posílá serverově hlavně `submit-activity-response` (`index.ts:139`); zdroje v datech: activity 156, assignment 160, lesson 140, live_game 32, practice 3, legacy 12.
+
+## 3. Proč jsou tabulky prázdné
+Návrh je „živý výpočet“: aktuální týden se nepočítá z tabulek, ale z `xp_events` (`league_week_standings`). `league_weeks` je jen archiv uzavřených týdnů a `league_memberships` ukládá jen změnu ligy (výchozí je Bronz). Obojí plní pouze `close_league_week`, a ta prochází jen školy s `league_enabled=true` – žádná taková není, proto je vše 0. To je očekávané, ne chyba. Třídy: všech 21 má soutěž tříd zapnutou (výchozí), ale bez zapnuté školy se neprojeví. Zapíná vedení školy (školní admin) v `/skola`.
+
+## 4. XP (odpovídá návrhu)
+Denní strop 150 (pražský den); opakování téže věci týž den ×1 / ×0,5 / ×0,2 / ×0 (při 10 XP = 10/5/2/0); bonus za sérii k prvnímu zápisu dne +5 od 3 dnů, +10 od 7 dnů, vše v rámci stropu. Bez zpětného přepočtu (od 17. 10., 62 žáků).
+
+## 5. Nejmenší krok pro pilot Žatec
+Bez migrace, bez cronu, bez kódu: správce školy Žatec zapne v `/skola` kartu „Bezli liga“ (přepínač). Žáci hned uvidí aktuální týden v záložce Liga, první uzávěr proběhne sám v neděli večer. Doporučené doplnění později (samostatné schválení): karta ligy na přehledu žáka (jen UI). Alternativa, pokud to máte zapnout vy: jeden datový zápis `UPDATE public.schools SET league_enabled = true WHERE id = '17840203-9bd6-47fc-97c3-726c4da82667';` – rollback stejný s `false` (již archivované týdny zůstanou).
+
+## 6. Rizika
+- Soukromí: žebříček jen přes definer funkce, top 10 + vlastní pozice, jména dle nastavení školy; před zapnutím zkontrolovat na žákovském účtu, že se neukáže celé jméno.
+- Opt-out: odhlášený žák se v žebříčku nezobrazí; ověřit po zapnutí.
+- Demo: demo školy ligu zapnutou nemají, tak zůstávají mimo.
+- Výkon: výpočet z `xp_events` pro jednu školu je malý; při mnoha školách přidat index (nyní netřeba).
+- XP ze starších dnů (od 17. 10.) se do prvního týdne započítají jen za aktuální týden.
+
+---
+
+# Část B – Bannery na přehledech (návrh, nic neprovedeno)
 
 ## Co už existuje (ověřeno čtením)
 - Bannery ani novinky na přehledu nejsou. Existují jen ruční oznámení (`notification_broadcasts`, `src/components/notifications/BroadcastHistory.tsx`) – jdou do zvonečku, ne na přehled. Obecný kolotoč `src/components/ui/carousel.tsx` existuje, ale nikde se pro bannery nepoužívá.
