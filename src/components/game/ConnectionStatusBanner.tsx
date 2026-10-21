@@ -11,6 +11,8 @@ interface ConnectionStatusBannerProps {
   onReconnect: () => void;
 }
 
+let lastRestoredToast: { dismiss: () => void } | null = null;
+
 export function ConnectionStatusBanner({ status, onReconnect }: ConnectionStatusBannerProps) {
   const { toast } = useToast();
   const outageStartRef = useRef<number | null>(null);
@@ -23,7 +25,9 @@ export function ConnectionStatusBanner({ status, onReconnect }: ConnectionStatus
     }
     if (status === "connected") {
       if (shouldAnnounceRestore(outageStartRef.current, Date.now())) {
-        toast({
+        // Pevná „identita“: předchozí hláška se zavře, nikdy se nevrší víc najednou.
+        lastRestoredToast?.dismiss();
+        lastRestoredToast = toast({
           title: UI_COPY.student.toasts.connectionRestored.title,
           description: UI_COPY.student.toasts.connectionRestored.description,
         });
