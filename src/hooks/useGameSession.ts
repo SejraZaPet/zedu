@@ -1,3 +1,4 @@
+import { RECONNECTING_NOTICE_DELAY_MS } from "@/lib/connection-notice";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/game-types";
@@ -42,6 +43,7 @@ export function useGameSession(
   const lightPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const mountedRef = useRef(true);
+  const reconnectingNoticeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Brání souběžným stahováním: pomalá síť jinak hromadila dotazy každé 2 s
   // (každý s kompletními snímky), až se prohlížeč zasekl.
@@ -169,6 +171,17 @@ export function useGameSession(
     setSession((prev) => applyLightSessionState(prev, light) as GameSession | null);
   }, [sessionId, joinToken, fetchData]);
 
+  // Krátké přepojení kanálu nehlásíme; stav „reconnecting“ až po prodlevě.
+  const markReconnecting = useCallback(() => {
+    if (reconnectingNoticeRef.current) return;
+    reconnectingNoticeRef.current = setTimeout(() => {
+      reconnectingNoticeRef.current = null;
+      if (mountedRef.current && !connectedRef.current) {
+        setConnectionStatus((s) => (s === "disconnected" ? s : "reconnecting"));
+      }
+    }, RECONNECTING_NOTICE_DELAY_MS);
+  }, []);
+
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(async () => {
     if (!sessionId || !mountedRef.current) return;
@@ -249,6 +262,7 @@ export function useGameSession(
         switch (status) {
           case "SUBSCRIBED":
             connectedRef.current = true;
+            if (reconnectingNoticeRef.current) { clearTimeout(reconnectingNoticeRef.current); reconnectingNoticeRef.current = null; }
             setConnectionStatus("connected");
             // Reset reconnect counter on success
             if (reconnectAttemptRef.current > 0) {
@@ -262,14 +276,14 @@ export function useGameSession(
           case "TIMED_OUT":
             connectedRef.current = false;
             console.warn(`Realtime ${status}:`, err);
-            setConnectionStatus("reconnecting");
+            markReconnecting();
             scheduleReconnect();
             break;
 
           case "CLOSED":
             connectedRef.current = false;
             if (mountedRef.current) {
-              setConnectionStatus("reconnecting");
+              markReconnecting();
               scheduleReconnect();
             }
             break;
@@ -354,6 +368,7 @@ export function useGameSession(
     return () => {
       mountedRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (reconnectingNoticeRef.current) { clearTimeout(reconnectingNoticeRef.current); reconnectingNoticeRef.current = null; }
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
@@ -369,7 +384,14 @@ export function useGameSession(
         channelRef.current = null;
       }
     };
-  }, [fetchData, subscribe, refetchTrigger, lightPoll, reconnect]);
+  }, [fetchData, subscribe, lightPoll, reconnect]);
+
+  // Opakované dočtení ze stránky jen načte data – kanál se kvůli němu nezakládá znovu.
+  const firstRefetchRef = useRef(true);
+  useEffect(() => {
+    if (firstRefetchRef.current) { firstRefetchRef.current = false; return; }
+    fetchData();
+  }, [refetchTrigger, fetchData]);
 
   return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers, refreshPlayers };
 }
