@@ -34,7 +34,7 @@ describe("hláška o obnovení spojení", () => {
 describe("useGameSession kanál", () => {
   it("změna refetchTrigger nezaloží nový kanál", async () => {
     const { useGameSession } = await import("@/hooks/useGameSession");
-    const { rerender } = renderHook(({ t }) => useGameSession("s1", undefined, t), { initialProps: { t: 0 } });
+    const { rerender } = renderHook(({ t }) => useGameSession("s1", t), { initialProps: { t: 0 } });
     await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
     const before = channelSpy.mock.calls.length;
     expect(before).toBe(1);
