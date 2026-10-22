@@ -110,7 +110,9 @@ html, body {
 /* ─── Hustota tisku (výchozí compact i bez třídy) ─── */
 .ws-page {
   --ws-item-gap: 4mm;
-  --ws-choice-pad: 3pt;
+  --ws-choice-pad: 0.5pt;
+  --ws-choice-lh: 1.15;
+  --ws-header-gap: 2pt;
   --ws-tf-gap: 5pt;
   --ws-order-pad: 5pt;
   --ws-order-box-top: 3pt;
@@ -121,7 +123,9 @@ html, body {
 }
 .ws-page.ws-density-normal {
   --ws-item-gap: 7mm;
-  --ws-choice-pad: 4pt;
+  --ws-choice-pad: 1.5pt;
+  --ws-choice-lh: 1.25;
+  --ws-header-gap: 4pt;
   --ws-tf-gap: 6.5pt;
   --ws-order-pad: 6.5pt;
   --ws-order-box-top: 4.5pt;
@@ -132,7 +136,9 @@ html, body {
 }
 .ws-page.ws-density-loose {
   --ws-item-gap: 10mm;
-  --ws-choice-pad: 5pt;
+  --ws-choice-pad: 3pt;
+  --ws-choice-lh: 1.4;
+  --ws-header-gap: 6pt;
   --ws-tf-gap: 8pt;
   --ws-order-pad: 8pt;
   --ws-order-box-top: 6pt;
@@ -332,8 +338,8 @@ html, body {
 }
 .ws-item-header {
   display: block;
-  margin-bottom: 6pt;
-  padding-bottom: 4pt;
+  margin-bottom: var(--ws-header-gap, 2pt);
+  padding-bottom: 0;
 }
 .ws-item-num {
   display: inline-block;
@@ -348,7 +354,7 @@ html, body {
 .ws-item .prompt {
   display: inline;
   font-size: var(--ws-prompt-size, 11pt);
-  font-weight: 600;
+  font-weight: 700;
   color: #1A1F2C !important;
   background: transparent !important;
   line-height: 1.4;
@@ -368,19 +374,35 @@ html, body {
 .ws-choices {
   list-style: none;
   padding: 0;
-  margin: 6pt 0 6pt 18pt;
+  margin: 2pt 0 0 18pt;
+}
+.ws-choices.ws-choices--2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8mm;
 }
 .ws-choices li {
   display: block;
-  padding: var(--ws-choice-pad, 3pt) 0;
+  padding: var(--ws-choice-pad, 0.5pt) 0;
   font-size: 11pt;
-  line-height: 1.5;
+  line-height: var(--ws-choice-lh, 1.15);
   color: #1A1F2C !important;
+  break-inside: avoid;
+}
+.ws-choice-box {
+  display: inline-block;
+  width: 3mm;
+  height: 3mm;
+  border: 0.6pt solid #64748B;
+  border-radius: 0.6mm;
+  margin-right: 4pt;
+  vertical-align: -0.4mm;
+  background: #FFFFFF !important;
 }
 .ws-choice-marker {
   display: inline-block;
-  min-width: 26pt;
-  margin-right: 6pt;
+  min-width: 14pt;
+  margin-right: 3pt;
   font-size: 11pt;
   font-weight: 700;
   color: #7C3AED !important;
@@ -910,6 +932,12 @@ function computeDisplayNumbers(items: WorksheetItem[]): Map<number, number> {
   return map;
 }
 
+/** Krátké možnosti (3–4, každá ≤ 38 znaků) se tisknou ve dvou sloupcích. */
+export function mcqColumns(choices: string[]): 1 | 2 {
+  if (choices.length < 3 || choices.length > 4) return 1;
+  return choices.every((c) => String(c ?? "").length <= 38) ? 2 : 1;
+}
+
 function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: number): string {
   const pointsHtml = showPoints && item.points > 0
     ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
@@ -918,11 +946,14 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   let body = "";
 
   switch (item.type) {
-    case "mcq":
-      body = `<ol class="ws-choices">${(item.choices ?? [])
-        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
+    case "mcq": {
+      const choices = item.choices ?? [];
+      const cls = mcqColumns(choices) === 2 ? "ws-choices ws-choices--2col" : "ws-choices";
+      body = `<ol class="${cls}">${choices
+        .map((c, i) => `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
         .join("")}</ol>`;
       break;
+    }
 
     case "true_false":
       body = `<div class="ws-tf-options">
