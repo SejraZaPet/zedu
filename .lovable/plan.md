@@ -1,74 +1,75 @@
-# Dialog „AI vytvoří pracovní list z lekce“: šířka a volba „Nezahrnout“
+# Kompaktní „Výběr z možností“ v náhledu, tisku a PDF
 
-Tento návrh zatím nic nemění. Databáze, edge funkce ani demo ochrany se nemění a nic se nezveřejňuje.
+Návrh. Nic se zatím nemění, migrace není potřeba (jen vzhled).
 
-## a) Kde je dialog a proč přetéká
+## 1. Kde se položka vykresluje
 
-Celý dialog je v `src/pages/WorksheetEditor.tsx`:
-- obal: ř. 2973 `DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto"`
-- sekce: komponenta `AiSectionsBuilder`, ř. 4451–4512
-- aktivity: ř. 3073–3105
-- pokyn pro AI: ř. 3106–3114
+Dvě nezávislé cesty:
 
-Pravděpodobné příčiny přetečení (vyčteno z kódu, v prohlížeči zatím neověřeno):
-1. **Řádek sekce (ř. 4482–4492):** výběr typu otázek má `flex-1`, ale chybí mu `min-w-0`. Výběr nechce zalomit dlouhý název typu, takže řádek roztáhne. Vedle jsou ještě tři tlačítka (↑ ↓ ✕), která se pak nevejdou a odjedou doprava.
-2. **Pole Počet/Body/Nadpis (ř. 4493):** mřížka `grid-cols-[5rem_5rem_1fr]`. Sloupec `1fr` se neumí zmenšit pod šířku obsahu, protože mu chybí `minmax(0,1fr)`.
-3. **Řádek aktivity (ř. 3082–3093):** název má `truncate`, ale chybí mu `min-w-0 flex-1`. Výběr má pevnou šířku `w-[190px] shrink-0`, takže u dlouhého názvu se řádek roztáhne.
-4. **Obal dialogu:** výchozí dialog je mřížka a jeho vnitřní prvky mají minimální šířku podle obsahu. Jeden široký řádek tak roztáhne celý formulář, což se při 125–150 % projeví nejvíc.
+- **Digitální přehrávač a „Náhled“ v editoru** – `src/components/worksheet-items/MCQItem.tsx` ř. 22–34: každá možnost je `flex … p-3 rounded-lg border`, mezi možnostmi `space-y-2`, RadioGroup s plným kolečkem. Tohle jsou ty „vysoké rámečky“. Náhled v editoru (`src/pages/WorksheetEditor.tsx` ř. 2786–2797) používá `WorksheetPlayer`, tedy právě tento digitální vzhled, ne tiskový. A4 rámeček stránky dělá `WorksheetPlayer.tsx` ř. 370.
+- **Tisk / PDF / „PDF pro pero“** – `src/lib/worksheet-print-renderer.ts`:
+  - HTML `mcq` ř. 921–924: `<ol class="ws-choices">` s písmeny „A)“, bez rámečků.
+  - CSS ř. 368–389: `.ws-choices` margin 6pt, `li` padding `var(--ws-choice-pad)` a line-height 1.5, značka min. 26pt.
+  - Hlavička otázky ř. 333–365: `margin-bottom 6pt + padding-bottom 4pt`, číslo 12–14pt, line-height 1.4, body vpravo 8.5pt.
+  - Celá položka ř. 324–331: `break-inside: avoid`, mezera `--ws-item-gap`.
+  - PDF (`worksheet-pdf-export.ts` ř. 56) a „PDF pro pero“ v sešitě používají stejné HTML.
+- **Pravda/nepravda** má vlastní styl (`.ws-tf-*` ř. 391 a dál, `TrueFalseItem.tsx`). Samostatný typ „Více správných“ ve schématu není (`worksheet-spec.ts` ř. 402), takže se ho změna netýká.
 
-Nejmenší oprava (jen třídy vzhledu):
-- **Obal:** `w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden`. Svislý posuvník zůstane uvnitř dialogu. `overflow-x-hidden` je jen pojistka, správné rozvržení zajistí body níže. Vnitřní obal `space-y-4` dostane `min-w-0`.
-- **Sekce:** horní řádek dostane `flex-wrap`, výběr typu `min-w-0 flex-1 basis-40` a tlačítka zůstanou pohromadě v `flex shrink-0`. Na úzké šířce se tlačítka zalomí na druhý řádek.
-- **Pole sekce:** mřížka `grid-cols-[4.5rem_4.5rem_minmax(0,1fr)]`. Pod 400 px (`max-[400px]:grid-cols-2`) se nadpis zalomí na celý další řádek (`col-span-2`).
-- **Aktivity:** řádek dostane `flex-wrap`, název `min-w-0 flex-1` a výběr `w-full sm:w-[190px]`. Na úzké šířce jde výběr pod název.
-- **Popisky a pokyn:** odstavec u aktivit dostane `break-words`, pole s pokynem `w-full`.
+## 2. Proč „Kompaktní“ výběr nezmenší
 
-## b) Volba u aktivity a nová hodnota „Nezahrnout“
+„Hustota tisku“ (`WorksheetEditor.tsx` ř. 2290, `printDensityOf` ř. 1379–1386) jen přepíná proměnné CSS v tiskovém HTML (ř. 110–143). Možnost se při ní mění jen o 3–5pt odsazení. Hlavní objem tvoří pevné hodnoty, které hustota neřídí: line-height 1.5, okraje seznamu 6pt, hlavička 10pt.
 
-Jak to funguje dnes:
-- Stav `activityModes: Record<id, "qr" | "convert">` (ř. 1314). Ukládá se jen v paměti dialogu, v databázi ani v listu ne.
-- Výchozí hodnota je `"qr"` (ř. 1326–1332).
-- Při generování (ř. 1716–1721) se aktivity rozdělí na dvě skupiny:
-  - **QR kód:** aktivity s `"qr"`, pokud mají vlastní odkaz.
-  - **Tištěná úloha:** aktivity s `"convert"` a také aktivity bez vlastního odkazu, tedy vnořené v kartách. Ty se převádějí vždy.
-- Obě skupiny jdou do edge funkce `generate-full-worksheet` (ř. 1742–1750) jako `qrLinks` a `activityPlan`.
-- Funkce obě pole jen filtruje a prázdné pole bere jako „nic“ (`supabase/functions/generate-full-worksheet/index.ts` ř. 184–200).
+Digitální náhled (`MCQItem`) hustotu nečte vůbec. Proto učitelka v náhledu vidí velké rámečky bez ohledu na nastavení. Je pravděpodobné, že hlášený „náhled“ je právě tento. Je to vyčtené z kódu, na její obrazovce neověřené.
 
-Návrh:
-- Typ rozšířit na `"qr" | "convert" | "none"`. Výchozí hodnota zůstane `"qr"`, takže dnešní chování se nezmění.
-- Rozdělení aktivit přesunout do malé čisté funkce `splitLessonActivities(activities, modes)` v novém souboru `src/lib/worksheet-activity-modes.ts`. Aktivita s `"none"` nebude ani mezi QR kódy, ani mezi úlohami. Platí to i pro aktivity bez odkazu, protože „Nezahrnout“ má přednost před automatickým převodem.
-- Do výběru přidat třetí položku „Nezahrnout“. U aktivit bez vlastního odkazu je volba QR kódu nedostupná (dnes se tiše převedou), nabídnou se jen „Převést na úlohu“ a „Nezahrnout“.
-- Nad seznam přidat dvě malá tlačítka:
-  - **„Nezahrnout žádnou“:** všem aktivitám nastaví „Nezahrnout“.
-  - **„Zahrnout všechny“:** vrátí výchozí stav, tedy QR kód tam, kde jde, jinak převod na úlohu.
-- Když jsou všechny aktivity „Nezahrnout“, pošlou se dvě prázdná pole. List se pak vytvoří jen ze sekcí a z textu lekce. Edge funkce to už dnes zvládá, proto se nemění a není potřeba ji nasazovat.
-- U počtu aktivit se zobrazí krátká informace, kolik aktivit se vynechá.
+## 3. Návrh nejmenší změny
 
-## c) Migrace
+**A. Tiskové HTML a PDF** (jen `worksheet-print-renderer.ts`):
+- Nové proměnné hustoty:
+  - `--ws-choice-pad` (compact 0.5pt, normal 1.5pt, loose 3pt);
+  - `--ws-choice-lh` (1.15 / 1.25 / 1.4);
+  - `--ws-header-gap` (2pt / 4pt / 6pt).
+  Stávající `--ws-item-gap` (4/7/10 mm) zůstává.
+- `.ws-choices`: okraj `2pt 0 0 18pt`, bez rámečků.
+- Každá možnost dostane malý čtvereček na zakroužkování: `.ws-choice-box` 3 mm, 0.6pt šedá čára. Písmeno zůstane „A)“, takže klíč i odkazy na písmena platí.
+- Dva sloupce u krátkých možností (`ws-choices--2col`, `display:grid; grid-template-columns:1fr 1fr; column-gap:8mm`). Pořadí A, B v prvním řádku a C, D ve druhém. O sloupcích rozhodne renderer: dva sloupce, když jsou 3–4 možnosti a každá má nejvýš ~38 znaků; jinak jeden sloupec. Čistá funkce `mcqColumns(choices)`.
+- Zadání tučně zůstává (font-weight 600 → 700), body malé vpravo zůstávají.
+- `break-inside: avoid` na `.ws-item` je beze změny.
+- Odhad: 5 otázek A–D na A4 při „Kompaktní“, 3–4 při „Běžná“.
 
-Migrace potřeba není. Volba se v databázi nikde neukládá a mění se jen obrazovka a obsah požadavku. Edge funkce zůstává beze změny.
+**B. Náhled v editoru**:
+Dialog „Náhled“ přepnout na vykreslení tiskového HTML (stejné jako PDF). Přehrávač dostane volbu „Tiskový náhled“, nebo se v dialogu zobrazí `renderWorksheetVariantHtml`. Učitelka pak uvidí přesně to, co se vytiskne, včetně hustoty.
 
-## d) Rizika a testy
+## 4. Digitální vzhled pro žáka
+
+`MCQItem` se nemění: zůstanou velké dotykové plochy, minimálně 44 px. Kompaktní vzhled platí jen pro náhled tisku, tisk, PDF a „PDF pro pero“. Řídí ho stávající volba „Hustota tisku“.
+
+## 5. Rizika a testy
 
 **Rizika:**
-- **Pokyny pro AI:** formát pokynů ani výsledku se nemění. Vynechané aktivity se AI prostě nepošlou.
-- **Stávající listy a tisk:** nic se jim nemění. Volba platí jen pro nové generování.
-- **Demo ochrany:** beze změny. Volání AI pro demo dál hlídá stávající limit.
-- **Úzká šířka:** zalomení může v užším okně trochu prodloužit dialog. Svislý posun uvnitř dialogu zůstává.
+- **Počet stran:** stávající listy budou v tisku kratší. Mění se jen vzhled, uložená data ne. Učitelka s rozvrženým listem může vidět jiné zalomení stránek, proto to uvedu v poznámce ke změně.
+- **Tiskové testy:**
+  - `worksheet-print-density` (mezery 4/7/10 mm) se nemění;
+  - `worksheet-table-row-height` (10 mm) se tabulek netýká;
+  - testy klíče správných odpovědí se nemění, písmena zůstávají.
+- **Přístupnost tisku:** čtvereček 3 mm a mezera mezi řádky minimálně ~5 mm stačí k označení tužkou. Písmo zůstává 11pt, kontrast beze změny.
+- **Demo ochrany:** nedotčené, jde jen o vzhled.
 
-**Testy** (nový soubor `src/test/worksheet-ai-dialog.test.tsx`):
-1. `splitLessonActivities`:
-   - aktivita s „none“ není mezi QR kódy ani mezi úlohami;
-   - výchozí stav dává stejné rozdělení jako dnes;
-   - aktivita bez odkazu s „none“ se nepřevede;
-   - když jsou všechny „none“, obě pole jsou prázdná.
-2. `AiSectionsBuilder`:
-   - kontrola, že rozvržení používá `minmax(0,1fr)` a `min-w-0`;
-   - řádek s tlačítky má `flex-wrap`.
-3. Kontrola v prohlížeči přes Playwright na šířkách 360, 768 a 1024 px a se zvětšením 150 %: otevřít dialog a ověřit, že u dialogu i u všech jeho prvků platí `scrollWidth <= clientWidth`. Zároveň pořídit snímky obrazovky.
-4. Spustit celou sadu testů a kontrolu kódu.
+**Testy** (nový `src/test/worksheet-mcq-compact.test.ts`):
+1. `mcqColumns`:
+   - 4 krátké možnosti → 2 sloupce;
+   - jedna dlouhá možnost → 1 sloupec;
+   - 5 a více možností → 1 sloupec.
+2. HTML `mcq` obsahuje `ws-choice-box` a písmena A)–D) a při krátkých možnostech třídu `ws-choices--2col`.
+3. CSS: compact `--ws-choice-lh` je 1.15 a je menší než u normal.
+4. Odhad výšky: model výšky otázky (hlavička + řádky × line-height + mezera) při compact dá pro 5 otázek A–D ≤ 273 mm, při normal 3–4 otázky.
+5. Kontrola tisku přes Playwright (vykreslené HTML na A4): 5 otázek se vejde na první stránku a žádná otázka se nerozdělí.
+6. Stávající tiskové testy a celá sada musí projít beze změny.
+
+## 6. Migrace
+
+Migrace není potřeba. Mění se jen CSS a HTML tisku a náhled v editoru, uložený list ani databáze se nemění.
 
 ## Dotčené soubory
-- `src/pages/WorksheetEditor.tsx` (jen dialog a `AiSectionsBuilder`)
-- `src/lib/worksheet-activity-modes.ts` (nový)
-- `src/test/worksheet-ai-dialog.test.tsx` (nový)
+- `src/lib/worksheet-print-renderer.ts`
+- `src/pages/WorksheetEditor.tsx` (jen dialog Náhled)
+- nový test
