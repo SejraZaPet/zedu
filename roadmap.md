@@ -107,4 +107,4 @@
 - [x] Výsledky po ukončení: přehled se načte hned, „Zatím žádné odpovědi“
 - [x] Smazána první kopie „Charakteristika…“; druhá (17:00) čeká na potvrzení
 - [x] Bezli liga v1
-- [ ] Dialog AI listu: šířka + volba Nezahrnout (schváleno)
+- [x] Dialog AI listu: šířka + volba Nezahrnout (schváleno)
