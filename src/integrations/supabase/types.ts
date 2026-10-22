@@ -1259,6 +1259,93 @@ export type Database = {
           },
         ]
       }
+      banners: {
+        Row: {
+          alt_text: string
+          created_at: string
+          created_by: string
+          display_seconds: number
+          ends_at: string | null
+          hidden_by_admin: boolean
+          id: string
+          image_path: string | null
+          is_active: boolean
+          link_url: string | null
+          media_type: string
+          poster_path: string | null
+          school_id: string | null
+          scope: string
+          sort_order: number
+          starts_at: string | null
+          target_leadership: boolean
+          target_students: boolean
+          target_teachers: boolean
+          updated_at: string
+          video_path: string | null
+        }
+        Insert: {
+          alt_text: string
+          created_at?: string
+          created_by?: string
+          display_seconds?: number
+          ends_at?: string | null
+          hidden_by_admin?: boolean
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          media_type: string
+          poster_path?: string | null
+          school_id?: string | null
+          scope: string
+          sort_order?: number
+          starts_at?: string | null
+          target_leadership?: boolean
+          target_students?: boolean
+          target_teachers?: boolean
+          updated_at?: string
+          video_path?: string | null
+        }
+        Update: {
+          alt_text?: string
+          created_at?: string
+          created_by?: string
+          display_seconds?: number
+          ends_at?: string | null
+          hidden_by_admin?: boolean
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          media_type?: string
+          poster_path?: string | null
+          school_id?: string | null
+          scope?: string
+          sort_order?: number
+          starts_at?: string | null
+          target_leadership?: boolean
+          target_students?: boolean
+          target_teachers?: boolean
+          updated_at?: string
+          video_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banners_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banners_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       behavior_points: {
         Row: {
           category: string
@@ -8914,6 +9001,38 @@ export type Database = {
       get_follower_count: { Args: { _creator_id: string }; Returns: number }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
+      get_my_banners: {
+        Args: never
+        Returns: {
+          alt_text: string
+          created_at: string
+          created_by: string
+          display_seconds: number
+          ends_at: string | null
+          hidden_by_admin: boolean
+          id: string
+          image_path: string | null
+          is_active: boolean
+          link_url: string | null
+          media_type: string
+          poster_path: string | null
+          school_id: string | null
+          scope: string
+          sort_order: number
+          starts_at: string | null
+          target_leadership: boolean
+          target_students: boolean
+          target_teachers: boolean
+          updated_at: string
+          video_path: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "banners"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_demo_pair: {
         Args: never
         Returns: {
