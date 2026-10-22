@@ -354,7 +354,7 @@ html, body {
 .ws-item .prompt {
   display: inline;
   font-size: var(--ws-prompt-size, 11pt);
-  font-weight: 600;
+  font-weight: 700;
   color: #1A1F2C !important;
   background: transparent !important;
   line-height: 1.4;

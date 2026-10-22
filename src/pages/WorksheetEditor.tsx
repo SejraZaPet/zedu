@@ -199,6 +199,7 @@ import {
 } from "@/lib/worksheet-templates";
 import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
 import PublishWorksheetDialog from "@/components/worksheet/PublishWorksheetDialog";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 import QuestionBankPickerDialog, { type QuestionBankItem } from "@/components/worksheet/QuestionBankPickerDialog";
@@ -2788,10 +2789,10 @@ export default function WorksheetEditor() {
           <DialogHeader>
             <DialogTitle>Náhled pracovního listu</DialogTitle>
           </DialogHeader>
-          <WorksheetPlayer
-            spec={spec}
-            variantId={spec.variants[0].variantId}
-            attemptId={null}
+          <iframe
+            title="Tiskový náhled pracovního listu"
+            className="w-full h-[75vh] rounded border border-border bg-card"
+            srcDoc={previewOpen ? renderWorksheetVariantHtml(spec, spec.variants[0].variantId) : ""}
           />
         </DialogContent>
       </Dialog>
