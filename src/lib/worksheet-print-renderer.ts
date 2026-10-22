@@ -910,6 +910,12 @@ function computeDisplayNumbers(items: WorksheetItem[]): Map<number, number> {
   return map;
 }
 
+/** Krátké možnosti (3–4, každá ≤ 38 znaků) se tisknou ve dvou sloupcích. */
+export function mcqColumns(choices: string[]): 1 | 2 {
+  if (choices.length < 3 || choices.length > 4) return 1;
+  return choices.every((c) => String(c ?? "").length <= 38) ? 2 : 1;
+}
+
 function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: number): string {
   const pointsHtml = showPoints && item.points > 0
     ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
@@ -918,10 +924,14 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   let body = "";
 
   switch (item.type) {
-    case "mcq":
-      body = `<ol class="ws-choices">${(item.choices ?? [])
-        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
+    case "mcq": {
+      const choices = item.choices ?? [];
+      const cls = mcqColumns(choices) === 2 ? "ws-choices ws-choices--2col" : "ws-choices";
+      body = `<ol class="${cls}">${choices
+        .map((c, i) => `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
         .join("")}</ol>`;
+      break;
+    }
       break;
 
     case "true_false":
