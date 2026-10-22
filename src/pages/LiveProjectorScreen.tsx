@@ -18,16 +18,26 @@ import { getClockOffset } from "@/lib/clock-sync";
 import { isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 
+// Banner spojení je na jednom stabilním místě mimo větve obsahu,
+// takže se při změně obrazovky (lobby → snímek → konec) znovu nemontuje.
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const game = useGameSession(sessionId, undefined, undefined, { playersSafetyPollMs: 3000 });
+  return (
+    <>
+      <ConnectionStatusBanner status={game.connectionStatus} onReconnect={game.reconnect} />
+      <ProjectorBody sessionId={sessionId} game={game} />
+    </>
+  );
+};
+
+const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; game: ReturnType<typeof useGameSession> }) => {
   const navigate = useNavigate();
   const handleClose = () => {
     if (window.opener) window.close();
     else navigate(-1);
   };
   const renderCloseButton = () => (
-    <>
-    <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <Button
       onClick={handleClose}
       variant="ghost"
@@ -36,9 +46,8 @@ const LiveProjectorScreen = () => {
     >
       <X className="w-4 h-4" /> Zavřít
     </Button>
-    </>
   );
-  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, undefined, undefined, { playersSafetyPollMs: 3000 });
+  const { session, players, responses, loading } = game;
 
   // Tik jen při závodu — jinak se celý projektor (snímek, obrázky) překresloval 2× za sekundu.
   const [now, setNow] = useState(() => Date.now());
