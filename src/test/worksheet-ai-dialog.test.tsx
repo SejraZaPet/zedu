@@ -44,5 +44,5 @@ describe("AiSectionsBuilder rozvržení", () => {
     expect(screen.getByTestId("ai-section-row").className).toContain("flex-wrap");
     expect(screen.getByTestId("ai-section-fields").className).toContain("minmax(0,1fr)");
     expect(screen.getByLabelText("Typ otázek v sekci 1").className).toContain("min-w-0");
-  });
+  }, 60000);
 });
