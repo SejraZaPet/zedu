@@ -2470,7 +2470,7 @@ export default function WorksheetEditor() {
                     : "Naplánováno"
                   : "Koncept"}
             </Badge>
-            <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="hidden sm:inline-flex">
+            <Button variant="outline" size="sm" onClick={() => void handlePreviewPdf()} className="hidden sm:inline-flex">
               <Eye className="w-4 h-4 mr-1" /> Náhled
             </Button>
             <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
@@ -2550,7 +2550,7 @@ export default function WorksheetEditor() {
                 >
                   <RotateCcw className="w-4 h-4 mr-2" /> Zpět
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreviewOpen(true)}>
+                <DropdownMenuItem onClick={() => void handlePreviewPdf()}>
                   <Eye className="w-4 h-4 mr-2" /> Náhled
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPdfDialogOpen(true)}>
