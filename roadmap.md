@@ -108,3 +108,4 @@
 - [x] Smazána první kopie „Charakteristika…“; druhá (17:00) čeká na potvrzení
 - [x] Bezli liga v1
 - [x] Dialog AI listu: šířka + volba Nezahrnout (schváleno)
+- [x] Klíč odpovědí/učitelská verze na poslední stránce, náhled v liště = export, písmena u MCQ

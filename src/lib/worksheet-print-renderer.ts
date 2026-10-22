@@ -606,6 +606,10 @@ html, body {
   page-break-before: always;
   padding-top: 8pt;
 }
+body.ws-preview-paginated .ws-answer-key {
+  break-before: auto !important;
+  page-break-before: auto !important;
+}
 .ws-answer-key h2 {
   font-size: 18pt;
   font-weight: 700;
@@ -1361,12 +1365,13 @@ function renderAnswerKey(
   keys: AnswerKeyEntry[],
   displayNumbers?: Map<number, number>,
   prompts?: Map<string, string>,
+  choices?: Map<string, string[]>,
 ): string {
   if (!keys?.length) return "";
 
   const rows = keys
     .map((k) => {
-      const ans = Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : k.correctAnswer;
+      const ans = mcqKeyAnswer(k.correctAnswer, choices?.get(k.itemId));
       void displayNumbers;
       const raw = (prompts?.get(k.itemId) ?? "").trim();
       const label = raw.length > 40 ? `${raw.slice(0, 40)}…` : raw;
@@ -1386,6 +1391,21 @@ function renderAnswerKey(
   <h2>Klíč odpovědí — Varianta ${esc(variantId)}</h2>
   ${rows}
 </div>`;
+}
+
+/** U výběru z možností doplní písmeno: „B) text“. Ostatní beze změny. */
+export function mcqKeyAnswer(correct: string | string[], choices?: string[]): string {
+  const fmt = (a: string) => {
+    if (!choices?.length) return a;
+    const t = String(a).trim();
+    let idx = choices.findIndex((c) => c.trim() === t);
+    if (idx < 0 && /^[A-Za-z]\)?$/.test(t)) {
+      const li = CHOICE_LETTERS.indexOf(t[0].toUpperCase());
+      if (li >= 0 && li < choices.length) idx = li;
+    }
+    return idx >= 0 ? `${CHOICE_LETTERS[idx]}) ${choices[idx]}` : a;
+  };
+  return Array.isArray(correct) ? correct.map(fmt).join(", ") : fmt(correct);
 }
 
 function renderFooter(spec: WorksheetSpec): string {
@@ -1454,6 +1474,7 @@ const TEACHER_BLOCK_CSS = `
 .ws-teacher-block h2 { font-size: 15pt; font-weight: 700; color: #1A1F2C !important; margin: 6pt 0 6pt; }
 .ws-teacher-notes { font-size: 11pt; line-height: 1.5; white-space: pre-wrap; color: #1A1F2C !important; }
 .ws-teacher-notes h3 { font-size: 12pt; font-weight: 700; margin: 8pt 0 2pt; }
+body.ws-preview-paginated .ws-teacher-block { break-before: auto !important; page-break-before: auto !important; }
 .ws-teacher-block .ws-answer-key { break-before: auto !important; page-break-before: auto !important; margin-top: 10pt; }
 `;
 
@@ -1510,7 +1531,7 @@ export function renderWorksheetVariantHtml(
     printAnswers = null;
   }
   const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])))
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])), new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).filter((it) => it.type === "mcq" && it.choices?.length).map((it) => [it.id, it.choices as string[]])))
     : "";
   const answerKey = options?.teacherVersion
     ? renderTeacherBlock(options.teacherNotes, rawKey)
@@ -1567,7 +1588,7 @@ export function renderWorksheetVariantFragment(
     .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
     .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])))
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])), new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).filter((it) => it.type === "mcq" && it.choices?.length).map((it) => [it.id, it.choices as string[]])))
     : "";
 
   const bodyHtml = `

@@ -119,6 +119,31 @@ window.addEventListener("load", async function () {
       current.list.appendChild(item);
     }
   });
+
+  // Blok učitele / klíč: vždy na novou poslední stránku, dlouhý klíč dělit po řádcích.
+  var tail = sourceContent.querySelector(":scope > .ws-teacher-block") || sourceContent.querySelector(":scope > .ws-answer-key");
+  if (tail) {
+    tail.parentNode.removeChild(tail);
+    var keyBox = tail.classList.contains("ws-answer-key") ? tail : tail.querySelector(".ws-answer-key");
+    var rows = keyBox ? Array.from(keyBox.querySelectorAll(":scope > .ws-key-item")) : [];
+    rows.forEach(function (r) { keyBox.removeChild(r); });
+    current = makePage(current.page);
+    current.content.appendChild(tail);
+    var target = keyBox || tail;
+    rows.forEach(function (r) {
+      target.appendChild(r);
+      var used = r.getBoundingClientRect().bottom - current.content.getBoundingClientRect().top;
+      if (used > pageHeight + 1 && target.children.length > 1) {
+        target.removeChild(r);
+        current = makePage(current.page);
+        var cont = document.createElement("div");
+        cont.className = target.className + " ws-key-continued";
+        current.content.appendChild(cont);
+        target = cont;
+        target.appendChild(r);
+      }
+    });
+  }
   document.body.dataset.wsRenderState = "ready";
   } catch (_) { document.body.dataset.wsRenderState = "error"; }
 });
