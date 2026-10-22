@@ -1,3 +1,4 @@
+import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -1311,7 +1312,7 @@ export default function WorksheetEditor() {
   /** Poměr poznámky / aktivity (jen v režimu „Výukový list – zápis a aktivity“). */
   const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
   /** Režim pro každou aktivitu z lekce: QR kód na aktivitu, nebo převod na blok listu. */
-  const [activityModes, setActivityModes] = useState<Record<string, "qr" | "convert">>({});
+  const [activityModes, setActivityModes] = useState<Record<string, LessonActivityMode>>({});
   // Při otevření dialogu převezmi aktuální druh listu.
   useEffect(() => {
     if (showAiGenerateDialog && spec) setAiKind(normalizeWorksheetKind(spec.header.worksheetMode));
@@ -1325,8 +1326,8 @@ export default function WorksheetEditor() {
   // Výchozí režim aktivit = QR kód
   useEffect(() => {
     setActivityModes((prev) => {
-      const next: Record<string, "qr" | "convert"> = {};
-      for (const a of activeLessonActivities) next[a.id] = prev[a.id] ?? "qr";
+      const next: Record<string, LessonActivityMode> = {};
+      for (const a of activeLessonActivities) next[a.id] = prev[a.id] ?? defaultActivityMode(a);
       return next;
     });
   }, [activeLessonActivities]);
@@ -1713,11 +1714,9 @@ export default function WorksheetEditor() {
 
       // ── Kontext z lekce: tabulky 1:1, QR na aktivity, aktivity k převodu ──
       // Aktivity vnořené v kartách nemají vlastní odkaz → vždy se převádějí na úlohu.
-      const qrActivities = activeLessonActivities.filter(
-        (a) => activityModes[a.id] !== "convert" && a.deepLinkIndex !== undefined,
-      );
-      const convertActivities = activeLessonActivities.filter(
-        (a) => activityModes[a.id] === "convert" || a.deepLinkIndex === undefined,
+      const { qr: qrActivities, convert: convertActivities } = splitLessonActivities(
+        activeLessonActivities,
+        activityModes,
       );
 
       let qrLinks: Array<{ label: string; url: string }> = [];
@@ -2970,7 +2969,7 @@ export default function WorksheetEditor() {
 
       {/* AI generate full worksheet */}
       <Dialog open={showAiGenerateDialog} onOpenChange={setShowAiGenerateDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden" data-testid="ai-generate-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -2980,7 +2979,7 @@ export default function WorksheetEditor() {
               AI analyzuje obsah lekce a navrhne kompletní pracovní list.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="space-y-1.5">
               <Label>Druh listu</Label>
               <Select value={aiKind} onValueChange={(v) => setAiKind(v as WorksheetKind)}>
@@ -3071,31 +3070,50 @@ export default function WorksheetEditor() {
               </div>
             )}
             {activeLessonActivities.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <Label>Aktivity z lekce</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground break-words">
                   U každé aktivity vyberte, jestli má být v listu QR kód (žák ji vyplní
-                  v appce), nebo se má převést na tisknutelnou úlohu.
+                  v appce), jestli se má převést na tisknutelnou úlohu, nebo ji nezahrnout.
                 </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={() => setActivityModes(Object.fromEntries(activeLessonActivities.map((a) => [a.id, "none" as const])))}>
+                    Nezahrnout žádnou
+                  </Button>
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={() => setActivityModes(Object.fromEntries(activeLessonActivities.map((a) => [a.id, defaultActivityMode(a)])))}>
+                    Zahrnout všechny
+                  </Button>
+                  {(() => {
+                    const n = activeLessonActivities.filter((a) => activityModes[a.id] === "none").length;
+                    return n > 0 ? (
+                      <span className="text-xs text-muted-foreground" aria-live="polite">
+                        Vynechá se {n} z {activeLessonActivities.length}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {activeLessonActivities.map((a) => (
                     <div
                       key={a.id}
-                      className="flex items-center justify-between gap-2 rounded-lg border p-2"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2"
                     >
-                      <span className="text-sm truncate">{a.title}</span>
+                      <span className="text-sm truncate min-w-0 flex-1">{a.title}</span>
                       <Select
-                        value={activityModes[a.id] ?? "qr"}
+                        value={activityModes[a.id] ?? defaultActivityMode(a)}
                         onValueChange={(v) =>
-                          setActivityModes((prev) => ({ ...prev, [a.id]: v as "qr" | "convert" }))
+                          setActivityModes((prev) => ({ ...prev, [a.id]: v as LessonActivityMode }))
                         }
                       >
-                        <SelectTrigger className="w-[190px] shrink-0">
+                        <SelectTrigger className="w-full sm:w-[190px] shrink-0" aria-label={`Co s aktivitou ${a.title}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          <SelectItem value="qr">QR kód na aktivitu</SelectItem>
+                          {a.deepLinkIndex !== undefined && <SelectItem value="qr">QR kód na aktivitu</SelectItem>}
                           <SelectItem value="convert">Převést na úlohu v listu</SelectItem>
+                          <SelectItem value="none">Nezahrnout</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3106,6 +3124,7 @@ export default function WorksheetEditor() {
             <div className="space-y-1.5">
               <Label>Volitelný pokyn pro AI</Label>
               <Textarea
+                className="w-full"
                 value={aiCustomHint}
                 onChange={(e) => setAiCustomHint(e.target.value)}
                 placeholder="Např. zaměř se na definice a pojmy, přidej praktické úkoly, vynechej otevřené otázky…"
@@ -4479,23 +4498,25 @@ export function AiSectionsBuilder({ preset, sections, onPreset, onChange }: {
         <Label>Sekce</Label>
         {sections.map((s, i) => (
           <div key={i} className="space-y-2 rounded-lg border p-2" data-testid="ai-section">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2" data-testid="ai-section-row">
               <Select value={s.type} onValueChange={(v) => patch(i, { type: v as SectionQuestionType })}>
-                <SelectTrigger aria-label={`Typ otázek v sekci ${i + 1}`} className="flex-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={`Typ otázek v sekci ${i + 1}`} className="min-w-0 flex-1 basis-40"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   {SECTION_QUESTION_TYPES.map((t) => <SelectItem key={t} value={t}>{SECTION_TYPE_LABELS[t]}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Button type="button" size="icon" variant="ghost" aria-label="Posunout nahoru" disabled={i === 0} onClick={() => move(i, -1)}>↑</Button>
-              <Button type="button" size="icon" variant="ghost" aria-label="Posunout dolů" disabled={i === sections.length - 1} onClick={() => move(i, 1)}>↓</Button>
-              <Button type="button" size="icon" variant="ghost" aria-label="Odebrat sekci" disabled={sections.length <= 1} onClick={() => onChange(sections.filter((_, j) => j !== i))}>✕</Button>
+              <div className="flex shrink-0 gap-1">
+                <Button type="button" size="icon" variant="ghost" aria-label="Posunout nahoru" disabled={i === 0} onClick={() => move(i, -1)}>↑</Button>
+                <Button type="button" size="icon" variant="ghost" aria-label="Posunout dolů" disabled={i === sections.length - 1} onClick={() => move(i, 1)}>↓</Button>
+                <Button type="button" size="icon" variant="ghost" aria-label="Odebrat sekci" disabled={sections.length <= 1} onClick={() => onChange(sections.filter((_, j) => j !== i))}>✕</Button>
+              </div>
             </div>
-            <div className="grid grid-cols-[5rem_5rem_1fr] gap-2">
+            <div className="grid grid-cols-[4.5rem_4.5rem_minmax(0,1fr)] max-[400px]:grid-cols-2 gap-2" data-testid="ai-section-fields">
               <Input type="number" min={1} max={20} aria-label={`Počet otázek v sekci ${i + 1}`} value={s.count}
                 onChange={(e) => patch(i, { count: clampSectionCount(e.target.value) })} />
               <Input type="number" min={0} step={0.5} aria-label={`Body za otázku v sekci ${i + 1}`} placeholder="body"
                 value={s.pointsPerItem ?? ""} onChange={(e) => patch(i, { pointsPerItem: e.target.value === "" ? null : Number(e.target.value) })} />
-              <Input aria-label={`Nadpis sekce ${i + 1}`} placeholder="Nadpis (volitelný)" value={s.title ?? ""}
+              <Input aria-label={`Nadpis sekce ${i + 1}`} placeholder="Nadpis (volitelný)" value={s.title ?? ""} className="min-w-0 max-[400px]:col-span-2"
                 onChange={(e) => patch(i, { title: e.target.value })} />
             </div>
           </div>
