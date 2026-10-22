@@ -39,3 +39,4 @@
 - Schedule exceptions: owner-only, Prague time, merged at display (`schedule-exception-store.ts`); timetables never rewritten.
 
 - Final results use fresh authorized player-view snapshots and shared game-ranking ranks; session-display-name separates screen/export defaults for privacy.
+- Dashboard banners live only in `banners` (RLS admin/school_admin, demo RESTRICTIVE, trigger caps); end users read solely via `get_my_banners()` so targeting and school isolation stay server-side.
