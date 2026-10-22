@@ -1,3 +1,4 @@
+import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -1326,7 +1327,7 @@ export default function WorksheetEditor() {
   useEffect(() => {
     setActivityModes((prev) => {
       const next: Record<string, LessonActivityMode> = {};
-      for (const a of activeLessonActivities) next[a.id] = prev[a.id] ?? "qr";
+      for (const a of activeLessonActivities) next[a.id] = prev[a.id] ?? defaultActivityMode(a);
       return next;
     });
   }, [activeLessonActivities]);
@@ -2978,7 +2979,7 @@ export default function WorksheetEditor() {
               AI analyzuje obsah lekce a navrhne kompletní pracovní list.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="space-y-1.5">
               <Label>Druh listu</Label>
               <Select value={aiKind} onValueChange={(v) => setAiKind(v as WorksheetKind)}>
