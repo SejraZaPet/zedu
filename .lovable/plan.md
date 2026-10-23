@@ -1,34 +1,57 @@
-# Diagnostika: klíč odpovědí a „Verze pro učitele“ v náhledu a tisku
+# Bannery – návrh etapy 2 (zobrazení) a 3 (správa)
 
-Zjištěno jen čtením kódu. Nic se neměnilo.
+Pouze návrh. Nic se neprovádí. Bucket `banners` zakládá učitelka až po vypnutí blokace veřejných bucketů. Návrh s ním jen počítá.
 
-## 1. Jak se volby předávají
-- V dialogu Export PDF jsou volby uložené ve stavu `pdfVersion`, `pdfIncludeAnswerKey`, `pdfIncludeNameField` a `teacherNotes` (`src/pages/WorksheetEditor.tsx` ř. 416–418).
-- **Tisk / PDF** volá `downloadWorksheetPdf` (ř. 1071–1076). **Náhled** v exportním dialogu volá `buildWorksheetPdfBlobUrl` (ř. 1122–1127). Obě cesty dostávají stejné volby: `teacherVersion`, klíč (u učitelské verze vždy zapnutý), poznámky a pole pro jméno. Obě pak používají `buildPrintHtml`, tedy stejné HTML i stejný skript pro dělení na stránky (`src/lib/worksheet-pdf-export.ts` ř. 37–128).
-- Samostatné tlačítko **Náhled** v liště editoru (ř. 2473 a 2553) otevírá jiný dialog (ř. 2787–2797). Ten volá `renderWorksheetVariantHtml(spec, variantId)` **bez voleb**. Vždy proto ukazuje žákovskou verzi bez poznámek, bez QR a bez dělení na stránky. Klíč ukáže jen tehdy, když ho má zapnutý sám list (`renderConfig.includeAnswerKey`). Je to nesoulad, ale za hlášenou chybu nemůže: oranžový rámeček se v tomto náhledu vůbec nevykreslí.
+## Zjištěný stav (čtením)
+- `drizzle/migrations/0069_banners_stage1.sql`: tabulka `banners` (ř. 1–26), RLS admin a school_admin (ř. 32–49), demo RESTRICTIVE (ř. 51–56), trigger `tg_banners_guard` s českými hláškami limitu 3 (ř. 59–95), `get_my_banners()` (ř. 100–121; vrací max 6, střídá platformní a školní podle `rn`), politiky úložiště jen INSERT a DELETE (ř. 128–137).
+- V úložišti není politika UPDATE. Soubory se proto nikdy nepřepisují (žádný `upsert`). Každé nahrání dostane nový název `platform/<uuid>.<ext>` nebo `school/<school_id>/<uuid>.<ext>`.
+- Vedení v `get_my_banners()` = role `school_admin`. Zástupci vedení (`school_leadership_delegates`) se jako vedení nepočítají a vidí jen učitelské bannery. Viz Migrace.
 
-## 2. Kde se vykresluje blok učitele a proč je oříznutý
-- Blok učitele vzniká v `renderTeacherBlock` (`worksheet-print-renderer.ts` ř. 1472–1481) a klíč v `renderAnswerKey` (ř. 1359–1389). Do dokumentu se vkládá na ř. 1512–1518 a 1536–1540. Leží **za** `.ws-items`, ale **uvnitř** `.ws-content` první stránky.
-- **Příčina:** skript pro dělení na stránky (`worksheet-pdf-export.ts` ř. 87–121) přesouvá na další stránky jen potomky `.ws-items`. Blok učitele zůstane v `.ws-content` **první** stránky za úlohami, které se na ni vešly. V náhledu má `.ws-content` pevnou výšku 267 mm a `overflow: hidden` (CSS ř. 682–692). Blok proto přeteče ven a ořízne se. Vidět zůstane jen horní okraj oranžového rámečku, což přesně odpovídá hlášení. Pravidlo `break-before: page` (ř. 1432–1433) na obrazovce nic nedělá.
-- Typ úlohy ani obsah klíče na tom nic nemění. Klíč se vygeneruje, ale je skrytý.
-- **Výběr z možností:** `renderAnswerKey` vypisuje `correctAnswer` tak, jak je uložené (ř. 1367). Žádné písmeno A–D k němu nepřidává. Pokud se ukládá text možnosti, v klíči je jen text bez písmene. Jak přesně se `correctAnswer` u této úlohy ukládá, ověřím na začátku opravy.
+## Etapa 2 – zobrazení (nasaditelná sama, bez bannerů v DB se nic neukáže)
+**Nové soubory**
+- `src/lib/banners.ts` (čistá logika): `bannerPublicUrl(path)` přes `supabase.storage.from('banners').getPublicUrl`, `filterDismissed(list, now)`, `dismissBanner(id, endsAt)` (localStorage `bezli.banner.dismissed`, do min(7 dní, `ends_at`), vše v try/catch), `bannerStatus(b, now)` → čeká / běží / vypršel / vypnutý / skryto.
+- `src/hooks/useMyBanners.ts`: `useQuery(['my-banners', userId], rpc('get_my_banners'))`, `staleTime` 5 min, bez refetch při focusu. Při chybě nic nezobrazit (žádný toast).
+- `src/components/dashboard/DashboardBanners.tsx`:
+  - Rezervovaná výška: poměr 3:1, max výška 200 px na desktopu a cca 120 px na mobilu (`aspect-[3/1] max-h-[200px]`, `rounded-xl`, jemný `border` a stín z tokenů). Skeleton jen během načítání. Když nejsou bannery, místo zmizí ještě před prvním vykreslením obsahu: rezervuje se jen při `isLoading` u uživatelů, kteří už bannery dříve měli (příznak v sessionStorage). Obsah tak neskáče.
+  - Karusel: časovač podle `display_seconds`. Pauza při najetí, focusu, dotyku a skrytí záložky (`visibilitychange`). Cross-fade 700 ms. Při `prefers-reduced-motion` přepnutí bez animace a bez automatického střídání.
+  - Video: `muted playsInline`, bez `controls`, bez `autoplay` atributu. Spouští ho IntersectionObserver (≥50 % viditelné) jen u aktivního snímku. Počítá `ended` a po 2 přehráních zastaví na posteru. Při `navigator.connection.saveData` nebo reduced-motion jen poster. Nikdy zvuk.
+  - Odkaz: celý banner je `<a target="_blank" rel="noopener noreferrer">`, jen když je `link_url` https. Jinak `<div>`.
+  - Přístupnost: `section aria-roledescription="carousel" aria-label="Oznámení"`, snímky `role="group" aria-roledescription="slide" aria-label="1 z 3"`, tlačítka Předchozí/Další a tečky (cíle ≥ 24 px, viditelný focus), tlačítko pauzy, „×“ s `aria-label="Skrýt oznámení na 7 dní"`, `alt` = `alt_text`, poster video `aria-label`. Ovládání klávesnicí.
+- **Vložení** (jen dashboardy, ne úlohy, kvíz, živá hra ani sešit):
+  - `src/pages/StudentDashboard.tsx` ř. 125–127: za hlavičku, před `MyLeagueCard`.
+  - `src/pages/TeacherDashboard.tsx` mezi hlavičku (ř. 400–410) a mřížku widgetů. Mimo přesouvatelné widgety, aby se neměnilo uložené pořadí.
+  - `src/pages/SchoolAdmin.tsx` nad `<Tabs>` (ř. 388). Ředitel / vedení = role `school_admin`. Uvidí bannery pro vedení, a pokud učí, i učitelské.
+- Demo účty: stejné chování. RPC vrací jen platformní a jejich školní bannery.
+- **Testy** `src/test/banners.test.ts(x)`: stav banneru (5 stavů), skrytí na 7 dní nebo do konce platnosti, poškozené nebo nedostupné localStorage nespadne, časovač respektuje `display_seconds` a pauzu, reduced-motion neposouvá automaticky, saveData nevykreslí `<video>`, video se zastaví po 2 smyčkách, odkaz má `rel="noopener noreferrer"` a jen https.
 
-## 3. Tisk / PDF
-- Tisk používá stejné rozdělené HTML. V `@media print` platí `overflow: visible` (ř. 765–780), takže se blok neořízne. Zůstane ale na **první** stránce DOM a pomocí `break-before: page` se vytiskne jako 2. stránka, **před** stránkami s dalšími úlohami. U víceстránkového listu tak klíč skončí uprostřed. Když je první stránka plná, může se také rozpadnout. Učitelka ho na konci nenajde.
-- Žádné `display:none` ani `.no-print` blok učitele neskrývají.
+## Etapa 3 – správa (dvě části, 3a lze nasadit hned po etapě 2)
+**3a – minimální formulář platformního admina** (aby učitelka co nejdřív viděla nahrání a zobrazení)
+- `src/components/banners/BannerForm.tsx` (sdílený), `src/components/banners/BannerList.tsx`, `src/lib/banner-upload.ts`.
+- `src/components/admin/AdminDashboard.tsx` (admin větev, ř. 172–249): přidat kartu „Bannery“. V ní přepínač skupiny Žáci / Učitelé / Vedení, seznam s náhledem, stavem a pořadím, akce Přidat, Upravit, Zapnout/Vypnout, Smazat. Zvlášť seznam školních bannerů s přepínačem „Skrýt“ (`hidden_by_admin`, nic jiného, jinak trigger odmítne).
+- Formulář: soubor, alt text (3–200 znaků), odkaz https, doba 3–60 s (výchozí 6), platnost od–do, pořadí, zapnuto, cílení. Živý náhled přes stejnou komponentu `DashboardBanners` v režimu náhledu.
+- Klientská validace (`banner-upload.ts`, čisté funkce s testy):
+  - Obrázek JPG/PNG/WebP ≤ 3 MB. Rozměry 1500×500, 1584×396 nebo 1920×480 (poměr 3:1 ±2 % nebo 4:1 přesně u dvou dalších formátů).
+  - Video `video/mp4` ≤ 3 MB, `duration` ≤ 10 s (přes `<video>` metadata), poměr jako u obrázku. H.264 v prohlížeči spolehlivě neověříme. Zkusí se `canPlayType('video/mp4; codecs="avc1.42E01E"')` a jinak se zobrazí jen upozornění.
+  - Poster: povinný. Doporučuji nabídnout „Vytvořit z prvního snímku“: canvas po `seeked` na 0,1 s → WebP/JPEG ≤ 3 MB. Ruční nahrání obrázku zůstane jako možnost.
+- Nahrání: nejdřív soubory (nový název, `upsert: false`), potom INSERT/UPDATE řádku. Když zápis řádku selže, smazat právě nahrané soubory. Když výměna souboru uspěje, smazat staré cesty. Při smazání banneru nejdřív smazat řádek, potom soubory (chyba mazání souboru = jen upozornění, ne chyba). Admin smí mazat všude, školní admin jen ve složce své školy (politika ř. 134–137).
+- České hlášky: chyby triggeru („…nejvýš 3 aktivní…“) zobrazit doslova. Chyba RLS nebo demo → „Tuto změnu nemáte oprávnění provést.“ Demo účty formulář nevidí (`is_demo_user` v klientu jen skryje UI, ochranu dělá DB).
 
-## 4. Nejmenší oprava (návrh, čeká na schválení)
-1. **Dělení na stránky** (`worksheet-pdf-export.ts`): blok `.ws-teacher-block` nebo samostatný `.ws-answer-key` po rozdělení úloh přesunout na **novou poslední stránku** (případně na více stránek). Když je klíč dlouhý, dělit ho po řádcích `.ws-key-item` stejným měřením jako úlohy. Výsledek: klíč je v náhledu i v tisku vždy na konci a na samostatné stránce.
-2. **Náhled v liště** (`WorksheetEditor.tsx` ř. 2795): použít stejné HTML jako exportní náhled, tedy `buildWorksheetPdfBlobUrl` s aktuálními volbami z exportu. Druhá možnost je ponechat žákovskou verzi a výslovně ji tak označit. Doporučuji první variantu, aby se volby nikde nelišily.
-3. **Písmeno u výběru z možností** (`renderAnswerKey`): pokud se ukládá text, dohledat pořadí možnosti a vypsat „B) text“. Bodování ani data se nemění.
-4. **Testy** (`src/test/student-worksheet-pdf.test.ts` nebo nový soubor):
-   - HTML učitelské verze obsahuje `ws-teacher-block`, „Klíč odpovědí“ a u výběru z možností správné písmeno.
-   - Skript dělení přesouvá blok učitele na poslední stránku. Ověří se v DOM test: po rozdělení je `.ws-teacher-block` v posledním `.ws-page`.
-   - Žákovská verze neobsahuje `ws-key-item` ani `ws-teacher` (stávající test zůstává).
-   - Stávající testy hustoty tisku a výšky řádků tabulky zůstávají beze změny.
+**3b – záložka „Bannery“ ve SchoolAdmin**
+- `src/pages/SchoolAdmin.tsx` ř. 390–400: nový `TabsTrigger value="banners"` a `TabsContent` s `BannerList`/`BannerForm` v režimu školy. Cílení Žáci / Učitelé / Oboje + volitelně Vedení. `scope='school'`, `school_id` = vlastní škola. Skrytý banner zobrazit jako „Skryto správcem platformy“ jen pro čtení přepínače.
 
-## 5. Migrace
-Není potřeba. Mění se jen vzhled a pořadí stránek v tisku. Data, oprávnění, bodování ani demo ochrany se nemění.
+**Testy etapy 3**: validace typu, velikosti, rozměrů, délky videa a povinného posteru, https odkaz, rozsah 3–60 s, od < do, převod chyb triggeru na hlášku, pořadí úklidu souborů (selhání zápisu → smazání nového souboru, výměna → smazání starého).
+
+## Migrace
+Pro etapy 2 a 3 není potřeba. Volitelně, jen pokud mají bannery „pro vedení“ vidět i zástupci ze `school_leadership_delegates` (ke schválení zvlášť, po ověření sloupců té tabulky):
+```sql
+-- návrh, neprovádět bez schválení; v get_my_banners() rozšířit "lead":
+-- lead := EXISTS(role='school_admin') OR EXISTS(SELECT 1 FROM school_leadership_delegates d
+--          WHERE d.user_id = auth.uid() AND d.school_id = me.school_id)
+```
 
 ## Rizika
-- U učitelské verze přibude jedna stránka na konci, protože klíč začne vždy na nové stránce. Žákovská verze se nezmění.
+- Bez bucketu nahrání selže. Formulář zobrazí „Úložiště bannerů zatím není připravené.“
+- Veřejné URL jsou čitelné komukoli s odkazem. Bannery proto nesmí obsahovat osobní údaje (upozornění ve formuláři).
+- Limit 3 aktivních hlídá trigger. Klient jen předem upozorní.
+- Dashboard učitele: banner leží mimo přesouvatelné widgety, uložené pořadí se nemění.
+- Live hry, úlohy, kvíz a sešit komponentu nevkládají.
