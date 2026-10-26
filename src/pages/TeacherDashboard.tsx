@@ -1,3 +1,4 @@
+import DashboardBanners from "@/components/dashboard/DashboardBanners";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -416,6 +417,8 @@ const TeacherDashboard = () => {
             Obnovit pořadí
           </Button>
         </div>
+
+        <DashboardBanners />
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={order} strategy={rectSortingStrategy}>
