@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
-  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X,
+  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
@@ -39,6 +39,17 @@ const TOOLS: { key: Mode; icon: React.ElementType; label: string }[] = [
 ];
 
 const uid = () => crypto.randomUUID();
+
+/* Přiblížení stránky: jen zobrazení, uložená data (relativní souřadnice) se nemění. */
+const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5, ZOOM_STEP = 0.25;
+const ZOOM_KEY = "bezli.notebook.zoom";
+const loadZoom = (): number => {
+  try {
+    const v = Number(localStorage.getItem(ZOOM_KEY));
+    return Number.isFinite(v) && v > 0 ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v)) : 1;
+  } catch { return 1; }
+};
+const saveZoom = (z: number) => { try { localStorage.setItem(ZOOM_KEY, String(z)); } catch { /* soukromý režim */ } };
 
 const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly = false }: Props) => {
   const stageRef = useRef<HTMLDivElement>(null);
