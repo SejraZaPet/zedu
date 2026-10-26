@@ -167,19 +167,26 @@ export function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke, w: number
 
   if (s.tool === "pen" || s.tool === "highlight" || s.tool === "eraser") {
     if (pressures && pts.length >= 2) {
-      // Tah po segmentech — šířka se odvozuje z tlaku pera.
+      // Plynulé křivky přes středy úseček; šířka podle tlaku pera.
+      let prevMid = pts[0];
       for (let i = 1; i < pts.length; i++) {
         const p = (pressures[i - 1] + pressures[i]) / 2;
-        ctx.lineWidth = Math.max(0.4, baseWidth * (0.5 + Math.max(0, Math.min(1, p))));
+        ctx.lineWidth = Math.max(0.4, baseWidth * (0.35 + 1.25 * Math.max(0, Math.min(1, p))));
+        const mid: [number, number] = i < pts.length - 1 ? [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2] : pts[i];
         ctx.beginPath();
-        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-        ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.moveTo(prevMid[0], prevMid[1]);
+        ctx.quadraticCurveTo(pts[i][0], pts[i][1], mid[0], mid[1]);
         ctx.stroke();
+        prevMid = mid;
       }
     } else {
       ctx.beginPath();
       ctx.moveTo(pts[0][0], pts[0][1]);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      if (pts.length === 2) ctx.lineTo(pts[1][0], pts[1][1]);
+      for (let i = 1; i < pts.length - 1; i++) {
+        ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+      }
+      if (pts.length > 2) ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
       ctx.stroke();
     }
 
