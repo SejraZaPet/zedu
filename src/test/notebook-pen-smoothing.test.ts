@@ -55,3 +55,19 @@ describe("zapamatování pera", () => {
     expect(loadPenPrefs().penSeen).toBe(true);
   });
 });
+
+describe("zvýrazňovač", () => {
+  it("jeden tah zvýrazňovače = jedno stroke() i s tlakem, konstantní šířka", () => {
+    const { ctx, calls } = fakeCtx();
+    const points: [number, number][] = Array.from({ length: 30 }, (_, i) => [0.1 + i * 0.01, 0.5 + (i % 3) * 0.002]);
+    renderStroke(ctx, { tool: "highlight", color: "#9B6CFF", width: 4, points, pressures: points.map((_, i) => (i % 5) / 5) } as any, 800, 1100);
+    expect(calls.filter((c) => c === "stroke").length).toBe(1);
+    expect(ctx.globalAlpha).toBe(0.35);
+  });
+  it("běžné pero s tlakem dál mění šířku po úsecích", () => {
+    const { ctx, calls } = fakeCtx();
+    const points: [number, number][] = Array.from({ length: 10 }, (_, i) => [0.1 + i * 0.01, 0.5]);
+    renderStroke(ctx, { tool: "pen", color: "#000", width: 2, points, pressures: points.map(() => 0.5) } as any, 800, 1100);
+    expect(calls.filter((c) => c === "stroke").length).toBe(9);
+  });
+});

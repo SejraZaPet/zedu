@@ -163,7 +163,9 @@ export function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke, w: number
 
   const pts = s.points.map(([x, y]) => [x * w, y * h] as [number, number]);
   const baseWidth = ctx.lineWidth;
-  const pressures = Array.isArray(s.pressures) && s.pressures.length === s.points.length ? s.pressures : null;
+  // Zvýrazňovač ignoruje tlak: jedna souvislá cesta = jeden stroke(), aby se průhlednost v překryvech nesčítala.
+  const pressures =
+    s.tool !== "highlight" && Array.isArray(s.pressures) && s.pressures.length === s.points.length ? s.pressures : null;
 
   if (s.tool === "pen" || s.tool === "highlight" || s.tool === "eraser") {
     if (pressures && pts.length >= 2) {
