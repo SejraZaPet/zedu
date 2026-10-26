@@ -119,4 +119,4 @@
 
 
 ## Sešit na tabletu (Část F)
-- [ ] Měření PŘED, rozložení pod xl, miniatury s obrázkem, testy, měření PO
+- [x] Měření PŘED, rozložení pod xl, miniatury s obrázkem, testy, měření PO
