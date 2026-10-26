@@ -33,3 +33,16 @@ describe("klíč odpovědí", () => {
   });
 
 });
+
+describe("vzhled klíče odpovědí", () => {
+  it("položka nemá úzký sloupec: zadání i odpověď jsou v jednom řádku na plnou šířku", () => {
+    const s = mcqSpec();
+    const html = renderWorksheetVariantHtml(s, s.variants[0].variantId, { teacherVersion: true });
+    expect(html).toMatch(/<div class="ws-key-line"><span class="ws-key-num">1\.<\/span> <span class="ws-key-prompt">Kolik je 2\+2\?<\/span> <span class="ws-key-arrow">→<\/span> <span class="ws-key-answer">B\) 4<\/span><\/div>/);
+    const css = (sel: string) => html.match(new RegExp(`\\${sel} \\{([^}]*)\\}`))?.[1] ?? "";
+    expect(css(".ws-key-num")).not.toMatch(/width/);
+    expect(css(".ws-key-line")).toMatch(/width: 100%/);
+    expect(css(".ws-key-line")).toMatch(/min-width: 0/);
+    expect(css(".ws-key-item")).toMatch(/break-inside: avoid/);
+  });
+});
