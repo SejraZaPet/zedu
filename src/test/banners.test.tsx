@@ -155,3 +155,30 @@ describe("náhled vybraného souboru", () => {
 
   });
 });
+
+describe("banner se nikdy neořezává", () => {
+  it("obrázek je vložent celý (object-contain), kontejner má šířku max 720 px a žádný ořez výškou", () => {
+    const { container } = render(<BannerCarousel banners={[mk("o", { image_path: "platform/1500x500.png" })]} />);
+    const img = screen.getByRole("img", { name: "Banner o" });
+    expect(img.className).toContain("object-contain");
+    expect(img.className).not.toContain("object-cover");
+    const section = screen.getByRole("region", { name: "Oznámení" });
+    expect(section.className).toContain("max-w-[720px]");
+    expect(section.className).toContain("aspect-[3/1]");
+    expect(section.className).not.toMatch(/max-h-\[/);
+    expect(section.className).toContain("bg-muted");
+    expect(container).toBeTruthy();
+  });
+  it("video i poster jsou vloženy celé", () => {
+    const { container } = render(<BannerCarousel banners={[mk("v", { media_type: "video", image_path: null, video_path: "platform/v.mp4", poster_path: "platform/p.jpg" })]} />);
+    const video = container.querySelector("video")!;
+    expect(video.className).toContain("object-contain");
+    expect(video.className).not.toContain("object-cover");
+    fireEvent.ended(video);
+    fireEvent.ended(container.querySelector("video")!);
+    const poster = screen.getByRole("img", { name: "Banner v" });
+    expect(poster.className).toContain("object-contain");
+    expect(poster.className).not.toContain("object-cover");
+  });
+});
+
