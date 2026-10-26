@@ -109,3 +109,11 @@
 - [x] Bezli liga v1
 - [x] Dialog AI listu: šířka + volba Nezahrnout (schváleno)
 - [x] Klíč odpovědí/učitelská verze na poslední stránce, náhled v liště = export, písmena u MCQ
+
+## Bannery
+- [x] Etapa 1: tabulka banners + RLS + trigger limit, get_my_banners(), veřejný bucket s limitem 3 MB
+- [x] Etapy 2 a 3: zobrazení na třech dashboardech, správa platformní i školní, demo účty bez formuláře
+- [x] Náhled vybraného souboru: blob URL se nepočítá jako cesta v úložišti
+- [x] Banner se nikdy neořezává: kontejner max 720 px, poměr 3/1, object-contain i pro video a poster; 658 testů, měření v prohlížeči (desktop 720×240, telefon 358×119, náhled formuláře 622×208)
+- [ ] Bannery pro vedení: zástupci vedení zatím vidí jen učitelské — čeká na schválenou úpravu databáze
+

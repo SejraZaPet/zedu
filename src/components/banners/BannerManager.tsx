@@ -140,7 +140,7 @@ function BannerTable({ rows, onEdit, onToggle, onDelete, onHide }: {
         const thumb = bannerPublicUrl(b.media_type === "video" ? b.poster_path : b.image_path);
         return (
           <li key={b.id} className="flex flex-wrap items-center gap-3 p-2">
-            {thumb ? <img src={thumb} alt="" className="h-10 w-30 aspect-[3/1] rounded object-cover" /> : null}
+            {thumb ? <img src={thumb} alt="" className="h-10 w-30 aspect-[3/1] rounded bg-muted object-contain" /> : null}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm">{b.alt_text}</p>
               <p className="text-xs text-muted-foreground">{b.media_type === "video" ? "Video" : "Obrázek"} · {b.display_seconds} s · pořadí {b.sort_order}</p>

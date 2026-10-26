@@ -33,7 +33,7 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
   }, [query.data, preview]);
 
   if (!preview && query.isLoading) {
-    return hadAny ? <div className="mb-6 aspect-[3/1] max-h-[120px] sm:max-h-[200px] w-full rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
+    return hadAny ? <div className="mb-6 aspect-[3/1] w-full max-w-[720px] rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
   return <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
@@ -69,7 +69,7 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
     <section
       aria-roledescription="carousel"
       aria-label="Oznámení"
-      className="relative mb-6 w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm aspect-[3/1] max-h-[120px] sm:max-h-[200px]"
+      className="relative mb-6 w-full max-w-[720px] overflow-hidden rounded-xl border border-border bg-muted shadow-sm aspect-[3/1]"
       onMouseEnter={() => setHoverPause(true)}
       onMouseLeave={() => setHoverPause(false)}
       onFocus={() => setHoverPause(true)}
@@ -146,7 +146,7 @@ function BannerSlide({ banner, active, posterOnly, tabbable }: { banner: Banner;
       <img
         src={bannerPublicUrl(banner.media_type === "video" ? banner.poster_path : banner.image_path) ?? ""}
         alt={banner.alt_text}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain"
         loading="lazy"
         decoding="async"
       />
@@ -188,7 +188,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
   }, [active, visible, done]);
 
   if (done) {
-    return <img src={poster} alt={banner.alt_text} className="h-full w-full object-cover" />;
+    return <img src={poster} alt={banner.alt_text} className="h-full w-full object-contain" />;
   }
   return (
     <video
@@ -199,7 +199,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
       playsInline
       preload="metadata"
       aria-label={banner.alt_text}
-      className="h-full w-full object-cover"
+      className="h-full w-full object-contain"
       onEnded={(e) => {
         loops.current += 1;
         if (loops.current >= MAX_VIDEO_LOOPS) setDone(true);
