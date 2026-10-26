@@ -480,6 +480,24 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         </div>
       )}
 
+      {!readOnly && content.worksheet?.mode === "pen" && (
+        <div className="mx-auto flex w-full max-w-[820px] flex-wrap items-center gap-2 rounded-lg border bg-muted/40 p-2 text-sm">
+          <Button
+            type="button"
+            size="sm"
+            variant={mode === "text" ? "default" : "outline"}
+            className="gap-1.5"
+            aria-pressed={mode === "text"}
+            onClick={() => setMode(mode === "text" ? "pen" : "text")}
+          >
+            <TypeIcon className="h-4 w-4" /> Psát klávesnicí
+          </Button>
+          <span className="text-muted-foreground">
+            {mode === "text" ? "Ťukni na místo v listu, kam chceš psát." : "Odpověď můžeš psát perem, nebo klávesnicí do textového pole."}
+          </span>
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-[820px]">
         <div
           ref={stageRef}
