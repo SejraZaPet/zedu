@@ -965,27 +965,46 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
     : "";
 
   let body = "";
+  const key = printInlineKeys?.get(item.id) ?? null;
+  /** Typ už odpověď vyznačil přímo v obsahu (nepřidávat obecný řádek). */
+  let keyShown = false;
 
   switch (item.type) {
     case "mcq": {
       const choices = item.choices ?? [];
       const cls = mcqColumns(choices) === 2 ? "ws-choices ws-choices--2col" : "ws-choices";
+      const ok = key ? correctChoiceIndexes(key.correctAnswer, choices) : new Set<number>();
+      keyShown = ok.size > 0;
       body = `<ol class="${cls}">${choices
-        .map((c, i) => `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
+        .map((c, i) => ok.has(i)
+          ? `<li class="ws-key-correct"><span class="ws-choice-box ws-choice-box--on" aria-hidden="true">✕</span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`
+          : `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
         .join("")}</ol>`;
       break;
     }
 
-    case "true_false":
+    case "true_false": {
+      const tv = key ? isTrueAnswer(inlineKeyText(key)) : null;
+      keyShown = tv !== null;
+      const opt = (label: string, on: boolean) => on
+        ? `<label class="ws-tf-option ws-key-correct"><span class="ws-tf-box ws-choice-box--on">✕</span> ${label}</label>`
+        : `<label class="ws-tf-option"><span class="ws-tf-box"></span> ${label}</label>`;
       body = `<div class="ws-tf-options">
-        <label class="ws-tf-option"><span class="ws-tf-box"></span> Pravda</label>
-        <label class="ws-tf-option"><span class="ws-tf-box"></span> Nepravda</label>
+        ${opt("Pravda", tv === true)}
+        ${opt("Nepravda", tv === false)}
       </div>`;
       break;
+    }
 
     case "fill_blank":
       if (item.blankText) {
-        body = `<div class="ws-blank-text">${esc(item.blankText).replace(/___/g, '<span class="ws-blank-slot">&nbsp;</span>')}</div>`;
+        const words = key ? (Array.isArray(key.correctAnswer) ? key.correctAnswer : [key.correctAnswer]).map(String) : [];
+        let wi = 0;
+        keyShown = words.length > 0;
+        body = `<div class="ws-blank-text">${esc(item.blankText).replace(/___/g, () => {
+          const w = words[wi++];
+          return w ? `<span class="ws-blank-slot ws-key-fill">${esc(w)}</span>` : '<span class="ws-blank-slot">&nbsp;</span>';
+        })}</div>`;
       }
       break;
 
@@ -1003,6 +1022,10 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
           <thead><tr><th>Pojem</th><th>Odpověď</th><th>Definice</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
+        if (key) {
+          keyShown = true;
+          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${item.matchPairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
+        }
       }
       break;
 
@@ -1012,6 +1035,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
           .map((o) => `<li><span class="ws-order-box"></span><span>${esc(o)}</span></li>`)
           .join("");
         body = `<ul class="ws-ordering-list">${lis}</ul>`;
+      }
+      if (key) {
+        keyShown = true;
+        const seq = Array.isArray(key.correctAnswer) ? key.correctAnswer : [key.correctAnswer];
+        body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné pořadí:</span> <span class="ws-inline-key-answer">${seq.map((s, i) => `${i + 1}. ${esc(String(s))}`).join(" · ")}</span></div>`;
       }
       break;
 
