@@ -48,3 +48,10 @@ describe("pero v sešitě", () => {
     vi.restoreAllMocks();
   });
 });
+
+describe("zapamatování pera", () => {
+  it("penSeen se uloží a načte", () => {
+    savePenPrefs({ penOnly: true, smoothing: "medium", penSeen: true });
+    expect(loadPenPrefs().penSeen).toBe(true);
+  });
+});
