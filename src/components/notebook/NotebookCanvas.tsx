@@ -472,6 +472,32 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const drawingActive = mode !== "select";
 
+  const zoomControls = (
+    <div className="flex items-center gap-1" role="group" aria-label="Přiblížení stránky">
+      <Button
+        type="button" size="icon" variant="outline" className="min-h-11 min-w-11"
+        title="Oddálit" aria-label="Oddálit stránku"
+        disabled={zoom <= ZOOM_MIN} onClick={() => setZoom(zoom - ZOOM_STEP)}
+      >
+        <ZoomOut className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button" size="sm" variant="outline" className="min-h-11 min-w-16"
+        title="Obnovit původní velikost" aria-label="Obnovit velikost 100 %"
+        onClick={() => setZoom(1)}
+      >
+        {Math.round(zoom * 100)} %
+      </Button>
+      <Button
+        type="button" size="icon" variant="outline" className="min-h-11 min-w-11"
+        title="Přiblížit" aria-label="Přiblížit stránku"
+        disabled={zoom >= ZOOM_MAX} onClick={() => setZoom(zoom + ZOOM_STEP)}
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       {!readOnly && (
