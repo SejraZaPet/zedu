@@ -71,3 +71,26 @@ describe("zvýrazňovač", () => {
     expect(calls.filter((c) => c === "stroke").length).toBe(9);
   });
 });
+
+describe("krytí zvýrazňovače", () => {
+  const pts: [number, number][] = [[0.1, 0.1], [0.3, 0.2], [0.5, 0.1]];
+  it("tah s opacity se vykreslí s tímto krytím", () => {
+    const { ctx } = fakeCtx();
+    renderStroke(ctx, { id: "a", tool: "highlight", color: "#FFD400", width: 4, points: pts, opacity: 0.6 } as any, 800, 1100);
+    expect(ctx.globalAlpha).toBe(0.6);
+  });
+  it("starý tah bez opacity zůstává 0,35", () => {
+    const { ctx } = fakeCtx();
+    renderStroke(ctx, { id: "b", tool: "highlight", color: "#FFD400", width: 4, points: pts } as any, 800, 1100);
+    expect(ctx.globalAlpha).toBe(0.35);
+  });
+  it("volba krytí se pamatuje, neplatná hodnota → 40 %", async () => {
+    const { loadPenPrefs, savePenPrefs } = await import("@/lib/notebook-pointer");
+    const m = new Map<string, string>();
+    const st: any = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => m.set(k, v) };
+    savePenPrefs({ penOnly: false, smoothing: "medium", highlightOpacity: 0.8 }, st);
+    expect(loadPenPrefs(st).highlightOpacity).toBe(0.8);
+    savePenPrefs({ penOnly: false, smoothing: "medium", highlightOpacity: 0.33 }, st);
+    expect(loadPenPrefs(st).highlightOpacity).toBe(0.4);
+  });
+});

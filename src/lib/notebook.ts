@@ -20,6 +20,8 @@ export interface Stroke {
    * Chybí-li pole (myš, prst, starší data, živá tabule), kreslí se konstantní šířkou.
    */
   pressures?: number[];
+  /** Volitelné krytí zvýrazňovače (0..1). Chybí-li (starší tahy), použije se původních 0,35. */
+  opacity?: number;
   text?: string;
 }
 
@@ -154,7 +156,7 @@ export function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke, w: number
   ctx.fillStyle = s.color;
 
   if (s.tool === "highlight") {
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = typeof s.opacity === "number" && s.opacity > 0 && s.opacity <= 1 ? s.opacity : 0.35;
     ctx.lineWidth = s.width * 3 * scale;
   } else if (s.tool === "eraser") {
     ctx.globalCompositeOperation = "destination-out";
