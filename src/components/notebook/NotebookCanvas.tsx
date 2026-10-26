@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
-  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X,
+  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
@@ -40,6 +40,17 @@ const TOOLS: { key: Mode; icon: React.ElementType; label: string }[] = [
 
 const uid = () => crypto.randomUUID();
 
+/* Přiblížení stránky: jen zobrazení, uložená data (relativní souřadnice) se nemění. */
+const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5, ZOOM_STEP = 0.25;
+const ZOOM_KEY = "bezli.notebook.zoom";
+const loadZoom = (): number => {
+  try {
+    const v = Number(localStorage.getItem(ZOOM_KEY));
+    return Number.isFinite(v) && v > 0 ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v)) : 1;
+  } catch { return 1; }
+};
+const saveZoom = (z: number) => { try { localStorage.setItem(ZOOM_KEY, String(z)); } catch { /* soukromý režim */ } };
+
 const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly = false }: Props) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,6 +69,12 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const rerender = useCallback(() => force((n) => n + 1), []);
 
   const [mode, setMode] = useState<Mode>("pen");
+  const [zoom, setZoomState] = useState<number>(loadZoom);
+  const setZoom = (z: number) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z / ZOOM_STEP) * ZOOM_STEP));
+    setZoomState(clamped);
+    saveZoom(clamped);
+  };
   const [penPrefs, setPenPrefsState] = useState<PenPrefs>(() => loadPenPrefs());
   const setPenPrefs = (next: PenPrefs) => { setPenPrefsState(next); savePenPrefs(next); };
   const drawingMode = mode !== "select" && mode !== "text";
@@ -334,6 +351,20 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  /* Ctrl/Cmd + (+, −, 0) mění přiblížení — funguje i v režimu jen pro čtení. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const t = e.target as HTMLElement;
+      if (t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable)) return;
+      if (e.key === "+" || e.key === "=") { e.preventDefault(); setZoom(zoom + ZOOM_STEP); }
+      else if (e.key === "-") { e.preventDefault(); setZoom(zoom - ZOOM_STEP); }
+      else if (e.key === "0") { e.preventDefault(); setZoom(1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
+
   /* --- posun / změna velikosti prvků --- */
   const startElementDrag = (
     e: React.PointerEvent,
@@ -441,6 +472,32 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const drawingActive = mode !== "select";
 
+  const zoomControls = (
+    <div className="flex items-center gap-1" role="group" aria-label="Přiblížení stránky">
+      <Button
+        type="button" size="icon" variant="outline" className="min-h-11 min-w-11"
+        title="Oddálit" aria-label="Oddálit stránku"
+        disabled={zoom <= ZOOM_MIN} onClick={() => setZoom(zoom - ZOOM_STEP)}
+      >
+        <ZoomOut className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button" size="sm" variant="outline" className="min-h-11 min-w-16"
+        title="Obnovit původní velikost" aria-label="Obnovit velikost 100 %"
+        onClick={() => setZoom(1)}
+      >
+        {Math.round(zoom * 100)} %
+      </Button>
+      <Button
+        type="button" size="icon" variant="outline" className="min-h-11 min-w-11"
+        title="Přiblížit" aria-label="Přiblížit stránku"
+        disabled={zoom >= ZOOM_MAX} onClick={() => setZoom(zoom + ZOOM_STEP)}
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       {!readOnly && (
@@ -519,6 +576,10 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               <option value="strong">Citlivost pera: Silné</option>
             </select>
           </div>
+
+          <span className="h-6 w-px bg-border" aria-hidden />
+
+          {zoomControls}
 
           <span className="h-6 w-px bg-border" aria-hidden />
 
@@ -608,13 +669,19 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         </div>
       )}
 
+      {readOnly && (
+        <div className="mx-auto flex w-full max-w-[820px] justify-end">{zoomControls}</div>
+      )}
+
       <div className="mx-auto w-full max-w-[820px]">
+        <div className={cn(zoom > 1 && "max-h-[85vh] overflow-auto")} data-testid="nb-zoom-scroll">
         <div
           ref={stageRef}
+          data-testid="nb-stage"
           className={cn("relative w-full overflow-hidden rounded-lg border bg-white shadow-sm touch-none", drawingMode && "select-none [-webkit-user-select:none] [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]")}
           onContextMenu={(e) => { if (drawingMode && !isEditableTarget(e.target)) e.preventDefault(); }}
           onDragStart={(e) => { if (drawingMode) e.preventDefault(); }}
-          style={{ aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
+          style={{ width: `${zoom * 100}%`, aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={finishStroke}
@@ -705,6 +772,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               )}
             </div>
           ))}
+        </div>
         </div>
       </div>
 
