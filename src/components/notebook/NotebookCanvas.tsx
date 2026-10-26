@@ -579,6 +579,10 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
           <span className="h-6 w-px bg-border" aria-hidden />
 
+          {zoomControls}
+
+          <span className="h-6 w-px bg-border" aria-hidden />
+
           <div className="flex items-center gap-1.5">
             {NOTEBOOK_COLORS.map((c) => (
               <button
