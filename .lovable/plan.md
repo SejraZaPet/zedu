@@ -201,3 +201,41 @@ V jedné transakci: založit [TEST] školy A a B, [TEST] uživatele-učitele s p
 4. **Psaní na iPadu:** písmo polí 16 px na dotykových zařízeních (`LayoutBlockItem.tsx:62,192`).
 5. **Text na listu „pro pero“:** nové pole tam, kam se ťukne (bez posunu doleva), písmo 20 a tlačítko „Psát klávesnicí“ na stránce s listem (`NotebookCanvas.tsx:154-168`).
 6. **Zmenšení stránek:** po změření opravit rozměr zobrazení v `MyNotebook` na max. ~820 px.
+
+---
+
+# Část D – Losování a Skupiny: výběr třídy a nepřítomní žáci
+
+## Zjištěný stav (z kódu)
+- Stránka `/…` `src/pages/TeacherClassroomTools.tsx:14-17` otevírá `ClassroomToolsOverlay` **bez** `target`; v plánu hodiny (`TeacherLessonPlanEditor.tsx:1532,2902`, `LessonPlanPacing.tsx`) se `target` předává podle připojené třídy/skupiny.
+- `ClassroomToolsOverlay.tsx:79-80` → `PeopleTool` (`src/components/classroom/PeopleTools.tsx`, 82 řádků) pro Losování i Skupiny.
+- Výběr seznamu **existuje**: `PeopleSource` (`PeopleTools.tsx:13-56`), Select „Seznam žáků“ (`:53`) s volbami Vlastní seznam / Třída · … / Skupina · …. Zobrazuje se nad losováním vždy (`:71`).
+- Načítání: třídy `useTeacherClasses` (`myClasses` = jen třídy s `source !== "school"`, `useTeacherClasses.ts:88`), skupiny `useSubjectGroups`; žáci přes `class_members` / `subject_group_members` + `profiles` (`PeopleTools.tsx:37-43`), jen čtení existujícími oprávněními.
+- „Nové losování“ (`:77`) jen vynuluje vylosované; zdroj seznamu nemění.
+- Docházka/absence: žádná v nástroji ani v DB pro tyto nástroje; jediný podobný prvek je `AbsentChip` v `src/components/game/TeamSetup.tsx:60-100` (lokální stav týmů živé hry).
+
+## Pravděpodobná příčina bodů 1 a 4 (k ověření v Chromiu jako první krok)
+1. **Asynchronní předvýběr:** po otevření je hodnota „Vlastní seznam“; až doběhne načtení tříd i skupin, efekt `PeopleTools.tsx:22-26` jednorázově přepne na třídu/skupinu z `initialTarget` (v plánu hodiny). Učitelka tak vidí, jak se „třída vloží sama“ po chvíli – zdánlivě po kliknutí. Není to vyvoláno tlačítkem „Nové losování“.
+2. **Nenápadný selektor:** Select vypadá jako běžné pole „Vlastní seznam“ a neříká, že tam jsou třídy; při „Vlastní seznam“ dominuje textové pole jmen.
+3. **Možná chybějící třídy:** `myClasses` vynechává školní třídy (`source === "school"`), kde je učitel jen přiřazený vyučující – takové třídy v nabídce chybí. Ověřit na účtu učitelky čtením (bez zápisu).
+Diagnóza není potvrzená v prohlížeči; první krok implementace ji změří (záznam pořadí renderů a obsahu Selectu).
+
+## Návrh UX (bez DB)
+- Nahoře vždy viditelný výběr „Třída nebo skupina“ (seskupené: Moje třídy / Třídy, kde učím / Skupiny / Vlastní seznam), během načítání stav „Načítám třídy…“ místo tichého přepnutí. Předvýběr z plánu hodiny zůstává, ale s popiskem „Předvybráno z plánu hodiny“.
+- Pod výběrem seznam žáků jako chip-přepínače: přítomný = plný, nepřítomný = přeškrtnutý a ztlumený (`aria-pressed`). Tlačítka „Všichni přítomni“ / „Odznačit všechny“, počet „Přítomno 22 z 25“.
+- Losování i dělení do skupin pracuje jen s přítomnými; změna přítomnosti vynuluje vylosované/skupiny (jako dnes změna seznamu).
+- Absence se pamatuje v localStorage jen pro dnešní den: klíč `bezli.classroom.absent.<YYYY-MM-DD Praha>.<class|group>:<id>` s **ID žáků, bez jmen**; starší dny se při čtení mažou; vše v try/catch. U vlastního seznamu se nepamatuje.
+- Stejná komponenta pro Losování i Skupiny.
+- Soukromí: dnes nástroj jména neschovává (jména se na projektoru ukazují vždy). Přidat volbu „Skrýt seznam žáků“ (sbalí chipy při promítání) – bez změny dnešního výchozího chování výsledku losování.
+
+## Co nerozbít
+- Demo ochrany a izolace párů: čtení žáků jen stávajícími dotazy, žádné nové.
+- Jména neukládat (jen ID), neposílat do URL/logů/analytiky.
+- Předvýběr z plánu hodiny a chování „Nelosovat už vylosované“.
+- Zahrnutí školních tříd jen pokud k nim existující RLS dovolí číst členy; jinak je nenabízet.
+
+## Odhad, rizika, testy
+- Odhad: 2–3 h (komponenta přítomnosti + úpravy výběru + testy + měření).
+- Rizika: dlouhé seznamy (30+ chipů) na projektoru – zalamování; školní třídy bez práva číst členy – skrýt.
+- Testy (`src/test/classroom-tools.test.ts` + nový): losuje jen přítomné; skupiny jen z přítomných; „Všichni přítomni“/„Odznačit“; absence se obnoví stejný den a zmizí další den; v localStorage nejsou jména; nedostupné localStorage nespadne; předvýběr z `initialTarget` zachován; select zobrazí stav načítání.
+- Migrace DB: **není potřeba**.
