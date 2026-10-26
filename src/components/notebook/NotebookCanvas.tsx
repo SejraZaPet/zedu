@@ -75,6 +75,15 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   );
 
 
+  /* --- iOS: žádný výběr textu ani menu při kreslení --- */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !drawingMode) return;
+    const block = (e: Event) => { if (!isEditableTarget(e.target)) e.preventDefault(); };
+    stage.addEventListener("selectstart", block);
+    return () => stage.removeEventListener("selectstart", block);
+  }, [drawingMode]);
+
   /* --- velikost plátna --- */
   useEffect(() => {
     const cvs = canvasRef.current;
@@ -426,6 +435,21 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
                 <span className="rounded-full bg-current" style={{ width: w, height: w }} />
               </Button>
             ))}
+          </div>
+
+          <span className="h-6 w-px bg-border" aria-hidden />
+
+          <div className="flex items-center gap-1" role="group" aria-label="Pero">
+            <Button type="button" size="sm" variant={penPrefs.penOnly ? "default" : "outline"} aria-pressed={penPrefs.penOnly}
+              title="Kreslí jen pero, prst ani dlaň nekreslí" onClick={() => setPenPrefs({ ...penPrefs, penOnly: !penPrefs.penOnly })}>
+              Jen pero
+            </Button>
+            <select aria-label="Vyhlazení pera" className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              value={penPrefs.smoothing} onChange={(e) => setPenPrefs({ ...penPrefs, smoothing: e.target.value as PenSmoothing })}>
+              <option value="fine">Vyhlazení: jemné</option>
+              <option value="medium">Vyhlazení: střední</option>
+              <option value="strong">Vyhlazení: silné</option>
+            </select>
           </div>
 
           <span className="h-6 w-px bg-border" aria-hidden />

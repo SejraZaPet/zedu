@@ -297,10 +297,25 @@ export default function MyNotebook() {
   };
 
   const deletePage = async (page: NotebookPage) => {
-    if (pages.length <= 1) return toast.error("Sešit musí mít alespoň jednu stránku.");
-    if (!window.confirm("Smazat tuto stránku?")) return;
-    await supabase.from("notebook_pages").delete().eq("id", page.id);
-    const next = pages.filter((p) => p.id !== page.id);
+    const last = pages.length <= 1;
+    if (!window.confirm(last ? "Smazat poslední stránku? Sešit dostane novou prázdnou stránku." : "Smazat tuto stránku?")) return;
+    let replacement: NotebookPage | null = null;
+    if (last) {
+      // Nejdřív prázdná stránka, teprve potom smazání — při chybě se nic neztratí.
+      if (!open) return;
+      const { data, error } = await supabase.from("notebook_pages")
+        .insert({ notebook_id: open.id, page_order: 1, background_style: "blank", content: EMPTY_CONTENT as any })
+        .select("*").single();
+      if (error || !data) return toast.error("Stránku se nepodařilo smazat. Zkuste to znovu.");
+      replacement = { ...(data as any), content: normalizeContent((data as any).content) } as NotebookPage;
+    }
+    const { error: delError } = await supabase.from("notebook_pages").delete().eq("id", page.id);
+    if (delError) {
+      if (replacement) await supabase.from("notebook_pages").delete().eq("id", replacement.id);
+      return toast.error("Stránku se nepodařilo smazat. Zkuste to znovu.");
+    }
+    if (replacement) await supabase.from("notebook_pages").update({ page_order: 0 }).eq("id", replacement.id);
+    const next = replacement ? [{ ...replacement, page_order: 0 }] : pages.filter((p) => p.id !== page.id);
     setPages(next);
     setActiveIndex((i) => Math.max(0, Math.min(i, next.length - 1)));
   };
