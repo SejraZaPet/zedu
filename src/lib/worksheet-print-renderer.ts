@@ -965,27 +965,46 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
     : "";
 
   let body = "";
+  const key = printInlineKeys?.get(item.id) ?? null;
+  /** Typ už odpověď vyznačil přímo v obsahu (nepřidávat obecný řádek). */
+  let keyShown = false;
 
   switch (item.type) {
     case "mcq": {
       const choices = item.choices ?? [];
       const cls = mcqColumns(choices) === 2 ? "ws-choices ws-choices--2col" : "ws-choices";
+      const ok = key ? correctChoiceIndexes(key.correctAnswer, choices) : new Set<number>();
+      keyShown = ok.size > 0;
       body = `<ol class="${cls}">${choices
-        .map((c, i) => `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
+        .map((c, i) => ok.has(i)
+          ? `<li class="ws-key-correct"><span class="ws-choice-box ws-choice-box--on" aria-hidden="true">✕</span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`
+          : `<li><span class="ws-choice-box" aria-hidden="true"></span><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
         .join("")}</ol>`;
       break;
     }
 
-    case "true_false":
+    case "true_false": {
+      const tv = key ? isTrueAnswer(inlineKeyText(key)) : null;
+      keyShown = tv !== null;
+      const opt = (label: string, on: boolean) => on
+        ? `<label class="ws-tf-option ws-key-correct"><span class="ws-tf-box ws-choice-box--on">✕</span> ${label}</label>`
+        : `<label class="ws-tf-option"><span class="ws-tf-box"></span> ${label}</label>`;
       body = `<div class="ws-tf-options">
-        <label class="ws-tf-option"><span class="ws-tf-box"></span> Pravda</label>
-        <label class="ws-tf-option"><span class="ws-tf-box"></span> Nepravda</label>
+        ${opt("Pravda", tv === true)}
+        ${opt("Nepravda", tv === false)}
       </div>`;
       break;
+    }
 
     case "fill_blank":
       if (item.blankText) {
-        body = `<div class="ws-blank-text">${esc(item.blankText).replace(/___/g, '<span class="ws-blank-slot">&nbsp;</span>')}</div>`;
+        const words = key ? (Array.isArray(key.correctAnswer) ? key.correctAnswer : [key.correctAnswer]).map(String) : [];
+        let wi = 0;
+        keyShown = words.length > 0;
+        body = `<div class="ws-blank-text">${esc(item.blankText).replace(/___/g, () => {
+          const w = words[wi++];
+          return w ? `<span class="ws-blank-slot ws-key-fill">${esc(w)}</span>` : '<span class="ws-blank-slot">&nbsp;</span>';
+        })}</div>`;
       }
       break;
 
@@ -1003,6 +1022,10 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
           <thead><tr><th>Pojem</th><th>Odpověď</th><th>Definice</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
+        if (key) {
+          keyShown = true;
+          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${item.matchPairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
+        }
       }
       break;
 
@@ -1012,6 +1035,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
           .map((o) => `<li><span class="ws-order-box"></span><span>${esc(o)}</span></li>`)
           .join("");
         body = `<ul class="ws-ordering-list">${lis}</ul>`;
+      }
+      if (key) {
+        keyShown = true;
+        const seq = Array.isArray(key.correctAnswer) ? key.correctAnswer : [key.correctAnswer];
+        body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné pořadí:</span> <span class="ws-inline-key-answer">${seq.map((s, i) => `${i + 1}. ${esc(String(s))}`).join(" · ")}</span></div>`;
       }
       break;
 
@@ -1139,6 +1167,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         ${item.prompt ? `<p style="font-size:10pt;margin:0 0 5px;">${esc(item.prompt)}</p>` : ""}
         <table class="ws-content-table">${thead}${tbody}</table>
         ${item.tableCaption ? `<p style="font-size:9pt;color:#555;margin:4px 0 0;">${esc(item.tableCaption)}</p>` : ""}
+        ${printInlineKeys?.get(item.id) ? renderInlineKey(item, printInlineKeys.get(item.id)!, false) : ""}
       </div>`;
     }
 
@@ -1374,6 +1403,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   ${imageHtml}
   ${body}
   ${renderAnswerSpace(item.answerSpace)}
+  ${key ? renderInlineKey(item, key, keyShown) : ""}
 </div>`;
 }
 
@@ -1432,6 +1462,49 @@ function renderFooter(spec: WorksheetSpec): string {
 /** Odpovědi žáka pro psací bloky během jednoho vykreslení (jen žákovský tisk). */
 let printAnswers: Record<string, unknown> | null = null;
 
+/** Klíč u otázek během jednoho vykreslení — nastavuje se JEN pro učitelskou verzi. */
+let printInlineKeys: Map<string, AnswerKeyEntry> | null = null;
+
+/** Indexy správných možností u výběru (text i písmeno). */
+function correctChoiceIndexes(correct: string | string[], choices: string[]): Set<number> {
+  const out = new Set<number>();
+  for (const a of Array.isArray(correct) ? correct : [correct]) {
+    const t = String(a ?? "").trim();
+    let idx = choices.findIndex((c) => String(c).trim() === t);
+    if (idx < 0 && /^[A-Za-z]\)?$/.test(t)) {
+      const li = CHOICE_LETTERS.indexOf(t[0].toUpperCase());
+      if (li >= 0 && li < choices.length) idx = li;
+    }
+    if (idx >= 0) out.add(idx);
+  }
+  return out;
+}
+
+function isTrueAnswer(v: string): boolean | null {
+  const t = v.trim().toLowerCase();
+  if (["true", "pravda", "ano", "p", "1"].includes(t)) return true;
+  if (["false", "nepravda", "ne", "n", "0"].includes(t)) return false;
+  return null;
+}
+
+/** Obecný řádek odpovědi + vzorová odpověď (otevřené) + vysvětlení. */
+function renderInlineKey(item: WorksheetItem, k: AnswerKeyEntry, alreadyShown: boolean): string {
+  const ans = inlineKeyText(k).trim();
+  const open = item.type === "short_answer" || item.type === "open_answer";
+  let out = "";
+  if (!alreadyShown && ans) {
+    out += open
+      ? `<div class="ws-inline-key ws-inline-key--model"><div class="ws-inline-key-label">Vzorová odpověď${item.points > 0 ? ` (${item.points} ${pointsLabel(item.points)})` : ""}:</div><div class="ws-inline-key-answer">${esc(ans)}</div>${k.rubric ? `<div class="ws-inline-key-expl">Hodnocení: ${esc(k.rubric)}</div>` : ""}</div>`
+      : `<div class="ws-inline-key"><span class="ws-inline-key-label">Odpověď:</span> <span class="ws-inline-key-answer">${esc(item.type === "mcq" ? mcqKeyAnswer(k.correctAnswer, item.choices) : ans)}</span></div>`;
+  }
+  if (k.explanation) out += `<div class="ws-inline-key-expl">${esc(k.explanation)}</div>`;
+  return out;
+}
+
+function inlineKeyText(k: AnswerKeyEntry): string {
+  return Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : String(k.correctAnswer ?? "");
+}
+
 /** Napsaný text na linkách; linky navíc se doplní prázdné. */
 function writtenLinesHtml(text: string, minLines: number, style: string, hMm = WRITE_LINE_HEIGHT_MM): string {
   const rows = text.split(/\n/);
@@ -1459,7 +1532,22 @@ export interface WorksheetPrintOptions {
   teacherVersion?: boolean;
   /** Poznámky pro učitele; vykreslí se jen při teacherVersion. */
   teacherNotes?: string;
+  /** Kde je klíč v učitelské verzi. Výchozí „end“ = dosavadní chování. */
+  answerKeyPlacement?: AnswerKeyPlacement;
 }
+
+export type AnswerKeyPlacement = "inline" | "end" | "both";
+
+const INLINE_KEY_CSS = `
+.ws-key-correct { font-weight: 700 !important; color: #166534 !important; }
+.ws-choice-box--on { border: 1pt solid #1A1F2C !important; background: #DCFCE7 !important; color: #1A1F2C !important; font-size: 8pt; line-height: 3mm; text-align: center; font-weight: 700; }
+.ws-key-fill { font-weight: 700; color: #1D4ED8 !important; text-decoration: underline; padding: 0 3pt; }
+.ws-inline-key { margin: 3pt 0 0 18pt; font-size: 10pt; color: #1A1F2C !important; break-inside: avoid; }
+.ws-inline-key--model { border: 1pt solid #166534; border-left-width: 3pt; border-radius: 3pt; padding: 4pt 6pt; background: #F0FDF4 !important; }
+.ws-inline-key-label { font-weight: 700; color: #166534 !important; }
+.ws-inline-key-answer { font-weight: 700; }
+.ws-inline-key-expl { margin: 2pt 0 0 18pt; font-size: 8.5pt; color: #475569 !important; font-style: italic; }
+`;
 
 const TEACHER_BLOCK_CSS = `
 .ws-teacher-block {
@@ -1536,6 +1624,11 @@ export function renderWorksheetVariantHtml(
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
   const displayNumbers = computeDisplayNumbers(variant.items);
   printAnswers = options?.answers ?? null;
+  const placement: AnswerKeyPlacement = options?.answerKeyPlacement ?? "end";
+  const inlineKey = !!options?.teacherVersion && placement !== "end";
+  printInlineKeys = inlineKey
+    ? new Map((spec.answerKeys[variantId] ?? []).map((k) => [k.itemId, k]))
+    : null;
   let items: string;
   try {
     items = variant.items
@@ -1543,8 +1636,10 @@ export function renderWorksheetVariantHtml(
       .join("\n");
   } finally {
     printAnswers = null;
+    printInlineKeys = null;
   }
-  const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
+  const keyAtEnd = !(options?.teacherVersion && placement === "inline");
+  const rawKey = keyAtEnd && (specCopy.renderConfig.includeAnswerKey || options?.teacherVersion)
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])), new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).filter((it) => it.type === "mcq" && it.choices?.length).map((it) => [it.id, it.choices as string[]])))
     : "";
   const answerKey = options?.teacherVersion
@@ -1557,7 +1652,7 @@ export function renderWorksheetVariantHtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(worksheetDocumentTitle(specCopy.header.title, specCopy.header.worksheetMode, specCopy.header.variantLabel))}</title>
-<style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}</style>
+<style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}${inlineKey ? INLINE_KEY_CSS : ""}</style>
 </head>
 <body>
 

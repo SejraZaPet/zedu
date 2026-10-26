@@ -414,6 +414,7 @@ export default function WorksheetEditor() {
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
   const [pdfVersion, setPdfVersion] = useState<"student" | "teacher">("student");
+  const [pdfKeyPlacement, setPdfKeyPlacement] = useState<"inline" | "end" | "both">("inline");
   /** Poznámky pro učitele — ukládají se do worksheets.teacher_notes, nikdy do spec (žák spec čte). */
   const [teacherNotes, setTeacherNotes] = useState("");
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
@@ -1073,6 +1074,7 @@ export default function WorksheetEditor() {
         includeAnswerKey: pdfVersion === "teacher" ? true : pdfIncludeAnswerKey,
         teacherVersion: pdfVersion === "teacher",
         teacherNotes: pdfVersion === "teacher" ? teacherNotes : undefined,
+        answerKeyPlacement: pdfVersion === "teacher" ? pdfKeyPlacement : undefined,
         includeNameField: pdfIncludeNameField,
       });
       setPdfDialogOpen(false);
@@ -1124,6 +1126,7 @@ export default function WorksheetEditor() {
         includeAnswerKey: pdfVersion === "teacher" ? true : pdfIncludeAnswerKey,
         teacherVersion: pdfVersion === "teacher",
         teacherNotes: pdfVersion === "teacher" ? teacherNotes : undefined,
+        answerKeyPlacement: pdfVersion === "teacher" ? pdfKeyPlacement : undefined,
         includeNameField: pdfIncludeNameField,
       });
       setPdfDialogOpen(false);
@@ -2846,6 +2849,31 @@ export default function WorksheetEditor() {
                 </p>
               )}
             </div>
+            {pdfVersion === "teacher" && (
+            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+              <Label className="text-sm" id="pdf-key-placement-label">Klíč odpovědí</Label>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="pdf-key-placement-label">
+                {([
+                  ["inline", "Přímo u otázek"],
+                  ["end", "Na konci listu"],
+                  ["both", "Obojí"],
+                ] as const).map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={pdfKeyPlacement === v}
+                    onClick={() => setPdfKeyPlacement(v)}
+                    className={`text-left rounded-md border p-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      pdfKeyPlacement === v ? "border-primary bg-primary/10" : "border-border bg-background"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
             {pdfVersion === "student" && (
             <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
               <div>

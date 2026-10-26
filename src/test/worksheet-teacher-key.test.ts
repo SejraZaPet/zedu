@@ -46,3 +46,58 @@ describe("vzhled klíče odpovědí", () => {
     expect(css(".ws-key-item")).toMatch(/break-inside: avoid/);
   });
 });
+
+describe("klíč přímo u otázek", () => {
+  const MARK = "ZZTAJNAODPOVED";
+  const leakSpec = () => {
+    const s = structuredClone(WORKSHEET_SPEC_EXAMPLE);
+    const v = s.variants[0];
+    v.items = [
+      { ...v.items[0], id: "m1", itemNumber: 1, type: "mcq", prompt: "Otázka?", choices: ["Jedna", MARK + "A", "Tři"] },
+      { ...v.items[0], id: "t1", itemNumber: 2, type: "true_false", prompt: "Tvrzení" },
+      { ...v.items[0], id: "f1", itemNumber: 3, type: "fill_blank", prompt: "", blankText: "Je to ___." },
+      { ...v.items[0], id: "o1", itemNumber: 4, type: "open_answer", prompt: "Popiš", points: 2 },
+    ] as any;
+    s.answerKeys = { [v.variantId]: [
+      { itemId: "m1", itemNumber: 1, correctAnswer: "B", explanation: MARK + "VYSV" },
+      { itemId: "t1", itemNumber: 2, correctAnswer: "Nepravda" },
+      { itemId: "f1", itemNumber: 3, correctAnswer: [MARK + "SLOVO"] },
+      { itemId: "o1", itemNumber: 4, correctAnswer: MARK + "VZOR", rubric: "2 b za úplnost" },
+    ] };
+    return s;
+  };
+
+  it("u otázek vyznačí správnou možnost, slovo i vzorovou odpověď; klíč na konci chybí", () => {
+    const s = leakSpec();
+    const html = renderWorksheetVariantHtml(s, s.variants[0].variantId, { teacherVersion: true, answerKeyPlacement: "inline" });
+    expect(html).toMatch(/<li class="ws-key-correct">[^]*?B\)<\/span> ZZTAJNAODPOVEDA/);
+    expect(html).toMatch(/ws-tf-option ws-key-correct"><span[^>]*>✕<\/span> Nepravda/);
+    expect(html).toContain(`ws-key-fill">${MARK}SLOVO`);
+    expect(html).toContain(`Vzorová odpověď (2 body):`);
+    expect(html).toContain(`${MARK}VYSV`);
+    expect(html).not.toContain(`class="ws-answer-key"`);
+    expect(html).toContain("ws-teacher-block");
+  });
+
+  it("„obojí“ vykreslí odpovědi u otázek i klíč na konci; bez volby zůstává jen klíč na konci", () => {
+    const s = leakSpec();
+    const both = renderWorksheetVariantHtml(s, s.variants[0].variantId, { teacherVersion: true, answerKeyPlacement: "both" });
+    expect(both).toContain("ws-key-correct");
+    expect(both).toContain(`class="ws-answer-key"`);
+    const def = renderWorksheetVariantHtml(s, s.variants[0].variantId, { teacherVersion: true });
+    expect(def).not.toContain("ws-key-correct");
+    expect(def).toContain(`class="ws-answer-key"`);
+  });
+
+  it("žákovská verze neprozradí odpovědi ani s volbou umístění", async () => {
+    const s = leakSpec();
+    const r = renderWorksheetVariantHtml(s, s.variants[0].variantId, { answerKeyPlacement: "inline" });
+    const st = await buildStudentWorksheetHtml(leakSpec(), "ws1");
+    for (const html of [r, st]) {
+      expect(html).not.toMatch(/ws-key-correct|ws-inline-key|ws-key-fill|ws-choice-box--on/);
+      expect(html).not.toContain(MARK + "SLOVO");
+      expect(html).not.toContain(MARK + "VZOR");
+      expect(html).not.toContain(MARK + "VYSV");
+    }
+  });
+});

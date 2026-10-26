@@ -25,6 +25,8 @@ export interface PdfExportOptions {
   teacherVersion?: boolean;
   /** Poznámky pro učitele — použijí se POUZE při teacherVersion. */
   teacherNotes?: string;
+  /** Umístění klíče v učitelské verzi (výchozí „end“ = dosavadní chování). */
+  answerKeyPlacement?: "inline" | "end" | "both";
   /** Base URL for student link (default: window.location.origin). */
   baseUrl?: string;
   /** Napsané odpovědi žáka (jen žákovská verze) — vytisknou se na linkách. */
@@ -57,6 +59,7 @@ async function buildPrintHtml(
     includeNameField: options.includeNameField,
     teacherVersion: !!options.teacherVersion,
     teacherNotes: options.teacherVersion ? options.teacherNotes : undefined,
+    answerKeyPlacement: options.teacherVersion ? options.answerKeyPlacement : undefined,
     answers: options.teacherVersion ? null : options.answers ?? null,
   });
 
