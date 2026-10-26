@@ -8,6 +8,7 @@ import { PeopleTool } from "@/components/classroom/PeopleTools";
 import { MegatextTool } from "@/components/classroom/MegatextTool";
 import { VolumeTool } from "@/components/classroom/VolumeTool";
 import "@/styles/classroom-tools.css";
+import { PortalContainerContext } from "@/components/ui/portal-container";
 
 export const classroomTools = [
   { id: "countdown", name: "Odpočet", icon: Timer },
@@ -23,12 +24,14 @@ export interface ClassroomToolRequest { id: string; duration?: number; autoStart
 export function ClassroomToolsOverlay({ request, onClose, target }: { request: ClassroomToolRequest | null; onClose: () => void; target?: ClassroomTarget }) {
   const [full, setFull] = useState(false);
   const [error, setError] = useState("");
-  const stage = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement | null>(null);
   const hadFullscreen = useRef(false);
   const latestClose = useRef(onClose);
   latestClose.current = onClose;
   const closing = useRef(false);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+  const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
+  const stageRef = (el: HTMLDivElement | null) => { stage.current = el; setStageEl(el); };
   useEffect(() => {
     if (!request) return;
     closing.current = false;
@@ -68,7 +71,8 @@ export function ClassroomToolsOverlay({ request, onClose, target }: { request: C
   const tool = classroomTools.find(t => t.id === request?.id);
   return (
     <Dialog open={Boolean(request)} onOpenChange={open => { if (!open) close(); }}>
-      <DialogPortal container={portalContainer}><DialogOverlay /><DialogPrimitive.Content ref={stage} aria-describedby={undefined} className="classroom-stage fixed inset-0 z-[100] bg-background text-foreground" onEscapeKeyDown={event => { event.preventDefault(); close(); }}>
+      <DialogPortal container={portalContainer}><DialogOverlay /><DialogPrimitive.Content ref={stageRef} aria-describedby={undefined} className="classroom-stage fixed inset-0 z-[100] bg-background text-foreground" onEscapeKeyDown={event => { event.preventDefault(); close(); }}>
+        <PortalContainerContext.Provider value={stageEl}>
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
           <DialogTitle className="text-xl font-heading">{tool?.name}</DialogTitle>
           <div className="flex gap-2"><Button variant="outline" onClick={() => void fullscreen()}>{full ? <Minimize /> : <Maximize />}{full ? "Zmenšit" : "Celá obrazovka"}</Button><DialogClose asChild><Button variant="ghost" size="icon" title="Zavřít" aria-label="Zavřít"><X /></Button></DialogClose></div>
@@ -80,6 +84,7 @@ export function ClassroomToolsOverlay({ request, onClose, target }: { request: C
         {request?.id === "groups" && <PeopleTool grouping initialTarget={target} />}
         {request?.id === "text" && <MegatextTool />}
         {request?.id === "volume" && <VolumeTool />}
+        </PortalContainerContext.Provider>
       </DialogPrimitive.Content></DialogPortal>
     </Dialog>
   );
