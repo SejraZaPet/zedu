@@ -515,7 +515,7 @@ export default function WorksheetPlayer({
         <div className="flex items-center gap-3">
           <Progress value={progressPct} className="flex-1 h-2" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {answeredCount}/{totalItems}
+            {answeredCount}/{progressTotal}
           </span>
           {isSaving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
           {lastSavedAt && !isSaving && (
