@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { isDemoAccount } from "@/lib/demo-seed-textbooks";
 import { BannerCarousel } from "@/components/dashboard/DashboardBanners";
 import {
   BANNER_STATUS_LABEL, bannerErrorMessage, bannerPublicUrl, bannerStatus, type Banner,
@@ -27,7 +28,23 @@ interface Props { scope: "platform" | "school"; schoolId?: string | null }
 const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
 const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
 
-export function BannerManager({ scope, schoolId = null }: Props) {
+/** Demo účty správu bannerů nevidí (zápis navíc blokuje demo_guard_banners_*). */
+export function BannerManager(props: Props) {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      const uid = data.user?.id;
+      const demo = uid ? await isDemoAccount(uid) : true;
+      if (alive) setAllowed(!demo);
+    });
+    return () => { alive = false; };
+  }, []);
+  if (!allowed) return null;
+  return <BannerManagerInner {...props} />;
+}
+
+function BannerManagerInner({ scope, schoolId = null }: Props) {
   const { toast } = useToast();
   const [rows, setRows] = useState<Banner[]>([]);
   const [schoolRows, setSchoolRows] = useState<Banner[]>([]);
