@@ -69,6 +69,12 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const rerender = useCallback(() => force((n) => n + 1), []);
 
   const [mode, setMode] = useState<Mode>("pen");
+  const [zoom, setZoomState] = useState<number>(loadZoom);
+  const setZoom = (z: number) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z / ZOOM_STEP) * ZOOM_STEP));
+    setZoomState(clamped);
+    saveZoom(clamped);
+  };
   const [penPrefs, setPenPrefsState] = useState<PenPrefs>(() => loadPenPrefs());
   const setPenPrefs = (next: PenPrefs) => { setPenPrefsState(next); savePenPrefs(next); };
   const drawingMode = mode !== "select" && mode !== "text";
