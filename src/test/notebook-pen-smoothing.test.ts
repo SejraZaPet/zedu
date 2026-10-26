@@ -41,9 +41,9 @@ describe("pero v sešitě", () => {
   });
   it("nastavení pera se pamatuje a nedostupné úložiště nespadne", () => {
     savePenPrefs({ penOnly: true, smoothing: "strong" });
-    expect(loadPenPrefs()).toEqual({ penOnly: true, smoothing: "strong", penSeen: false });
+    expect(loadPenPrefs()).toEqual({ penOnly: true, smoothing: "strong", penSeen: false, highlightOpacity: 0.4 });
     const broken = { getItem() { throw new Error("x"); }, setItem() { throw new Error("x"); } } as unknown as Storage;
-    expect(loadPenPrefs(broken)).toEqual({ penOnly: false, smoothing: "medium", penSeen: false });
+    expect(loadPenPrefs(broken)).toEqual({ penOnly: false, smoothing: "medium", penSeen: false, highlightOpacity: 0.4 });
     expect(() => savePenPrefs({ penOnly: false, smoothing: "fine" }, broken)).not.toThrow();
     vi.restoreAllMocks();
   });
