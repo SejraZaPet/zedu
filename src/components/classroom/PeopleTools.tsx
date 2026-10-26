@@ -11,8 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { classroomTargetSource, drawClassroomPerson, loadClassroomAbsent, parseClassroomNames, presentClassroomPeople, saveClassroomAbsent, splitClassroomGroups, type ClassroomPerson, type ClassroomTarget } from "@/lib/classroom-tools";
 
 function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: ClassroomPerson[]) => void; initialTarget?: ClassroomTarget }) {
-  const { myClasses, loading: classesLoading } = useTeacherClasses();
-  const { groups, loading: groupsLoading } = useSubjectGroups();
+  const { myClasses, loading: classesLoading, refetch: refetchClasses } = useTeacherClasses();
+  const { groups, loading: groupsLoading, refetch: refetchGroups } = useSubjectGroups();
   const [source, setSource] = useState("manual");
   const [manual, setManual] = useState("");
   const [people, setPeople] = useState<ClassroomPerson[]>([]);
@@ -24,14 +24,17 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   const preselected = useRef(false);
   const userPicked = useRef(false);
   const listsLoading = classesLoading || groupsLoading;
+  // Předvýběr i při pozdějším načtení seznamů, ale jen dokud učitel sám nic nevybral.
   useEffect(() => {
-    if (preselected.current || listsLoading) return;
-    preselected.current = true;
-    if (userPicked.current) return;
+    if (preselected.current || userPicked.current || listsLoading) return;
     const next = classroomTargetSource(initialTarget, myClasses, groups);
+    if (next === "manual") return;
+    preselected.current = true;
     setSource(next);
-    setFromPlan(next !== "manual");
+    setFromPlan(true);
   }, [listsLoading, initialTarget, myClasses, groups]);
+  const listsEmpty = !listsLoading && myClasses.length === 0 && groups.length === 0;
+  const refreshLists = () => { void refetchClasses?.(); void refetchGroups?.(); };
   useEffect(() => { setAbsent(loadClassroomAbsent(source)); }, [source]);
   const pickSource = (v: string) => { userPicked.current = true; setFromPlan(false); setSource(v); };
   const updateAbsent = (next: string[]) => { setAbsent(next); saveClassroomAbsent(source, next); };
@@ -64,6 +67,7 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   return <div className="space-y-3">
     <label className="block space-y-2"><span>Třída nebo skupina</span><Select value={source} onValueChange={pickSource} disabled={listsLoading}><SelectTrigger aria-label="Třída nebo skupina"><SelectValue placeholder="Načítám třídy…" />{listsLoading && <span className="sr-only">Načítám třídy…</span>}</SelectTrigger><SelectContent>{myClasses.length > 0 && <SelectGroup><SelectLabel>Třídy</SelectLabel>{myClasses.map(c => <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>)}</SelectGroup>}{groups.length > 0 && <SelectGroup><SelectLabel>Skupiny</SelectLabel>{groups.map(g => <SelectItem key={g.id} value={`group:${g.id}`}>{g.name}</SelectItem>)}</SelectGroup>}<SelectGroup><SelectLabel>Jiné</SelectLabel><SelectItem value="manual">Vlastní seznam</SelectItem></SelectGroup></SelectContent></Select></label>
     {listsLoading && <p className="text-sm text-muted-foreground">Načítám třídy a skupiny…</p>}
+    {listsEmpty && <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><span>Nenalezeny žádné třídy ani skupiny – zkuste Obnovit.</span><Button type="button" size="sm" variant="outline" onClick={refreshLists}>Obnovit seznam tříd</Button></div>}
     {fromPlan && <p className="text-sm text-muted-foreground">Předvybráno z plánu hodiny.</p>}
     {source === "manual" && <label className="block space-y-2"><span>Jména — jedno na řádek</span><Textarea value={manual} onChange={e => setManual(e.target.value)} rows={4} aria-label="Jména — jedno na řádek" /></label>}
     {source !== "manual" && people.length > 0 && <div className="space-y-2">
