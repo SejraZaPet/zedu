@@ -1167,6 +1167,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         ${item.prompt ? `<p style="font-size:10pt;margin:0 0 5px;">${esc(item.prompt)}</p>` : ""}
         <table class="ws-content-table">${thead}${tbody}</table>
         ${item.tableCaption ? `<p style="font-size:9pt;color:#555;margin:4px 0 0;">${esc(item.tableCaption)}</p>` : ""}
+        ${printInlineKeys?.get(item.id) ? renderInlineKey(item, printInlineKeys.get(item.id)!, false) : ""}
       </div>`;
     }
 
@@ -1402,6 +1403,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   ${imageHtml}
   ${body}
   ${renderAnswerSpace(item.answerSpace)}
+  ${key ? renderInlineKey(item, key, keyShown) : ""}
 </div>`;
 }
 
