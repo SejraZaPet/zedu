@@ -59,7 +59,7 @@ function LinedTextarea({
       readOnly={disabled}
       onChange={(e) => onChange(e.target.value)}
       rows={lines}
-      className="block w-full resize-none bg-transparent px-1 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+      className="block w-full resize-none bg-transparent px-1 text-sm [@media(pointer:coarse)]:text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
       style={{
         lineHeight: `${lineMm}mm`,
         minHeight: `${lines * lineMm}mm`,
@@ -189,7 +189,7 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
               value={typeof value === "string" ? value : ""}
               readOnly={disabled}
               onChange={(e) => onChange(e.target.value)}
-              className="block w-full resize-none rounded-sm border border-border bg-transparent p-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="block w-full resize-none rounded-sm border border-border bg-transparent p-2 text-sm [@media(pointer:coarse)]:text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
               style={{ height: `${h}mm`, lineHeight: `${WRITE_LINE_HEIGHT_MM}mm`, ...bg }}
             />
           ) : (
