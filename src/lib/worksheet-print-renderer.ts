@@ -1487,6 +1487,20 @@ function isTrueAnswer(v: string): boolean | null {
   return null;
 }
 
+/** Obecný řádek odpovědi + vzorová odpověď (otevřené) + vysvětlení. */
+function renderInlineKey(item: WorksheetItem, k: AnswerKeyEntry, alreadyShown: boolean): string {
+  const ans = inlineKeyText(k).trim();
+  const open = item.type === "short_answer" || item.type === "open_answer";
+  let out = "";
+  if (!alreadyShown && ans) {
+    out += open
+      ? `<div class="ws-inline-key ws-inline-key--model"><div class="ws-inline-key-label">Vzorová odpověď${item.points > 0 ? ` (${item.points} ${pointsLabel(item.points)})` : ""}:</div><div class="ws-inline-key-answer">${esc(ans)}</div>${k.rubric ? `<div class="ws-inline-key-expl">Hodnocení: ${esc(k.rubric)}</div>` : ""}</div>`
+      : `<div class="ws-inline-key"><span class="ws-inline-key-label">Odpověď:</span> <span class="ws-inline-key-answer">${esc(item.type === "mcq" ? mcqKeyAnswer(k.correctAnswer, item.choices) : ans)}</span></div>`;
+  }
+  if (k.explanation) out += `<div class="ws-inline-key-expl">${esc(k.explanation)}</div>`;
+  return out;
+}
+
 function inlineKeyText(k: AnswerKeyEntry): string {
   return Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : String(k.correctAnswer ?? "");
 }
@@ -1518,7 +1532,22 @@ export interface WorksheetPrintOptions {
   teacherVersion?: boolean;
   /** Poznámky pro učitele; vykreslí se jen při teacherVersion. */
   teacherNotes?: string;
+  /** Kde je klíč v učitelské verzi. Výchozí „end“ = dosavadní chování. */
+  answerKeyPlacement?: AnswerKeyPlacement;
 }
+
+export type AnswerKeyPlacement = "inline" | "end" | "both";
+
+const INLINE_KEY_CSS = `
+.ws-key-correct { font-weight: 700 !important; color: #166534 !important; }
+.ws-choice-box--on { border: 1pt solid #1A1F2C !important; background: #DCFCE7 !important; color: #1A1F2C !important; font-size: 8pt; line-height: 3mm; text-align: center; font-weight: 700; }
+.ws-key-fill { font-weight: 700; color: #1D4ED8 !important; text-decoration: underline; padding: 0 3pt; }
+.ws-inline-key { margin: 3pt 0 0 18pt; font-size: 10pt; color: #1A1F2C !important; break-inside: avoid; }
+.ws-inline-key--model { border: 1pt solid #166534; border-left-width: 3pt; border-radius: 3pt; padding: 4pt 6pt; background: #F0FDF4 !important; }
+.ws-inline-key-label { font-weight: 700; color: #166534 !important; }
+.ws-inline-key-answer { font-weight: 700; }
+.ws-inline-key-expl { margin: 2pt 0 0 18pt; font-size: 8.5pt; color: #475569 !important; font-style: italic; }
+`;
 
 const TEACHER_BLOCK_CSS = `
 .ws-teacher-block {
@@ -1595,6 +1624,11 @@ export function renderWorksheetVariantHtml(
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
   const displayNumbers = computeDisplayNumbers(variant.items);
   printAnswers = options?.answers ?? null;
+  const placement: AnswerKeyPlacement = options?.answerKeyPlacement ?? "end";
+  const inlineKey = !!options?.teacherVersion && placement !== "end";
+  printInlineKeys = inlineKey
+    ? new Map((spec.answerKeys[variantId] ?? []).map((k) => [k.itemId, k]))
+    : null;
   let items: string;
   try {
     items = variant.items
@@ -1602,8 +1636,10 @@ export function renderWorksheetVariantHtml(
       .join("\n");
   } finally {
     printAnswers = null;
+    printInlineKeys = null;
   }
-  const rawKey = specCopy.renderConfig.includeAnswerKey || options?.teacherVersion
+  const keyAtEnd = !(options?.teacherVersion && placement === "inline");
+  const rawKey = keyAtEnd && (specCopy.renderConfig.includeAnswerKey || options?.teacherVersion)
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers, new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).map((it) => [it.id, it.prompt ?? ""])), new Map((spec.variants.find((v) => v.variantId === variantId)?.items ?? []).filter((it) => it.type === "mcq" && it.choices?.length).map((it) => [it.id, it.choices as string[]])))
     : "";
   const answerKey = options?.teacherVersion
@@ -1616,7 +1652,7 @@ export function renderWorksheetVariantHtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(worksheetDocumentTitle(specCopy.header.title, specCopy.header.worksheetMode, specCopy.header.variantLabel))}</title>
-<style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}</style>
+<style>${css}${options?.teacherVersion ? TEACHER_BLOCK_CSS : ""}${inlineKey ? INLINE_KEY_CSS : ""}</style>
 </head>
 <body>
 
