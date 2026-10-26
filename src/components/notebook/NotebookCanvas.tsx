@@ -1,3 +1,4 @@
+import { farEnough, isEditableTarget, loadPenPrefs, PEN_SMOOTHING, savePenPrefs, shouldDrawPointer, smoothPressure, type PenPrefs, type PenSmoothing } from "@/lib/notebook-pointer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
@@ -53,6 +54,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const rerender = useCallback(() => force((n) => n + 1), []);
 
   const [mode, setMode] = useState<Mode>("pen");
+  const [penPrefs, setPenPrefsState] = useState<PenPrefs>(() => loadPenPrefs());
+  const setPenPrefs = (next: PenPrefs) => { setPenPrefsState(next); savePenPrefs(next); };
+  const drawingMode = mode !== "select" && mode !== "text";
   const [color, setColor] = useState(NOTEBOOK_COLORS[0]);
   const [width, setWidth] = useState(NOTEBOOK_WIDTHS[1]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
@@ -152,6 +156,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     }
     if (editingId) finishEditing();
     if (shouldIgnorePointer(e)) return;
+    if (!shouldDrawPointer(e.pointerType, penPrefs.penOnly)) return;
     // Už se kreslí jiným ukazatelem (druhý prst, dlaň) → ignorovat.
     if (drawingRef.current || gateRef.current.active !== null) return;
     e.preventDefault();
@@ -210,11 +215,24 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         : [];
     const events = samples.length > 0 ? samples : [native];
 
+    const stage = stageRef.current;
+    const sw = stage?.clientWidth || 1, sh = stage?.clientHeight || 1;
+    const cfg = PEN_SMOOTHING[penPrefs.smoothing];
+    const before = cur.points.length;
     for (const ev of events) {
-      cur.points.push(relative(ev));
-      (cur.pressures ??= []).push(pressureOf(ev));
+      const pt = relative(ev);
+      if (!farEnough(cur.points[cur.points.length - 1] as [number, number], pt, sw, sh, cfg.minDistPx)) continue;
+      cur.points.push(pt);
+      const pr = cur.pressures ?? (cur.pressures = []);
+      pr.push(smoothPressure(pr[pr.length - 1], pressureOf(ev), cfg.pressureAlpha));
     }
-    rerender();
+    if (cur.points.length === before) return;
+    // Jen nový úsek — celé plátno se překreslí až po dokončení tahu.
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) {
+      const from = Math.max(0, before - 2);
+      renderStroke(ctx, { ...cur, points: cur.points.slice(from), pressures: cur.pressures?.slice(from) }, sw, sh);
+    } else rerender();
   };
 
 
@@ -501,7 +519,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       <div className="mx-auto w-full max-w-[820px]">
         <div
           ref={stageRef}
-          className="relative w-full overflow-hidden rounded-lg border bg-white shadow-sm touch-none"
+          className={cn("relative w-full overflow-hidden rounded-lg border bg-white shadow-sm touch-none", drawingMode && "select-none [-webkit-user-select:none] [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]")}
+          onContextMenu={(e) => { if (drawingMode && !isEditableTarget(e.target)) e.preventDefault(); }}
+          onDragStart={(e) => { if (drawingMode) e.preventDefault(); }}
           style={{ aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
