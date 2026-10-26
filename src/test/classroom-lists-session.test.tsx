@@ -5,12 +5,10 @@ import type { ReactNode } from "react";
 
 const auth = { user: null as null | { id: string }, loading: true };
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
-const chain: any = {};
-["select", "eq", "order", "in"].forEach(k => { chain[k] = () => chain; });
-chain.then = (res: any) => res({ data: [], error: null });
+const mk = (data: unknown[]) => { const c: any = {}; ["select", "eq", "order", "in"].forEach(k => { c[k] = () => c; }); c.then = (res: any) => res({ data, error: null }); return c; };
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   auth: { getSession: async () => ({ data: { session: auth.user ? { user: auth.user } : null } }) },
-  from: (t: string) => t === "classes" ? { ...chain, then: (res: any) => res({ data: [{ id: "c1", name: "[TEST] 7.A" }], error: null }) } : chain,
+  from: (t: string) => mk(t === "classes" ? [{ id: "c1", name: "[TEST] 7.A" }] : []),
 } }));
 
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
