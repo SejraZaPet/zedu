@@ -105,12 +105,13 @@ export function smoothPressure(prev: number | undefined, next: number, alpha: nu
 }
 
 const PREF_KEY = "bezli.notebook.pen";
-export interface PenPrefs { penOnly: boolean; smoothing: PenSmoothing }
+/** penSeen: pero už bylo jednou použito → „Jen pero“ se zapnulo samo (uživatel ho může vypnout). */
+export interface PenPrefs { penOnly: boolean; smoothing: PenSmoothing; penSeen?: boolean }
 export function loadPenPrefs(storage: Storage | undefined = globalThis.localStorage): PenPrefs {
   try {
     const v = JSON.parse(storage.getItem(PREF_KEY) || "{}");
-    return { penOnly: v.penOnly === true, smoothing: v.smoothing in PEN_SMOOTHING ? v.smoothing : "medium" };
-  } catch { return { penOnly: false, smoothing: "medium" }; }
+    return { penOnly: v.penOnly === true, smoothing: v.smoothing in PEN_SMOOTHING ? v.smoothing : "medium", penSeen: v.penSeen === true };
+  } catch { return { penOnly: false, smoothing: "medium", penSeen: false }; }
 }
 export function savePenPrefs(p: PenPrefs, storage: Storage | undefined = globalThis.localStorage): void {
   try { storage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* nedostupné úložiště */ }
