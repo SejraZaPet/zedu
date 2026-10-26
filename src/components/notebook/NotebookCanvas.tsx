@@ -351,6 +351,20 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  /* Ctrl/Cmd + (+, −, 0) mění přiblížení — funguje i v režimu jen pro čtení. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const t = e.target as HTMLElement;
+      if (t && (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable)) return;
+      if (e.key === "+" || e.key === "=") { e.preventDefault(); setZoom(zoom + ZOOM_STEP); }
+      else if (e.key === "-") { e.preventDefault(); setZoom(zoom - ZOOM_STEP); }
+      else if (e.key === "0") { e.preventDefault(); setZoom(1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
+
   /* --- posun / změna velikosti prvků --- */
   const startElementDrag = (
     e: React.PointerEvent,
