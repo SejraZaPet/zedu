@@ -138,3 +138,20 @@ describe("validace nahrání", () => {
     expect(bannerErrorMessage({ code: "42501", message: "new row violates row-level security policy" })).toBe("Tuto změnu nemáte oprávnění provést.");
   });
 });
+
+describe("náhled vybraného souboru", () => {
+  it("blob URL zůstane beze změny a není odvolán před načtením", async () => {
+    const { bannerPublicUrl } = await import("@/lib/banners");
+    const blob = "blob:http://localhost/abc-123";
+    expect(bannerPublicUrl(blob)).toBe(blob);
+    expect(bannerPublicUrl("data:image/png;base64,AA")).toBe("data:image/png;base64,AA");
+    expect(bannerPublicUrl("platform/x.png")).toContain("/storage/v1/object/public/banners/platform/x.png");
+    const revoke = vi.fn();
+    (URL as any).revokeObjectURL = revoke;
+    render(<BannerCarousel banners={[mk("p", { image_path: blob, alt_text: "Náhled" })]} preview />);
+    const img = screen.getByAltText("Náhled") as HTMLImageElement;
+    expect(img.getAttribute("src")).toBe(blob);
+    expect(revoke).not.toHaveBeenCalled();
+
+  });
+});
