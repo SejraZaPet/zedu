@@ -43,6 +43,10 @@ const uid = () => crypto.randomUUID();
 const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly = false }: Props) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** Horní vrstva jen pro rozpracovaný tah (a dočasně předpovězené body). */
+  const liveRef = useRef<HTMLCanvasElement>(null);
+  const liveFrameRef = useRef<number | null>(null);
+  const predictedRef = useRef<[number, number][]>([]);
   const drawingRef = useRef<Stroke | null>(null);
   /** Čas posledního doteku pera — slouží k jednoduchému palm rejection. */
   const lastPenAtRef = useRef(0);
@@ -87,8 +91,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   /* --- velikost plátna --- */
   useEffect(() => {
     const cvs = canvasRef.current;
+    const live = liveRef.current;
     const stage = stageRef.current;
     if (!cvs || !stage) return;
+    // desynchronized musí být v prvním volání getContext; kde chybí, prohlížeč volbu ignoruje.
+    try { live?.getContext("2d", { desynchronized: true } as CanvasRenderingContext2DSettings); } catch { /* nepodporováno */ }
     const resize = () => {
       const w = stage.clientWidth;
       const h = stage.clientHeight;
@@ -99,6 +106,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       cvs.style.width = `${w}px`;
       cvs.style.height = `${h}px`;
       cvs.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (live) {
+        live.width = cvs.width; live.height = cvs.height;
+        live.style.width = `${w}px`; live.style.height = `${h}px`;
+        live.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
       rerender();
     };
     resize();
@@ -118,8 +130,31 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     const h = stage.clientHeight;
     ctx.clearRect(0, 0, w, h);
     for (const s of strokes) renderStroke(ctx, s, w, h);
-    if (drawingRef.current) renderStroke(ctx, drawingRef.current, w, h);
+    // Guma maže hotové tahy, proto se kreslí do hlavní vrstvy; ostatní tahy jsou na horní vrstvě.
+    if (drawingRef.current?.tool === "eraser") renderStroke(ctx, drawingRef.current, w, h);
+    else drawLive();
   });
+
+  /** Překreslí jen horní vrstvu: rozpracovaný tah + dočasné předpovězené body. */
+  const drawLive = () => {
+    const live = liveRef.current;
+    const stage = stageRef.current;
+    const ctx = live?.getContext("2d");
+    if (!ctx || !stage) return;
+    const w = stage.clientWidth, h = stage.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    const cur = drawingRef.current;
+    if (!cur || cur.tool === "eraser") return;
+    const pred = predictedRef.current;
+    if (!pred.length) return renderStroke(ctx, cur, w, h);
+    const last = cur.pressures?.[cur.pressures.length - 1] ?? 0.5;
+    renderStroke(ctx, { ...cur, points: [...cur.points, ...pred], pressures: cur.pressures ? [...cur.pressures, ...pred.map(() => last)] : undefined }, w, h);
+  };
+  const scheduleLive = () => {
+    if (liveFrameRef.current !== null) return;
+    liveFrameRef.current = requestAnimationFrame(() => { liveFrameRef.current = null; drawLive(); });
+  };
+  useEffect(() => () => { if (liveFrameRef.current !== null) cancelAnimationFrame(liveFrameRef.current); }, []);
 
   const patch = useCallback(
     (next: Partial<NotebookPageContent>) => onChange({ ...content, ...next }),
@@ -165,7 +200,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     }
     if (editingId) finishEditing();
     if (shouldIgnorePointer(e)) return;
-    if (!shouldDrawPointer(e.pointerType, penPrefs.penOnly)) return;
+    if (e.pointerType === "pen" && !penPrefs.penSeen) setPenPrefs({ ...penPrefs, penOnly: true, penSeen: true });
+    if (!shouldDrawPointer(e.pointerType, penPrefs.penOnly || (e.pointerType === "pen" && !penPrefs.penSeen))) return;
     // Už se kreslí jiným ukazatelem (druhý prst, dlaň) → ignorovat.
     if (drawingRef.current || gateRef.current.active !== null) return;
     e.preventDefault();
@@ -200,7 +236,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       points: [p],
       pressures: [pressureOf(e)],
     };
-    rerender();
+    predictedRef.current = [];
+    if (mode === "eraser") rerender(); else scheduleLive();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -211,7 +248,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     if (cur.tool === "rect" || cur.tool === "circle" || cur.tool === "arrow") {
       cur.points = [cur.points[0], relative(e)];
       cur.pressures = [cur.pressures?.[0] ?? 0.5, pressureOf(e)];
-      rerender();
+      scheduleLive();
       return;
     }
 
@@ -235,13 +272,18 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       const pr = cur.pressures ?? (cur.pressures = []);
       pr.push(smoothPressure(pr[pr.length - 1], pressureOf(ev), cfg.pressureAlpha));
     }
-    if (cur.points.length === before) return;
-    // Jen nový úsek — celé plátno se překreslí až po dokončení tahu.
-    const ctx = canvasRef.current?.getContext("2d");
-    if (ctx) {
+    // Předpovězené body jen dočasně na horní vrstvě, nikdy se neukládají.
+    const predicted = typeof native.getPredictedEvents === "function" ? (native.getPredictedEvents() as PointerEvent[]) : [];
+    predictedRef.current = cur.tool === "eraser" ? [] : predicted.slice(0, 2).map((ev) => relative(ev));
+    if (cur.points.length === before && !predictedRef.current.length) return;
+    if (cur.tool === "eraser") {
+      // Guma: jen nový úsek přímo do hlavní vrstvy, bez překreslení všech tahů.
+      const ctx = canvasRef.current?.getContext("2d");
       const from = Math.max(0, before - 2);
-      renderStroke(ctx, { ...cur, points: cur.points.slice(from), pressures: cur.pressures?.slice(from) }, sw, sh);
-    } else rerender();
+      if (ctx && cur.points.length > before) renderStroke(ctx, { ...cur, points: cur.points.slice(from), pressures: cur.pressures?.slice(from) }, sw, sh);
+      return;
+    }
+    scheduleLive();
   };
 
 
@@ -253,6 +295,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     const type = strokeTypeRef.current;
     drawingRef.current = null;
     strokeTypeRef.current = null;
+    predictedRef.current = [];
+    drawLive();
     if (!s) return;
     if (s.tool !== "text") {
       const pts = finalizeTapPoints(s.points as [number, number][], type);
@@ -444,11 +488,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
               title="Kreslí jen pero, prst ani dlaň nekreslí" onClick={() => setPenPrefs({ ...penPrefs, penOnly: !penPrefs.penOnly })}>
               Jen pero
             </Button>
-            <select aria-label="Vyhlazení pera" className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            <select aria-label="Citlivost pera" className="h-8 rounded-md border border-input bg-background px-2 text-sm"
               value={penPrefs.smoothing} onChange={(e) => setPenPrefs({ ...penPrefs, smoothing: e.target.value as PenSmoothing })}>
-              <option value="fine">Vyhlazení: jemné</option>
-              <option value="medium">Vyhlazení: střední</option>
-              <option value="strong">Vyhlazení: silné</option>
+              <option value="fine">Citlivost pera: Jemné</option>
+              <option value="medium">Citlivost pera: Střední</option>
+              <option value="strong">Citlivost pera: Silné</option>
             </select>
           </div>
 
@@ -584,6 +628,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
             ref={canvasRef}
             className={cn("absolute inset-0", drawingActive ? "cursor-crosshair" : "pointer-events-none")}
           />
+          <canvas ref={liveRef} aria-hidden className="pointer-events-none absolute inset-0" />
 
           {/* Textové boxy — nad kresbou */}
           {textBoxes.map((tb) => (
