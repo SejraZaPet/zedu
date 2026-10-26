@@ -1,4 +1,4 @@
-import { farEnough, isEditableTarget, loadPenPrefs, PEN_SMOOTHING, savePenPrefs, shouldDrawPointer, smoothPressure, type PenPrefs, type PenSmoothing } from "@/lib/notebook-pointer";
+import { DEFAULT_HIGHLIGHT_OPACITY, HIGHLIGHT_OPACITIES, farEnough, isEditableTarget, loadPenPrefs, PEN_SMOOTHING, savePenPrefs, shouldDrawPointer, smoothPressure, type PenPrefs, type PenSmoothing } from "@/lib/notebook-pointer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
@@ -235,6 +235,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       width,
       points: [p],
       pressures: [pressureOf(e)],
+      ...(mode === "highlight" ? { opacity: penPrefs.highlightOpacity ?? DEFAULT_HIGHLIGHT_OPACITY } : {}),
     };
     predictedRef.current = [];
     if (mode === "eraser") rerender(); else scheduleLive();
@@ -486,6 +487,25 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
           </div>
 
           <span className="h-6 w-px bg-border" aria-hidden />
+
+          {mode === "highlight" && (
+            <>
+              <div className="flex items-center gap-1" role="group" aria-label="Průhlednost zvýrazňovače">
+                <span className="text-xs text-muted-foreground">Krytí</span>
+                {HIGHLIGHT_OPACITIES.map((o) => {
+                  const active = (penPrefs.highlightOpacity ?? DEFAULT_HIGHLIGHT_OPACITY) === o;
+                  return (
+                    <Button key={o} type="button" size="sm" variant={active ? "default" : "outline"} aria-pressed={active}
+                      className="min-h-11 min-w-11" title={`Krytí zvýrazňovače ${Math.round(o * 100)} %`}
+                      onClick={() => setPenPrefs({ ...penPrefs, highlightOpacity: o })}>
+                      {Math.round(o * 100)} %
+                    </Button>
+                  );
+                })}
+              </div>
+              <span className="h-6 w-px bg-border" aria-hidden />
+            </>
+          )}
 
           <div className="flex items-center gap-1" role="group" aria-label="Pero">
             <Button type="button" size="sm" variant={penPrefs.penOnly ? "default" : "outline"} aria-pressed={penPrefs.penOnly}

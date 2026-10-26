@@ -106,12 +106,14 @@ export function smoothPressure(prev: number | undefined, next: number, alpha: nu
 
 const PREF_KEY = "bezli.notebook.pen";
 /** penSeen: pero už bylo jednou použito → „Jen pero“ se zapnulo samo (uživatel ho může vypnout). */
-export interface PenPrefs { penOnly: boolean; smoothing: PenSmoothing; penSeen?: boolean }
+export const HIGHLIGHT_OPACITIES = [0.25, 0.4, 0.6, 0.8] as const;
+export const DEFAULT_HIGHLIGHT_OPACITY = 0.4;
+export interface PenPrefs { penOnly: boolean; smoothing: PenSmoothing; penSeen?: boolean; highlightOpacity?: number }
 export function loadPenPrefs(storage: Storage | undefined = globalThis.localStorage): PenPrefs {
   try {
     const v = JSON.parse(storage.getItem(PREF_KEY) || "{}");
-    return { penOnly: v.penOnly === true, smoothing: v.smoothing in PEN_SMOOTHING ? v.smoothing : "medium", penSeen: v.penSeen === true };
-  } catch { return { penOnly: false, smoothing: "medium", penSeen: false }; }
+    return { penOnly: v.penOnly === true, smoothing: v.smoothing in PEN_SMOOTHING ? v.smoothing : "medium", penSeen: v.penSeen === true, highlightOpacity: (HIGHLIGHT_OPACITIES as readonly number[]).includes(v.highlightOpacity) ? v.highlightOpacity : DEFAULT_HIGHLIGHT_OPACITY };
+  } catch { return { penOnly: false, smoothing: "medium", penSeen: false, highlightOpacity: DEFAULT_HIGHLIGHT_OPACITY }; }
 }
 export function savePenPrefs(p: PenPrefs, storage: Storage | undefined = globalThis.localStorage): void {
   try { storage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* nedostupné úložiště */ }
