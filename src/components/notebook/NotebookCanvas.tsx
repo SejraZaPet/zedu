@@ -669,13 +669,19 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         </div>
       )}
 
+      {readOnly && (
+        <div className="mx-auto flex w-full max-w-[820px] justify-end">{zoomControls}</div>
+      )}
+
       <div className="mx-auto w-full max-w-[820px]">
+        <div className={cn(zoom > 1 && "max-h-[85vh] overflow-auto")} data-testid="nb-zoom-scroll">
         <div
           ref={stageRef}
+          data-testid="nb-stage"
           className={cn("relative w-full overflow-hidden rounded-lg border bg-white shadow-sm touch-none", drawingMode && "select-none [-webkit-user-select:none] [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]")}
           onContextMenu={(e) => { if (drawingMode && !isEditableTarget(e.target)) e.preventDefault(); }}
           onDragStart={(e) => { if (drawingMode) e.preventDefault(); }}
-          style={{ aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
+          style={{ width: `${zoom * 100}%`, aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={finishStroke}
