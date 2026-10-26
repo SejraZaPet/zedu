@@ -199,7 +199,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
       playsInline
       preload="metadata"
       aria-label={banner.alt_text}
-      className="h-full w-full object-cover"
+      className="h-full w-full object-contain"
       onEnded={(e) => {
         loops.current += 1;
         if (loops.current >= MAX_VIDEO_LOOPS) setDone(true);
