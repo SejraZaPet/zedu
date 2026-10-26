@@ -133,3 +133,71 @@ V jedné transakci: založit [TEST] školy A a B, [TEST] uživatele-učitele s p
 - **Demo:** jde jen o vykreslení na straně prohlížeče, demo ochrany ani ukládání se nemění.
 - **Další testy:** výchozí volba = u otázek; „na konci“ dává stejné HTML jako dnes; „obojí“ vykreslí obě části; volání bez parametru se nemění.
 - **Migrace není potřeba:** data i oprávnění zůstávají stejné.
+
+---
+
+# Část C: Pracovní listy žáka v sešitě, úkolu a učebnici – průzkum a návrh
+
+## A. Jak se list dostane k žákovi
+| Cesta | Co vznikne | Kam se ukládá | Vidí učitel? |
+|---|---|---|---|
+| Úkol s digitálním listem | `StudentAssignmentPlayer.tsx:947-969` → `WorksheetPanel` → `WorksheetPlayer` | `assignment_attempts.answers` / `progress` (autosave každých 10 s, `useWorksheetAutosave.ts:138-151`, odevzdání `worksheet-attempt.ts:145-168`) | Ano: `WorksheetAttemptGrading` (`AssignmentDetailDialog.tsx:741-744`), hodnocení v `progress._teacher_grading` |
+| Sešit → Vložit list „digitálně“ | 1 stránka `notebook_pages` s `content.worksheet` = {worksheetId, mode, assignmentId?} (`worksheet-notebook.ts:160-166`), zobrazí se živě (`NotebookWorksheetPage.tsx:20-44`) | odpovědi v `assignment_attempts` (s úkolem) nebo `student_worksheet_work` | jen s úkolem |
+| Sešit → Vložit list „pro pero“ | Žádné PDF: HTML listu se v prohlížeči převede `html2canvas` (scale 1.4, JPEG 0.82) na obrázek každé A4 stránky (`worksheet-notebook.ts:100-124,169-190`), uloží do `notebook-media` | tahy `content.strokes`, text `.textBoxes` (`notebook.ts:49-61`), ukládání po 800 ms (`MyNotebook.tsx:204-219`) | jen jako snímek při odevzdání úkolu (`answers._notebookSnapshot`, `worksheet-notebook.ts:213-251`) |
+| Učebnice (kapitola) | `LessonWorksheets.tsx:21-27` čte `worksheets.source_lesson_id` + `show_in_lesson`; otevře úkol, nebo samostatný list (`:60`) | `student_worksheet_work` | Ne (RLS jen vlastník, `0052_student_worksheet_work.sql:25-42`) |
+| QR / odkaz z tisku | `/student/pracovni-list/:id` (`worksheet-pdf-export.ts:46`, `App.tsx:208`) → `StudentWorksheetView.tsx:29-72`; úkol nehledá | `student_worksheet_work` | Ne |
+| Vyfocený tištěný list | obrázek do sešitu (`NotebookCanvas.tsx:440-445`) nebo příloha úkolu (`AttachmentsUploader.tsx:94-107`) | `notebook-media` / `assignment_attachments` | přílohu úkolu ano; bez rozpoznání odpovědí |
+
+## B. Příčiny problémů 2–4
+- **(i) „Prázdné“ stránky:** sešit nemá líné vykreslování (IntersectionObserver). Ikona dokumentu s názvem je **digitální stránka listu** (`NotebookWorksheetPage.tsx:3,20-24`), ne nevykreslené PDF. Pravděpodobně se list ve verzi „digitálně“ nenačte (chybí přístup k listu nebo úkolu, nebo jde o náhled stránky). Rastrové stránky mají při načítání kolečko a při chybě hlášku (`NotebookImageContent.tsx:83-100`). Velké stránky: plátno má max. 820 px (`NotebookCanvas.tsx:464-468`), takže obrovské stránky 1300×1900 jsou nejspíš seznam/náhled v `MyNotebook`. **Neověřeno, ověřím jako první krok etapy 1** (Chromium 1390×1900 na [TEST] sešitu).
+- **(ii) Posunuté tahy:** přepočet souřadnic je jinak správný (čerstvý `getBoundingClientRect`, DPR, `touch-none`; `NotebookCanvas.tsx:76-136`). Skutečné chyby:
+  1. Chybí hlídání aktivního prstu nebo pera a `pointercancel` (`:140-205,469-472`). Dlaň nebo druhý prst tak „převezme“ rozepsaný tah, a proto vznikají čáry k okraji a přes nadpis.
+  2. Odmítání dlaně je jen časové, na 1 s po peru (`:122-136`).
+  3. Souřadnice se počítají včetně rámečku, ale kreslí se bez něj (`:101-118`), což dává drobný posun u okrajů.
+  4. Ťuknutí perem (jeden bod) se zahodí (`:211-217`).
+  Do jiné stránky se tahy neukládají, ukládá se vždy do aktivní stránky (`MyNotebook.tsx:202,679`).
+- **(iii) Psaní klávesnicí na listu „pro pero“:** nástroj Text „T“ existuje (`NotebookCanvas.tsx:154-168`). Nové pole se ale posune doleva a nahoru (omezení x ≤ 0,4, y ≤ 0,92) a začíná písmem 32, což je nepraktické. Obrázek nemá žádná pole, kam by šla odpověď napsat.
+
+## C. Přehrávač na tabletu
+- **„[0 body]“:** formátování u nulových bodů (`WorksheetPlayer.tsx:348`), štítky na řádcích 424 a 596. Sekce bez označení `section_heading` (394–398) dostanou štítek bodů.
+- **„Vyplněno 2/6“:** do počtu se započítávají i sekce a bloky bez odpovědi (`:263,278`).
+- **Velikost polí:** textová pole mají písmo `text-sm` (pod 16 px, `LayoutBlockItem.tsx:62,192`), což na iPadu způsobí přiblížení stránky při psaní. Otevřená odpověď má jen 5 řádků a omezenou šířku (`OpenAnswerItem.tsx:6-12`), buňka tabulky 1 řádek. Úprava pro klávesnici iPadu (`visualViewport`) chybí a lepkavá lišta (`:352`) zakrývá pole.
+- **Tisk/PDF pro žáka:** tlačítka jsou jen na samostatném listu a v učebnici (`StudentWorksheetView.tsx:59-65`, `LessonWorksheets.tsx:65`). Obě dělají totéž. Návrh: nechat jedno „Vytisknout“, ve sbaleném menu.
+- **Scribble (Apple Pencil):** běžná `textarea`/`input` Scribble podporuje, pokud se pole při psaní nepřekreslí. Na zařízení neověřeno.
+
+## D. Návrh řešení – varianty
+1. **Varianta 1 – opravy na místě:** stávající dva režimy, jen opravy pera, polí a velikostí. Je to nejméně riziková varianta, ale nesjednocuje to.
+2. **Varianta 2 (doporučená) – jeden model „list v sešitě“:** vložení listu do sešitu vytvoří vždy **živou vyplnitelnou stránku** (stejné položky jako přehrávač). Nad ní je volitelná průhledná vrstva pro pero, uložená v `content.strokes` stejné stránky a zarovnaná na kontejner A4 listu. Přepínač v liště „Psát“ / „Pero“: v režimu Pero se kreslí jen perem (`pointerType==='pen'`) a prst posouvá stránku. `touch-action: none` platí jen v režimu Pero. Režim „pro pero“ zůstane jen pro cizí PDF a fotky (obrázek + vrstva + textová pole).
+3. **Varianta 3 – plně rastrový list s rozpoznáním písma:** odpovědi by se ze snímku rozpoznávaly (OCR/AI). Je to drahé, nespolehlivé a citlivé na data. Nedoporučuji.
+- **Velikost stránek:** šířka kontejneru, max. ~820 px, poměr A4, pruh miniatur, šipky mezi stránkami listu, „Vyplněno x/y“ v hlavičce stránky listu.
+- **Učebnice ↔ sešit:** v kapitole tlačítko „Otevřít v sešitě“, které použije stávající `ensure_my_course_notebooks()` a vložení digitální stránky.
+- **Zpětná vazba učiteli:**
+  - list s úkolem jde dál přes `assignment_attempts` a `WorksheetAttemptGrading` (beze změny),
+  - u listu bez úkolu vyžaduje viditelnost pro učitele změnu RLS nad `student_worksheet_work`. To je samostatná DB etapa, kterou předložím s SQL a rollbackem zvlášť; v tomto návrhu ji nespouštím.
+
+## E. Etapy
+1. **Rychlé opravy** (bez DB; viz F) + měření v Chromiu s emulací dotyku a pera.
+2. **Přehrávač na tabletu:** písmo 16 px, větší pole, lišta se při psaní neposouvá přes pole (`visualViewport`), menu tisku. Bez DB.
+3. **Sjednocený list v sešitě** (varianta 2): vrstva pera nad digitální stránkou, přepínač Psát/Pero, miniatury, průběh vyplnění. Bez DB, nové klíče jen v `notebook_pages.content`. Staré stránky „pro pero“ zůstanou funkční.
+4. **Učebnice → sešit:** tlačítko „Otevřít v sešitě“. Bez DB.
+5. **(Volitelně, vyžaduje DB a schválení)** učitel vidí samostatnou práci žáků (`student_worksheet_work`): SQL a rollback předložím zvlášť.
+- **Rizika:**
+  - stávající sešity a tahy se nepřepisují, nové pole se jen přidá,
+  - výkon iPadu: jedno plátno na aktivní stránce, žádný `html2canvas` při každém zobrazení,
+  - demo: zápis jde přes stávající RLS a demo politiky, beze změn.
+- **Testy:**
+  - jednotkové: souřadnice tahu s rámečkem, ignorování druhého pointeru, `pointercancel`, nulové body bez štítku, počet „Vyplněno“ bez sekcí,
+  - Playwright: emulace iPadu (1390×1900, `hasTouch`) a syntetické pen/touch události.
+- **Co nedělat:** neměnit úkoly, hodnocení ani bodování; nemazat ani nepřevádět stávající stránky; neměnit RLS bez zvláštního schválení; žádné OCR.
+
+## F. Rychlé opravy (do ~1 h, bez DB)
+1. **Pero:**
+   - hlídat ID aktivního pointeru a `pointercancel` / `lostpointercapture`,
+   - po prvním peru ignorovat dotyk po celou dobu tahu,
+   - počítat souřadnice proti vnitřní ploše bez rámečku,
+   - ťuknutí perem vykreslí tečku (`NotebookCanvas.tsx:113-217,469-472`).
+2. **„[0 body]“:** skrýt štítek, když `points <= 0` (`WorksheetPlayer.tsx:348,424,596`).
+3. **„Vyplněno x/y“:** počítat jen položky s odpovědí (`:263,278`).
+4. **Psaní na iPadu:** písmo polí 16 px na dotykových zařízeních (`LayoutBlockItem.tsx:62,192`).
+5. **Text na listu „pro pero“:** nové pole tam, kam se ťukne (bez posunu doleva), písmo 20 a tlačítko „Psát klávesnicí“ na stránce s listem (`NotebookCanvas.tsx:154-168`).
+6. **Zmenšení stránek:** po změření opravit rozměr zobrazení v `MyNotebook` na max. ~820 px.
