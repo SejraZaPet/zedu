@@ -1,3 +1,5 @@
+import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import BannerManager from "@/components/banners/BannerManager";
 import { useEffect, useState } from "react";
 import { SchoolLeagueCard } from "@/components/school/SchoolLeagueCard";
 import { useNavigate } from "react-router-dom";
@@ -386,6 +388,8 @@ const SchoolAdmin = () => {
           </Card>
         )}
 
+        <DashboardBanners />
+
         <Tabs defaultValue="overview">
           <TabsList className="flex w-full flex-nowrap justify-start overflow-x-auto">
             <TabsTrigger value="overview"><LayoutDashboard className="w-4 h-4 mr-1" /> Přehled</TabsTrigger>
@@ -398,7 +402,12 @@ const SchoolAdmin = () => {
             <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
+            <TabsTrigger value="banners">Bannery</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="banners">
+            <BannerManager scope="school" schoolId={school.id} />
+          </TabsContent>
 
           <TabsContent value="overview">
             <SchoolOverviewTab schoolId={school.id} />

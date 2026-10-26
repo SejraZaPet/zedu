@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import BannerManager from "@/components/banners/BannerManager";
 import {
   Users, UserCheck, School, BookOpen, Activity, TrendingUp,
   Clock, Plus, CheckCheck, Sparkles,
@@ -211,6 +212,11 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
               <BookOpen className="w-4 h-4" /> Spravovat nápovědu
             </Button>
           </div>
+        </div>
+
+        <div className="border border-border rounded-lg p-4 space-y-3">
+          <h2 className="text-sm font-medium text-foreground">Bannery</h2>
+          <BannerManager scope="platform" />
         </div>
 
         {/* Recent registrations */}
