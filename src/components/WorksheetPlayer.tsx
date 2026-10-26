@@ -11,6 +11,7 @@
  *   - Progress bar + item navigation
  */
 
+import { pointsBadgeLabel, progressItems } from "@/lib/worksheet-progress";
 import { hasEditableTableCells } from "@/lib/worksheet-table";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -275,8 +276,10 @@ export default function WorksheetPlayer({
     return allItems.slice(start + 1, currentRealIdx);
   }, [allItems, item?.id]);
 
-  const answeredCount = items.filter((it) => isItemAnswered(it, answers[it.id])).length;
-  const progressPct = totalItems > 0 ? (answeredCount / totalItems) * 100 : 0;
+  const counted = progressItems(items);
+  const answeredCount = counted.filter((it) => isItemAnswered(it, answers[it.id])).length;
+  const progressTotal = counted.length;
+  const progressPct = progressTotal > 0 ? (answeredCount / progressTotal) * 100 : 0;
 
   const itemResult = results?.perItem[item?.id];
 
@@ -353,7 +356,7 @@ export default function WorksheetPlayer({
           <div className="flex items-center gap-3">
             <Progress value={progressPct} className="flex-1 h-2" aria-label="Postup" />
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              Vyplněno {answeredCount}/{totalItems}
+              Vyplněno {answeredCount}/{progressTotal}
             </span>
             {isSaving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
             {lastSavedAt && !isSaving && <Save className="h-3 w-3 text-muted-foreground" aria-label="Uloženo" />}
@@ -420,8 +423,8 @@ export default function WorksheetPlayer({
                     <p id={`ws-q-${it.id}`} className="font-semibold">
                       {it.prompt}
                     </p>
-                    {spec.renderConfig.showPoints && (
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">[{fmtPts(it.points)}]</span>
+                    {spec.renderConfig.showPoints && pointsBadgeLabel(it.points) && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">[{pointsBadgeLabel(it.points)}]</span>
                     )}
                   </div>
                   {it.imageUrl && (
@@ -591,9 +594,9 @@ export default function WorksheetPlayer({
                   </Badge>
                 )}
               </div>
-              {spec.renderConfig.showPoints && (
+              {spec.renderConfig.showPoints && pointsBadgeLabel(item.points) && (
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  [{item.points} {item.points === 1 ? "bod" : item.points < 5 ? "body" : "bodů"}]
+                  [{pointsBadgeLabel(item.points)}]
                 </span>
               )}
             </div>
