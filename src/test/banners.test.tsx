@@ -157,7 +157,7 @@ describe("náhled vybraného souboru", () => {
 });
 
 describe("banner se nikdy neořezává", () => {
-  it("obrázek je vložent celý (object-contain), kontejner má šířku max 720 px a žádný ořez výškou", () => {
+  it("obrázek je zobrazený celý (object-contain), kontejner má šířku max 720 px a žádný ořez výškou", () => {
     const { container } = render(<BannerCarousel banners={[mk("o", { image_path: "platform/1500x500.png" })]} />);
     const img = screen.getByRole("img", { name: "Banner o" });
     expect(img.className).toContain("object-contain");
