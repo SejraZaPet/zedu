@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface SubjectGroupOption {
   id: string;
@@ -19,11 +20,15 @@ export interface SubjectGroupOption {
  * `useTeacherClasses` tam, kde lze hodinu či zadání směrovat na skupinu.
  */
 export const useSubjectGroups = () => {
-  const { data = [], isLoading } = useQuery<SubjectGroupOption[]>({
-    queryKey: ["subject-group-options"],
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
+  const { data = [], isLoading, refetch } = useQuery<SubjectGroupOption[]>({
+    // Klíč podle uživatele a dotaz až po přihlášení: prázdný výsledek bez session se nesmí kešovat.
+    queryKey: ["subject-group-options", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
+      if (!session) throw new Error("Přihlášení se ještě načítá.");
       // Explicitní filtr na vlastníka: RLS pouští adminovi (is_admin()) všechny
       // skupiny, v UI ale chceme vždy jen vlastní.
       const { data, error } = await supabase
@@ -53,9 +58,10 @@ export const useSubjectGroups = () => {
       });
     },
     staleTime: 60 * 1000,
+    retry: 2,
   });
 
-  return { groups: data, loading: isLoading };
+  return { groups: data, loading: authLoading || isLoading, refetch };
 };
 
 interface RealSubject { id: string; name: string; abbreviation: string | null; color: string | null }

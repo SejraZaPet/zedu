@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
 export interface TeacherClassOption {
@@ -18,11 +19,15 @@ export interface TeacherClassOption {
  * can pick a real class instead of creating a duplicate one.
  */
 export const useTeacherClasses = () => {
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
   const { data = [], isLoading, refetch } = useQuery<TeacherClassOption[]>({
-    queryKey: ["teacher-classes-options"],
+    // Klíč podle uživatele a dotaz až po přihlášení: prázdný výsledek bez session se nesmí kešovat.
+    queryKey: ["teacher-classes-options", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
+      if (!session) throw new Error("Přihlášení se ještě načítá.");
       const userId = session.user.id;
 
       const [rolesRes, ctRes, createdRes, visibleRes] = await Promise.all([
@@ -80,6 +85,7 @@ export const useTeacherClasses = () => {
       });
     },
     staleTime: 60 * 1000,
+    retry: 2,
   });
 
   return {
@@ -88,7 +94,7 @@ export const useTeacherClasses = () => {
     myClasses: data.filter((c) => c.source !== "school"),
     /** Existující třídy školy, které učitel zatím neučí — nabízejí se jako první volba. */
     schoolClasses: data.filter((c) => c.source === "school"),
-    loading: isLoading,
+    loading: authLoading || isLoading,
     refetch,
   };
 };
