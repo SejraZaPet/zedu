@@ -9,7 +9,7 @@ export default function OpenAnswerItem({ item, value, onChange, disabled }: Work
       disabled={disabled}
       placeholder="Rozepište svou odpověď…"
       rows={5}
-      className="max-w-lg"
+      className="max-w-lg [@media(pointer:coarse)]:text-base"
     />
   );
 }
