@@ -1432,6 +1432,35 @@ function renderFooter(spec: WorksheetSpec): string {
 /** Odpovědi žáka pro psací bloky během jednoho vykreslení (jen žákovský tisk). */
 let printAnswers: Record<string, unknown> | null = null;
 
+/** Klíč u otázek během jednoho vykreslení — nastavuje se JEN pro učitelskou verzi. */
+let printInlineKeys: Map<string, AnswerKeyEntry> | null = null;
+
+/** Indexy správných možností u výběru (text i písmeno). */
+function correctChoiceIndexes(correct: string | string[], choices: string[]): Set<number> {
+  const out = new Set<number>();
+  for (const a of Array.isArray(correct) ? correct : [correct]) {
+    const t = String(a ?? "").trim();
+    let idx = choices.findIndex((c) => String(c).trim() === t);
+    if (idx < 0 && /^[A-Za-z]\)?$/.test(t)) {
+      const li = CHOICE_LETTERS.indexOf(t[0].toUpperCase());
+      if (li >= 0 && li < choices.length) idx = li;
+    }
+    if (idx >= 0) out.add(idx);
+  }
+  return out;
+}
+
+function isTrueAnswer(v: string): boolean | null {
+  const t = v.trim().toLowerCase();
+  if (["true", "pravda", "ano", "p", "1"].includes(t)) return true;
+  if (["false", "nepravda", "ne", "n", "0"].includes(t)) return false;
+  return null;
+}
+
+function inlineKeyText(k: AnswerKeyEntry): string {
+  return Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : String(k.correctAnswer ?? "");
+}
+
 /** Napsaný text na linkách; linky navíc se doplní prázdné. */
 function writtenLinesHtml(text: string, minLines: number, style: string, hMm = WRITE_LINE_HEIGHT_MM): string {
   const rows = text.split(/\n/);
