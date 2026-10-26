@@ -621,31 +621,48 @@ body.ws-preview-paginated .ws-answer-key {
 }
 .ws-key-item {
   display: block;
-  padding: 8pt 0;
+  width: 100%;
+  min-width: 0;
+  padding: 4pt 0;
   margin-bottom: 0;
   border-bottom: 0.5pt solid #E5E7EB;
   background: #FFFFFF !important;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.ws-key-line {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  font-size: 10.5pt;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .ws-key-num {
-  display: inline-block;
-  width: 24pt;
+  display: inline;
   font-weight: 700;
   color: ${BRAND_PRIMARY} !important;
-  font-size: 11pt;
-  vertical-align: top;
+}
+.ws-key-prompt {
+  display: inline;
+  color: #475569 !important;
+}
+.ws-key-arrow {
+  display: inline;
+  color: #94A3B8 !important;
+  padding: 0 2pt;
 }
 .ws-key-answer {
   display: inline;
   color: #1A1F2C !important;
-  font-weight: 600;
-  font-size: 11pt;
+  font-weight: 700;
 }
 .ws-key-explanation {
   display: block;
-  margin: 4pt 0 0 24pt;
+  margin: 2pt 0 0 14pt;
   color: #64748B !important;
-  font-size: 9.5pt;
-  line-height: 1.5;
+  font-size: 9pt;
+  line-height: 1.4;
 }
 
 /* ─── D.7 Footer ─── */
@@ -1372,16 +1389,13 @@ function renderAnswerKey(
   const rows = keys
     .map((k) => {
       const ans = mcqKeyAnswer(k.correctAnswer, choices?.get(k.itemId));
-      void displayNumbers;
-      const raw = (prompts?.get(k.itemId) ?? "").trim();
-      const label = raw.length > 40 ? `${raw.slice(0, 40)}…` : raw;
+      const num = displayNumbers?.get(k.itemNumber) ?? k.itemNumber;
+      const raw = (prompts?.get(k.itemId) ?? "").trim().replace(/:\s*$/, "");
+      const label = raw.length > 60 ? `${raw.slice(0, 60)}…` : raw;
       return `
 <div class="ws-key-item">
-  ${label ? `<span class="ws-key-num">${esc(label)}:</span>` : ""}
-  <div>
-    <span class="ws-key-answer">${esc(ans)}</span>
-    ${k.explanation ? `<div class="ws-key-explanation">${esc(k.explanation)}</div>` : ""}
-  </div>
+  <div class="ws-key-line">${num ? `<span class="ws-key-num">${esc(String(num))}.</span> ` : ""}${label ? `<span class="ws-key-prompt">${esc(label)}</span> <span class="ws-key-arrow">→</span> ` : ""}<span class="ws-key-answer">${esc(ans)}</span></div>
+  ${k.explanation ? `<div class="ws-key-explanation">${esc(k.explanation)}</div>` : ""}
 </div>`;
     })
     .join("");
