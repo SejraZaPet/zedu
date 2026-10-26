@@ -773,6 +773,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {!readOnly && (
