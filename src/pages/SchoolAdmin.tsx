@@ -1,4 +1,5 @@
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import BannerManager from "@/components/banners/BannerManager";
 import { useEffect, useState } from "react";
 import { SchoolLeagueCard } from "@/components/school/SchoolLeagueCard";
@@ -481,6 +482,7 @@ const Header = ({ onLogout, schoolName }: { onLogout: () => void; schoolName?: s
         <SchoolIcon className="w-5 h-5" /> Administrace školy {schoolName ? `· ${schoolName}` : ""}
       </h1>
       <div className="flex items-center gap-2">
+        <BannersNewsButton />
         <SchoolViewSwitcher />
         <Button size="sm" variant="ghost" asChild><a href="/"><Home className="w-4 h-4 mr-1" /> Web</a></Button>
         <Button size="sm" variant="ghost" onClick={onLogout}><LogOut className="w-4 h-4 mr-1" /> Odhlásit</Button>

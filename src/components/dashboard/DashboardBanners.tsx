@@ -6,6 +6,8 @@ import {
   MAX_VIDEO_LOOPS, bannerPublicUrl, dismissBanner, filterDismissed, isSafeHttpsUrl, type Banner,
 } from "@/lib/banners";
 
+import { BANNERS_ANCHOR_ID, BANNERS_RESTORE_EVENT } from "./BannersNewsButton";
+
 const SEEN_KEY = "bezli.banner.hadAny";
 
 function prefersReducedMotion(): boolean {
@@ -25,6 +27,12 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [source, preview, dismissTick],
   );
+  useEffect(() => {
+    if (preview) return;
+    const onRestore = () => setDismissTick((t) => t + 1);
+    window.addEventListener(BANNERS_RESTORE_EVENT, onRestore);
+    return () => window.removeEventListener(BANNERS_RESTORE_EVENT, onRestore);
+  }, [preview]);
   const hadAny = (() => { try { return sessionStorage.getItem(SEEN_KEY) === "1"; } catch { return false; } })();
   useEffect(() => {
     if (!preview && query.data) {
@@ -36,7 +44,8 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
     return hadAny ? <div className="mb-6 aspect-[3/1] w-full max-w-[720px] rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
-  return <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
+  const carousel = <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
+  return preview ? carousel : <div id={BANNERS_ANCHOR_ID} className="scroll-mt-24">{carousel}</div>;
 }
 
 export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banner[]; preview?: boolean; onDismiss?: () => void }) {

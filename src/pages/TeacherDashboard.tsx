@@ -1,4 +1,5 @@
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -409,13 +410,16 @@ const TeacherDashboard = () => {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => persistOrder(DEFAULT_ORDER)}
-          >
-            Obnovit pořadí
-          </Button>
+          <div className="flex items-center gap-2">
+            <BannersNewsButton />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => persistOrder(DEFAULT_ORDER)}
+            >
+              Obnovit pořadí
+            </Button>
+          </div>
         </div>
 
         <DashboardBanners />
