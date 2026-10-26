@@ -29,6 +29,8 @@ export const MAX_VIDEO_LOOPS = 2;
 
 export function bannerPublicUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  // Local previews (blob:/data:) and already-resolved URLs pass through unchanged.
+  if (/^(blob:|data:|https?:\/\/)/i.test(path)) return path;
   return supabase.storage.from(BANNER_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
