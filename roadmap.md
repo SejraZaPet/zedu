@@ -117,3 +117,6 @@
 - [x] Banner se nikdy neořezává: kontejner max 720 px, poměr 3/1, object-contain i pro video a poster; 658 testů, měření v prohlížeči (desktop 720×240, telefon 358×119, náhled formuláře 622×208)
 - [ ] Bannery pro vedení: zástupci vedení zatím vidí jen učitelské — čeká na schválenou úpravu databáze
 
+
+## Sešit na tabletu (Část F)
+- [ ] Měření PŘED, rozložení pod xl, miniatury s obrázkem, testy, měření PO
