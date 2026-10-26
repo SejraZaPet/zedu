@@ -41,7 +41,7 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
   }, [query.data, preview]);
 
   if (!preview && query.isLoading) {
-    return hadAny ? <div className="mb-6 aspect-[3/1] w-full max-w-[720px] rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
+    return hadAny ? <div className="mx-auto mb-6 aspect-[4/1] max-h-[300px] w-full rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
   const carousel = <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
@@ -78,7 +78,7 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
     <section
       aria-roledescription="carousel"
       aria-label="Oznámení"
-      className="relative mb-6 w-full max-w-[720px] overflow-hidden rounded-xl border border-border bg-muted shadow-sm aspect-[3/1]"
+      className="relative mx-auto mb-6 w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm aspect-[4/1] max-h-[300px]"
       onMouseEnter={() => setHoverPause(true)}
       onMouseLeave={() => setHoverPause(false)}
       onFocus={() => setHoverPause(true)}

@@ -292,7 +292,7 @@ function BannerFormDialog({ scope, schoolId, banner, defaultGroup, onClose, onSa
           <div className="space-y-1">
             <Label htmlFor="banner-file">{kind === "image" ? "Obrázek (JPG, PNG, WebP)" : "Video MP4 H.264, bez zvuku, nejvýš 10 s"}</Label>
             <Input id="banner-file" type="file" accept={kind === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4"} onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-            <p className="text-xs text-muted-foreground">1500×500, 1584×396 nebo 1920×480 px, nejvýš 3 MB. Soubor je veřejně dostupný, nevkládejte osobní údaje.</p>
+            <p className="text-xs text-muted-foreground">Doporučeno 1920×480 px (4:1). Přijímáme i 1584×396 a 1500×500. Nadpis velký, důležitý obsah uprostřed. Soubor je veřejně dostupný, nevkládejte osobní údaje.</p>
           </div>
           {kind === "video" && (
             <div className="space-y-1">

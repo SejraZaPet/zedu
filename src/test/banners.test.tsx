@@ -157,15 +157,18 @@ describe("náhled vybraného souboru", () => {
 });
 
 describe("banner se nikdy neořezává", () => {
-  it("obrázek je zobrazený celý (object-contain), kontejner má šířku max 720 px a žádný ořez výškou", () => {
+  it("obrázek je zobrazený celý (object-contain), kontejner je plná šířka, vycentrovaný, poměr 4:1 s výškou do 300 px", () => {
     const { container } = render(<BannerCarousel banners={[mk("o", { image_path: "platform/1500x500.png" })]} />);
     const img = screen.getByRole("img", { name: "Banner o" });
     expect(img.className).toContain("object-contain");
     expect(img.className).not.toContain("object-cover");
     const section = screen.getByRole("region", { name: "Oznámení" });
-    expect(section.className).toContain("max-w-[720px]");
-    expect(section.className).toContain("aspect-[3/1]");
-    expect(section.className).not.toMatch(/max-h-\[/);
+    expect(section.className).toContain("w-full");
+    expect(section.className).toContain("mx-auto");
+    expect(section.className).not.toContain("max-w-");
+    expect(section.className).toContain("aspect-[4/1]");
+    expect(section.className).toContain("max-h-[300px]");
+    expect(section.className).not.toMatch(/object-cover/);
     expect(section.className).toContain("bg-muted");
     expect(container).toBeTruthy();
   });
