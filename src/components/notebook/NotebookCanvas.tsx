@@ -443,7 +443,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   return (
     <div className="space-y-3">
       {!readOnly && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2">
+        <div
+          data-testid="nb-toolbar"
+          className="sticky z-20 flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2 shadow-sm"
+          style={{ top: "calc(70px + var(--demo-banner-h, 0px) + 0.5rem)" }}
+        >
           <div className="flex items-center gap-1">
             {TOOLS.map((t) => {
               const Icon = t.icon;

@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, Copy, FileDown, FolderPlus, GripVertical, ListTree, NotebookPen, Pencil, Plus, Search, Trash2, Users,
+  ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Copy, FileDown, FolderPlus, GripVertical, ListTree, NotebookPen, Pencil, Plus, Search, Settings2, Trash2, Users,
 } from "lucide-react";
 import NotebookCanvas from "@/components/notebook/NotebookCanvas";
 import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
+import NotebookPageStrip from "@/components/notebook/NotebookPageStrip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import InsertWorksheetButton from "@/components/notebook/InsertWorksheetButton";
 import NotebookWorksheetPage from "@/components/notebook/NotebookWorksheetPage";
 import {
@@ -28,6 +30,12 @@ import { cn } from "@/lib/utils";
 
 export default function MyNotebook() {
   const { user, role } = useAuth();
+  // Na tabletu (pod xl) je „Nastavení stránky“ sbalené, na širokém PC rozbalené.
+  const [settingsOpen, setSettingsOpen] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia("(min-width: 1280px)").matches
+      : true,
+  );
   const [params, setParams] = useSearchParams();
   const lessonId = params.get("lekce");
   const classId = params.get("trida");
@@ -546,8 +554,8 @@ export default function MyNotebook() {
               </div>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[180px_1fr]">
-              <aside className="space-y-2">
+            <div className="grid gap-4 xl:grid-cols-[180px_1fr]">
+              <aside className="hidden space-y-2 xl:block" data-testid="nb-page-sidebar">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Stránky</span>
                   <Button size="icon" variant="outline" title="Přidat stránku" disabled={busy} onClick={() => addPage()}>
@@ -604,7 +612,27 @@ export default function MyNotebook() {
                 </div>
               </aside>
 
-              <section className="space-y-3">
+              <section className="min-w-0 space-y-3">
+                <div className="xl:hidden">
+                  <NotebookPageStrip
+                    pages={pages}
+                    activeIndex={activeIndex}
+                    busy={busy}
+                    onSelect={setActiveIndex}
+                    onAdd={() => addPage()}
+                    onDuplicate={(p) => addPage(p)}
+                    onDelete={(p) => deletePage(p)}
+                  />
+                </div>
+
+                <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="rounded-lg border">
+                  <CollapsibleTrigger asChild>
+                    <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium">
+                      <span className="flex items-center gap-2"><Settings2 className="h-4 w-4" /> Nastavení stránky</span>
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", settingsOpen && "rotate-180")} aria-hidden />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 px-3 pb-3">
                 {activePage && (
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="min-w-[200px] flex-1">
@@ -633,6 +661,23 @@ export default function MyNotebook() {
                     </div>
                   </div>
                 )}
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">Podklad stránky</Label>
+                    <Select
+                      value={activePage?.background_style ?? "blank"}
+                      onValueChange={(v) => setBackground(v as BackgroundStyle)}
+                    >
+                      <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(BACKGROUND_LABELS) as BackgroundStyle[]).map((k) => (
+                          <SelectItem key={k} value={k}>{BACKGROUND_LABELS[k]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <nav aria-label="Listování stránkami" className="flex flex-wrap items-center gap-2">
                   <Button
@@ -667,21 +712,6 @@ export default function MyNotebook() {
                     <Button type="submit" variant="secondary" className="h-11">Jít</Button>
                   </form>
                 </nav>
-
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm">Podklad stránky</Label>
-                  <Select
-                    value={activePage?.background_style ?? "blank"}
-                    onValueChange={(v) => setBackground(v as BackgroundStyle)}
-                  >
-                    <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(BACKGROUND_LABELS) as BackgroundStyle[]).map((k) => (
-                        <SelectItem key={k} value={k}>{BACKGROUND_LABELS[k]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 {activePage?.content.worksheet?.mode === "digital" ? (
                   <NotebookWorksheetPage
