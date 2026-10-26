@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
   ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X,
@@ -44,6 +45,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const drawingRef = useRef<Stroke | null>(null);
   /** Čas posledního doteku pera — slouží k jednoduchému palm rejection. */
   const lastPenAtRef = useRef(0);
+  const gateRef = useRef(new PointerGate());
+  const strokeTypeRef = useRef<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [, force] = useState(0);
@@ -114,9 +117,11 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     const stage = stageRef.current;
     if (!stage) return [0, 0];
     const r = stage.getBoundingClientRect();
-    const x = r.width > 0 ? (e.clientX - r.left) / r.width : 0;
-    const y = r.height > 0 ? (e.clientY - r.top) / r.height : 0;
-    return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
+    return normalizePoint(e.clientX, e.clientY, {
+      left: r.left, top: r.top,
+      borderLeft: stage.clientLeft, borderTop: stage.clientTop,
+      innerWidth: stage.clientWidth || r.width, innerHeight: stage.clientHeight || r.height,
+    });
   };
 
   /** Tlak 0..1 — jen pero dává použitelné hodnoty, jinak konstanta jako dosud. */
@@ -147,19 +152,21 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     }
     if (editingId) finishEditing();
     if (shouldIgnorePointer(e)) return;
+    // Už se kreslí jiným ukazatelem (druhý prst, dlaň) → ignorovat.
+    if (drawingRef.current || gateRef.current.active !== null) return;
     e.preventDefault();
-    (e.target as Element).setPointerCapture(e.pointerId);
     const p = relative(e);
 
     if (mode === "text") {
       const box: NotebookTextBox = {
         id: uid(),
-        x: Math.min(p[0], 0.4), y: Math.min(p[1], 0.92),
-        w: Math.max(0.3, Math.min(0.6, 0.97 - Math.min(p[0], 0.4))), h: 0.05,
+        // Pole vznikne tam, kam se ťuklo; posune se jen tolik, aby se vešlo na stránku.
+        x: Math.min(p[0], 0.7), y: Math.min(p[1], 0.95),
+        w: Math.max(0.27, Math.min(0.6, 0.97 - Math.min(p[0], 0.7))), h: 0.04,
         text: "",
         html: "",
         color,
-        fontSize: 32,
+        fontSize: 20,
       };
       patch({ textBoxes: [...textBoxes, box] });
       setSelectedId(box.id);
@@ -168,6 +175,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       return;
     }
 
+    if (!gateRef.current.begin(e.pointerId, e.pointerType)) return;
+    strokeTypeRef.current = e.pointerType;
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* ukazatel už neexistuje */ }
     drawingRef.current = {
       id: uid(),
       tool: mode,
@@ -181,7 +191,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (readOnly || !drawingRef.current) return;
-    if (shouldIgnorePointer(e)) return;
+    if (!gateRef.current.accepts(e.pointerId)) return;
     const cur = drawingRef.current;
 
     if (cur.tool === "rect" || cur.tool === "circle" || cur.tool === "arrow") {
@@ -208,11 +218,20 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   };
 
 
-  const finishStroke = () => {
+  const finishStroke = (e?: React.PointerEvent) => {
+    // Konec jen od ukazatele, který tah začal (zvednutí jiného prstu tah neukončí).
+    if (e && drawingRef.current && !gateRef.current.accepts(e.pointerId)) return;
+    if (e) gateRef.current.end(e.pointerId); else gateRef.current.reset();
     const s = drawingRef.current;
+    const type = strokeTypeRef.current;
     drawingRef.current = null;
+    strokeTypeRef.current = null;
     if (!s) return;
-    if (s.points.length < 2 && s.tool !== "text") return rerender();
+    if (s.tool !== "text") {
+      const pts = finalizeTapPoints(s.points as [number, number][], type);
+      if (!pts) return rerender();
+      if (pts !== s.points) { s.points = pts; s.pressures = [s.pressures?.[0] ?? 0.5, s.pressures?.[0] ?? 0.5]; }
+    }
     setRedoStack([]);
     patch({ strokes: [...strokes, s] });
   };
@@ -469,7 +488,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={finishStroke}
-          onPointerLeave={finishStroke}
+          onPointerLeave={(e) => { if (!drawingRef.current || !gateRef.current.accepts(e.pointerId)) return; if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) return; finishStroke(e); }}
+          onPointerCancel={finishStroke}
+          onLostPointerCapture={finishStroke}
         >
           {/* Obrázky — pod kreslicí vrstvou, kreslit lze přímo přes ně */}
           {images.map((img) => (
