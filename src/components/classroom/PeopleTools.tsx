@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { supabase } from "@/integrations/supabase/client";
-import { classroomTargetSource, drawClassroomPerson, parseClassroomNames, splitClassroomGroups, type ClassroomPerson, type ClassroomTarget } from "@/lib/classroom-tools";
+import { classroomTargetSource, drawClassroomPerson, loadClassroomAbsent, parseClassroomNames, presentClassroomPeople, saveClassroomAbsent, splitClassroomGroups, type ClassroomPerson, type ClassroomTarget } from "@/lib/classroom-tools";
 
 function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: ClassroomPerson[]) => void; initialTarget?: ClassroomTarget }) {
   const { myClasses, loading: classesLoading } = useTeacherClasses();
@@ -18,12 +18,23 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   const [people, setPeople] = useState<ClassroomPerson[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [absent, setAbsent] = useState<string[]>([]);
+  const [fromPlan, setFromPlan] = useState(false);
+  const [hideList, setHideList] = useState(false);
   const preselected = useRef(false);
+  const userPicked = useRef(false);
+  const listsLoading = classesLoading || groupsLoading;
   useEffect(() => {
-    if (preselected.current || classesLoading || groupsLoading) return;
+    if (preselected.current || listsLoading) return;
     preselected.current = true;
-    setSource(classroomTargetSource(initialTarget, myClasses, groups));
-  }, [classesLoading, groupsLoading, initialTarget, myClasses, groups]);
+    if (userPicked.current) return;
+    const next = classroomTargetSource(initialTarget, myClasses, groups);
+    setSource(next);
+    setFromPlan(next !== "manual");
+  }, [listsLoading, initialTarget, myClasses, groups]);
+  useEffect(() => { setAbsent(loadClassroomAbsent(source)); }, [source]);
+  const pickSource = (v: string) => { userPicked.current = true; setFromPlan(false); setSource(v); };
+  const updateAbsent = (next: string[]) => { setAbsent(next); saveClassroomAbsent(source, next); };
   const manualPeople = useMemo(() => parseClassroomNames(manual), [manual]);
   useEffect(() => {
     let active = true;
@@ -48,11 +59,23 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
     })();
     return () => { active = false; };
   }, [source, myClasses.map(c => c.id).join(","), groups.map(g => g.id).join(",")]);
-  useEffect(() => { onPeople(source === "manual" ? manualPeople : people); }, [source, manualPeople, people, onPeople]);
+  const present = useMemo(() => presentClassroomPeople(people, absent), [people, absent]);
+  useEffect(() => { onPeople(source === "manual" ? manualPeople : present); }, [source, manualPeople, present, onPeople]);
   return <div className="space-y-3">
-    <label className="block space-y-2"><span>Seznam žáků</span><Select value={source} onValueChange={setSource}><SelectTrigger aria-label="Seznam žáků"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Vlastní seznam</SelectItem>{myClasses.map(c => <SelectItem key={c.id} value={`class:${c.id}`}>Třída · {c.name}</SelectItem>)}{groups.map(g => <SelectItem key={g.id} value={`group:${g.id}`}>Skupina · {g.name}</SelectItem>)}</SelectContent></Select></label>
+    <label className="block space-y-2"><span>Třída nebo skupina</span><Select value={source} onValueChange={pickSource} disabled={listsLoading}><SelectTrigger aria-label="Třída nebo skupina"><SelectValue placeholder="Načítám třídy…" />{listsLoading && <span className="sr-only">Načítám třídy…</span>}</SelectTrigger><SelectContent>{myClasses.length > 0 && <SelectGroup><SelectLabel>Třídy</SelectLabel>{myClasses.map(c => <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>)}</SelectGroup>}{groups.length > 0 && <SelectGroup><SelectLabel>Skupiny</SelectLabel>{groups.map(g => <SelectItem key={g.id} value={`group:${g.id}`}>{g.name}</SelectItem>)}</SelectGroup>}<SelectGroup><SelectLabel>Jiné</SelectLabel><SelectItem value="manual">Vlastní seznam</SelectItem></SelectGroup></SelectContent></Select></label>
+    {listsLoading && <p className="text-sm text-muted-foreground">Načítám třídy a skupiny…</p>}
+    {fromPlan && <p className="text-sm text-muted-foreground">Předvybráno z plánu hodiny.</p>}
     {source === "manual" && <label className="block space-y-2"><span>Jména — jedno na řádek</span><Textarea value={manual} onChange={e => setManual(e.target.value)} rows={4} aria-label="Jména — jedno na řádek" /></label>}
-    <p className="text-sm text-muted-foreground" role="status">{loading || classesLoading || groupsLoading ? "Načítání…" : error || `${source === "manual" ? manualPeople.length : people.length} žáků`}</p>
+    {source !== "manual" && people.length > 0 && <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium">Kdo je dnes ve škole</span>
+        <Button type="button" size="sm" variant="outline" onClick={() => updateAbsent([])}>Všichni přítomni</Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => updateAbsent(people.map(p => p.id))}>Odznačit všechny</Button>
+        <Button type="button" size="sm" variant="ghost" aria-expanded={!hideList} onClick={() => setHideList(v => !v)}>{hideList ? "Zobrazit seznam žáků" : "Skrýt seznam žáků"}</Button>
+      </div>
+      {!hideList && <ul className="flex flex-wrap gap-2" aria-label="Přítomnost žáků">{people.map(p => { const isAbsent = absent.includes(p.id); return <li key={p.id}><button type="button" aria-pressed={!isAbsent} aria-label={`${p.name}: ${isAbsent ? "nepřítomen" : "přítomen"}`} onClick={() => updateAbsent(isAbsent ? absent.filter(id => id !== p.id) : [...absent, p.id])} className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAbsent ? "border-border bg-muted text-muted-foreground line-through" : "border-primary bg-primary/10 text-foreground"}`}>{p.name}</button></li>; })}</ul>}
+    </div>}
+    <p className="text-sm text-muted-foreground" role="status">{loading || listsLoading ? "Načítání…" : error || (source === "manual" ? `${manualPeople.length} žáků` : `Přítomno ${present.length} z ${people.length}`)}</p>
   </div>;
 }
 
