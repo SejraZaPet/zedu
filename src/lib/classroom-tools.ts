@@ -46,3 +46,35 @@ export function formatClassroomTime(ms: number, tenths = false): string {
   const s = total % 60;
   return `${h ? `${h}:` : ""}${String(h ? m : Math.floor(total / 60)).padStart(2, "0")}:${String(s).padStart(2, "0")}${tenths ? `.${Math.floor(Math.max(0, ms) % 1000 / 100)}` : ""}`;
 }
+const ABSENT_PREFIX = "bezli.classroom.absent.";
+
+/** Prague calendar day, so absences reset at local midnight. */
+export function classroomDayKey(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Prague", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
+/** Only pupil IDs for today are stored; names never leave memory. Older days are purged. */
+export function loadClassroomAbsent(source: string, now = new Date(), storage: Storage | undefined = globalThis.localStorage): string[] {
+  if (source === "manual") return [];
+  try {
+    const day = classroomDayKey(now);
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const k = storage.key(i);
+      if (k?.startsWith(ABSENT_PREFIX) && !k.startsWith(`${ABSENT_PREFIX}${day}.`)) storage.removeItem(k);
+    }
+    const parsed = JSON.parse(storage.getItem(`${ABSENT_PREFIX}${day}.${source}`) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch { return []; }
+}
+
+export function saveClassroomAbsent(source: string, ids: readonly string[], now = new Date(), storage: Storage | undefined = globalThis.localStorage): void {
+  if (source === "manual") return;
+  try {
+    const key = `${ABSENT_PREFIX}${classroomDayKey(now)}.${source}`;
+    if (ids.length) storage.setItem(key, JSON.stringify([...ids])); else storage.removeItem(key);
+  } catch { /* storage unavailable */ }
+}
+
+export function presentClassroomPeople(people: readonly ClassroomPerson[], absent: readonly string[]): ClassroomPerson[] {
+  return people.filter(p => !absent.includes(p.id));
+}
