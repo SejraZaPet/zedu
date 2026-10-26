@@ -11,6 +11,7 @@ import StudentProgressWidgets from "@/components/student/StudentProgressWidgets"
 import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
 import MyLeagueCard from "@/components/student/MyLeagueCard";
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import RecognitionWidget from "@/components/behavior/RecognitionWidget";
 import UpcomingExamsCard from "@/components/student/UpcomingExamsCard";
@@ -123,6 +124,7 @@ const StudentDashboard = () => {
             </h1>
             <p className="text-muted-foreground mt-1">Studentský panel</p>
           </div>
+          {user && <BannersNewsButton />}
         </div>
 
         {user && <DashboardBanners />}
