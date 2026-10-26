@@ -81,3 +81,55 @@ V jedné transakci: založit [TEST] školy A a B, [TEST] uživatele-učitele s p
 ## Dopad
 - Stávající uživatelé: školní admini, učitelé a žáci dostanou totožný výsledek. Zástupci (2) navíc uvidí bannery pro vedení – dnes žádný takový banner neexistuje, takže okamžitý dopad je nulový.
 - Kód aplikace, RLS, tabulky, edge funkce ani úložiště se nemění. Je to jediná změna.
+
+---
+
+# Část B: Klíč odpovědí přímo u otázek (učitelská verze) – návrh
+
+## 1. Jak renderer dnes zná odpověď
+- Typy položek (`src/lib/worksheet-spec.ts:16–47`): mcq, fill_blank, true_false, matching, ordering, short_answer, open_answer, offline_activity, section_header, write_lines, instruction_box, two_boxes, qr_link, flow_steps, crossword, word_search, sorting, flashcards, image_label, image_hotspot, lesson_reference, table, image, image_text, gallery, callout, blank_box.
+- Otázka (`WorksheetItem`, 147–281) nese jen zadání a podklady (`choices`, `blankText` s `___`, `matchPairs`, `orderItems`, `tableRows`/`tableEditable`, `points`). Správná odpověď v ní není.
+- Odpovědi jsou zvlášť v `spec.answerKeys[variantId]` jako `AnswerKeyEntry { itemId, itemNumber, correctAnswer: string | string[], explanation?, rubric? }` (284–293). Ukládají se do `worksheets.spec` a varianty je kopírují (906–920, 994–998).
+- Formát odpovědi není podle typu vynucený:
+  - mcq: text možnosti nebo písmeno, např. „B“ / „B)“ – `mcqKeyAnswer`, `worksheet-print-renderer.ts:1411–1423`,
+  - pravda/nepravda: „true“ / „Pravda“ / „Nepravda“,
+  - doplňování: pole slov v pořadí mezer,
+  - přiřazování: pole „levá=pravá“ nebo „levá → pravá“,
+  - řazení: pole textů v pořadí,
+  - otevřená: text a `rubric`.
+  Výchozí hodnoty jsou v `worksheet-defaults.ts:234–257`, příklady v `worksheet-spec.ts:729–746`.
+- Vykreslování: `renderItem` (`worksheet-print-renderer.ts:962–1378`), klíč `renderAnswerKey` (1380–1408, bez rubriky), blok učitele `renderTeacherBlock` (1507–1516). Volby `WorksheetPrintOptions` (1453–1462) obsahují `teacherVersion`. Klíč se zapíná přes `spec.renderConfig.includeAnswerKey` a u učitele je vždy zapnutý (1547–1552).
+
+## 2. Nejmenší změna (jen kód, bez databáze)
+- Nová volba rendereru `answerKeyPlacement?: "inline" | "end" | "both"`. Když chybí, chování je stejné jako dnes („end“), takže stávající volání (náhled v editoru, `renderAllVariants`, sešit, testy) se nezmění.
+- Odpovědi u otázek se vykreslí **jen** při `teacherVersion === true` a placement `inline`/`both`. `renderItem` dostane volitelný záznam klíče (mapa podle `itemId`); bez učitelské verze se mapa vůbec nepředá.
+- Vzhled (rozlišitelný i v černobílém tisku: tučné písmo, symbol, rámeček; barva je jen doplněk):
+  - mcq: správná možnost ☒ + tučně + odstín zelené; párování textu i písmene stejně jako `mcqKeyAnswer`,
+  - pravda/nepravda: správná hodnota ☒ + tučně,
+  - doplňování: slovo vepsané do čáry tučně a podtrženě,
+  - krátká/otevřená: rámeček „Vzorová odpověď“ s textem a rubrikou, s body,
+  - řazení: čísla pořadí vepsaná do políček,
+  - přiřazování: seznam správných dvojic „levá → pravá“ pod položkou,
+  - tabulka: vyplní se upravitelné buňky, jen pokud klíč obsahuje pole pro buňky; jinak text pod tabulkou,
+  - ostatní typy (sorting, crossword, image_label…): obecný řádek „Odpověď: …“ pod položkou, pokud záznam existuje.
+- Vysvětlení se zobrazí malým šedým písmem pod otázkou. Body zůstávají vpravo jako dnes.
+- Neplatná nebo neznámá podoba odpovědi se zobrazí jako obecný řádek „Odpověď: …“. Nic nespadne a nic se nezahodí.
+
+## 3. Volba v dialogu Export PDF
+- `WorksheetEditor.tsx`: nový stav `pdfKeyPlacement` (výchozí `inline`) vedle `pdfIncludeAnswerKey` (415) a `pdfVersion` (416). U učitelské verze (dialog 2800–2875, volby verze 2823–2849) se zobrazí přepínač „Klíč odpovědí: ● přímo u otázek / ○ na konci listu / ○ obojí“.
+- `PdfExportOptions` (`worksheet-pdf-export.ts:19–32`) dostane `answerKeyPlacement?`. `buildPrintHtml` (37–78) ho předá rendereru. Stahování (editor 1071–1074) i náhled (1122–1125) pošlou stejnou hodnotu, takže Náhled, tisk a PDF jsou stejné.
+- Při volbě „přímo u otázek“ se klíč na konci nevykreslí. Blok poznámek učitele zůstane na konci stránky jako dnes. Žákovská verze přepínač nemá a zůstává beze změny.
+
+## 4. Dopad na rozvržení
+- Odpověď je uvnitř `.ws-item`, který už má `break-inside: avoid` (330–333). Stránkování (`worksheet-pdf-export.ts:97–120`) měří hotové bloky, takže položky jen o něco narostou a dělení stránek zůstává správné. Klíč na konci se dělí dál po řádcích (123–145).
+- Kompaktní mcq ve dvou sloupcích (956–975, 374–390) zůstává; jen se zvýrazní správná buňka a nic se nepřidává do mřížky.
+- Zvláštní režim „PDF pro pero“ v kódu není. Žákovský tisk (`buildStudentWorksheetHtml`, 248–285) klíče maže a nemění se.
+- Testy: `worksheet-teacher-key` se rozšíří. `print-density`, `table-row-height` a `student-worksheet-pdf` volají renderer bez nové volby, takže by měly projít beze změny.
+
+## 5. Rizika a testy
+- **Únik do žákovské verze:** nový test pro každý typ s odpovědí. Postaví list s jedinečnými značkami odpovědí a vysvětlení a ověří, že HTML z `buildStudentWorksheetHtml` a ze žákovského `renderWorksheetVariantHtml` neobsahuje značky, třídy `ws-inline-key`/`ws-key-*` ani je nemá v atributech `title`/`aria`/`data-*`. Statické hledání dnes žádné takové atributy nenašlo.
+- **Pozor na existující možnost:** v editoru jde u žákovské verze ručně zapnout „Zahrnout klíč“ (2850–2861). To je dnešní chování a odpovědi u otázek tam nepřibudou.
+- **Staré listy:** formáty odpovědí se liší (text/písmeno, „true“/„Pravda“, různé oddělovače dvojic). Pro každý formát bude test, u neznámého formátu se použije obecný řádek „Odpověď: …“.
+- **Demo:** jde jen o vykreslení na straně prohlížeče, demo ochrany ani ukládání se nemění.
+- **Další testy:** výchozí volba = u otázek; „na konci“ dává stejné HTML jako dnes; „obojí“ vykreslí obě části; volání bez parametru se nemění.
+- **Migrace není potřeba:** data i oprávnění zůstávají stejné.
