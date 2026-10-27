@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
-import { aiContentSpec, buildPhases, flattenPhaseQuestions, KNOWN_METHODS, prepareSourceText, SOURCE_KINDS } from "../_shared/practice-phases.ts";
+import { aiContentSpec, attachExplanations, buildPhases, openExplanationSpec, openPhaseKeys, SOURCE_ONLY_RULE, flattenPhaseQuestions, KNOWN_METHODS, prepareSourceText, SOURCE_KINDS } from "../_shared/practice-phases.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,9 +120,12 @@ Deno.serve(async (req) => {
     }
 
     const title = lesson?.title ?? "Vlastní materiál žáka";
+    // Klíče fází s otevřenými úkoly (struktura fází je daná kódem, ne AI).
+    const openKeys = phaseSlug ? openPhaseKeys(buildPhases(phaseSlug, {}, total, lessonText)) : [];
     const prompt = phaseSlug
       ? `Připravuješ procvičování technikou ${phaseSlug} pro českého žáka (12–19 let).
 Piš česky, tykej, krátké jasné věty. Používej VÝHRADNĚ obsah textu níže.
+${SOURCE_ONLY_RULE}
 CÍLOVÁ OBTÍŽNOST: ${targetDifficulty}
 
 NÁZEV: ${title}
@@ -132,10 +135,10 @@ ${lessonText}
 """
 
 Vrať JSON objekt s klíči:
-- ${aiContentSpec(phaseSlug, total)}
+- ${aiContentSpec(phaseSlug, total)}${openKeys.length ? `\n- ${openExplanationSpec(openKeys)}` : ""}
 - "recommendation": 1–2 věty, co zopakovat.
-Otázka multiple_choice: { "type":"multiple_choice","text","options":[4 možnosti],"correct_index":0,"difficulty","topic" }.
-Otázka true_false: { "type":"true_false","text","correct_answer":true,"difficulty","topic" }.`
+Otázka multiple_choice: { "type":"multiple_choice","text","options":[4 možnosti],"correct_index":0,"difficulty","topic","explanation":"1–2 věty proč, jen z textu","source_quote":"doslovný úryvek" }.
+Otázka true_false: { "type":"true_false","text","correct_answer":true,"difficulty","topic","explanation","source_quote" }.`
       : `Jsi učitel připravující procvičovací otázky pro českého žáka.
 Tvým úkolem je vygenerovat ${total} otázek STRIKTNĚ z následujícího obsahu – nepoužívej žádné obecné znalosti mimo tento text.
 
@@ -173,7 +176,7 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
             {
               role: "system",
               content:
-                "Jsi pedagogický asistent. Generuješ otázky pouze z poskytnutého textu lekce.",
+                `Jsi pedagogický asistent. Generuješ otázky a vysvětlení pouze z poskytnutého textu. ${SOURCE_ONLY_RULE}`,
             },
             { role: "user", content: prompt },
           ],
@@ -218,10 +221,10 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
       parsed = { questions: [], recommendation: "" };
     }
 
-    const phases = phaseSlug ? buildPhases(phaseSlug, parsed, total, lessonText) : [];
+    const phases = phaseSlug ? attachExplanations(buildPhases(phaseSlug, parsed, total, lessonText), parsed, lessonText) : [];
     const questions = phaseSlug
       ? flattenPhaseQuestions(phases).filter((q) => q.type === "multiple_choice" || q.type === "true_false")
-      : (Array.isArray(parsed.questions) ? parsed.questions : []);
+      : (Array.isArray(parsed.questions) ? parsed.questions : []).map(({ explanation: _e, source_quote: _q, ...q }: any) => q);
     const recommendation: string = typeof parsed.recommendation === "string" ? parsed.recommendation : "";
 
     // Doporučení jen u lekcí (vlastní text se nikam neukládá).

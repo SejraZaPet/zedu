@@ -54,3 +54,28 @@ const DIFF: Record<string, string> = { easy: "základní", medium: "střední", 
 export const difficultyLabelCs = (d: string | null | undefined) => DIFF[d ?? "medium"] ?? DIFF.medium;
 
 export const hasOpenQuestions = (qs: PracticeQuestion[]) => qs.some((q) => q.type === "open");
+
+export const NO_EXPLANATION_MSG = "K této otázce se nepodařilo najít vysvětlení ve zdroji.";
+export const OPEN_QUESTIONS_NOTE = "U otevřených otázek se neznámkuje – porovnej svou odpověď s vysvětlením ze zdroje.";
+
+export type ExplainData = {
+  explanation?: string | null; source_quote?: string | null; key_points?: string[]; summary_only?: boolean;
+};
+export type ExplanationView =
+  | { kind: "full"; explanation: string | null; quote: string | null; keyPoints: string[]; summaryOnly: boolean }
+  | { kind: "missing"; message: string };
+
+/** Co ukázat u otázky. Otevřená otázka nikdy nezůstane beze slova (chybí-li vše → hláška). */
+export function explanationView(q: { type: string; explain?: ExplainData | null }): ExplanationView | null {
+  const e = q.explain ?? null;
+  const keyPoints = (e?.key_points ?? []).filter((s) => typeof s === "string" && s.trim());
+  const explanation = e?.explanation?.trim() || (keyPoints.length ? keyPoints.join(" ") : null);
+  const quote = e?.source_quote?.trim() || null;
+  if (explanation || quote || keyPoints.length) {
+    return { kind: "full", explanation, quote, keyPoints, summaryOnly: e?.summary_only ?? !quote };
+  }
+  return q.type === "open" ? { kind: "missing", message: NO_EXPLANATION_MSG } : null;
+}
+
+export const sourceOriginLabel = (lessonTitle: string | null | undefined) =>
+  lessonTitle ? `z lekce ${lessonTitle}` : "z tvého textu";
