@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { supabase } from "@/integrations/supabase/client";
+import { excludePreviewStudents, fetchMyPreviewStudentIds } from "@/lib/preview-students";
 import { classroomTargetSource, drawClassroomPerson, loadClassroomAbsent, parseClassroomNames, presentClassroomPeople, saveClassroomAbsent, splitClassroomGroups, type ClassroomPerson, type ClassroomTarget } from "@/lib/classroom-tools";
 
 function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: ClassroomPerson[]) => void; initialTarget?: ClassroomTarget }) {
