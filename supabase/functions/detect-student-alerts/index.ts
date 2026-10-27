@@ -3,6 +3,7 @@
 // Creates 'inactive' and 'struggling_topic' alerts + notifies teachers & parents.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { excludePreviewIds, loadPreviewStudents } from "../_shared/preview-students.ts";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 
 const corsHeaders = {
@@ -55,7 +56,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  for (const st of students ?? []) {
+  const previewMap = await loadPreviewStudents(supabase);
+  for (const st of excludePreviewIds((students ?? []) as any[], (s: any) => s.id, previewMap)) {
     const studentId = (st as any).id as string;
     const studentName = `${(st as any).first_name ?? ""} ${(st as any).last_name ?? ""}`.trim() || "Žák";
 

@@ -3,6 +3,7 @@
 // Body: { kind: 'new_assignment', assignment_id } | { kind: 'new_result', attempt_id }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { excludePreviewIds, loadPreviewStudents } from "../_shared/preview-students.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,6 +147,9 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const previewMap = await loadPreviewStudents(supabase);
+    studentIds = excludePreviewIds(studentIds, (id: string) => id, previewMap);
 
     if (studentIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {

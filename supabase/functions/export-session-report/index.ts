@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { excludePreviewIds, loadPreviewStudents } from "../_shared/preview-students.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { answerDistribution, classSuccessSummary, computeParticipantStats, isGradedSlide, pct } from "../_shared/session-participants.ts";
@@ -72,11 +73,19 @@ serve(async (req) => {
     }
 
     // Fetch players + responses
-    const { data: players } = await supabase
+    const { data: rawPlayers } = await supabase
       .from("game_players")
       .select("id, nickname, user_id, total_score")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
+    // Testovací žák: jen ve hrách jeho vlastníka.
+    const previewMap = await loadPreviewStudents(
+      createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    );
+    const players = rawPlayers
+      ? excludePreviewIds(rawPlayers, (p) => p.user_id, previewMap, user.id)
+      : rawPlayers;
+    const playerIdSet = new Set((players ?? []).map((p) => p.id));
 
     const { data: responses } = await supabase
       .from("game_responses")

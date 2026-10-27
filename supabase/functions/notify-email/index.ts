@@ -2,6 +2,7 @@
 // Volá se asynchronně z DB triggeru na `notifications` (pg_net) s X-Internal-Secret.
 // Body: { notification_id }  |  admin JWT: { action: "domain_status" }
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { isPreviewEmail } from "../_shared/preview-students.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
@@ -65,8 +66,12 @@ Deno.serve(async (req) => {
     return json({ skipped: "too_old" });
   }
 
+  const { data: pv } = await db.from("preview_students").select("student_id").eq("student_id", n.recipient_id).maybeSingle();
+  if (pv) return json({ skipped: "preview_student" });
+
   const { data: p } = await db.from("profiles").select("email, email_notifications_enabled").eq("id", n.recipient_id).maybeSingle();
   if (!p?.email || (p as any).email_notifications_enabled === false) return json({ skipped: "disabled_or_no_email" });
+  if (isPreviewEmail(p.email)) return json({ skipped: "preview_student" });
 
   // Rodiče řeší samostatný kanál (parent_email_notifications).
   const { data: roles } = await db.from("user_roles").select("role").eq("user_id", n.recipient_id);

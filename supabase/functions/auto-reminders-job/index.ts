@@ -4,6 +4,7 @@
 // Idempotence: pokud existuje notifikace s tímto broadcast_id pro daný pár (assignment, student), znovu se neposílá.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { excludePreviewIds, loadPreviewStudents } from "../_shared/preview-students.ts";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { reminderBody, reminderMemberSource } from "../_shared/reminder-targets.ts";
 
@@ -49,6 +50,7 @@ Deno.serve(async (req) => {
     });
   }
 
+  const previewMap = await loadPreviewStudents(supabase);
   let created = 0;
   let skipped = 0;
 
@@ -60,7 +62,11 @@ Deno.serve(async (req) => {
       .from(src.table)
       .select(src.userColumn)
       .eq(src.idColumn, src.id);
-    const studentIds = [...new Set((members ?? []).map((m: any) => m[src.userColumn]).filter(Boolean))] as string[];
+    const studentIds = excludePreviewIds(
+      [...new Set((members ?? []).map((m: any) => m[src.userColumn]).filter(Boolean))] as string[],
+      (id) => id,
+      previewMap,
+    );
     if (studentIds.length === 0) continue;
 
     // Žáci, kteří už úkol odevzdali
