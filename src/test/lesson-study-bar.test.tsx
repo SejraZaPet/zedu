@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const invoke = vi.fn();
@@ -66,6 +66,8 @@ describe("LessonStudyBar – Učím se", () => {
     await waitFor(() =>
       expect(invoke).toHaveBeenCalledWith("lesson-study-helper", { body: { lesson_id: "lesson-123", mode: "summary" } }),
     );
+    cleanup();
+    renderBar([]);
     fireEvent.click(screen.getByRole("button", { name: /Učím se/ }));
     fireEvent.click(screen.getByRole("button", { name: /Kartičky/ }));
     await waitFor(() =>
