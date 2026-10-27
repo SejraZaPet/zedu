@@ -36,7 +36,7 @@
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
 - Merge dashboard order via teacher-dashboard-order to preserve positions.
 
-- Schedule exceptions: owner-only, Prague time, merged at display (`schedule-exception-store.ts`); timetables never rewritten.
+- Schedule exceptions: owner-written, Prague time, merged at display (`schedule-exception-store.ts`); students/parents read only via SECURITY DEFINER `student_schedule_changes` (no owner/notes), timetables never rewritten.
 
 - Final results use fresh authorized player-view snapshots and shared game-ranking ranks; session-display-name separates screen/export defaults for privacy.
 - Dashboard banners live only in `banners` (RLS admin/school_admin, demo RESTRICTIVE, trigger caps); end users read solely via `get_my_banners()` so targeting and school isolation stay server-side.
