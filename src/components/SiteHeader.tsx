@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award, Monitor } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award, Monitor, Trophy } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import { useMySchool } from "@/hooks/useMySchool";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { MessagesSquare } from "lucide-react";
+import { useMyLeague, showLeagueMenu } from "@/hooks/useMyLeague";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
@@ -109,7 +110,13 @@ const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isLoggedIn, role: userRole, roles, signOut } = useAuth();
+  const { isLoggedIn, role: userRole, roles, signOut, user } = useAuth();
+  const { status: leagueStatus } = useMyLeague(user?.id, userRole === "user");
+  const studentExtraItems: TeacherExtraNavItem[] = showLeagueMenu(leagueStatus)
+    ? STUDENT_EXTRA_ITEMS.flatMap((i) => i.href === "/student/metody"
+        ? [i, { label: "Liga", href: "/student/zebricek?tab=liga", icon: Trophy }]
+        : [i])
+    : STUDENT_EXTRA_ITEMS;
   const unreadMessages = useUnreadMessages();
   const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
@@ -327,13 +334,13 @@ const SiteHeader = () => {
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  {userRole === "user" && STUDENT_EXTRA_ITEMS.length > 0 && (
+                  {userRole === "user" && studentExtraItems.length > 0 && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
                         Více
                       </DropdownMenuLabel>
-                      {STUDENT_EXTRA_ITEMS.map((item) => {
+                      {studentExtraItems.map((item) => {
                         const Icon = item.icon;
                         return (
                           <DropdownMenuItem
@@ -422,8 +429,8 @@ const SiteHeader = () => {
                 );
               })
             )}
-            {userRole === "user" && STUDENT_EXTRA_ITEMS.length > 0 && (
-              STUDENT_EXTRA_ITEMS.map((item) => {
+            {userRole === "user" && studentExtraItems.length > 0 && (
+              studentExtraItems.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname.startsWith(item.href);
                 return (

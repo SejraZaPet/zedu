@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,8 @@ interface Row {
 
 const StudentLeaderboard = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "liga" ? "league" : "class";
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [classId, setClassId] = useState<string>("");
   const [rows, setRows] = useState<Row[]>([]);
@@ -93,7 +95,14 @@ const StudentLeaderboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="class">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            const next = new URLSearchParams(searchParams);
+            if (v === "league") next.set("tab", "liga"); else next.delete("tab");
+            setSearchParams(next, { replace: true });
+          }}
+        >
           <TabsList className="mb-4">
             <TabsTrigger value="class">Třída</TabsTrigger>
             <TabsTrigger value="league">Liga</TabsTrigger>
