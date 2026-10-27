@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, Printer, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import UpcomingScheduleChanges from "@/components/calendar/UpcomingScheduleChanges";
 import { DEFAULT_PERIOD_TIMES } from "@/lib/teacher-schedule-store";
 import {
   getSubjectAbbreviation,
@@ -201,6 +202,8 @@ export default function StudentSchedule() {
             <Printer className="w-4 h-4" /> Tisk rozvrhu
           </Button>
         </div>
+
+        <div className="print-hide"><UpcomingScheduleChanges slots={slots} /></div>
 
         {/* Parity tabs */}
         <div className="flex items-center gap-2 mb-4 flex-wrap print-hide">

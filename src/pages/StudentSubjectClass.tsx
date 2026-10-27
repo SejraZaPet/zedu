@@ -46,6 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
+import { fetchStudentScheduleChanges, isLessonNotHeld, mergeStudentScheduleChanges, type StudentChangeRow } from "@/lib/schedule-exception-store";
 import {
   getSubjectAbbreviation,
   getSubjectColor,
@@ -160,6 +161,7 @@ export default function StudentSubjectClass() {
   const [lessonTopics, setLessonTopics] = useState<Record<string, StudentLessonTopic>>({});
   const [materialsDate, setMaterialsDate] = useState<string | null>(null);
   const [lessonPlans, setLessonPlans] = useState<StudentLessonPlan[]>([]);
+  const [changeRows, setChangeRows] = useState<StudentChangeRow[]>([]);
   /** Plány spárované na hodinu v rozvrhu: klíč „yyyy-MM-dd|HH:mm“. */
   const plansBySlot = useMemo(() => {
     const map: Record<string, StudentLessonPlan[]> = {};
@@ -394,12 +396,24 @@ export default function StudentSubjectClass() {
   const future = new Date(now);
   future.setDate(future.getDate() + 60);
 
+  // Visible class changes (cancelled/moved) via safe RPC; on error none.
+  useEffect(() => {
+    if (!user || !slots.length) return;
+    let off = false;
+    fetchStudentScheduleChanges(past, future).then((rows) => { if (!off) setChangeRows(rows); });
+    return () => { off = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, slots]);
+
   const occurrences = useMemo(() => {
     const events = expandScheduleSlots(slots as any, past, future);
-    return events.sort((a, b) => a.start.getTime() - b.start.getTime());
-  }, [slots]);
+    const merged = mergeStudentScheduleChanges(events, changeRows, { from: past, to: future },
+      (f, t) => expandScheduleSlots(slots as any, f, t));
+    return merged.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [slots, changeRows]);
 
-  const pastLessons = occurrences.filter((e) => e.end < now).reverse().slice(0, 200);
+  // Zrušená/přesunutá hodina se nikdy nepočítá mezi „Co jste probrali“.
+  const pastLessons = occurrences.filter((e) => e.end < now && !isLessonNotHeld(e)).reverse().slice(0, 200);
   const pastList = useLessonListDisclosure(pastLessons);
   // Nadcházející hodiny: jen nejbližších 30 dní, ať přehled není zahlcený.
   const upcomingLimit = new Date(now);
@@ -767,9 +781,19 @@ export default function StudentSubjectClass() {
                         <div className="text-sm font-medium truncate">
                           {format(e.start, "EEE d. M.", { locale: cs })} ·{" "}
                           {today ? "Dnes · " : ""}
-                          {formatTime(e.start)} – {formatTime(e.end)}{" "}
-                          <LessonRowBadges badges={badges} />
+                          <span className={e.scheduleStatus === "cancelled" ? "line-through" : undefined}>
+                            {formatTime(e.start)} – {formatTime(e.end)}
+                          </span>{" "}
+                          {e.scheduleStatus === "cancelled" && <Badge variant="outline">Zrušeno</Badge>}
+                          {e.scheduleStatus === "moved_from" && e.movedStart && (
+                            <Badge variant="outline">Přesunuto na {format(e.movedStart, "d. M.")} {formatTime(e.movedStart)}</Badge>
+                          )}
+                          {e.scheduleStatus === "moved_to" && <Badge variant="outline">Přesunuto</Badge>}
+                          {!isLessonNotHeld(e) && <LessonRowBadges badges={badges} />}
                         </div>
+                        {e.scheduleStatus === "cancelled" && e.publicReason && (
+                          <div className="text-xs text-muted-foreground whitespace-normal">Důvod: {e.publicReason}</div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchExceptionRows, mergeExceptions, ownedSource, type Expander } from "@/lib/schedule-exception-store";
+import { fetchExceptionRows, fetchStudentScheduleChanges, mergeExceptions, mergeStudentScheduleChanges, ownedSource, type Expander } from "@/lib/schedule-exception-store";
 import ScheduleExceptionDialog from "@/components/calendar/ScheduleExceptionDialog";
 import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import { useToast } from "@/hooks/use-toast";
@@ -183,6 +183,10 @@ const TodayWidget = ({ role }: Props) => {
             .sort((a, b) => a.start.getTime() - b.start.getTime());
           if (mounted) setExpander(() => expand);
         }
+      } else if (role === "student") {
+        // Visible class changes via safe RPC; on error the plain timetable stays.
+        const rows = await fetchStudentScheduleChanges(from, to);
+        lessons = mergeStudentScheduleChanges(lessons, rows, { from, to }, (f, t) => expandScheduleSlots(slots, f, t));
       }
 
       const fromIso = new Date().toISOString();
@@ -332,19 +336,24 @@ const TodayWidget = ({ role }: Props) => {
                     target ? "cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring" : ""
                   }`}
                 >
-                  <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
+                  <span className={`font-mono text-xs w-24 shrink-0 text-muted-foreground ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
-                  <span className={`flex-1 truncate ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
-                    {ev.title}
-                    {ev.groupId && ev.className && (
-                      <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className={`block truncate ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
+                      {ev.title}
+                      {ev.groupId && ev.className && (
+                        <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                      )}
+                    </span>
+                    {role === "student" && ev.scheduleStatus === "cancelled" && ev.publicReason && (
+                      <span className="block text-xs text-muted-foreground whitespace-normal">Důvod: {ev.publicReason}</span>
                     )}
                   </span>
                   {ev.room && (
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
-                  {isCurrent && (
+                  {isCurrent && ev.scheduleStatus !== "cancelled" && (
                     <Badge className="bg-primary text-primary-foreground shrink-0">
                       právě probíhá
                     </Badge>
@@ -361,7 +370,7 @@ const TodayWidget = ({ role }: Props) => {
                     </Badge>
                   )}
                   {ev.scheduleStatus === "moved_to" && (
-                    <Badge variant="outline" className="shrink-0">přesunuto</Badge>
+                    <Badge variant="outline" className="shrink-0">Přesunuto</Badge>
                   )}
                   {canChange && (
                     <span className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
