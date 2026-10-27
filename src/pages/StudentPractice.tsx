@@ -1,4 +1,4 @@
-import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, type ExplainData } from "@/lib/student-practice";
+import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, masteryFromPercents, type ExplainData } from "@/lib/student-practice";
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
 import { practiceErrorMessage } from "@/lib/practice-error";
@@ -327,11 +327,8 @@ const StudentPractice = () => {
             const p = (r.answers_json as any)?.percent;
             if (typeof p === "number") percents.push(p);
           }
-          // Weighted average: newest gets highest weight (3,2,1)
-          const weights = [3, 2, 1];
-          let ws = 0, wsum = 0;
-          percents.forEach((p, i) => { const w = weights[i] ?? 1; ws += p * w; wsum += w; });
-          const newPercent = wsum > 0 ? Math.round(ws / wsum) : percent;
+          // Vážený průměr: nejnovější váha 3, pak 2, 1.
+          const newPercent = masteryFromPercents(percents, percent);
 
           const { data: existing } = await supabase
             .from("student_lesson_mastery")
@@ -789,9 +786,9 @@ function PhaseContent({ phase, slug, submitted, terms, stops, setStops, acrostic
         <div className="space-y-2">
           {Array.from({ length: Math.max(terms.length, 5) }).map((_, i) => (
             <div key={i}>
-              <Label htmlFor={`stop-${i}`}>Zastávka {i + 1}</Label>
+              <Label htmlFor={`stop-${i}`}>Název zastávky {i + 1}</Label>
               <Input id={`stop-${i}`} value={stops[i] ?? ""} disabled={submitted} className="mt-1 text-base"
-                placeholder={i === 0 ? "třeba: dveře od pokoje" : ""}
+                placeholder={i === 0 ? `Zastávka ${i + 1} (třeba: dveře od pokoje)` : `Zastávka ${i + 1}`}
                 onChange={(e) => { const n = [...stops]; n[i] = e.target.value; setStops(n); }} />
             </div>
           ))}

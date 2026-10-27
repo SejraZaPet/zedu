@@ -269,7 +269,7 @@ export function buildPhases(slug: string, ai: any, total: number, sourceText: st
       case "prochazeni":
         content = { terms };
         questions = terms.map((t: { term: string }, i: number) => ({
-          type: "short_answer" as const, text: `Zastávka {{stop:${i}}}: jaký pojem tu leží?`, correct_answer: t.term,
+          type: "short_answer" as const, text: `{{stop:${i}}}: jaký pojem tu leží?`, correct_answer: t.term,
         }));
         break;
       default:
@@ -374,8 +374,15 @@ export function attachExplanations(phases: PracticePhase[], ai: any, source: str
 export const SOURCE_ONLY_RULE =
   "Vysvětluj VÝHRADNĚ z poskytnutého textu. Je zakázáno doplňovat vlastní znalosti nebo fakta, která v textu nejsou. Když text téma neobsahuje, napiš to (např. „Text o tom nic neříká.“).";
 
+/** Fáze, jejichž vysvětlení má shrnout celý zdroj (Recite/Pověz, wRite/Notace). */
+export const WHOLE_SOURCE_KEYS = new Set(["recite", "povez", "write", "notace"]);
+
 /** Popis klíče open_explanations pro prompt. */
 export function openExplanationSpec(phaseKeys: string[]): string {
   if (!phaseKeys.length) return "";
-  return `"open_explanations": objekt s klíči ${phaseKeys.map((k) => `"${k}"`).join(", ")}; každý { "explanation": 2–4 věty vlastními slovy, jak by vypadala dobrá odpověď na úkol té fáze – jen z textu, "source_quote": krátký DOSLOVNÝ úryvek z textu (max ${QUOTE_MAX} znaků, zkopíruj přesně), "key_points": 3–5 bodů z textu }`;
+  const whole = phaseKeys.filter((k) => WHOLE_SOURCE_KEYS.has(k));
+  const wholeRule = whole.length
+    ? ` U klíčů ${whole.map((k) => `"${k}"`).join(", ")} (vybavení vlastními slovy / shrnutí) musí "explanation" a "key_points" shrnout CELÝ text: 3–5 nejdůležitějších bodů napříč celým textem, ne jediný detail; "source_quote" je nejreprezentativnější doslovná věta textu. U ostatních klíčů vysvětluj konkrétní úkol té fáze.`
+    : "";
+  return `"open_explanations": objekt s klíči ${phaseKeys.map((k) => `"${k}"`).join(", ")}; každý { "explanation": 2–4 věty vlastními slovy, jak by vypadala dobrá odpověď na úkol té fáze – jen z textu, "source_quote": krátký DOSLOVNÝ úryvek z textu (max ${QUOTE_MAX} znaků, zkopíruj přesně), "key_points": 3–5 bodů z textu }.${wholeRule}`;
 }

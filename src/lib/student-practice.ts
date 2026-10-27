@@ -79,3 +79,11 @@ export function explanationView(q: { type: string; explain?: ExplainData | null 
 
 export const sourceOriginLabel = (lessonTitle: string | null | undefined) =>
   lessonTitle ? `z lekce ${lessonTitle}` : "z tvého textu";
+
+/** Mastery = vážený průměr posledních (max 3) procent, nejnovější první (váhy 3,2,1). */
+export function masteryFromPercents(percents: number[], fallback: number): number {
+  const weights = [3, 2, 1];
+  let ws = 0, wsum = 0;
+  percents.slice(0, 3).forEach((p, i) => { const w = weights[i] ?? 1; ws += p * w; wsum += w; });
+  return wsum > 0 ? Math.round(ws / wsum) : fallback;
+}
