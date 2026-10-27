@@ -12,10 +12,13 @@ import { loadFullPortfolio, PortfolioItem, TYPE_LABEL } from "@/lib/portfolio";
 import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEffectiveStudent } from "@/hooks/useEffectiveStudent";
+import { PREVIEW_WRITE_MESSAGE } from "@/lib/effective-student";
 
 
 export default function StudentPortfolio() {
-  const { user, viewAsRole } = useAuth();
+  const { user } = useAuth();
+  const { studentId, isPreview } = useEffectiveStudent();
   const [searchParams] = useSearchParams();
   const initialSubject = searchParams.get("subject") || undefined;
   const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -26,12 +29,12 @@ export default function StudentPortfolio() {
 
 
   const refresh = useCallback(async () => {
-    if (!user) return;
+    if (!user || !studentId) return;
     setLoading(true);
-    const data = await loadFullPortfolio(user.id);
+    const data = await loadFullPortfolio(studentId);
     setItems(data);
     setLoading(false);
-  }, [user]);
+  }, [user, studentId]);
 
   useEffect(() => {
     if (!user) return;
@@ -39,12 +42,12 @@ export default function StudentPortfolio() {
     supabase
       .from("profiles")
       .select("first_name, last_name")
-      .eq("id", user.id)
+      .eq("id", studentId ?? user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) setProfileName(`${data.first_name ?? ""} ${data.last_name ?? ""}`.trim());
       });
-  }, [user, refresh]);
+  }, [user, studentId, refresh]);
 
   const exportPdf = async () => {
     if (items.length === 0) { toast.error("Portfolio je prázdné"); return; }
@@ -97,7 +100,7 @@ export default function StudentPortfolio() {
             <Button variant="outline" className="gap-1.5" onClick={exportPdf}>
               <Download className="w-4 h-4" /> Exportovat portfolio
             </Button>
-            {user && <AddPortfolioItemDialog studentId={user.id} onAdded={refresh} />}
+            {user && !isPreview && <AddPortfolioItemDialog studentId={user.id} onAdded={refresh} />}
           </div>
         </header>
 
@@ -123,15 +126,15 @@ export default function StudentPortfolio() {
                 <NotebookPen className="w-4 h-4" /> Sešit
               </Button>
             </div>
-            {viewAsRole && (
+            {isPreview && (
               <p role="status" className="mb-4 rounded-lg border border-border bg-muted/50 p-3 text-sm">
-                Prohlížíte jako žák, ale toto je vaše vlastní portfolio. Portfolio konkrétního žáka otevřete ze seznamu třídy.
+                Náhled portfolia ukázkového žáka. {PREVIEW_WRITE_MESSAGE}
               </p>
             )}
             {view === "timeline" ? (
-              <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+              <PortfolioTimeline items={items} canDelete={!isPreview} onItemDeleted={refresh} initialSubject={initialSubject} />
             ) : (
-              <PortfolioBookView items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+              <PortfolioBookView items={items} canDelete={!isPreview} onItemDeleted={refresh} initialSubject={initialSubject} />
             )}
           </>
         )}
