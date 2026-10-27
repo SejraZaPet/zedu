@@ -19,3 +19,20 @@ export const questionCountForDuration = (min: number | null | undefined): number
   if (!min || !Number.isFinite(min)) return null;
   return Math.max(4, Math.min(12, Math.round(min / 5) * 4));
 };
+
+/** Pořadí a názvy technik v liště „Učím se“ u lekce. */
+export const STUDY_TECHNIQUES: { slug: string; name: string }[] = [
+  { slug: "sq4r", name: "SQ4R" },
+  { slug: "pqrst", name: "PQRST" },
+  { slug: "5p", name: "5P" },
+  { slug: "neana", name: "NEANA" },
+  { slug: "sekvencni", name: "Sekvenční" },
+  { slug: "akrostika", name: "Akrostika" },
+  { slug: "loci", name: "Loci" },
+  { slug: "pomodoro", name: "Pomodoro" },
+];
+
+export const techniquePracticeUrl = (slug: string, lessonId: string, min = 10) =>
+  `/student/metody/${slug}/procviceni?lesson=${encodeURIComponent(lessonId)}&min=${min}`;
+
+export const techniqueGuideUrl = (slug: string) => `/student/metody?navod=${encodeURIComponent(slug)}`;

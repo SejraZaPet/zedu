@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -165,6 +165,18 @@ const StudentMethods = () => {
     setDetail(m);
     setStepIdx(0);
   };
+
+  // „Jak technika funguje“ z lišty u lekce: /student/metody?navod=<slug>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const guideSlug = searchParams.get("navod");
+  useEffect(() => {
+    if (!guideSlug || methods.length === 0) return;
+    const m = methods.find((x) => x.slug === guideSlug);
+    if (m) openDetail(m);
+    const next = new URLSearchParams(searchParams);
+    next.delete("navod");
+    setSearchParams(next, { replace: true });
+  }, [guideSlug, methods]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startPractice = () => {
     if (!practiceFor) return;
