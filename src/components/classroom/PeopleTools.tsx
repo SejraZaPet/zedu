@@ -52,7 +52,8 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
           ? await supabase.from("class_members").select("user_id").eq("class_id", id)
           : await supabase.from("subject_group_members").select("student_id").eq("group_id", id);
         if (membership.error) throw membership.error;
-        const ids = [...new Set((membership.data ?? []).map(row => "user_id" in row ? row.user_id : row.student_id))];
+        const previewIds = await fetchMyPreviewStudentIds();
+        const ids = excludePreviewStudents([...new Set((membership.data ?? []).map(row => "user_id" in row ? row.user_id : row.student_id))], (x) => x, previewIds);
         if (!ids.length) return;
         const { data, error: profileError } = await supabase.from("profiles").select("id, first_name, last_name").in("id", ids);
         if (profileError) throw profileError;
