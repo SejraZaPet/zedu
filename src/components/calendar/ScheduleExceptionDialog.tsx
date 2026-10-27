@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +55,7 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
     setNewDate(format(event.start, "yyyy-MM-dd"));
     setNewStart(format(event.start, "HH:mm"));
     setNewEnd(format(event.end, "HH:mm"));
-    setReason(""); setNote(""); setPlanAction("unassigned"); setConfirmConflict(false); setError(null);
+    setReason(""); setNote(""); setShare(true); setShowReason(true); setPlanAction("unassigned"); setConfirmConflict(false); setError(null);
     setPlanIds([]); setPlanCount(0);
     if (user && source && mode !== "revert") {
       findLinkedPlans(user.id, event, source.originalDate)
