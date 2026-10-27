@@ -1,3 +1,4 @@
+import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions } from "@/lib/student-practice";
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
 import { practiceErrorMessage } from "@/lib/practice-error";
@@ -141,7 +142,7 @@ const StudentPractice = () => {
               lesson_title: ragRes.data.lesson?.title,
               phases: [{
                 phase_name: "Procvičování z lekce",
-                phase_intro: `AI připravila otázky přímo z obsahu lekce. Cílová obtížnost: ${ragRes.data.target_difficulty ?? "medium"}.`,
+                phase_intro: `AI připravila otázky přímo z obsahu lekce. Cílová obtížnost: ${difficultyLabelCs(ragRes.data.target_difficulty)}.`,
                 questions: ragRes.data.questions ?? [],
               }],
             },
@@ -237,6 +238,11 @@ const StudentPractice = () => {
   const handleSubmit = async () => {
     setSubmitted(true);
     if (!data) return;
+    // Skóre počítat přímo z odpovědí – `score`/`percent` z useMemo jsou ještě z doby před odevzdáním (0).
+    const fresh = scorePractice(data.practice.phases.flatMap((p) => p.questions), answers);
+    const score = fresh.correct;
+    const totalScorable = fresh.total;
+    const percent = fresh.percent;
     setSavingSession(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
@@ -431,7 +437,7 @@ const StudentPractice = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {totalScorable > 0
-                        ? "Otevřené odpovědi se nehodnotí automaticky — projdi si je sám/sama."
+                        ? hasOpenQuestions(allQuestions) && "Otevřené odpovědi se nehodnotí automaticky — projdi si je sám/sama."
                         : "Cvičení obsahovalo jen otevřené otázky bez automatického vyhodnocení."}
                     </p>
                   </div>
@@ -585,9 +591,9 @@ const StudentPractice = () => {
                               />
                             )}
 
-                            {submitted && q.type !== "open" && q.correct_answer && result === false && (
+                            {submitted && q.type !== "open" && correctAnswerLabel(q) && result === false && (
                               <p className="text-xs text-muted-foreground mt-2">
-                                Správná odpověď: <span className="font-medium">{q.correct_answer}</span>
+                                Správná odpověď: <span className="font-medium">{correctAnswerLabel(q)}</span>
                               </p>
                             )}
                             {submitted && q.hint && result === false && (
