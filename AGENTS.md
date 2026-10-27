@@ -41,3 +41,4 @@
 - Final results use fresh authorized player-view snapshots and shared game-ranking ranks; session-display-name separates screen/export defaults for privacy.
 - Dashboard banners live only in `banners` (RLS admin/school_admin, demo RESTRICTIVE, trigger caps); end users read solely via `get_my_banners()` so targeting and school isolation stay server-side.
 - Radix popups inside high-z/fullscreen layers portal into the element from `PortalContainerContext` (ClassroomToolsOverlay provides its stage), so menus stay visible above the layer and in fullscreen.
+- Admin "view as student" switches the real session to an owned `preview_students` account only via the `preview-student-switch` edge function (target never from client; admin session restored from sessionStorage), so student RLS/XP stay unchanged; preview students must be excluded from class lists, stats and licences.
