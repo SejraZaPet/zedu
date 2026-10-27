@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
+import { aiContentSpec, buildPhases, flattenPhaseQuestions, KNOWN_METHODS, prepareSourceText, SOURCE_KINDS } from "../_shared/practice-phases.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,15 +33,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lesson_id, student_id, method, question_count } = await req.json();
+    const { lesson_id, student_id, method, question_count, source_text, source_kind } = await req.json();
     const total = clampQuestionCount(question_count, 6);
     const tfCount = Math.max(1, Math.round(total / 3));
     const mcCount = total - tfCount;
-    if (!lesson_id) {
-      return new Response(JSON.stringify({ error: "lesson_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+    const phaseSlug = typeof method === "string" && KNOWN_METHODS.includes(method) ? method : null;
+    const useSource = !lesson_id && source_text !== undefined;
+    if (!lesson_id && !useSource) return json({ error: "Vyber lekci nebo vlož vlastní text." }, 400);
+    if (useSource && !(SOURCE_KINDS as readonly string[]).includes(source_kind)) {
+      return json({ error: "Neznámý typ zdroje." }, 400);
     }
 
     // Authorization: caller can only request practice for themselves,
@@ -51,37 +55,29 @@ Deno.serve(async (req) => {
         hasRole(auth.userId, "teacher"),
         hasRole(auth.userId, "admin"),
       ]);
-      if (!isTeacher && !isAdmin) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!isTeacher && !isAdmin) return json({ error: "Forbidden" }, 403);
     }
-    // If no student_id provided, default to the caller.
     if (!effectiveStudentId) effectiveStudentId = auth.userId;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-
-    // Lekce: nejdřív globální, pak učitelská; přístup ověřen RLS volajícího.
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: auth.authHeader } },
-    });
-    const found = await loadPracticeLesson(userClient, supabase, lesson_id);
-    if (!found.ok) {
-      return new Response(JSON.stringify({ error: found.error }), {
-        status: found.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let lesson: { id: string; title: string } | null = null;
+    let lessonText = "";
+    if (useSource) {
+      // Žákův vlastní text: jen do AI, nikam se neukládá.
+      const prepared = prepareSourceText(source_text);
+      if (!prepared.ok) return json({ error: prepared.error }, 422);
+      lessonText = prepared.text;
+    } else {
+      // Lekce: nejdřív globální, pak učitelská; přístup ověřen RLS volajícího.
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: auth.authHeader } },
       });
-    }
-    const lesson = found.lesson;
-
-    const lessonText = blocksToText(lesson.blocks);
-    if (!hasEnoughLessonText(lessonText)) {
-      return new Response(JSON.stringify({ error: INSUFFICIENT_LESSON_TEXT }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const found = await loadPracticeLesson(userClient, supabase, lesson_id);
+      if (!found.ok) return json({ error: found.error }, found.status);
+      lesson = { id: found.lesson.id, title: found.lesson.title };
+      lessonText = blocksToText(found.lesson.blocks);
+      if (!hasEnoughLessonText(lessonText)) return json({ error: INSUFFICIENT_LESSON_TEXT }, 422);
     }
 
     // Adapt difficulty: combine XP level + recent success rate
@@ -123,14 +119,31 @@ Deno.serve(async (req) => {
       else targetDifficulty = "medium";
     }
 
-    const prompt = `Jsi učitel připravující procvičovací otázky pro českého žáka.
-Tvým úkolem je vygenerovat ${total} otázek STRIKTNĚ z následujícího obsahu lekce – nepoužívej žádné obecné znalosti mimo tento text.
+    const title = lesson?.title ?? "Vlastní materiál žáka";
+    const prompt = phaseSlug
+      ? `Připravuješ procvičování technikou ${phaseSlug} pro českého žáka (12–19 let).
+Piš česky, tykej, krátké jasné věty. Používej VÝHRADNĚ obsah textu níže.
+CÍLOVÁ OBTÍŽNOST: ${targetDifficulty}
 
-LEKCE: ${lesson.title}
+NÁZEV: ${title}
+TEXT:
+"""
+${lessonText}
+"""
+
+Vrať JSON objekt s klíči:
+- ${aiContentSpec(phaseSlug, total)}
+- "recommendation": 1–2 věty, co zopakovat.
+Otázka multiple_choice: { "type":"multiple_choice","text","options":[4 možnosti],"correct_index":0,"difficulty","topic" }.
+Otázka true_false: { "type":"true_false","text","correct_answer":true,"difficulty","topic" }.`
+      : `Jsi učitel připravující procvičovací otázky pro českého žáka.
+Tvým úkolem je vygenerovat ${total} otázek STRIKTNĚ z následujícího obsahu – nepoužívej žádné obecné znalosti mimo tento text.
+
+LEKCE: ${title}
 ${method ? `METODA: ${method}` : ""}
 CÍLOVÁ OBTÍŽNOST: ${targetDifficulty} (easy=základní fakta, medium=porozumění, hard=aplikace/analýza)
 
-OBSAH LEKCE:
+OBSAH:
 """
 ${lessonText}
 """
@@ -190,7 +203,7 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error("AI gateway error", aiRes.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: "AI teď neodpovídá. Zkus to za chvíli." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -205,31 +218,29 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
       parsed = { questions: [], recommendation: "" };
     }
 
-    const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
-    const recommendation: string = parsed.recommendation ?? "";
+    const phases = phaseSlug ? buildPhases(phaseSlug, parsed, total, lessonText) : [];
+    const questions = phaseSlug
+      ? flattenPhaseQuestions(phases).filter((q) => q.type === "multiple_choice" || q.type === "true_false")
+      : (Array.isArray(parsed.questions) ? parsed.questions : []);
+    const recommendation: string = typeof parsed.recommendation === "string" ? parsed.recommendation : "";
 
-    // Persist recommendation (best-effort)
-    if (effectiveStudentId) {
+    // Doporučení jen u lekcí (vlastní text se nikam neukládá).
+    if (effectiveStudentId && lesson) {
       await supabase.from("student_practice_recommendations").insert({
         student_id: effectiveStudentId,
-        lesson_id,
+        lesson_id: lesson.id,
         weak_topics: [],
         recommendation,
       });
     }
 
-
-    return new Response(
-      JSON.stringify({
-        lesson: { id: lesson.id, title: lesson.title },
-        target_difficulty: targetDifficulty,
-        questions,
-        recommendation,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return json({
+      lesson,
+      target_difficulty: targetDifficulty,
+      questions,
+      phases,
+      recommendation,
+    });
   } catch (e) {
     console.error("ai-practice-rag error", e);
     return new Response(

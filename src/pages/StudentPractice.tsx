@@ -16,6 +16,10 @@ import {
   ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2, Award,
 } from "lucide-react";
 import Confetti from "@/components/game/Confetti";
+import PomodoroTimer from "@/components/practice/PomodoroTimer";
+import { checkAcrostic, readPracticeSource, sequenceUnlockedCount, withStops } from "@/lib/practice-method";
+import { LOCI_WARNING } from "../../supabase/functions/_shared/practice-phases";
+import { Lock } from "lucide-react";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 
 type Question = {
@@ -34,7 +38,12 @@ type Phase = {
   phase_name: string;
   phase_intro?: string;
   questions: Question[];
+  key?: string;
+  kind?: string;
+  content?: { text?: string; outline?: string[]; points?: string[]; terms?: { term: string; meaning?: string }[] };
 };
+
+const LOCI_KEY = "bezli.practice.loci.stops";
 
 type PracticeData = {
   method: { id: string; name: string; slug: string };
@@ -80,6 +89,7 @@ const StudentPractice = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const lessonId = searchParams.get("lesson") || null;
+  const useCustomSource = searchParams.get("source") === "custom";
   const plannedMin = Number(searchParams.get("min")) || null;
   const questionCount = questionCountForDuration(plannedMin);
   const navigate = useNavigate();
@@ -95,6 +105,12 @@ const StudentPractice = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [mastery, setMastery] = useState<{ mastery_percent: number; sessions_count: number; mastered_at: string | null } | null>(null);
   const [showMasteryCelebration, setShowMasteryCelebration] = useState(false);
+  const [sourceKind, setSourceKind] = useState<string | null>(null);
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [stops, setStops] = useState<string[]>(() => {
+    try { const v = JSON.parse(sessionStorage.getItem(LOCI_KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+  });
+  useEffect(() => { try { sessionStorage.setItem(LOCI_KEY, JSON.stringify(stops)); } catch { /* ignore */ } }, [stops]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,10 +141,21 @@ const StudentPractice = () => {
       // Use RAG endpoint when a lesson is specified, otherwise fall back to generic.
       let fnData: any = null;
       let fnErr: any = null;
-      if (lessonId) {
-        const { data: { session } } = await supabase.auth.getSession();
+      const customSource = !lessonId && useCustomSource ? readPracticeSource() : null;
+      if (!lessonId && useCustomSource && !customSource) {
+        setError("Materiál k procvičení se nenašel. Vrať se a vlož ho znovu.");
+        setLoading(false);
+        return;
+      }
+      setSourceKind(customSource ? customSource.kind : lessonId ? "lesson" : null);
+      setSourceLabel(customSource?.label ?? null);
+      if (lessonId || customSource) {
         const ragRes = await supabase.functions.invoke("ai-practice-rag", {
-          body: { lesson_id: lessonId, method: slug, ...(questionCount ? { question_count: questionCount } : {}) },
+          body: {
+            ...(customSource ? { source_text: customSource.text, source_kind: customSource.kind } : { lesson_id: lessonId }),
+            method: slug,
+            ...(questionCount ? { question_count: questionCount } : {}),
+          },
         });
         if (ragRes.error || ragRes.data?.error) {
           fnErr = ragRes.error || { message: ragRes.data?.error };
@@ -140,7 +167,12 @@ const StudentPractice = () => {
             practice: {
               method_name: slug,
               lesson_title: ragRes.data.lesson?.title,
-              phases: [{
+              phases: Array.isArray(ragRes.data.phases) && ragRes.data.phases.length > 0
+                ? ragRes.data.phases.map((ph: any) => ({
+                  phase_name: ph.title, phase_intro: ph.instruction, questions: ph.questions ?? [],
+                  key: ph.key, kind: ph.kind, content: ph.content,
+                }))
+                : [{
                 phase_name: "Procvičování z lekce",
                 phase_intro: `AI připravila otázky přímo z obsahu lekce. Cílová obtížnost: ${difficultyLabelCs(ragRes.data.target_difficulty)}.`,
                 questions: ragRes.data.questions ?? [],
@@ -170,7 +202,7 @@ const StudentPractice = () => {
         setLoading(false);
         return;
       }
-      if (!(fnData?.practice?.phases ?? []).some((phase: Phase) => phase.questions?.length > 0)) {
+      if (!(fnData?.practice?.phases ?? []).some((phase: Phase) => phase.questions?.length > 0 || phase.kind === "pomodoro")) {
         setError("Z této lekce se nepodařilo vytvořit otázky. Zkus to znovu.");
         setLoading(false);
         return;
@@ -181,7 +213,7 @@ const StudentPractice = () => {
     return () => {
       cancelled = true;
     };
-  }, [slug, lessonId, reloadKey, questionCount]);
+  }, [slug, lessonId, reloadKey, questionCount, useCustomSource]);
 
   // Load mastery for this lesson
   useEffect(() => {
@@ -256,7 +288,9 @@ const StudentPractice = () => {
         score: totalScorable > 0 ? score : null,
         answers_json: {
           answers,
-          phases: data.practice.phases,
+          // Bez obsahu fází: kopie žákova textu se neukládá.
+          phases: data.practice.phases.map(({ content: _c, ...ph }) => ph),
+          ...(sourceKind && sourceKind !== "lesson" ? { source: { kind: sourceKind } } : {}),
           score,
           total_scorable: totalScorable,
           percent,
@@ -376,6 +410,9 @@ const StudentPractice = () => {
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
+              {!data.lesson && sourceLabel && (
+                <p className="text-muted-foreground mt-1">Zdroj: {sourceLabel}</p>
+              )}
 
               {lessonId && mastery && (
                 <div className="mt-4">
@@ -466,7 +503,24 @@ const StudentPractice = () => {
             <div className="space-y-8">
               {(() => {
                 let idx = 0;
-                return data.practice.phases.map((phase, pi) => (
+                const isSeq = slug === "sekvencni";
+                const unlocked = isSeq ? sequenceUnlockedCount(
+                  data.practice.phases.map((ph) => ({ kind: ph.kind ?? "questions", questions: ph.questions })),
+                  answers,
+                ) : data.practice.phases.length;
+                const allTerms = data.practice.phases.find((ph) => ph.content?.terms?.length && ph.kind === "terms")?.content?.terms
+                  ?? data.practice.phases.find((ph) => ph.content?.terms?.length)?.content?.terms ?? [];
+                return data.practice.phases.map((phase, pi) => {
+                  if (pi >= unlocked && !submitted) {
+                    idx += phase.questions.length;
+                    return (
+                      <section key={pi} className="bg-muted/40 border border-dashed border-border rounded-xl p-5 flex items-center gap-3 text-muted-foreground">
+                        <Lock className="w-5 h-5" aria-hidden />
+                        <p><span className="font-semibold">{phase.phase_name}</span> – odemkne se, až budeš mít v předchozí části aspoň 70 %.</p>
+                      </section>
+                    );
+                  }
+                  return (
                   <section key={pi} className="bg-card border border-border rounded-xl p-5">
                     <div className="mb-4">
                       <span className="text-xs font-medium uppercase tracking-wider text-primary">
@@ -477,6 +531,14 @@ const StudentPractice = () => {
                         <p className="text-sm text-muted-foreground mt-1">{phase.phase_intro}</p>
                       )}
                     </div>
+                    <PhaseContent
+                      phase={phase} slug={slug ?? ""} submitted={submitted} terms={allTerms}
+                      stops={stops} setStops={setStops}
+                      acrosticAnswer={(() => {
+                        const start = idx;
+                        return typeof answers[String(start)] === "string" ? String(answers[String(start)]) : "";
+                      })()}
+                    />
 
                     <div className="space-y-5">
                       {phase.questions.map((q) => {
@@ -499,7 +561,7 @@ const StudentPractice = () => {
                               <div className="flex-1">
                                 <p className="font-medium">
                                   <span className="text-muted-foreground mr-2">{i + 1}.</span>
-                                  {q.text ?? q.prompt}
+                                  {withStops(q.text ?? q.prompt ?? "", stops)}
                                 </p>
                                 {q.difficulty && (
                                   <span className={`inline-block mt-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${DIFFICULTY_META[q.difficulty]?.cls ?? ""}`}>
@@ -604,7 +666,8 @@ const StudentPractice = () => {
                       })}
                     </div>
                   </section>
-                ));
+                  );
+                });
               })()}
             </div>
 
@@ -628,5 +691,85 @@ const StudentPractice = () => {
     </div>
   );
 };
+
+function PhaseContent({ phase, slug, submitted, terms, stops, setStops, acrosticAnswer }: {
+  phase: Phase; slug: string; submitted: boolean; terms: { term: string; meaning?: string }[];
+  stops: string[]; setStops: (s: string[]) => void; acrosticAnswer: string;
+}) {
+  const c = phase.content;
+  const kind = phase.kind;
+  return (
+    <div className="space-y-4 mb-5">
+      {slug === "loci" && phase.key === "trasa" && (
+        <p className="text-sm rounded-md border border-border bg-muted/50 p-3">{LOCI_WARNING}</p>
+      )}
+      {c?.outline && c.outline.length > 0 && (
+        <div>
+          <p className="text-sm font-semibold mb-1">Osnova</p>
+          <ul className="list-disc pl-5 text-sm space-y-1">{c.outline.map((o, i) => <li key={i}>{o}</li>)}</ul>
+        </div>
+      )}
+      {(kind === "read" || kind === "section") && c?.text && (
+        <div className="max-h-96 overflow-y-auto rounded-md border border-border bg-muted/30 p-4 text-base leading-relaxed whitespace-pre-line">
+          {c.text}
+        </div>
+      )}
+      {kind === "terms" && terms.length > 0 && (
+        <ol className="list-decimal pl-5 space-y-1">
+          {terms.map((t, i) => <li key={i}><span className="font-semibold">{t.term}</span>{t.meaning ? ` – ${t.meaning}` : ""}</li>)}
+        </ol>
+      )}
+      {kind === "letters" && terms.length > 0 && (
+        <div className="flex flex-wrap gap-2" aria-label="První písmena pojmů">
+          {terms.map((t, i) => (
+            <span key={i} className="w-11 h-11 rounded-md border border-primary/40 bg-primary/5 flex items-center justify-center font-heading text-xl font-bold">
+              {(t.term.trim()[0] ?? "").toUpperCase()}
+            </span>
+          ))}
+        </div>
+      )}
+      {kind === "acrostic" && terms.length > 0 && acrosticAnswer.trim() && (() => {
+        const r = checkAcrostic(acrosticAnswer, terms.map((t) => t.term));
+        return (
+          <div role="status" className={`rounded-md border p-3 text-sm ${r.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-muted/40"}`}>
+            <p className="font-medium mb-2">{r.ok ? `Sedí to! Tvůj ${r.mode} má správná písmena v pořadí.` : "Zkontroluj písmena:"}</p>
+            <div className="flex flex-wrap gap-2">
+              {r.items.map((it, i) => (
+                <span key={i} className={`px-2 py-1 rounded border ${it.ok ? "border-emerald-500/50" : "border-destructive/50"}`}>
+                  {it.expected} → {it.got || "–"} {it.ok ? "✓" : "✗"}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+      {kind === "loci_route" && (
+        <div className="space-y-2">
+          {Array.from({ length: Math.max(terms.length, 5) }).map((_, i) => (
+            <div key={i}>
+              <Label htmlFor={`stop-${i}`}>Zastávka {i + 1}</Label>
+              <Input id={`stop-${i}`} value={stops[i] ?? ""} disabled={submitted} className="mt-1 text-base"
+                placeholder={i === 0 ? "třeba: dveře od pokoje" : ""}
+                onChange={(e) => { const n = [...stops]; n[i] = e.target.value; setStops(n); }} />
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">Zastávky zůstávají jen v tomto prohlížeči, nikam se neukládají.</p>
+        </div>
+      )}
+      {kind === "loci_images" && terms.length > 0 && (
+        <ul className="text-sm space-y-1">
+          {terms.map((t, i) => <li key={i}><span className="font-semibold">{withStops(`{{stop:${i}}}`, stops)}</span> → {t.term}</li>)}
+        </ul>
+      )}
+      {kind === "pomodoro" && <PomodoroTimer />}
+      {submitted && c?.points && c.points.length > 0 && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-semibold mb-1">Porovnej s klíčovými body z textu</p>
+          <ul className="list-disc pl-5 text-sm space-y-1">{c.points.map((pt, i) => <li key={i}>{pt}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default StudentPractice;
