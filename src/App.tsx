@@ -100,6 +100,7 @@ import ParentAcademy from "./pages/ParentAcademy";
 import TeacherFromMaterial from "./pages/TeacherFromMaterial";
 import StudentFromMaterial from "./pages/StudentFromMaterial";
 import ViewAsBanner from "./components/ViewAsBanner";
+import PreviewStudentBanner from "./components/PreviewStudentBanner";
 import DemoBanner from "./components/demo/DemoBanner";
 import DemoPage from "./pages/DemoPage";
 import PublicSiteAssistant from "./components/PublicSiteAssistant";
@@ -118,6 +119,7 @@ const App = () => (
         <AuthProvider>
           <AccessibilitySettingsSync />
           <ViewAsBanner />
+          <PreviewStudentBanner />
           <DemoBanner />
           <PublicSiteAssistant />
           <Routes>

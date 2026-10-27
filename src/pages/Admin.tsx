@@ -1,3 +1,5 @@
+import { switchToPreviewStudent } from "@/lib/preview-student";
+import { toast } from "sonner";
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -368,8 +370,12 @@ const ViewAsSwitcher = () => {
         onValueChange={(v) => {
           if (v === "admin") {
             setViewAsRole(null);
+          } else if (v === "user") {
+            switchToPreviewStudent()
+              .then(() => { window.location.href = "/student"; })
+              .catch((e) => toast.error(e instanceof Error ? e.message : "Přepnutí se nepodařilo."));
           } else {
-            setViewAsRole(v as "school_admin" | "teacher" | "user");
+            setViewAsRole(v as "school_admin" | "teacher");
             // Navigate to that role's dashboard so admin immediately sees it
             window.location.href = VIEW_AS_TARGETS[v] ?? "/";
           }
@@ -385,7 +391,7 @@ const ViewAsSwitcher = () => {
           </SelectItem>
 
           <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
-          <SelectItem value="user">Zobrazit jako žák</SelectItem>
+          <SelectItem value="user">Zobrazit jako žák (testovací žák)</SelectItem>
         </SelectContent>
       </Select>
     </div>

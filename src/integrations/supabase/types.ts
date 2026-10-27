@@ -4666,6 +4666,39 @@ export type Database = {
         }
         Relationships: []
       }
+      preview_students: {
+        Row: {
+          created_at: string
+          owner_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          owner_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          owner_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preview_students_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preview_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_credentials: {
         Row: {
           encrypted_password: string | null
@@ -9187,6 +9220,7 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      is_preview_student: { Args: { _uid: string }; Returns: boolean }
       is_public_shared_textbook: {
         Args: { _textbook_id: string }
         Returns: boolean
