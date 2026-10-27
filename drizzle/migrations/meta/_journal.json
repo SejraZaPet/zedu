@@ -526,6 +526,13 @@
       "when": 1793121646939,
       "tag": "0074_i2a_preview_hide_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793121735962,
+      "tag": "0075_i2b2_hide_preview_stats_notify",
+      "breakpoints": true
     }
   ]
 }
