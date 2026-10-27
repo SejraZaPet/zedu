@@ -20,7 +20,7 @@ export async function switchToPreviewStudent(): Promise<void> {
   window.sessionStorage.setItem(PREVIEW_RETURN_KEY, JSON.stringify({
     access_token: s.access_token, refresh_token: s.refresh_token,
   }));
-  try { window.localStorage.removeItem("zedu_view_as_role"); } catch { /* ignore */ }
+  try { window.localStorage.removeItem("Bezli:view-as-role"); } catch { /* ignore */ }
   const { error: setErr } = await supabase.auth.setSession(data.session);
   if (setErr) {
     window.sessionStorage.removeItem(PREVIEW_RETURN_KEY);
