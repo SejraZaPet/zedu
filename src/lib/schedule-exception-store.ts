@@ -186,3 +186,91 @@ export async function saveException(params: {
   });
   if (error) throw new Error(error.message || "Změnu se nepodařilo uložit.");
 }
+
+/**
+ * Student/parent projection returned by the SECURITY DEFINER RPC
+ * `student_schedule_changes`: no owner, no private notes; `public_reason`
+ * is empty unless the teacher marked the reason as visible.
+ */
+export type StudentChangeRow = {
+  id: string;
+  source_kind: string;
+  source_id: string;
+  class_slot_id: string | null;
+  original_date: string;
+  action: string;
+  new_date: string | null;
+  new_start: string | null;
+  new_end: string | null;
+  class_id: string | null;
+  group_id: string | null;
+  public_reason: string | null;
+};
+
+/** On any error returns [] so the timetable renders exactly as before. */
+export async function fetchStudentScheduleChanges(from: Date, to: Date): Promise<StudentChangeRow[]> {
+  try {
+    const { data, error } = await supabase.rpc("student_schedule_changes" as any, {
+      _from: format(from, "yyyy-MM-dd"),
+      _to: format(to, "yyyy-MM-dd"),
+    });
+    if (error || !Array.isArray(data)) return [];
+    return data as StudentChangeRow[];
+  } catch {
+    return [];
+  }
+}
+
+const VIEWER_OWNER = "viewer";
+
+/**
+ * Merge visible class-slot changes into a student's/parent's expanded lessons.
+ * Matches by slot ID + original date only. Never throws: on bad data the
+ * plain timetable is returned unchanged.
+ */
+export function mergeStudentScheduleChanges(
+  events: CalendarEvent[],
+  rows: StudentChangeRow[],
+  range: { from: Date; to: Date },
+  expand?: Expander,
+): CalendarEvent[] {
+  const usable = rows.filter((r) => r.source_kind === "class_slot" && (r.action === "cancelled" || r.action === "moved"));
+  if (!usable.length) return events;
+  const fromKey = format(range.from, "yyyy-MM-dd");
+  const toKey = format(range.to, "yyyy-MM-dd");
+  const extra = expand
+    ? [...new Set(usable.map((r) => r.original_date).filter((d) => d < fromKey || d > toKey))].flatMap((d) =>
+        expand(new Date(`${d}T00:00:00`), new Date(`${d}T23:59:59`)).filter((e) => e.type === "lesson"))
+    : [];
+  const sourced: ScheduleOccurrence[] = [];
+  const rest: CalendarEvent[] = [];
+  for (const e of [...events, ...extra]) {
+    const s = e.scheduleSource;
+    if (e.type === "lesson" && s?.kind === "class_slot") {
+      sourced.push({ ...e, source: { kind: "class_slot", ownerId: VIEWER_OWNER, slotId: s.slotId,
+        originalDate: format(e.originalStart ?? e.start, "yyyy-MM-dd") } });
+    } else if (!extra.includes(e)) rest.push(e);
+  }
+  try {
+    const exceptions: ScheduleException[] = usable.map((r) => ({
+      id: r.id,
+      source: { kind: "class_slot", ownerId: VIEWER_OWNER, slotId: r.source_id, originalDate: r.original_date },
+      action: r.action as ScheduleException["action"],
+      state: "active",
+      newDate: r.new_date ?? undefined,
+      newStart: hhmm(r.new_start),
+      newEnd: hhmm(r.new_end),
+      publicReason: (r.public_reason ?? "").trim() || undefined,
+    }));
+    const effective = applyScheduleExceptions(sourced, exceptions, { start: range.from, end: range.to });
+    const merged: CalendarEvent[] = effective.map(({ source: _s, isTeachingOccurrence: _t, exceptionId: _x, ...e }) => e);
+    return [...rest, ...merged].sort((a, b) => a.start.getTime() - b.start.getTime());
+  } catch {
+    return events;
+  }
+}
+
+/** Lesson did not happen at this time (cancelled, or moved away). */
+export function isLessonNotHeld(e: Pick<CalendarEvent, "scheduleStatus">): boolean {
+  return e.scheduleStatus === "cancelled" || e.scheduleStatus === "moved_from";
+}
