@@ -5193,6 +5193,7 @@ export type Database = {
           original_date: string
           owner_id: string
           public_reason: string
+          reason_visible: boolean
           request_id: string
           revision: number
           source_id: string
@@ -5214,6 +5215,7 @@ export type Database = {
           original_date: string
           owner_id: string
           public_reason?: string
+          reason_visible?: boolean
           request_id: string
           revision?: number
           source_id: string
@@ -5235,6 +5237,7 @@ export type Database = {
           original_date?: string
           owner_id?: string
           public_reason?: string
+          reason_visible?: boolean
           request_id?: string
           revision?: number
           source_id?: string
@@ -9406,6 +9409,7 @@ export type Database = {
           original_date: string
           owner_id: string
           public_reason: string
+          reason_visible: boolean
           request_id: string
           revision: number
           source_id: string
@@ -9493,6 +9497,7 @@ export type Database = {
           original_date: string
           owner_id: string
           public_reason: string
+          reason_visible: boolean
           request_id: string
           revision: number
           source_id: string
@@ -9629,6 +9634,23 @@ export type Database = {
         Returns: Json
       }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
+      student_schedule_changes: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          action: string
+          class_id: string
+          class_slot_id: string
+          group_id: string
+          id: string
+          new_date: string
+          new_end: string
+          new_start: string
+          original_date: string
+          public_reason: string
+          source_id: string
+          source_kind: string
+        }[]
+      }
       subject_dependency_counts: {
         Args: { _subject_ids: string[] }
         Returns: {
