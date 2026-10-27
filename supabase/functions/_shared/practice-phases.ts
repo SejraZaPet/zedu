@@ -17,6 +17,9 @@ export interface PhaseQuestion {
   hint?: string;
   difficulty?: "easy" | "medium" | "hard";
   topic?: string;
+  explain?: SourceExplanation;
+  /** Interní: syrové vysvětlení od AI (odstraní attachExplanations). */
+  explain_raw?: unknown;
 }
 
 export interface PhaseDef {
@@ -160,11 +163,11 @@ export function sanitizeQuestion(raw: any): PhaseQuestion | null {
     const options = strList(raw.options, 6);
     const ci = Number(raw.correct_index);
     if (options.length < 2 || !Number.isInteger(ci) || ci < 0 || ci >= options.length) return null;
-    return { type, text, options, correct_index: ci, hint: str(raw.hint) || undefined, difficulty: raw.difficulty, topic: str(raw.topic) || undefined };
+    return { type, text, options, correct_index: ci, hint: str(raw.hint) || undefined, difficulty: raw.difficulty, topic: str(raw.topic) || undefined, ...(raw.explanation ? { explain_raw: { explanation: raw.explanation, source_quote: raw.source_quote } } : {}) };
   }
   if (type === "true_false") {
     if (typeof raw.correct_answer !== "boolean") return null;
-    return { type, text, correct_answer: raw.correct_answer, hint: str(raw.hint) || undefined, difficulty: raw.difficulty, topic: str(raw.topic) || undefined };
+    return { type, text, correct_answer: raw.correct_answer, hint: str(raw.hint) || undefined, difficulty: raw.difficulty, topic: str(raw.topic) || undefined, ...(raw.explanation ? { explain_raw: { explanation: raw.explanation, source_quote: raw.source_quote } } : {}) };
   }
   if (type === "short_answer") {
     const ca = str(raw.correct_answer);
@@ -312,3 +315,67 @@ export function aiContentSpec(slug: string, total: number): string {
 }
 
 export const flattenPhaseQuestions = (phases: PracticePhase[]) => phases.flatMap((p) => p.questions);
+
+// ---------- Vysvětlení ze zdroje (otevřené otázky) ----------
+export const QUOTE_MAX = 200;
+export interface SourceExplanation {
+  explanation: string | null;
+  source_quote: string | null;
+  key_points: string[];
+  /** true = úryvek nešel ověřit / chybí → zobrazit jako „shrnutí ze zdroje“. */
+  summary_only: boolean;
+}
+
+/** Normalizace pro porovnání úryvku: bez diakritiky, malá písmena, jednotné mezery a uvozovky. */
+export function normalizeForMatch(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[„“”"«»]/g, '"').replace(/[‚‘’']/g, "'").replace(/[–—]/g, "-")
+    .replace(/\s+/g, " ").trim();
+}
+
+/** Vrátí úryvek jen pokud je (po normalizaci) doslovně ve zdroji; jinak null. */
+export function verifySourceQuote(quote: unknown, source: string): string | null {
+  const q = str(quote).replace(/^["„“]+|["“”]+$/g, "").trim();
+  if (q.length < 8 || q.length > QUOTE_MAX + 40) return null;
+  return normalizeForMatch(source).includes(normalizeForMatch(q)) ? q.slice(0, QUOTE_MAX + 40) : null;
+}
+
+export function buildSourceExplanation(raw: any, source: string): SourceExplanation {
+  const key_points = strList(raw?.key_points, 5);
+  let explanation = str(raw?.explanation).slice(0, 900) || null;
+  const source_quote = verifySourceQuote(raw?.source_quote, source);
+  if (!explanation && key_points.length) explanation = key_points.join(" ");
+  return { explanation, source_quote, key_points, summary_only: !source_quote };
+}
+
+/** Phase keys s otevřenými otázkami, pro které AI vrací vysvětlení. */
+export function openPhaseKeys(phases: PracticePhase[]): string[] {
+  return phases.filter((p) => p.questions.some((q) => q.type === "open")).map((p) => p.key);
+}
+
+/** Připojí ke každé otevřené otázce `explain` (vždy, i prázdné) a k uzavřeným ověřené vysvětlení, je-li. */
+export function attachExplanations(phases: PracticePhase[], ai: any, source: string): PracticePhase[] {
+  const map = ai?.open_explanations && typeof ai.open_explanations === "object" ? ai.open_explanations : {};
+  return phases.map((p) => ({
+    ...p,
+    questions: p.questions.map((q: any) => {
+      if (q.type === "open") return { ...q, explain: buildSourceExplanation(map[p.key], source) };
+      if ((q.type === "multiple_choice" || q.type === "true_false") && q.explain_raw) {
+        const e = buildSourceExplanation(q.explain_raw, source);
+        const { explain_raw: _r, ...rest } = q;
+        return e.explanation ? { ...rest, explain: e } : rest;
+      }
+      if (q.explain_raw) { const { explain_raw: _r, ...rest } = q; return rest; }
+      return q;
+    }),
+  }));
+}
+
+export const SOURCE_ONLY_RULE =
+  "Vysvětluj VÝHRADNĚ z poskytnutého textu. Je zakázáno doplňovat vlastní znalosti nebo fakta, která v textu nejsou. Když text téma neobsahuje, napiš to (např. „Text o tom nic neříká.“).";
+
+/** Popis klíče open_explanations pro prompt. */
+export function openExplanationSpec(phaseKeys: string[]): string {
+  if (!phaseKeys.length) return "";
+  return `"open_explanations": objekt s klíči ${phaseKeys.map((k) => `"${k}"`).join(", ")}; každý { "explanation": 2–4 věty vlastními slovy, jak by vypadala dobrá odpověď na úkol té fáze – jen z textu, "source_quote": krátký DOSLOVNÝ úryvek z textu (max ${QUOTE_MAX} znaků, zkopíruj přesně), "key_points": 3–5 bodů z textu }`;
+}
