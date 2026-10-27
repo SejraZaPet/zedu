@@ -60,7 +60,7 @@ describe("definice fází", () => {
     const walk = ph.find((p) => p.key === "prochazeni")!;
     expect(walk.questions).toHaveLength(5);
     expect(walk.questions[0].correct_answer).toBe("Mitochondrie");
-    expect(withStops(walk.questions[0].text, ["Kuchyň"])).toBe("Zastávka Kuchyň: jaký pojem tu leží?");
+    expect(withStops(walk.questions[0].text, ["Kuchyň"])).toBe("Kuchyň: jaký pojem tu leží?");
     expect(withStops(walk.questions[1].text, ["Kuchyň"])).toContain("Zastávka 2");
   });
 });
