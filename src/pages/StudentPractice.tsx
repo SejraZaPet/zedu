@@ -410,6 +410,9 @@ const StudentPractice = () => {
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
+              {!data.lesson && sourceLabel && (
+                <p className="text-muted-foreground mt-1">Zdroj: {sourceLabel}</p>
+              )}
 
               {lessonId && mastery && (
                 <div className="mt-4">
