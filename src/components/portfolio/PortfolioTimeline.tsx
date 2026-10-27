@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import RubricEvaluator, { RubricEvaluationList } from "@/components/portfolio/RubricEvaluator";
+import PortfolioSourceActions from "@/components/portfolio/PortfolioSourceActions";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 
 interface Props {
@@ -317,13 +318,14 @@ function PortfolioCard({
                     <Video className="w-3.5 h-3.5" /> Otevřít video
                   </a>
                 )}
+                <PortfolioSourceActions item={item} />
                 {item.files && item.files.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {item.files.map((f) => (
                       <li key={f.id} className="flex items-center gap-2 text-sm">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                         <span className="flex-1 truncate">{f.file_name}</span>
-                        {fileUrls[f.id] && (
+                        {fileUrls[f.id] ? (
                           <a
                             href={fileUrls[f.id]!}
                             target="_blank"
@@ -332,7 +334,9 @@ function PortfolioCard({
                           >
                             <ExternalLink className="w-3 h-3" /> Otevřít
                           </a>
-                        )}
+                        ) : f.id in fileUrls ? (
+                          <span className="text-xs text-muted-foreground">Soubor není dostupný</span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
