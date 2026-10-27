@@ -533,6 +533,13 @@
       "when": 1793121735962,
       "tag": "0075_i2b2_hide_preview_stats_notify",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793121776038,
+      "tag": "0076_j2_schedule_exception_visibility",
+      "breakpoints": true
     }
   ]
 }

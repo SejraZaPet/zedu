@@ -9622,6 +9622,10 @@ export type Database = {
         Args: { _answered: boolean; _question_id: string }
         Returns: undefined
       }
+      set_schedule_exception_reason_visible: {
+        Args: { _exception_id: string; _visible: boolean }
+        Returns: boolean
+      }
       set_school_event_dismissed_for_all: {
         Args: { _dismissed: boolean; _event_id: string }
         Returns: undefined
