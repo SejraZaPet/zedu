@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,8 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
   const [newEnd, setNewEnd] = useState("");
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const [share, setShare] = useState(true);
+  const [showReason, setShowReason] = useState(true);
   const [planAction, setPlanAction] = useState<"unassigned" | "next">("unassigned");
   const [planCount, setPlanCount] = useState(0);
   const [planIds, setPlanIds] = useState<string[]>([]);
@@ -52,7 +55,7 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
     setNewDate(format(event.start, "yyyy-MM-dd"));
     setNewStart(format(event.start, "HH:mm"));
     setNewEnd(format(event.end, "HH:mm"));
-    setReason(""); setNote(""); setPlanAction("unassigned"); setConfirmConflict(false); setError(null);
+    setReason(""); setNote(""); setShare(true); setShowReason(true); setPlanAction("unassigned"); setConfirmConflict(false); setError(null);
     setPlanIds([]); setPlanCount(0);
     if (user && source && mode !== "revert") {
       findLinkedPlans(user.id, event, source.originalDate)
@@ -117,7 +120,7 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
     }
     setSaving(true);
     try {
-      await saveException({
+      const res = await saveException({
         source: source!,
         action: mode === "move" ? "moved" : mode === "cancel" ? "cancelled" : "reverted",
         newDate: mode === "move" ? newDate : undefined,
@@ -128,8 +131,11 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
         planIds: mode === "revert" ? [] : planIds,
         planAction: mode === "cancel" ? planAction : "unassigned",
         nextDate: mode === "cancel" && planAction === "next" ? nextDate : null,
+        share,
+        showReason,
       });
       toast({ title: mode === "move" ? "Hodina přesunuta" : mode === "cancel" ? "Hodina zrušena" : "Hodina vrácena do rozvrhu" });
+      if (res.reasonVisibilityFailed) toast({ title: "Změna je uložená, důvod se žákům zatím nezobrazuje." });
       onSaved();
       onClose();
     } catch (err) {
@@ -145,7 +151,7 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {event.title}{event.className ? ` · ${event.className}` : ""} — {origLabel}. Změna platí jen pro tento jeden termín a uvidíte ji pouze Vy.
+            {event.title}{event.className ? ` · ${event.className}` : ""} — {origLabel}. Změna platí jen pro tento jeden termín. Žáci a rodiče ji uvidí, jen pokud to níže povolíte.
           </DialogDescription>
         </DialogHeader>
 
@@ -207,9 +213,20 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
               <Label htmlFor="sx-reason">Důvod</Label>
               <Input id="sx-reason" className="h-11" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Např. exkurze, nemoc" />
             </div>
+            <div className="grid gap-1">
+              <label htmlFor="sx-share" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+                <Checkbox id="sx-share" checked={share} onCheckedChange={(v) => setShare(v === true)} />
+                Ukázat změnu žákům a rodičům
+              </label>
+              <label htmlFor="sx-show-reason" className={`flex min-h-11 items-center gap-3 text-sm ${share ? "cursor-pointer" : "opacity-50"}`}>
+                <Checkbox id="sx-show-reason" checked={share && showReason} disabled={!share} onCheckedChange={(v) => setShowReason(v === true)} />
+                Ukázat i důvod
+              </label>
+            </div>
             <div className="grid gap-1.5">
               <Label htmlFor="sx-note">Soukromá poznámka (nepovinné)</Label>
-              <Textarea id="sx-note" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+              <Textarea id="sx-note" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} aria-describedby="sx-note-help" />
+              <p id="sx-note-help" className="text-xs text-muted-foreground">Soukromá poznámka se žákům nikdy nezobrazí.</p>
             </div>
           </div>
         ) : (

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { excludePreviewStudents, fetchMyPreviewStudentIds } from "@/lib/preview-students";
 import { useToast } from "@/hooks/use-toast";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
@@ -237,7 +238,8 @@ export const TeamSetup = ({ session, players }: Props) => {
           ? await supabase.from("class_members").select("user_id").eq("class_id", id)
           : await supabase.from("subject_group_members").select("student_id").eq("group_id", id);
       if (res.error) throw res.error;
-      const userIds = ((res.data as any[]) ?? []).map((r) => r.user_id ?? r.student_id).filter(Boolean);
+      const previewIds = await fetchMyPreviewStudentIds();
+      const userIds = excludePreviewStudents(((res.data as any[]) ?? []).map((r) => r.user_id ?? r.student_id).filter(Boolean), (x: string) => x, previewIds);
       if (userIds.length === 0) {
         toast({ title: "Třída/skupina nemá žádné žáky", variant: "destructive" });
         return;

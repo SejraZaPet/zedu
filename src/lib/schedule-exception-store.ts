@@ -154,6 +154,14 @@ export async function currentRevision(source: ScheduleOccurrenceSource): Promise
   return (data as any)?.revision ?? 0;
 }
 
+/** Visibility flags actually written: the reason is never public without the change. */
+export function visibilityFlags(share: boolean | undefined, showReason: boolean | undefined) {
+  const s = share ?? true;
+  return { share: s, reasonVisible: s && (showReason ?? true) };
+}
+
+export type SaveExceptionResult = { reasonVisibilityFailed: boolean };
+
 export async function saveException(params: {
   source: ScheduleOccurrenceSource;
   action: "cancelled" | "moved" | "reverted";
@@ -165,9 +173,14 @@ export async function saveException(params: {
   planIds?: string[];
   planAction?: "unassigned" | "next";
   nextDate?: string | null;
-}): Promise<void> {
+  /** Show the change to students and parents (default true). */
+  share?: boolean;
+  /** Also show the public reason (default true; only when shared). */
+  showReason?: boolean;
+}): Promise<SaveExceptionResult> {
   const revision = await currentRevision(params.source);
-  const { error } = await supabase.rpc("save_schedule_exception" as any, {
+  const flags = visibilityFlags(params.share, params.showReason);
+  const { data, error } = await supabase.rpc("save_schedule_exception" as any, {
     _kind: params.source.kind,
     _source_id: params.source.slotId,
     _original_date: params.source.originalDate,
@@ -177,7 +190,7 @@ export async function saveException(params: {
     _new_end: params.newEnd ?? null,
     _reason: params.reason ?? "",
     _note: params.note ?? "",
-    _share: false,
+    _share: flags.share,
     _expected_revision: revision,
     _request_id: crypto.randomUUID(),
     _plan_ids: params.planIds ?? [],
@@ -185,6 +198,16 @@ export async function saveException(params: {
     _next_date: params.nextDate ?? null,
   });
   if (error) throw new Error(error.message || "Změnu se nepodařilo uložit.");
+  if (params.action === "reverted" || !flags.reasonVisible || !(params.reason ?? "").trim()) {
+    return { reasonVisibilityFailed: false };
+  }
+  const id = (data as any)?.id;
+  if (!id) return { reasonVisibilityFailed: true };
+  const { data: ok, error: rvErr } = await supabase.rpc("set_schedule_exception_reason_visible" as any, {
+    _exception_id: id,
+    _visible: true,
+  });
+  return { reasonVisibilityFailed: !!rvErr || ok !== true };
 }
 
 /**

@@ -1,4 +1,5 @@
 import { requireAuth, hasRole } from "../_shared/auth.ts";
+import { isPreviewEmail } from "../_shared/preview-students.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendWithRetry, SEND_INTERVAL_MS } from "../_shared/email-delivery.ts";
 
@@ -55,6 +56,13 @@ Deno.serve(async (req) => {
 
     // Demo režim: na smyšlené adresy @demo.bezli.cz se nikdy nic neposílá.
     const demoRecipients = (Array.isArray(to) ? to : [to]).map((x: unknown) => String(x ?? "").toLowerCase());
+    // Testovací žák: adresy @preview.invalid se nikdy neodesílají.
+    if (demoRecipients.some((r: string) => isPreviewEmail(r))) {
+      return new Response(JSON.stringify({ skipped: "preview_recipient" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (demoRecipients.some((r: string) => r.endsWith("@demo.bezli.cz"))) {
       return new Response(JSON.stringify({ skipped: "demo_recipient" }), {
         status: 200,

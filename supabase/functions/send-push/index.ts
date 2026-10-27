@@ -2,6 +2,7 @@
 // Triggered by the DB trigger `notifications_send_push` after a new row in `notifications`,
 // or invoked manually with `{ test: true }` from the client.
 import { corsHeaders } from "npm:@supabase/supabase-js@2.95.0/cors";
+
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import webpush from "npm:web-push@3.6.7";
 
@@ -111,6 +112,14 @@ Deno.serve(async (req) => {
     if (!recipient_id) {
       return new Response(JSON.stringify({ error: "recipient_id required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: pv } = await admin.from("preview_students").select("student_id").eq("student_id", recipient_id).maybeSingle();
+    if (pv) {
+      return new Response(JSON.stringify({ skipped: "preview_student" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

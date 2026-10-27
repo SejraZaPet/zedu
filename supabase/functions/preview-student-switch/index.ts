@@ -3,6 +3,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { requireAuth } from "../_shared/auth.ts";
 import { adminClient, issueSession } from "../_shared/demo.ts";
+import { syncPreviewMemberships } from "../_shared/preview-sync.ts";
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -27,14 +28,25 @@ Deno.serve(async (req) => {
       user_metadata: { first_name: "Testovací", last_name: "žák", role_label: "student", status: "approved" },
     });
     if (error || !u?.user) return json({ error: "Testovacího žáka se nepodařilo vytvořit." }, 500);
-    const { data: owner } = await db.from("profiles").select("school_id").eq("id", auth.userId).maybeSingle();
-    await db.from("profiles").update({ status: "approved", school_id: owner?.school_id ?? null }).eq("id", u.user.id);
+    await db.from("profiles").update({ status: "approved", school_id: null }).eq("id", u.user.id);
     const { error: insErr } = await db.from("preview_students").insert({ student_id: u.user.id, owner_id: auth.userId });
     if (insErr) {
       await db.auth.admin.deleteUser(u.user.id);
       return json({ error: "Testovacího žáka se nepodařilo vytvořit." }, 500);
     }
     ps = { student_id: u.user.id };
+  }
+
+  // Zařazení do aktivních tříd a skupin vlastníka (a odebrání z cizích).
+  try {
+    const sync = await syncPreviewMemberships(db, auth.userId, ps.student_id);
+    await db.from("audit_log").insert({
+      actor_id: auth.userId, action: "preview_student_sync", target_type: "preview_student", target_id: ps.student_id,
+      details: sync,
+    });
+  } catch (e) {
+    console.error("preview sync failed", (e as Error).message);
+    return json({ error: "Testovacího žáka se nepodařilo zařadit do vašich tříd. Zkuste to prosím znovu." }, 500);
   }
 
   const { data: su } = await db.auth.admin.getUserById(ps.student_id);
