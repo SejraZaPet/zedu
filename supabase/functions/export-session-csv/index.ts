@@ -75,11 +75,14 @@ serve(async (req) => {
     const playerIdSet = new Set((players ?? []).map((p) => p.id));
 
     // Fetch responses
-    const { data: responses } = await supabase
+    const { data: rawResponses } = await supabase
       .from("game_responses")
       .select("*")
       .eq("session_id", sessionId)
       .order("question_index", { ascending: true });
+    const responses = rawResponses
+      ? rawResponses.filter((r: any) => !r.player_id || playerIdSet.has(r.player_id))
+      : rawResponses;
 
     // For named mode, fetch profiles
     let profileMap: Record<string, string> = {};
