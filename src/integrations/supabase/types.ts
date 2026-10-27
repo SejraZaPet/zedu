@@ -9223,6 +9223,7 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      is_preview_owner: { Args: { _student: string }; Returns: boolean }
       is_preview_student: { Args: { _uid: string }; Returns: boolean }
       is_public_shared_textbook: {
         Args: { _textbook_id: string }
@@ -9360,6 +9361,7 @@ export type Database = {
           tier: number
         }[]
       }
+      my_preview_student_ids: { Args: never; Returns: string[] }
       my_school_sale_settings: {
         Args: never
         Returns: {
