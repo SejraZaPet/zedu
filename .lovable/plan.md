@@ -1,0 +1,9 @@
+
+### Část H – stav implementace (27. 10. 2026)
+- H1 hotovo (beze změny).
+- H2 hotovo v kódu: definice fází 8 technik v `supabase/functions/_shared/practice-phases.ts` (server, ne AI); `ai-practice-rag` vrací `phases[]` + zpětně kompatibilní `questions`; UI ve `StudentPractice.tsx` (osnova, čtení, klíčové body po vyhodnocení, akrostik kontrola, loci zastávky jen v relaci, sekvenční odemykání ≥ 70 %, Pomodoro `PomodoroTimer.tsx` z časových razítek). Logika v `src/lib/practice-method.ts`.
+- H3 hotovo: zdroj Vlastní text (max 8000, min 150) a Soubor (PDF/.txt čtený v prohlížeči). Foto skryto: `process-file-content` nemá demo AI limit. Portfolio skryto: položky nemají text (jen skóre/odkazy).
+- H4 hotovo: stránka sešitu – jen `textBoxes[].text` (bez seznamu třídy), bez rukopisu.
+- Sezení z vlastního zdroje: `lesson_id` null, `answers_json.source = { kind }`, fáze bez textu; mastery jen lekce. Bez DB migrace.
+- Edge funkce `ai-practice-rag` NENASAZENA (čeká na pokyn); do nasazení vlastní zdroje hlásí chybu a lekce mají jednu fázi.
+- „Uložit do sešitu“ vynecháno (funkce vložení textu do sešitu neexistuje).
