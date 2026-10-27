@@ -1,4 +1,4 @@
-import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions } from "@/lib/student-practice";
+import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, type ExplainData } from "@/lib/student-practice";
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
 import { practiceErrorMessage } from "@/lib/practice-error";
@@ -32,6 +32,7 @@ type Question = {
   hint?: string;
   difficulty?: "easy" | "medium" | "hard";
   topic?: string;
+  explain?: ExplainData;
 };
 
 type Phase = {
@@ -107,6 +108,7 @@ const StudentPractice = () => {
   const [showMasteryCelebration, setShowMasteryCelebration] = useState(false);
   const [sourceKind, setSourceKind] = useState<string | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [stops, setStops] = useState<string[]>(() => {
     try { const v = JSON.parse(sessionStorage.getItem(LOCI_KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
   });
@@ -119,6 +121,7 @@ const StudentPractice = () => {
       setError(null);
       setData(null);
       setAnswers({});
+      setRevealed({});
       setSubmitted(false);
       setStartedAt(Date.now());
 
@@ -474,8 +477,8 @@ const StudentPractice = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {totalScorable > 0
-                        ? hasOpenQuestions(allQuestions) && "Otevřené odpovědi se nehodnotí automaticky — projdi si je sám/sama."
-                        : "Cvičení obsahovalo jen otevřené otázky bez automatického vyhodnocení."}
+                        ? hasOpenQuestions(allQuestions) && OPEN_QUESTIONS_NOTE
+                        : OPEN_QUESTIONS_NOTE}
                     </p>
                   </div>
                 </div>
@@ -661,6 +664,15 @@ const StudentPractice = () => {
                             {submitted && q.hint && result === false && (
                               <p className="text-xs text-muted-foreground mt-1">Tip: {q.hint}</p>
                             )}
+                            {q.type === "open" && !submitted && !revealed[key] && !(typeof userAns === "string" && userAns.trim()) && (
+                              <Button type="button" variant="ghost" size="sm" className="mt-2 min-h-11"
+                                onClick={() => setRevealed((r) => ({ ...r, [key]: true }))}>
+                                Ukázat vysvětlení
+                              </Button>
+                            )}
+                            {((q.type === "open" && (submitted || revealed[key])) || (submitted && result === false)) && (
+                              <SourceExplanationBlock q={q} origin={sourceOriginLabel(data.lesson?.title)} />
+                            )}
                           </div>
                         );
                       })}
@@ -691,6 +703,36 @@ const StudentPractice = () => {
     </div>
   );
 };
+
+function SourceExplanationBlock({ q, origin }: { q: Question; origin: string }) {
+  const v = explanationView(q);
+  if (!v) return null;
+  return (
+    <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm" role="note">
+      <p className="font-semibold mb-1">
+        Vysvětlení ze zdroje <span className="font-normal text-muted-foreground">({origin})</span>
+      </p>
+      {v.kind === "missing" ? (
+        <p className="text-muted-foreground">{v.message}</p>
+      ) : (
+        <>
+          {v.explanation && (
+            <p>
+              {v.summaryOnly && <span className="text-xs text-muted-foreground mr-1">shrnutí ze zdroje:</span>}
+              {v.explanation}
+            </p>
+          )}
+          {v.keyPoints.length > 0 && q.type === "open" && (
+            <ul className="list-disc pl-5 mt-2 space-y-1">{v.keyPoints.map((k, i) => <li key={i}>{k}</li>)}</ul>
+          )}
+          {v.quote && (
+            <blockquote className="mt-2 border-l-2 border-primary/50 pl-3 italic text-muted-foreground">„{v.quote}“</blockquote>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 function PhaseContent({ phase, slug, submitted, terms, stops, setStops, acrosticAnswer }: {
   phase: Phase; slug: string; submitted: boolean; terms: { term: string; meaning?: string }[];
