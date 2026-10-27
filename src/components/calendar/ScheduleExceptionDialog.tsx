@@ -151,7 +151,7 @@ export default function ScheduleExceptionDialog({ event, mode, onClose, events, 
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {event.title}{event.className ? ` · ${event.className}` : ""} — {origLabel}. Změna platí jen pro tento jeden termín a uvidíte ji pouze Vy.
+            {event.title}{event.className ? ` · ${event.className}` : ""} — {origLabel}. Změna platí jen pro tento jeden termín. Žáci a rodiče ji uvidí, jen pokud to níže povolíte.
           </DialogDescription>
         </DialogHeader>
 
