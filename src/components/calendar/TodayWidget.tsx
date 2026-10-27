@@ -370,7 +370,7 @@ const TodayWidget = ({ role }: Props) => {
                     </Badge>
                   )}
                   {ev.scheduleStatus === "moved_to" && (
-                    <Badge variant="outline" className="shrink-0">přesunuto</Badge>
+                    <Badge variant="outline" className="shrink-0">Přesunuto</Badge>
                   )}
                   {canChange && (
                     <span className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>

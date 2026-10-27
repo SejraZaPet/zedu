@@ -199,7 +199,7 @@ const StudentCalendar = () => {
 
           <div className="flex items-center gap-2">
             <CalendarExportMenu
-              events={events.map((e) => toExportEvent(e as any))}
+              events={events.filter((e) => e.scheduleStatus !== "cancelled" && e.scheduleStatus !== "moved_from").map((e) => toExportEvent(e as any))}
               filename={`Bezli-kalendar-${format(weekStart, "yyyy-MM-dd")}.ics`}
               calName="Bezli – můj kalendář"
             />

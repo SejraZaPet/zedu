@@ -198,7 +198,7 @@ const CalendarWeekGrid = ({
                           {ev.scheduleStatus === "cancelled" && `Zrušeno${ev.publicReason ? ` · ${ev.publicReason}` : ""}`}
                           {ev.scheduleStatus === "moved_from" && ev.movedStart &&
                             `Přesunuto na ${ev.movedStart.getDate()}. ${ev.movedStart.getMonth() + 1}. ${formatTime(ev.movedStart)}`}
-                          {ev.scheduleStatus === "moved_to" && "přesunuto"}
+                          {ev.scheduleStatus === "moved_to" && "Přesunuto"}
                         </div>
                       )}
                     </button>
