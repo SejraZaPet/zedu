@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, Clock } from "lucide-react";
+import UpcomingScheduleChanges from "@/components/calendar/UpcomingScheduleChanges";
 import { DEFAULT_PERIOD_TIMES } from "@/lib/teacher-schedule-store";
 import {
   getSubjectAbbreviation,
@@ -180,6 +181,8 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
           </div>
         )}
       </div>
+
+      {!loading && <UpcomingScheduleChanges slots={slots} compact />}
 
       {loading ? (
         <p className="text-xs text-muted-foreground py-6 text-center">Načítám rozvrh…</p>

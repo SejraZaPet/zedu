@@ -23,6 +23,7 @@ import {
 } from "@/lib/calendar-utils";
 import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
 import { toExportEvent } from "@/lib/calendar-export";
+import { fetchStudentScheduleChanges, mergeStudentScheduleChanges } from "@/lib/schedule-exception-store";
 
 const StudentCalendar = () => {
   const navigate = useNavigate();
@@ -77,11 +78,12 @@ const StudentCalendar = () => {
 
       if (cancelled) return;
 
-      const lessonEvents = expandScheduleSlots(
-        ((slotsRes.data as any[]) ?? []) as any,
-        from,
-        to,
-      );
+      const rawSlots = ((slotsRes.data as any[]) ?? []) as any;
+      const expand = (f: Date, t: Date) => expandScheduleSlots(rawSlots, f, t);
+      // Visible class changes via safe RPC; on error the plain timetable stays.
+      const changeRows = await fetchStudentScheduleChanges(from, to);
+      if (cancelled) return;
+      const lessonEvents = mergeStudentScheduleChanges(expand(from, to), changeRows, { from, to }, expand);
 
       const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {
