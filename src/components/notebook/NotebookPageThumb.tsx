@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BackgroundStyle, NB_H, NB_W, NotebookPageContent, backgroundCss, renderStroke, signNotebookImages } from "@/lib/notebook";
+import { BackgroundStyle, NB_H, NB_W, NotebookPageContent, backgroundCss, renderStroke, signNotebookImages, isLiveWorksheetPage } from "@/lib/notebook";
 import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 import { drawNotebookTextBox } from "@/lib/notebook-rich-text";

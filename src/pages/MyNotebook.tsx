@@ -23,6 +23,7 @@ import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
   NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
   loadNotebooks, loadPages, ensureMyCourseNotebooks, normalizeContent, savePageContent, savePageMeta, upsertClassRosterTextBox,
+  isLiveWorksheetPage,
 } from "@/lib/notebook";
 import { buildToc, listSections, pageDisplayTitle } from "@/lib/notebook-toc";
 import { Checkbox } from "@/components/ui/checkbox";
