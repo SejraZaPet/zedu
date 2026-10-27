@@ -143,7 +143,7 @@ describe("zdroj textu", () => {
   it("odmítne krátký text česky", () => {
     const r = prepareSourceText("krátké");
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toContain(String(MIN_SOURCE_TEXT_LENGTH));
+    if (r.ok === false) expect(r.error).toContain(String(MIN_SOURCE_TEXT_LENGTH));
   });
   it("ze sešitu čte jen textová pole (bez tahů, obrázků a seznamu třídy)", () => {
     const content = {
