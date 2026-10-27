@@ -10,6 +10,7 @@ import {
 import {
   PortfolioItem, TYPE_LABEL, getAttachmentSignedUrl, getStudentAttachmentSignedUrl,
 } from "@/lib/portfolio";
+import PortfolioSourceActions from "@/components/portfolio/PortfolioSourceActions";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -211,13 +212,14 @@ export default function PortfolioBookView({ items, initialSubject }: Props) {
                   <Video className="h-3.5 w-3.5" /> Otevřít video
                 </a>
               )}
-              {active.files && active.files.length > 0 && (
+              <PortfolioSourceActions item={active} />
+                {active.files && active.files.length > 0 && (
                 <ul className="space-y-1">
                   {active.files.map((f) => (
                     <li key={f.id} className="flex items-center gap-2 text-sm">
                       <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className="flex-1 truncate">{f.file_name}</span>
-                      {fileUrls[f.id] && (
+                      {fileUrls[f.id] ? (
                         <a
                           href={fileUrls[f.id]!}
                           target="_blank"
@@ -226,7 +228,9 @@ export default function PortfolioBookView({ items, initialSubject }: Props) {
                         >
                           <ExternalLink className="h-3 w-3" /> Otevřít
                         </a>
-                      )}
+                      ) : f.id in fileUrls ? (
+                          <span className="text-xs text-muted-foreground">Soubor není dostupný</span>
+                        ) : null}
                     </li>
                   ))}
                 </ul>

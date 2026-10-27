@@ -16,6 +16,10 @@ interface Props {
   studentName?: string;
   assignmentTitle?: string;
   triggerVariant?: "icon" | "button";
+  /** Label of the "button" trigger (default „Náhled“). */
+  triggerLabel?: string;
+  /** Inside the portfolio itself: hide the link back to the portfolio and explain a missing attempt. */
+  inPortfolio?: boolean;
 }
 
 interface AttachmentRow {
@@ -37,6 +41,7 @@ interface AttemptRow {
 
 export default function AttemptQuickPreviewDialog({
   assignmentId, studentId, studentName, assignmentTitle, triggerVariant = "icon",
+  triggerLabel = "Náhled", inPortfolio = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,7 +96,7 @@ export default function AttemptQuickPreviewDialog({
         </Button>
       ) : (
         <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-          <Eye className="w-4 h-4 mr-1.5" /> Náhled
+          <Eye className="w-4 h-4 mr-1.5" aria-hidden /> {triggerLabel}
         </Button>
       )}
       <DialogContent className="max-w-2xl">
@@ -112,7 +117,11 @@ export default function AttemptQuickPreviewDialog({
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : !attempt ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">Žádný pokus.</p>
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            {inPortfolio
+              ? "Odevzdání se nepodařilo najít, nebo k němu nemáte přístup (např. úkol zadal jiný vyučující)."
+              : "Žádný pokus."}
+          </p>
         ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -173,11 +182,13 @@ export default function AttemptQuickPreviewDialog({
         )}
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="outline" asChild>
-            <Link to={`/portfolio/${studentId}`}>
-              <FolderOpen className="w-4 h-4 mr-1.5" /> Zobrazit v portfoliu žáka
-            </Link>
-          </Button>
+          {!inPortfolio ? (
+            <Button variant="outline" asChild>
+              <Link to={`/portfolio/${studentId}`}>
+                <FolderOpen className="w-4 h-4 mr-1.5" /> Zobrazit v portfoliu žáka
+              </Link>
+            </Button>
+          ) : <span />}
           <Button variant="ghost" onClick={() => setOpen(false)}>Zavřít</Button>
         </DialogFooter>
       </DialogContent>

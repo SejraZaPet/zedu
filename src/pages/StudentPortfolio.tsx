@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 
 export default function StudentPortfolio() {
-  const { user } = useAuth();
+  const { user, viewAsRole } = useAuth();
   const [searchParams] = useSearchParams();
   const initialSubject = searchParams.get("subject") || undefined;
   const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -123,6 +123,11 @@ export default function StudentPortfolio() {
                 <NotebookPen className="w-4 h-4" /> Sešit
               </Button>
             </div>
+            {viewAsRole && (
+              <p role="status" className="mb-4 rounded-lg border border-border bg-muted/50 p-3 text-sm">
+                Prohlížíte jako žák, ale toto je vaše vlastní portfolio. Portfolio konkrétního žáka otevřete ze seznamu třídy.
+              </p>
+            )}
             {view === "timeline" ? (
               <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
             ) : (
