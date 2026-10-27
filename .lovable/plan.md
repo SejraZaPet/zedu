@@ -843,3 +843,118 @@ AS $function$
   LIMIT 1
 $function$;
 ```
+
+---
+
+# Část J – Zrušené hodiny u žáků (diagnostika + návrh, NESPOUŠTĚT)
+
+## Shrnutí pro učitelku
+- **Nejde o chybu, ale o nedokončenou etapu.** Zrušení hodiny se dnes ukládá jen pro učitele. Žákovské zobrazení bylo 18. 10. výslovně odloženo („Žákovské zobrazení ani zprávy třídě neimplementovat“). Žádná žákovská stránka změny rozvrhu nečte a žáci k nim ani nemají přístup.
+- Proto žák vidí zrušenou hodinu jako běžnou, po jejím čase jako „proběhlo“.
+- Návrh: žák (a rodič) uvidí u zrušené hodiny přeškrtnutý čas a štítek „Zrušeno“. Důvod uvidí jen tehdy, když ho učitel označí jako veřejný. Soukromá poznámka se žákům nikdy neposílá.
+
+## 1) Kde se nastavuje viditelnost
+- Sloupec `schedule_exceptions.visible_to_students`: výchozí hodnota `false`.
+- RPC `save_schedule_exception(..., _share boolean, ...)`: parametr `_share` **ignoruje**. INSERT i ON CONFLICT natvrdo nastaví `visible_to_students=false` a návrat zrušení také `false`.
+- Klient `src/lib/schedule-exception-store.ts` ř. 180 posílá `_share: false`.
+- Dialog `src/components/calendar/ScheduleExceptionDialog.tsx` ř. 207–208: pole „Důvod“ (uloží se do `public_reason`) a poznámka (uloží se do `schedule_exception_notes`). Zaškrtávátko pro žáky v dialogu chybí.
+- Jak učitel zrušení zveřejňuje: dnes nijak.
+
+## 2) Kde žák čte rozvrh
+| Stránka | Soubor | Čte výjimky? |
+|---|---|---|
+| Dnes (přehled žáka) | `components/calendar/TodayWidget.tsx` (role student, ř. 353 „proběhlo“) | volá `fetchExceptionRows`, ale RLS vrací žákovi prázdno |
+| Předmět – Proběhlé/Nadcházející | `pages/StudentSubjectClass.tsx` | ne, jen `class_schedule_slots` |
+| Týdenní rozvrh | `pages/StudentSchedule.tsx` | ne |
+| Kalendář žáka | `pages/StudentCalendar.tsx` | ne |
+| Rozvrh rodiče | `components/parent/ChildScheduleWidget.tsx` | ne |
+
+- RLS `schedule_exceptions_read`: `owner_id = auth.uid()`, plus demo_guard a demo_iso.
+- `read_schedule_exceptions` je SECURITY INVOKER (`SELECT *`), takže žák nedostane nic. Kdyby dostal, viděl by celý řádek. Proto pro žáky navrhuji samostatnou bezpečnou funkci místo rozšíření RLS.
+
+## 3) Návrh
+**J1 – bezpečné čtení (migrace):**
+```sql
+ALTER TABLE public.schedule_exceptions ADD COLUMN reason_visible boolean NOT NULL DEFAULT false;
+
+CREATE OR REPLACE FUNCTION public.student_schedule_changes(_from date, _to date)
+RETURNS TABLE(id uuid, source_kind text, source_id text, class_slot_id uuid, original_date date,
+  action text, new_date date, new_start time, new_end time, class_id uuid, group_id uuid, public_reason text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT e.id, e.source_kind, e.source_id, e.class_slot_id, e.original_date, e.action,
+    e.new_date, e.new_start, e.new_end, e.class_id, e.group_id,
+    CASE WHEN e.reason_visible THEN e.public_reason ELSE '' END
+  FROM public.schedule_exceptions e
+  WHERE e.state = 'active' AND e.visible_to_students
+    AND (e.original_date BETWEEN _from AND _to OR e.new_date BETWEEN _from AND _to)
+    AND public.schedule_demo_access(e.owner_id, e.class_id, e.group_id)
+    AND (
+      EXISTS (SELECT 1 FROM public.class_members m WHERE m.class_id = e.class_id AND m.user_id = auth.uid())
+      OR EXISTS (SELECT 1 FROM public.subject_group_members g WHERE g.group_id = e.group_id AND g.user_id = auth.uid())
+      OR EXISTS (SELECT 1 FROM public.parent_student_links l
+        JOIN public.class_members m ON m.user_id = l.student_id
+        WHERE l.parent_id = auth.uid() AND m.class_id = e.class_id)
+      OR EXISTS (SELECT 1 FROM public.parent_student_links l
+        JOIN public.subject_group_members g ON g.user_id = l.student_id
+        WHERE l.parent_id = auth.uid() AND g.group_id = e.group_id)
+    )
+$$;
+REVOKE EXECUTE ON FUNCTION public.student_schedule_changes(date, date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.student_schedule_changes(date, date) TO authenticated;
+```
+Rollback J1:
+```sql
+DROP FUNCTION IF EXISTS public.student_schedule_changes(date, date);
+ALTER TABLE public.schedule_exceptions DROP COLUMN IF EXISTS reason_visible;
+```
+Soukromá poznámka (`schedule_exception_notes`) ani vlastník se nevracejí.
+
+Před spuštěním ověřím sloupce `subject_group_members.group_id` a `parent_student_links.parent_id` / `student_id`.
+
+**J2 – ukládání do budoucna (migrace):**
+- `save_schedule_exception` bude dál mít stejnou signaturu.
+- `visible_to_students` = `coalesce(_share, true)` pro `cancelled` / `moved`; u návratu zrušení zůstane `false`.
+- `reason_visible` řídí nový parametr; aby se signatura nezměnila, ponese ho stávající `_share`, nebo nová přetížená funkce.
+- Úplná původní a nová definice (funkce je dlouhá) bude v samostatném balíčku ke schválení stejně jako u I2b.
+
+Dialog dostane:
+- „Ukázat změnu žákům a rodičům“ (výchozí zapnuto)
+- „Ukázat i důvod“ (výchozí vypnuto, s nápovědou „Důvod uvidí žáci i rodiče, nepište osobní údaje“)
+
+**J3 – zobrazení u žáka (klient, bez DB):**
+- Nový `fetchStudentScheduleChanges()` a stávající `applyScheduleExceptions` označí výskyty jako zrušené.
+- Úpravy v TodayWidget (role student), StudentSubjectClass, StudentSchedule, StudentCalendar a ChildScheduleWidget.
+- Zrušená hodina má přeškrtnutý čas a název, štítek „Zrušeno“ a pod ní případný důvod.
+- Na stránce předmětu se nikdy nezapočítá mezi „Co jste probrali“.
+- Přesunutá hodina se ukáže na novém termínu se štítkem „Přesunuto“.
+
+**b) 24 stávajících záznamů (zápis dat, jen po „schvaluji“):**
+```sql
+-- náhled, jen čtení
+SELECT id, original_date, class_id, group_id, length(public_reason) FROM public.schedule_exceptions
+WHERE state='active' AND action='cancelled' AND source_kind='class_slot'
+  AND original_date BETWEEN '2026-10-26' AND '2026-10-30' AND NOT visible_to_students;
+-- zveřejnění (po J1), varianta bez důvodu / s důvodem podle rozhodnutí učitelky
+UPDATE public.schedule_exceptions SET visible_to_students = true /*, reason_visible = true */
+WHERE id IN (<24 id z náhledu>);
+-- rollback
+UPDATE public.schedule_exceptions SET visible_to_students = false, reason_visible = false
+WHERE id IN (<stejných 24 id>);
+```
+Zveřejnění se dotkne jen výjimek dané učitelky. Stálý rozvrh se nemění.
+
+**d) Oznámení žákům (jen návrh, neposílat):** v J2 volitelné tlačítko „Upozornit třídu“. Vloží in-app notifikaci členům třídy nebo skupiny přes existující `send_notification` (receiver_type `class`). Žádné e-maily.
+
+## 4) Etapy, riziko, testy
+| Etapa | Riziko | Test |
+|---|---|---|
+| J1 čtení | nízké (nová funkce, dnes nikdo nevidí nic navíc) | SQL: funkce nevrací notes ani owner; žák cizí třídy dostane prázdno; demo izolace |
+| J3 zobrazení | nízké | vitest: zrušený výskyt má štítek, nepočítá se do „probrali“; Playwright: přehled Dnes, předmět, týden, kalendář, rodič |
+| b) 24 záznamů | nízké, vratné | náhled před/po, rollback podle ID |
+| J2 ukládání | střední (dlouhá RPC) | stávající testy `schedule-exceptions*.test.ts` + zrušení/přesun/návrat |
+
+Pořadí: J1 → J3 → b) → J2. Demo režim se nemění: zachovají se `schedule_demo_access`, demo_guard i demo_iso.
+
+Otázky pro učitelku:
+1. Mají se u 24 zrušení ukázat i důvody?
+2. Má být zaškrtávátko „Ukázat žákům“ výchozí zapnuté?
