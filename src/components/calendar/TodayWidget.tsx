@@ -336,19 +336,24 @@ const TodayWidget = ({ role }: Props) => {
                     target ? "cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring" : ""
                   }`}
                 >
-                  <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
+                  <span className={`font-mono text-xs w-24 shrink-0 text-muted-foreground ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
-                  <span className={`flex-1 truncate ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
-                    {ev.title}
-                    {ev.groupId && ev.className && (
-                      <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className={`block truncate ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
+                      {ev.title}
+                      {ev.groupId && ev.className && (
+                        <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                      )}
+                    </span>
+                    {role === "student" && ev.scheduleStatus === "cancelled" && ev.publicReason && (
+                      <span className="block text-xs text-muted-foreground whitespace-normal">Důvod: {ev.publicReason}</span>
                     )}
                   </span>
                   {ev.room && (
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
-                  {isCurrent && (
+                  {isCurrent && ev.scheduleStatus !== "cancelled" && (
                     <Badge className="bg-primary text-primary-foreground shrink-0">
                       právě probíhá
                     </Badge>
