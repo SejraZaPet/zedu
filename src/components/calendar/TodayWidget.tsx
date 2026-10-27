@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchExceptionRows, mergeExceptions, ownedSource, type Expander } from "@/lib/schedule-exception-store";
+import { fetchExceptionRows, fetchStudentScheduleChanges, mergeExceptions, mergeStudentScheduleChanges, ownedSource, type Expander } from "@/lib/schedule-exception-store";
 import ScheduleExceptionDialog from "@/components/calendar/ScheduleExceptionDialog";
 import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import { useToast } from "@/hooks/use-toast";
@@ -183,6 +183,10 @@ const TodayWidget = ({ role }: Props) => {
             .sort((a, b) => a.start.getTime() - b.start.getTime());
           if (mounted) setExpander(() => expand);
         }
+      } else if (role === "student") {
+        // Visible class changes via safe RPC; on error the plain timetable stays.
+        const rows = await fetchStudentScheduleChanges(from, to);
+        lessons = mergeStudentScheduleChanges(lessons, rows, { from, to }, (f, t) => expandScheduleSlots(slots, f, t));
       }
 
       const fromIso = new Date().toISOString();
