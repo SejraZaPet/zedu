@@ -55,7 +55,7 @@ export interface NotebookPageContent {
   /** Vložený pracovní list (viz worksheet-notebook.ts). */
   worksheet?: {
     worksheetId: string;
-    mode: "digital" | "pen";
+    mode: "digital" | "pen" | "live";
     title: string;
     assignmentId?: string | null;
     pageIndex?: number;
@@ -652,3 +652,7 @@ export async function addPageToPortfolio(
 export async function ensureMyCourseNotebooks(): Promise<void> {
   try { await (supabase.rpc as any)("ensure_my_course_notebooks"); } catch { /* tiše */ }
 }
+
+/** Stránka s živým vyplnitelným listem (digital = starší odkaz, live = nový model). */
+export const isLiveWorksheetPage = (c: Pick<NotebookPageContent, "worksheet"> | null | undefined): boolean =>
+  c?.worksheet?.mode === "digital" || c?.worksheet?.mode === "live";

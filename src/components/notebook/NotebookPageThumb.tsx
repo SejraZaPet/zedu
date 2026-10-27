@@ -78,7 +78,7 @@ const NotebookPageThumb = ({ content, backgroundStyle, className }: Props) => {
         />
       ) : null)}
       <canvas ref={ref} className="absolute inset-0 h-full w-full" />
-      {content.worksheet?.mode === "digital" && (
+      {isLiveWorksheetPage(content) && content.worksheet && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-card/90 p-1 text-center">
           <FileText className="h-5 w-5 text-primary" aria-hidden />
           <span className="line-clamp-3 text-[9px] font-medium leading-tight text-foreground">{content.worksheet.title}</span>

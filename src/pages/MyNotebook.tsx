@@ -713,7 +713,7 @@ export default function MyNotebook() {
                   </form>
                 </nav>
 
-                {activePage?.content.worksheet?.mode === "digital" ? (
+                {activePage && isLiveWorksheetPage(activePage.content) ? (
                   <NotebookWorksheetPage
                     key={activePage.id}
                     worksheetRef={activePage.content.worksheet as any}
