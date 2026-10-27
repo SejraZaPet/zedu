@@ -512,6 +512,13 @@
       "when": 1793118864580,
       "tag": "0072_student_schedule_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793120397413,
+      "tag": "0073_i2b1_hide_preview_students",
+      "breakpoints": true
     }
   ]
 }
