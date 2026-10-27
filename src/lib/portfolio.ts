@@ -115,6 +115,22 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
     manual.forEach((m) => { m.files = byItem.get(m.id) ?? []; });
   }
 
+  // Doplní assignment_id k položkám, které znají jen attempt_id (kvůli „Zobrazit odevzdání“).
+  const orphanAttemptIds = manual
+    .filter((m) => !m.source_assignment_id && typeof m.content_json?.attempt_id === "string")
+    .map((m) => m.content_json.attempt_id as string);
+  if (orphanAttemptIds.length > 0) {
+    const { data: rows } = await supabase
+      .from("assignment_attempts")
+      .select("id, assignment_id")
+      .in("id", orphanAttemptIds);
+    const byAttempt = new Map(((rows ?? []) as any[]).map((r) => [r.id, r.assignment_id]));
+    manual.forEach((m) => {
+      const aid = byAttempt.get(m.content_json?.attempt_id);
+      if (aid && !m.content_json.assignment_id) m.content_json = { ...m.content_json, assignment_id: aid };
+    });
+  }
+
   const auto: PortfolioItem[] = [];
 
   // Only include attempts that are NOT already reflected in a linked portfolio item
@@ -133,7 +149,7 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
       description: null,
       subject: a.assignments?.subjects?.name ?? null,
       attachment_url: null,
-      content_json: { score: a.score, max_score: a.max_score, attempt_id: a.id },
+      content_json: { score: a.score, max_score: a.max_score, attempt_id: a.id, assignment_id: a.assignment_id },
       created_at: a.submitted_at || new Date().toISOString(),
       synthetic: true,
     });
@@ -240,4 +256,16 @@ export async function removeStudentAttachmentFile(path: string): Promise<void> {
       supabase.storage.from(b).remove([path]),
     ),
   );
+}
+
+/** Úkol, ze kterého položka vznikla (pro náhled odevzdání), nebo null. */
+export function portfolioAssignmentId(item: PortfolioItem): string | null {
+  const fromJson = item.content_json?.assignment_id;
+  return item.source_assignment_id || (typeof fromJson === "string" ? fromJson : null);
+}
+
+/** Interní odkaz na pracovní list uložený z učebnice (jen relativní cesty aplikace). */
+export function portfolioWorksheetHref(item: PortfolioItem): string | null {
+  const href = item.content_json?.href;
+  return typeof href === "string" && href.startsWith("/student/pracovni-list/") ? href : null;
 }
