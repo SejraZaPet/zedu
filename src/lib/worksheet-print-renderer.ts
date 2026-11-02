@@ -1028,10 +1028,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         </table>`;
         if (key) {
           keyShown = true;
-          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${item.matchPairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
+          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${pairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
         }
       }
       break;
+    }
 
     case "ordering":
       if (item.orderItems?.length) {
