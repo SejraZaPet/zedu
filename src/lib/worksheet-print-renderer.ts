@@ -1008,14 +1008,18 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       }
       break;
 
-    case "matching":
-      if (item.matchPairs?.length) {
+    case "matching": {
+      // Prázdné páry se jen nezobrazí; specifikace zůstává beze změny.
+      const pairs = (item.matchPairs ?? []).filter(
+        (p) => !!p && !!(p.left ?? "").trim() && !!(p.right ?? "").trim(),
+      );
+      if (pairs.length) {
         // Pravý sloupec musí být zamíchaný, jinak jsou správné páry přímo proti sobě.
         const shuffled = seededShuffleNonIdentity(
-          item.matchPairs.map((p) => p.right),
+          pairs.map((p) => p.right),
           item.id,
         );
-        const rows = item.matchPairs
+        const rows = pairs
           .map((p, i) => `<tr><td>${i + 1}. ${esc(p.left)}</td><td class="ws-match-answer">&nbsp;</td><td>${esc(shuffled[i])}</td></tr>`)
           .join("");
         body = `<table class="ws-matching-table">
