@@ -36,10 +36,11 @@ describe("Spojování s neúplnými páry", () => {
     const spec: any = {
       specVersion: "1", worksheetId: "w1", title: "T", subject: "S", grade: 1, language: "cs-CZ",
       variants: [{ variantId: "A", seed: 1, items: [{ ...base, matchPairs: [{ left: "a", right: "1" }, { left: "b", right: "2" }, { left: "", right: "" }] }] }],
-      answerKeys: { A: [] }, randomizationRules: [],
+      answerKeys: { A: [] }, randomizationRules: [], header: { title: "T", studentNameField: true }, renderConfig: { showPoints: false, includeAnswerKey: false },
     };
     let html = "";
     expect(() => { html = renderWorksheetVariantHtml(spec, "A"); }).not.toThrow();
-    expect(html).not.toContain("3. ");
+    expect(html).toContain("2. b");
+    expect(html).not.toContain("<td>3. ");
   });
 });
