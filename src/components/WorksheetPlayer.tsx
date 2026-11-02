@@ -35,6 +35,7 @@ import { t } from "@/lib/t";
 import type { WorkTarget } from "@/lib/worksheet-work";
 import { RotateCcw, Hourglass } from "lucide-react";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
+import { displayableMatchPairs } from "@/components/worksheet-items/MatchingItem";
 import { hasWrittenText } from "@/components/worksheet-items/LayoutBlockItem";
 import type {
   WorksheetSpec,
@@ -319,7 +320,7 @@ export default function WorksheetPlayer({
     if (!Renderer) return <p className="text-muted-foreground text-sm">Nepodporovaný typ úlohy.</p>;
     return (
       <Renderer
-        item={it}
+        item={it.type === "matching" ? { ...it, matchPairs: displayableMatchPairs(it.matchPairs) } : it}
         value={answers[it.id]}
         onChange={(v) => setAnswer(it.id, v)}
         disabled={submitted}

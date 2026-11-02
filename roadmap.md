@@ -120,3 +120,7 @@
 
 ## Sešit na tabletu (Část F)
 - [x] Měření PŘED, rozložení pod xl, miniatury s obrázkem, testy, měření PO
+
+## Spojování v editoru pracovního listu — bílá stránka
+- [x] Oprava náhledu, přehrávače, tisku, klíče a ochrana náhledu; 5 regresních testů
+- [ ] Nasazení až po pokynu „nasadit“; kliknutí v běžící aplikaci neověřeno

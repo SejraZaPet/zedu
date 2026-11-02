@@ -176,6 +176,7 @@ import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import LessonVisualBlockItem from "@/components/worksheet-items/LessonVisualBlockItem";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
+import EditorErrorBoundary from "@/components/EditorErrorBoundary";
 import { paginateWorksheetEditorItems } from "@/lib/worksheet-editor-pagination";
 import { createWriteLinePatch, getWriteLineCount, getWriteLineHeightMm, answerSpaceHeightMm, WRITE_LINE_HEIGHT_MM, WRITE_LINE_HEIGHT_MIN_MM, WRITE_LINE_HEIGHT_MAX_MM, getBlankBoxHeightMm, BLANK_BOX_MIN_MM, BLANK_BOX_MAX_MM } from "@/lib/worksheet-write-lines";
 import "@/styles/worksheet-editor.css";
@@ -3539,7 +3540,11 @@ function SortableItemBlock({
           </div>
         )}
         <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
-          {Renderer ? <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} /> : null}
+          {Renderer ? (
+            <EditorErrorBoundary resetKey={JSON.stringify(item)}>
+              <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} />
+            </EditorErrorBoundary>
+          ) : null}
         </div>
         <EditorImageSlot item={item} expanded={expanded} onUpdateItem={onUpdateItem} />
         {item.type !== "write_lines" && item.type !== "blank_box" && item.answerSpace.type !== "none" && item.answerSpace.heightMm > 0 && (
@@ -4061,6 +4066,7 @@ function PropertiesPanel({
             onClick={() => {
               const next = [...(item.matchPairs ?? []), { left: "", right: "" }];
               onUpdateItem({ matchPairs: next });
+              onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
             }}
           >
             <Plus className="w-3 h-3 mr-1" /> Přidat pár

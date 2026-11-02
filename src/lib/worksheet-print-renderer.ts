@@ -1008,14 +1008,18 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       }
       break;
 
-    case "matching":
-      if (item.matchPairs?.length) {
+    case "matching": {
+      // Prázdné páry se jen nezobrazí; specifikace zůstává beze změny.
+      const pairs = (item.matchPairs ?? []).filter(
+        (p) => !!p && !!(p.left ?? "").trim() && !!(p.right ?? "").trim(),
+      );
+      if (pairs.length) {
         // Pravý sloupec musí být zamíchaný, jinak jsou správné páry přímo proti sobě.
         const shuffled = seededShuffleNonIdentity(
-          item.matchPairs.map((p) => p.right),
+          pairs.map((p) => p.right),
           item.id,
         );
-        const rows = item.matchPairs
+        const rows = pairs
           .map((p, i) => `<tr><td>${i + 1}. ${esc(p.left)}</td><td class="ws-match-answer">&nbsp;</td><td>${esc(shuffled[i])}</td></tr>`)
           .join("");
         body = `<table class="ws-matching-table">
@@ -1024,10 +1028,11 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         </table>`;
         if (key) {
           keyShown = true;
-          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${item.matchPairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
+          body += `<div class="ws-inline-key"><span class="ws-inline-key-label">Správné dvojice:</span> ${pairs.map((p) => `<span class="ws-inline-key-answer">${esc(p.left)} → ${esc(p.right)}</span>`).join("; ")}</div>`;
         }
       }
       break;
+    }
 
     case "ordering":
       if (item.orderItems?.length) {
