@@ -1,4 +1,5 @@
 
+import { toast } from "sonner";
 import { MonitorPlay, ChevronDown, ChevronRight, MoreHorizontal, BookmarkPlus, LayoutTemplate } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
