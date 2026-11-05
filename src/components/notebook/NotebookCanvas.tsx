@@ -5,7 +5,7 @@ import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
   ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut, Hand, Maximize2,
 } from "lucide-react";
-import { anchorScroll, clampZoom, distance, isGesturePointer, midpoint, pinchZoom } from "@/lib/notebook-gestures";
+import { anchorScroll, clampZoom, fitWidth, distance, isGesturePointer, midpoint, pinchZoom } from "@/lib/notebook-gestures";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
 import NotebookImageContent from "@/components/notebook/NotebookImageContent";
@@ -233,8 +233,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   /** true = pointer was consumed as a pan/pinch gesture */
   const gestureDown = (e: React.PointerEvent): boolean => {
     if (e.pointerType === "touch") touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const isGesture = isGesturePointer(e.pointerType, { hand: handTool || readOnly, penOnly: penPrefs.penOnly, touchCount: touchesRef.current.size });
+    const isGesture = isGesturePointer(e.pointerType, { hand: handTool || readOnly, penOnly: penPrefs.penOnly, touchCount: touchesRef.current.size, select: mode === "select" });
     if (!isGesture) return false;
+    if (mode === "select" && touchesRef.current.size === 1) { if (editingId) finishEditing(); setSelectedId(null); }
     // Druhý prst během tahu prstem → tah zahodit a přejít na přiblížení.
     if (drawingRef.current && strokeTypeRef.current === "touch") {
       drawingRef.current = null; strokeTypeRef.current = null; predictedRef.current = [];
@@ -579,7 +580,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       <Button
         type="button" size="sm" variant="outline" className="min-h-11"
         title="Přizpůsobit šířce" aria-label="Přizpůsobit stránku šířce"
-        onClick={() => { setZoom(1); const sc = scrollRef.current; if (sc) { sc.scrollLeft = 0; sc.scrollTop = 0; } }}
+        onClick={() => { const f = fitWidth(); setZoom(f.zoom); const sc = scrollRef.current; if (sc) { sc.scrollLeft = f.scrollLeft; sc.scrollTop = f.scrollTop; } }}
       >
         <Maximize2 className="h-4 w-4" />
         <span className="sr-only sm:not-sr-only sm:ml-1">Na šířku</span>

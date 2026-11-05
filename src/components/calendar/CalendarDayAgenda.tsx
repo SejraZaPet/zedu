@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { type CalendarEvent, formatTime, getEventColors } from "@/lib/calendar-utils";
 import { splitDayAgenda } from "@/lib/calendar-day-agenda";
+import DeadlineMarker from "@/components/calendar/DeadlineMarker";
 
 interface Props {
   events: CalendarEvent[];
@@ -58,15 +59,16 @@ const CalendarDayAgenda = ({ events, day, onEventClick, reflectionState, onRefle
 
   return (
     <div className="space-y-5 rounded-lg border bg-card p-3" data-testid="calendar-day-agenda">
+      {deadlines.length > 0 && (
+        <div className="flex items-center gap-2 border-b pb-2">
+          <span className="text-sm font-semibold">Termíny</span>
+          <DeadlineMarker events={deadlines} onOpen={onEventClick} />
+        </div>
+      )}
       <section>
         <h2 className="mb-2 text-sm font-semibold">Rozvrh</h2>
         {lessons.length ? <ul className="space-y-2">{lessons.map((e) => card(e, true))}</ul>
           : <p className="text-sm text-muted-foreground">Žádné hodiny.</p>}
-      </section>
-      <section>
-        <h2 className="mb-2 text-sm font-semibold">Termíny úkolů</h2>
-        {deadlines.length ? <ul className="space-y-2">{deadlines.map((e) => card(e, false))}</ul>
-          : <p className="text-sm text-muted-foreground">Žádné termíny.</p>}
       </section>
     </div>
   );

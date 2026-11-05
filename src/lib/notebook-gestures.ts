@@ -19,8 +19,11 @@ export const distance = (a: { x: number; y: number }, b: { x: number; y: number 
 export const midpoint = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
 /** Should this pointer move the page instead of drawing? Pen always draws unless the hand tool is on. */
-export function isGesturePointer(pointerType: string, opts: { hand: boolean; penOnly: boolean; touchCount: number }): boolean {
+export function isGesturePointer(pointerType: string, opts: { hand: boolean; penOnly: boolean; touchCount: number; select?: boolean }): boolean {
   if (opts.hand) return true;
   if (pointerType !== "touch") return false;
-  return opts.penOnly || opts.touchCount >= 2;
+  return opts.penOnly || opts.touchCount >= 2 || opts.select === true;
 }
+
+/** "Fit width": back to 100 % and scroll to the start. */
+export const fitWidth = () => ({ zoom: 1, scrollLeft: 0, scrollTop: 0 });

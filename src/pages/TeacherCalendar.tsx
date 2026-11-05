@@ -1,3 +1,4 @@
+import { filterCalendarAssignments } from "@/lib/calendar-deadlines";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -113,7 +114,7 @@ const TeacherCalendar = () => {
           .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)"),
         supabase
           .from("assignments")
-          .select("id, title, deadline, class_id, exam_type")
+          .select("id, title, deadline, class_id, exam_type, settings")
           .eq("teacher_id", user.id)
           .not("deadline", "is", null)
           .gte("deadline", from.toISOString())
@@ -152,7 +153,7 @@ const TeacherCalendar = () => {
         [...lessonEvents, ...personalEvents], exceptionRows, user.id, { from, to }, expand,
       );
 
-      const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
+      const assignmentEvents: CalendarEvent[] = filterCalendarAssignments((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {
           const start = new Date(a.deadline);
           return {

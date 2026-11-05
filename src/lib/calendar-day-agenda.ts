@@ -7,7 +7,7 @@ export function splitDayAgenda(events: CalendarEvent[], day: Date) {
     .filter((e) => isSameDay(e.start, day))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
   return {
-    lessons: sameDay.filter((e) => e.type === "lesson"),
-    deadlines: sameDay.filter((e) => e.type !== "lesson"),
+    lessons: sameDay.filter((e) => e.type !== "assignment"),
+    deadlines: sameDay.filter((e) => e.type === "assignment"),
   };
 }
