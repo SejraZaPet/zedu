@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 import { Clock, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight, Hourglass, ClipboardCheck, Lock, BookOpen, Megaphone, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,11 +41,14 @@ export function AssignmentStatusGroups<T extends StatusAssignment & { id: string
   renderItem: (item: T, status: AssignmentStatus) => ReactNode;
 }) {
   const uid = useId();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    try { return { submitted: true, graded: true, closed: true, material: true, ...JSON.parse(sessionStorage.getItem(storageKey) ?? "{}") }; }
-    catch { return { submitted: true, graded: true }; }
-  });
-  useEffect(() => { try { sessionStorage.setItem(storageKey, JSON.stringify(collapsed)); } catch { /* unavailable storage */ } }, [collapsed, storageKey]);
+  // Re-read when storageKey changes (same component reused across subjects/classes).
+  const [state, setState] = useState(() => ({ key: storageKey, map: readCollapsed(storageKey, teacher) }));
+  const collapsed = state.key === storageKey ? state.map : readCollapsed(storageKey, teacher);
+  const toggle = (group: string) => {
+    const map = { ...collapsed, [group]: !collapsed[group] };
+    writeCollapsed(storageKey, map);
+    setState({ key: storageKey, map });
+  };
   const sorted = sortStatusAssignments(items, statusOf);
   return <div className="space-y-5">{(teacher ? TEACHER_ASSIGNMENT_GROUPS : ASSIGNMENT_GROUPS).map((group) => {
     const rows = sorted.filter((item) => statusOf(item).group === group.key);
@@ -54,7 +57,7 @@ export function AssignmentStatusGroups<T extends StatusAssignment & { id: string
     return <section key={group.key} aria-labelledby={`${id}-heading`}>
       <h2 id={`${id}-heading`}>
         <Button variant="ghost" className="mb-2 h-auto py-2 px-1 gap-2" aria-expanded={!collapsed[group.key]} aria-controls={id}
-          onClick={() => setCollapsed((prev) => ({ ...prev, [group.key]: !prev[group.key] }))}>
+          onClick={() => toggle(group.key)}>
           {collapsed[group.key] ? <ChevronRight aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
           <span className="font-semibold">{group.label}</span><span className="text-muted-foreground tabular-nums">({rows.length})</span>
         </Button>
@@ -64,4 +67,25 @@ export function AssignmentStatusGroups<T extends StatusAssignment & { id: string
       </div>
     </section>;
   })}</div>;
+}
+
+const STUDENT_OPEN = new Set(["pending", "announcement"]);
+const TEACHER_OPEN = new Set(["review", "pending"]);
+/** Výchozí sbalení skupin bez uložené volby. */
+export function defaultCollapsed(teacher: boolean): Record<string, boolean> {
+  const open = teacher ? TEACHER_OPEN : STUDENT_OPEN;
+  return Object.fromEntries((teacher ? TEACHER_ASSIGNMENT_GROUPS : ASSIGNMENT_GROUPS).map((g) => [g.key, !open.has(g.key)]));
+}
+const STORAGE_PREFIX = "bezli:collapsed:";
+export function readCollapsed(storageKey: string, teacher: boolean): Record<string, boolean> {
+  const base = defaultCollapsed(teacher);
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + storageKey);
+    const saved = raw ? JSON.parse(raw) : null;
+    if (saved && typeof saved === "object") for (const [k, v] of Object.entries(saved)) if (typeof v === "boolean") base[k] = v;
+  } catch { /* private mode / corrupt value → defaults */ }
+  return base;
+}
+export function writeCollapsed(storageKey: string, map: Record<string, boolean>) {
+  try { localStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify(map)); } catch { /* unavailable storage */ }
 }
