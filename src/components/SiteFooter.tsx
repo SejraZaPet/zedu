@@ -65,8 +65,9 @@ const SiteFooter = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Bezli. Všechna práva vyhrazena.
           </p>
+          {showAdminLink && (
           <a
-            href="/auth"
+            href="/admin"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
             aria-label="Administrace"
             title="Administrace"
@@ -74,6 +75,7 @@ const SiteFooter = () => {
             <Settings className="w-3.5 h-3.5" />
             Administrace
           </a>
+          )}
         </div>
 
       </div>

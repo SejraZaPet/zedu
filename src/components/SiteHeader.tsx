@@ -21,6 +21,7 @@ import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
 import DemoRoleSwitch from "@/components/demo/DemoRoleSwitch";
+import RoleSwitchMenu from "@/components/RoleSwitchMenu";
 
 interface NavItem {
   label: string;
@@ -309,6 +310,7 @@ const SiteHeader = () => {
                       Administrace
                     </DropdownMenuItem>
                   )}
+                  <RoleSwitchMenu variant="dropdown" />
                   {(userRole === "teacher" || userRole === "lektor") && (
                     <>
                       {teacherMenuGroups.map((group) => (
@@ -477,6 +479,7 @@ const SiteHeader = () => {
                       <Settings size={18} /> Administrace
                     </button>
                   )}
+                  <RoleSwitchMenu variant="mobile" onDone={() => setMenuOpen(false)} />
                   <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left w-full">
                     <LogOut size={18} /> Odhlásit
                   </button>
