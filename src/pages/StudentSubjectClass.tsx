@@ -553,7 +553,7 @@ export default function StudentSubjectClass() {
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
       <main
-        className="flex-1 container mx-auto px-4 py-8 max-w-6xl"
+        className="student-touch flex-1 container mx-auto px-4 py-8 max-w-6xl min-w-0 overflow-x-hidden"
         style={{ paddingTop: "calc(70px + 2rem)" }}
       >
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
@@ -591,7 +591,7 @@ export default function StudentSubjectClass() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap min-w-0 [&>button]:max-w-full [&>button]:whitespace-normal max-sm:[&>button]:w-full">
               <Button
                 variant="outline"
                 onClick={() => navigate(`/student/portfolio?subject=${encodeURIComponent(subjectLabel)}`)}
@@ -646,7 +646,7 @@ export default function StudentSubjectClass() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <PlanPrepareButton lessons={lessons} />
-                      <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Detail</Button>
+                      <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>
                     </div>
                   </li>
                 );
@@ -655,8 +655,8 @@ export default function StudentSubjectClass() {
           </section>
         )}
 
-        <Tabs defaultValue="past" className="w-full">
-          <TabsList>
+        <Tabs defaultValue="past" className="w-full min-w-0">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
             <TabsTrigger value="past">
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Proběhnuté
