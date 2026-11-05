@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { normalizeAiProps, assertAiFillContent, AI_FILL_EMPTY_ERROR } from "@/lib/activity-ai-normalize";
 
