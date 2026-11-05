@@ -45,3 +45,4 @@
 - Assignment kinds (task/material/announcement) and late submission live in `assignments.settings` (`kind`, `lateUntil`, `pinned`, `visibleUntil`) via `assignment-kind.ts`; missing keys = task with no late submission, so existing assignments keep today's behaviour.
 - Student "new assignment" email copy lives only in `_shared/assignment-email.ts` (pure, tested); `settings.notifyEmail`/`notifyOverdue` default by kind via `assignment-kind.ts`, so missing keys keep existing behaviour.
 - AI activity output is normalized only in `src/lib/activity-ai-normalize.ts` (tolerates AI shape variants, rejects fill activities without blanks), so editors never silently receive empty content.
+- Notebook finger pan/pinch is view-only via `notebook-gestures.ts` (pen always draws; finger pans in pen-only/hand mode), so strokes and exports are unaffected. Mobile day calendar uses `CalendarDayAgenda` list; desktop grid unchanged.
