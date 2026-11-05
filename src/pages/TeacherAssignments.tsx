@@ -1085,6 +1085,29 @@ const TeacherAssignments = () => {
                 <AssignmentDescriptionEditor content={description} onChange={setDescription} />
               </div>
 
+              <fieldset className="space-y-1">
+                <legend className="sr-only">Upozornění žákům</legend>
+                <label className="flex min-h-11 items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={notifyEmailOpt ?? formKind !== "material"}
+                    onCheckedChange={(v) => setNotifyEmailOpt(v === true)}
+                  />
+                  Poslat žákům e-mail
+                </label>
+                {formKind === "task" && (
+                  <div>
+                    <label className="flex min-h-11 items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={notifyOverdueOpt ?? true}
+                        onCheckedChange={(v) => setNotifyOverdueOpt(v === true)}
+                      />
+                      Automaticky upozornit, když neodevzdají
+                    </label>
+                    <p className="ml-6 text-xs text-muted-foreground">Bude aktivní po zapnutí automatických upozornění.</p>
+                  </div>
+                )}
+              </fieldset>
+
               {formKind === "announcement" && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="flex min-h-11 items-center gap-2 text-sm">
