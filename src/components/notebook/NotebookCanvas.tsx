@@ -1,10 +1,11 @@
 import { DEFAULT_HIGHLIGHT_OPACITY, HIGHLIGHT_OPACITIES, farEnough, isEditableTarget, loadPenPrefs, PEN_SMOOTHING, savePenPrefs, shouldDrawPointer, smoothPressure, type PenPrefs, type PenSmoothing } from "@/lib/notebook-pointer";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PointerGate, finalizeTapPoints, normalizePoint } from "@/lib/notebook-pointer";
 import {
   Pencil, Highlighter, Eraser, Type as TypeIcon, Square, CircleIcon,
-  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut,
+  ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut, Hand, Maximize2,
 } from "lucide-react";
+import { anchorScroll, clampZoom, distance, isGesturePointer, midpoint, pinchZoom } from "@/lib/notebook-gestures";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
 import NotebookImageContent from "@/components/notebook/NotebookImageContent";
@@ -70,6 +71,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
   const [mode, setMode] = useState<Mode>("pen");
   const [zoom, setZoomState] = useState<number>(loadZoom);
+  const [handTool, setHandTool] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const setZoom = (z: number) => {
     const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z / ZOOM_STEP) * ZOOM_STEP));
     setZoomState(clamped);
@@ -206,8 +209,85 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     return e.pointerType === "touch" && Date.now() - lastPenAtRef.current < 1000;
   };
 
+  /* --- posun a přiblížení prsty (jen zobrazení) --- */
+  const touchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const gestureRef = useRef<{ startDist: number; startZoom: number; last: { x: number; y: number } } | null>(null);
+  const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
+  const liveZoomRef = useRef(zoom);
+  liveZoomRef.current = zoom;
+
+  useLayoutEffect(() => {
+    const sc = scrollRef.current, p = pendingScrollRef.current;
+    if (!sc || !p) return;
+    sc.scrollLeft = p.left; sc.scrollTop = p.top;
+    pendingScrollRef.current = null;
+  }, [zoom]);
+
+  const resetGestureStart = () => {
+    const pts = [...touchesRef.current.values()];
+    gestureRef.current = pts.length
+      ? { startDist: pts.length >= 2 ? distance(pts[0], pts[1]) : 0, startZoom: liveZoomRef.current, last: pts.length >= 2 ? midpoint(pts[0], pts[1]) : pts[0] }
+      : null;
+  };
+
+  /** true = pointer was consumed as a pan/pinch gesture */
+  const gestureDown = (e: React.PointerEvent): boolean => {
+    if (e.pointerType === "touch") touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const isGesture = isGesturePointer(e.pointerType, { hand: handTool || readOnly, penOnly: penPrefs.penOnly, touchCount: touchesRef.current.size });
+    if (!isGesture) return false;
+    // Druhý prst během tahu prstem → tah zahodit a přejít na přiblížení.
+    if (drawingRef.current && strokeTypeRef.current === "touch") {
+      drawingRef.current = null; strokeTypeRef.current = null; predictedRef.current = [];
+      gateRef.current.reset(); drawLive();
+    }
+    if (e.pointerType !== "touch") touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    e.preventDefault();
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    resetGestureStart();
+    return true;
+  };
+
+  const gestureMove = (e: React.PointerEvent): boolean => {
+    if (!gestureRef.current || !touchesRef.current.has(e.pointerId)) return false;
+    touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const sc = scrollRef.current;
+    const g = gestureRef.current;
+    const pts = [...touchesRef.current.values()];
+    const center = pts.length >= 2 ? midpoint(pts[0], pts[1]) : pts[0];
+    if (sc) {
+      const r = sc.getBoundingClientRect();
+      let left = sc.scrollLeft - (center.x - g.last.x);
+      let top = sc.scrollTop - (center.y - g.last.y);
+      if (pts.length >= 2 && g.startDist > 0) {
+        const next = pinchZoom(g.startZoom, g.startDist, distance(pts[0], pts[1]));
+        const k = next / liveZoomRef.current;
+        if (Math.abs(k - 1) > 0.001) {
+          left = anchorScroll(left, center.x - r.left, k);
+          top = anchorScroll(top, center.y - r.top, k);
+          pendingScrollRef.current = { left, top };
+          liveZoomRef.current = next;
+          setZoomState(next);
+        } else { sc.scrollLeft = left; sc.scrollTop = top; }
+      } else { sc.scrollLeft = left; sc.scrollTop = top; }
+    }
+    g.last = center;
+    return true;
+  };
+
+  /** true = pointer belonged to a gesture */
+  const gestureUp = (e: React.PointerEvent): boolean => {
+    const had = touchesRef.current.delete(e.pointerId);
+    if (!gestureRef.current) return false;
+    if (touchesRef.current.size === 0) { gestureRef.current = null; saveZoom(clampZoom(Math.round(liveZoomRef.current / ZOOM_STEP) * ZOOM_STEP)); }
+    else resetGestureStart();
+    return had;
+  };
+
+  const onStagePointerUp = (e: React.PointerEvent) => { if (gestureUp(e)) return; finishStroke(e); };
+
   /* --- kreslení --- */
   const onPointerDown = (e: React.PointerEvent) => {
+    if (gestureDown(e)) return;
     if (readOnly) return;
     if (mode === "select") {
       // klik na prázdné místo papíru ukončí psaní / zruší výběr
@@ -259,6 +339,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (gestureMove(e)) return;
     if (readOnly || !drawingRef.current) return;
     if (!gateRef.current.accepts(e.pointerId)) return;
     const cur = drawingRef.current;
@@ -495,6 +576,21 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       >
         <ZoomIn className="h-4 w-4" />
       </Button>
+      <Button
+        type="button" size="sm" variant="outline" className="min-h-11"
+        title="Přizpůsobit šířce" aria-label="Přizpůsobit stránku šířce"
+        onClick={() => { setZoom(1); const sc = scrollRef.current; if (sc) { sc.scrollLeft = 0; sc.scrollTop = 0; } }}
+      >
+        <Maximize2 className="h-4 w-4" />
+        <span className="sr-only sm:not-sr-only sm:ml-1">Na šířku</span>
+      </Button>
+      <Button
+        type="button" size="icon" variant={handTool ? "default" : "outline"} className="min-h-11 min-w-11"
+        title="Ruka – posun stránky" aria-label="Ruka – posun stránky" aria-pressed={handTool}
+        onClick={() => setHandTool((v) => !v)}
+      >
+        <Hand className="h-4 w-4" />
+      </Button>
     </div>
   );
 
@@ -674,7 +770,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       )}
 
       <div className="mx-auto w-full max-w-[820px]">
-        <div className={cn(zoom > 1 && "max-h-[85vh] overflow-auto")} data-testid="nb-zoom-scroll">
+        <div ref={scrollRef} className={cn("overflow-auto [-webkit-overflow-scrolling:touch]", zoom > 1 && "max-h-[85vh]")} data-testid="nb-zoom-scroll">
         <div
           ref={stageRef}
           data-testid="nb-stage"
@@ -684,10 +780,10 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
           style={{ width: `${zoom * 100}%`, aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={finishStroke}
+          onPointerUp={onStagePointerUp}
           onPointerLeave={(e) => { if (!drawingRef.current || !gateRef.current.accepts(e.pointerId)) return; if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) return; finishStroke(e); }}
-          onPointerCancel={finishStroke}
-          onLostPointerCapture={finishStroke}
+          onPointerCancel={onStagePointerUp}
+          onLostPointerCapture={onStagePointerUp}
         >
           {/* Obrázky — pod kreslicí vrstvou, kreslit lze přímo přes ně */}
           {images.map((img) => (
