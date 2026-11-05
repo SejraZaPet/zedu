@@ -202,3 +202,162 @@ Rollback: `DROP TRIGGER IF EXISTS trg_block_material_attempts ON public.assignme
 1. Varianta A (doporučeno), B, nebo C?
 2. Má být „Oznámení“ součástí teď, nebo později (přes příspěvky třídy)?
 3. Má být „Upozornit žáky“ u nového materiálu ve výchozím stavu zapnuté, nebo vypnuté?
+
+---
+
+# Třetí část: Rozhodnutí učitelky, Oznámení a společný plán fází
+
+## Rozhodnutí (zapsáno)
+- Materiál = varianta A (`assignments.settings.kind = "material"`). „Upozornit žáky“ je ve výchozím stavu **vypnuto**.
+- Oznámení se zavede **teď** jako třetí druh.
+- Odevzdání po termínu: **Ne** (výchozí) / **Ano do data** (+3, +7, +14 dní, vlastní datum) / **Ano bez omezení**.
+- Rozpracovaná práce po termínu dostane štítek **„Po termínu – rozpracováno“**.
+
+## Oznámení
+**Kde uložit:** v úkolech jako `settings.kind = "announcement"`, ne v `class_stories`.
+- Příspěvky třídy mají jen `class_id`, text a obrázek. Neumí skupinu, předmět, přílohy, připnutí ani platnost. Rozšířit je by vyžadovalo migraci a nová oprávnění.
+- Úkoly už všechno potřebné mají: třídu/skupinu, předmět, přílohy, oprávnění žáků i rodičů, demo izolaci a kopírování. Všechny tři druhy se tak zadávají jedním formulářem.
+- Příspěvky třídy zůstávají beze změny jako „nástěnka“ s fotkami.
+
+**Čím se liší:**
+| | Úkol | Materiál | Oznámení |
+|---|---|---|---|
+| Ikona / štítek | `ClipboardList` „Úkol“ | `BookOpen` „Materiál“ | `Megaphone` „Oznámení“ |
+| Text | popis | popis | krátký text (do 500 znaků) |
+| Přílohy | ano | ano (hlavní obsah) | volitelně 1–3 |
+| Termín / odevzdání / body | ano | ne | ne |
+| Připnutí | ne | ne | volitelně `settings.pinned` |
+| Platnost | – | – | volitelně `settings.visibleUntil` (po datu se schová) |
+| Upozornit žáky | ano (dnes) | výchozí vypnuto | **výchozí zapnuto** (volbu lze vypnout) |
+| XP / statistiky / připomínky | ano | ne | ne |
+
+**Učitel:** tlačítko **„Přidat“** nabídne **Úkol / Materiál / Oznámení**. Formulář zobrazí jen pole pro zvolený druh. V seznamu úkolů učitele jsou samostatné záložky „Materiály“ a „Oznámení“, bez „Odevzdalo X/Y“.
+
+**Žák:**
+- Předmět: nahoře připnutá oznámení, pak „Oznámení“, „Materiály“ a nakonec úkoly.
+- Dnes: platná oznámení (max. 3) se štítkem „Oznámení“ a tečkou „Nové“.
+- Moje úlohy: oznámení se tu neukazují, materiály jsou na konci.
+- Kalendář: oznámení i materiál se nezobrazují.
+- Rodič: platná oznámení a materiály dítěte jsou ke čtení v přehledu dítěte.
+- Barva: neutrální `secondary`, vždy s textem štítku. Stavové barvy se nepoužijí.
+
+**Upozornění:**
+- Fáze 1: oznámení použije stávající upozornění na nový úkol. Text upozornění ale řeší server, takže dokud nebude fáze 2, přijde „Nový úkol: …“. Aby žáky nemátlo, posílá se ve fázi 1 upozornění u oznámení jen tehdy, když ho učitel zapne. Kvůli tomuto omezení je u oznámení ve fázi 1 výchozí stav **vypnuto**.
+- Fáze 2: server pošle „Nové oznámení: …“ nebo „Nový materiál: …“ a výchozí stav oznámení se přepne na **zapnuto**.
+
+## Odevzdání po termínu (upřesnění)
+- Uložení: `settings.lateUntil`. Chybí = Ne (dnešní chování). `"unlimited"` = bez omezení. ISO datum = do data. Volby +3/+7/+14 dní se přepočítají z termínu na konkrétní datum.
+- Žák po termínu:
+  - pokud je odevzdání dovoleno: „Lze odevzdat do …“ a po odevzdání „Odevzdáno po termínu“
+  - jinak: „Termín vypršel, úkol už nelze odevzdat.“
+- Učitel vidí „Odevzdáno po termínu“ u každého takového pokusu.
+- Trigger z první části se mění: místo `allowLate` čte `lateUntil`.
+```sql
+CREATE OR REPLACE FUNCTION public.enforce_assignment_deadline()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE d timestamptz; late text; limit_at timestamptz;
+BEGIN
+  IF NEW.status <> 'submitted' OR (TG_OP = 'UPDATE' AND OLD.status = 'submitted') THEN RETURN NEW; END IF;
+  IF public.is_admin() THEN RETURN NEW; END IF;
+  SELECT deadline, settings->>'lateUntil' INTO d, late FROM public.assignments WHERE id = NEW.assignment_id;
+  IF d IS NULL OR now() <= d + interval '2 minutes' OR late = 'unlimited' THEN RETURN NEW; END IF;
+  limit_at := CASE WHEN late ~ '^\d{4}-\d{2}-\d{2}' THEN late::timestamptz END;
+  IF limit_at IS NOT NULL AND now() <= limit_at + interval '2 minutes' THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'deadline_passed' USING ERRCODE = 'P0001';
+END $$;
+REVOKE ALL ON FUNCTION public.enforce_assignment_deadline() FROM PUBLIC, anon;
+CREATE TRIGGER trg_enforce_assignment_deadline
+  BEFORE INSERT OR UPDATE OF status ON public.assignment_attempts
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_assignment_deadline();
+```
+Učitelé odevzdání nezakládají, proto výjimku má jen admin. Před spuštěním se ověří automatické odevzdání při vypršení časovače.
+
+## DB dopad oznámení
+- Fáze 1: žádný. Používá se stávající `settings jsonb`.
+- Fáze 2: pokus u oznámení i materiálu zakáže tentýž trigger:
+```sql
+CREATE OR REPLACE FUNCTION public.block_material_attempts() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.assignments a WHERE a.id = NEW.assignment_id
+             AND a.settings->>'kind' IN ('material','announcement')) THEN
+    RAISE EXCEPTION 'no_submission_for_this_kind' USING ERRCODE = 'P0001';
+  END IF; RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION public.block_material_attempts() FROM PUBLIC, anon;
+CREATE TRIGGER trg_block_material_attempts BEFORE INSERT ON public.assignment_attempts
+  FOR EACH ROW EXECUTE FUNCTION public.block_material_attempts();
+```
+
+---
+
+# SOUHRNNÝ PLÁN FÁZÍ
+
+## Fáze 1: jen aplikace, bez DB (spustí se po „schvaluji fázi 1“)
+1. **Stavy úkolů** (`src/lib/assignment-status.ts`):
+   - Žák: Čeká / Odevzdané / Zkontrolované / Po termínu; štítky „Odevzdáno po termínu“ a „Po termínu – rozpracováno“.
+   - Učitel: Připravuje se / Probíhá / Ke kontrole / Zkontrolované / Uzavřené; „Odevzdalo X/Y“ (zelená = všichni / oranžová = část / šedá = nikdo / červená = nikdo po termínu, vždy s textem).
+   - Nový `assignmentKind(settings)` (úkol | materiál | oznámení); materiály a oznámení mimo stavy.
+2. **Volba po termínu** ve formuláři úkolu: Ne / Ano do data (+3/+7/+14/vlastní) / Ano bez omezení. Přehrávač ji respektuje. Server ji vynutí až ve fázi 2; do té doby hlídá jen prohlížeč, stejně jako dnes termín.
+3. **Přidat → Úkol / Materiál / Oznámení**, formuláře podle druhu, upozornění žáků (výchozí vypnuto u materiálu, ve fázi 1 i u oznámení).
+4. **Zobrazení:** skupiny „Materiály“ a „Oznámení“, připnutí, platnost, tečka „Nové“ (paměť v prohlížeči), Dnes, předmět, Moje úlohy, rodič. Kalendář a „Nadcházející testy“ materiál ani oznámení nezobrazí.
+5. **Přehrávač:** u materiálu a oznámení jen čtení a přílohy, nikdy nový pokus.
+
+Soubory:
+- `src/lib/assignment-status.ts`, nový `src/lib/assignment-kind.ts`
+- `src/components/assignments/AssignmentStatusGroups.tsx`, nový `src/components/assignments/AssignmentKindBadge.tsx`
+- `src/pages/TeacherAssignments.tsx`, `src/pages/TeacherSubjectClass.tsx`
+- `src/pages/StudentAssignments.tsx`, `src/pages/StudentSubjectClass.tsx`, `src/pages/StudentAssignmentPlayer.tsx`
+- `src/components/calendar/TodayWidget.tsx`, `src/components/student/UpcomingExamsCard.tsx`
+- `src/lib/student-assignment-attempts.ts` (doplní `submitted_at`)
+- rodičovský přehled dítěte (komponenta se ověří při implementaci)
+- `src/index.css` (tokeny barev stavů)
+
+Testy (vitest):
+- odevzdáno po termínu ≠ „Po termínu“
+- rozpracováno po termínu = „Po termínu – rozpracováno“
+- skóre 0 = zkontrolováno
+- učitel „Ke kontrole“ při 1 neohodnoceném
+- „Odevzdalo 18/24“ a barva
+- testovací žák mimo počet
+- `lateUntil` chybí = Ne; +7 dní se přepočítá z termínu; „unlimited“
+- materiál a oznámení mimo stavy a mimo „Odevzdalo X/Y“
+- oznámení po `visibleUntil` se skryje; připnuté je první
+- úkol bez `kind` a plán testu (`settings.plan`) beze změny
+- přehrávač u materiálu nezaloží pokus
+
+Ověření v prohlížeči:
+- učitelka vytvoří `[TEST]` úkol, materiál a oznámení
+- testovací žák a rodič je uvidí správně
+- úklid jen `[TEST]` záznamů
+
+Rollback fáze 1: vrátit uvedené soubory, data se nemění. Stávající úkoly nemají `kind` ani `lateUntil`, takže se chovají jako dnes.
+
+## Fáze 2: databáze (spustí se po „schvaluji fázi 2“)
+1. Uložit rollback soubory: původní definice + md5 všech měněných funkcí (`add_xp`/`trg_add_xp_assignment_attempt`, `notify_on_assignment…`, `notify_on_attempt_submitted`, `class_engagement_stats`, `school_engagement_overview`, `school_overview_stats`, a také edge funkci `auto-reminders-job`).
+2. Migrace: `enforce_assignment_deadline` (`lateUntil`) + `block_material_attempts` (materiál/oznámení).
+3. Migrace: vynechat `settings->>'kind' IN ('material','announcement')` z XP, upozornění na odevzdání, statistik a připomínek. Upozornění pro nový druh dostane text „Nové oznámení / Nový materiál“. Přesné úpravy se připraví čtením aktuálních definic jako balíček ke schválení se celým zněním (jako u I2b).
+4. Edge funkce: `auto-reminders-job`, `export-session-*` (pokud čtou úkoly) vynechají materiál a oznámení. Pak výchozí stav upozornění u oznámení = zapnuto.
+
+Kontroly po migraci:
+- triggery existují
+- pokus u `[TEST]` materiálu je odmítnut
+- odevzdání po termínu bez povolení je odmítnuto, s povolením projde
+- existující počty pokusů a XP se nezměnily
+
+Rollback fáze 2:
+```sql
+DROP TRIGGER IF EXISTS trg_enforce_assignment_deadline ON public.assignment_attempts;
+DROP FUNCTION IF EXISTS public.enforce_assignment_deadline();
+DROP TRIGGER IF EXISTS trg_block_material_attempts ON public.assignment_attempts;
+DROP FUNCTION IF EXISTS public.block_material_attempts();
+-- + obnova původních definic funkcí z uložených rollback souborů (ověření md5)
+```
+
+## Rizika
+- Místa, která počítají úkoly a nejsou ve fázi 1 ošetřená (statistiky, liga, připomínky). Do fáze 2 se materiál a oznámení mohou objevit v počtech „zadaných úkolů“. XP nevznikne, protože se nezakládá pokus.
+- Kopie předmětu/třídy přenáší `settings`, takže druh i platnost zůstanou (ověřit testem).
+- Uložený stav sbalení skupin: nové skupiny se zobrazí rozbalené.
+- Demo a testovací žák: beze změny pravidel.
+
+Nic se nespustí bez „schvaluji fázi 1“ / „schvaluji fázi 2“ a nic se nenasadí bez „nasadit“.
