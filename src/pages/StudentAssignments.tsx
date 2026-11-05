@@ -164,7 +164,7 @@ const StudentAssignments = () => {
                             <Badge variant="outline" className="text-xs">Naplánováno · zatím nic k odevzdání</Badge>
                             <div className="flex flex-wrap gap-2">
                               <PlanPrepareButton lessons={planLessons(a)} />
-                              <Button className="assignment-card-action" size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Detail</Button>
+                              <Button className="assignment-card-action" size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>
                             </div>
                           </div>
                         ) : a.exam_type === "ustni" ? (

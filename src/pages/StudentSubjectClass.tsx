@@ -697,7 +697,7 @@ export default function StudentSubjectClass() {
                     assignments,
                   });
                   return (
-                  <Card key={e.id} className="p-3" data-testid="lesson-row">
+                  <Card key={e.id} className="p-3 min-w-0" data-testid="lesson-row">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">
