@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen, Megaphone } from "lucide-react";
 import AssignmentFormActions from "@/components/assignments/AssignmentFormActions";
 import { showSaveChangesOnly, editSaveOutcome } from "@/lib/assignment-edit-save";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -40,6 +40,8 @@ import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDesc
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
 import {
@@ -1149,6 +1151,7 @@ const TeacherAssignments = () => {
                   {!deadline && <p className="mt-1 text-xs text-muted-foreground">Nejdřív nastavte termín odevzdání.</p>}
                 </div>
               </div>
+              )}
 
               {/* Materiály k úkolu (odkazy, dokumenty, obrázky, zvuk, video) */}
               {userId && (
@@ -1836,7 +1839,7 @@ const TeacherAssignments = () => {
                                     </p>
                                   )}
 
-                                  {a.status === "published" && (
+                                  {a.status === "published" && assignmentKind(a.settings) === "task" && (
                                     <div className="space-y-1 pt-1 max-w-xs">
                                       <div className="assignment-card-meta flex justify-between text-xs text-muted-foreground">
                                         <span>{prog.submitted}/{prog.total} odevzdáno</span>
@@ -1853,10 +1856,10 @@ const TeacherAssignments = () => {
                                         {format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}
                                       </span>
                                     )}
-                                    <span className="flex items-center gap-1">
+                                    {assignmentKind(a.settings) === "task" && <span className="flex items-center gap-1">
                                       <RotateCcw className="w-3 h-3" />
                                       {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
-                                    </span>
+                                    </span>}
                                     {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
                                     {a.lockdown_mode && (
                                       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
@@ -1870,7 +1873,7 @@ const TeacherAssignments = () => {
 
                               <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                 <Button size="sm" variant="outline" className="assignment-card-action" onClick={() => setDetailAssignment(a)}>Detail</Button>
-                                {a.status === "published" && a.class_id && (
+                                {a.status === "published" && a.class_id && assignmentKind(a.settings) === "task" && (
                                   <RemindButton
                                     mode="teacher"
                                     receiverType="class"
