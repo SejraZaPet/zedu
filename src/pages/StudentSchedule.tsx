@@ -56,6 +56,10 @@ export default function StudentSchedule() {
   const [slots, setSlots] = useState<ClassSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ParityTab>("both");
+  const [mobileDay, setMobileDay] = useState(() => {
+    const d = new Date().getDay();
+    return d >= 1 && d <= 5 ? d - 1 : 0;
+  });
   const [studentName, setStudentName] = useState("");
   const [classNames, setClassNames] = useState<string[]>([]);
 
