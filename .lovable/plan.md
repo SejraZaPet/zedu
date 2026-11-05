@@ -85,3 +85,120 @@ DROP FUNCTION IF EXISTS public.enforce_assignment_deadline();
 ## Otázky
 1. Má se rozpracovaná, ale neodevzdaná práce po termínu zobrazit jako „Po termínu“ se štítkem „Rozpracováno – neodevzdáno“ (návrh), nebo ji chcete brát jako odevzdanou?
 2. Má mít „Lze odevzdat po termínu“ i konečné datum (např. +7 dní), nebo stačí ano/ne?
+
+---
+
+# Druhá část: Materiály pro žáky, které se neodevzdávají
+
+## Souhrn pro učitelku
+- Dnes neexistuje samostatný „Materiál“. Učitel může soubory, odkazy, učebnice, prezentace nebo pracovní list předat jen třemi způsoby: jako **úkol** (přílohy `materials`), přes **příspěvek třídy**, nebo zprávou. Úkol ale vždy padá do stavů „K odevzdání“ a „Po termínu“. Proto materiál zadaný jako úkol vypadá jako nesplněná práce.
+- V databázi je 14 úkolů bez termínu. Některé z nich jsou nejspíš právě takové „materiály“ (6 jen s obsahem, 4 jen s přílohami, 2 projekty a 2 práce v hodině s přílohami). Ukazují se jako „K odevzdání“.
+- **Doporučení: varianta A** = nový druh „Materiál“ ve stávajících úkolech. Fáze 1 je bez databáze: druh se uloží do nastavení úkolu. Fáze 2 (pojistky v databázi) proběhne jen po schválení.
+
+## 1. Jak se dnes sdílí věci bez odevzdání
+| Co | Kde je uloženo | Kde to žák vidí | Termín / „Co mě čeká“ | Plete se s úkolem? |
+|---|---|---|---|---|
+| Přílohy úkolu (soubory, odkazy, lekce) | `assignments.materials` | Moje úlohy, předmět (`AssignmentMaterialsList`), Dnes | podle úkolu | **ano**, je to úkol |
+| Úkol bez termínu / „Práce v hodině“ | `assignments` (`exam_type`, `deadline` null) | Moje úlohy, předmět, Dnes | bez termínu, ale „K odevzdání“ / „V hodině“ | **ano** |
+| Plán testu/úkolu | `assignments.settings.plan` bez obsahu | předmět, kalendář, Nadcházející testy | ano | záměrně ano (je to ohlášení) |
+| Učebnice třídě/skupině | `class_textbooks`, `subject_group_textbooks`, `class_subject_textbooks` | předmět, Moje učebnice | ne | ne |
+| Prezentace / lekce v plánu | `teacher_presentations`, `lesson_plans` | předmět (plán hodiny) | jen přes plán hodiny | ne, ale jen v plánu hodiny |
+| Pracovní list k tisku | `worksheets` | jen přes úkol nebo plán hodiny | podle toho | ano, když se zadá úkolem |
+| Příspěvek třídy | `class_stories` | nástěnka třídy, rodič (`ParentClassStoriesFeed`), upozornění | ne | ne, ale chybí u předmětu a přílohy jsou omezené |
+| Zpráva | `messages` + přílohy | messenger | ne | ne, ale ztratí se v konverzaci |
+
+Typ „bez odevzdání“ dnes neexistuje (žádné `noSubmission` v kódu ani v datech). `exam_type` zná: úkol, práce v hodině, ústní, písemné, digitální, projekt.
+
+## 2. Varianty
+**A) Druh „Materiál“ ve stávajících úkolech (doporučeno)**
+- Uložení: `assignments.settings.kind = "material"`. Termín, pokusy a hodnocení se u materiálu skryjí.
+- Plus: použije stávající přílohy, oprávnění, třídu/skupinu/předmět, demo izolaci i kopírování. Fáze 1 nepotřebuje migraci.
+- Minus: materiál je technicky úkol. Každé místo, které počítá úkoly (upozornění, připomínky, XP, statistiky), ho musí vědomě vynechat. Bez fáze 2 by žák mohl ručně založit pokus přes adresu (neškodné, ale nesprávné).
+
+**B) Samostatná tabulka `class_materials`**
+- Plus: úplně oddělené od úkolů, nic se nesplete, čisté do budoucna.
+- Minus: nová tabulka, oprávnění, demo pravidla, úložiště, notifikace, kopie a rodičovský pohled. Velký zásah, několik schvalovacích kroků.
+- Návrh SQL (NESPOUŠTĚT):
+```sql
+CREATE TABLE public.class_materials (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id uuid NOT NULL,
+  class_id uuid REFERENCES public.classes(id) ON DELETE CASCADE,
+  group_id uuid REFERENCES public.subject_groups(id) ON DELETE CASCADE,
+  subject_id uuid REFERENCES public.subjects(id),
+  title text NOT NULL, description text,
+  items jsonb NOT NULL DEFAULT '[]', status text NOT NULL DEFAULT 'published',
+  published_at timestamptz NOT NULL DEFAULT now(),
+  is_demo_seed boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK ((class_id IS NULL) <> (group_id IS NULL))
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.class_materials TO authenticated;
+GRANT ALL ON public.class_materials TO service_role;
+ALTER TABLE public.class_materials ENABLE ROW LEVEL SECURITY;
+-- politiky: učitel vlastník/spoluučitel spravuje; člen třídy/skupiny a rodič čte published;
+-- + RESTRICTIVE demo_guard_/demo_iso podle stávajících vzorů
+```
+Rollback: `DROP TABLE IF EXISTS public.class_materials;`
+
+**C) Jen štítek na stávajících věcech**
+- Plus: nejmenší změna.
+- Minus: úkol se štítkem dál počítá „K odevzdání / Po termínu“, pokud se stejně nezmění stavy (tím se z toho stane varianta A). Učebnice a příspěvky se dál zobrazují jinde. Problém to nevyřeší.
+
+## 3. Doporučení A: jak bude vypadat
+- **Učitel:** tlačítko „Přidat“ nabídne **Úkol** (ikona schránky), **Materiál** (ikona knihy, `BookOpen`) a **Oznámení** (megafon, později, přes příspěvky třídy). U Materiálu formulář nabídne název, popis, přílohy (soubory, odkazy, lekce, učebnice, prezentace, pracovní list „k tisku“) a cíl (třída/skupina, předmět). Termín, pokusy ani body se nevyplňují. Volitelně: „Upozornit žáky“ (výchozí vypnuto).
+- **Žák:** samostatná skupina **„Materiály“** u předmětu, v Moje úlohy (na konci) a v Dnes jen „Nový materiál“. Štítek „Materiál“ v neutrální barvě (`secondary`), bez stavových barev a bez termínu. Novinka má tečku a text „Nové“ (zapamatuje se v prohlížeči). Tlačítko „Otevřít“, žádné „Odevzdat“.
+- **Kalendář:** materiál se nezobrazuje (nemá termín). Volitelně později jako tichý záznam v den zveřejnění.
+- **Rodič:** vidí „Materiály“ dítěte jen ke čtení. Nepočítá se do nesplněných úkolů.
+- **XP/liga, připomínky, upozornění „nový úkol“, statistiky odevzdání:** materiál se vynechá. Materiál nedává XP.
+- **Demo a testovací žák:** platí stávající pravidla úkolů beze změny.
+
+## 4. Fáze
+- **Fáze 1 (bez DB):** `settings.kind`. Úpravy:
+  - `assignment-status.ts`: nový stav „material“ mimo termíny a stavy
+  - `AssignmentStatusGroups.tsx`: skupina „Materiály“
+  - formulář v `TeacherAssignments.tsx`: volba druhu
+  - `StudentAssignmentPlayer.tsx`: u materiálu jen zobrazení příloh, bez pokusu
+  - `TodayWidget`, `StudentSubjectClass`, `UpcomingExamsCard` a kalendář: vynechat materiál z „K odevzdání“
+  - `TeacherAssignments`: bez „Odevzdalo X/Y“
+  - Lze převést i stávající úkol na materiál (úprava úkolu, učitelka sama).
+- **Fáze 2 (DB, jen po „schvaluji“):** trigger zakáže pokus u materiálu. `add_xp`, `auto-reminders-job`, `notify_on_assignment` a statistiky (`class_engagement_stats`) vynechají `settings->>'kind'='material'`. Před úpravou se uloží rollback (původní definice + md5), stejně jako u I2b. Návrh triggeru:
+```sql
+CREATE OR REPLACE FUNCTION public.block_material_attempts() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.assignments a WHERE a.id = NEW.assignment_id AND a.settings->>'kind' = 'material') THEN
+    RAISE EXCEPTION 'material_has_no_submission' USING ERRCODE = 'P0001';
+  END IF; RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION public.block_material_attempts() FROM PUBLIC, anon;
+CREATE TRIGGER trg_block_material_attempts BEFORE INSERT ON public.assignment_attempts
+  FOR EACH ROW EXECUTE FUNCTION public.block_material_attempts();
+```
+Rollback: `DROP TRIGGER IF EXISTS trg_block_material_attempts ON public.assignment_attempts; DROP FUNCTION IF EXISTS public.block_material_attempts();`
+- Do fáze 2 se ve fázi 1 skryje tlačítko „Nový úkol“ v upozornění u materiálů. Pokud server upozornění pošle, napíše „Nový úkol“. To je známé omezení fáze 1: buď se upozornění u materiálu dočasně vypne, nebo se fáze 2 spustí brzy.
+
+## 5. Rizika a testy
+- **Rizika:**
+  - Zapomenuté místo, které materiál dál počítá jako úkol (statistiky, připomínky, export CSV/PDF, liga). Proto je fáze 2 nutná.
+  - Kopie předmětu/třídy přenáší `settings`, takže materiál zůstane materiálem (ověřit).
+  - Plán hodiny a „Plán testu“ (`settings.plan`) se nemění.
+  - Staré úkoly bez `kind` = úkol, tedy beze změny.
+- **Testy:**
+  - materiál nemá stav „K odevzdání / Po termínu“
+  - materiál je ve skupině „Materiály“
+  - materiál se nepočítá do „Odevzdalo X/Y“
+  - úkol bez `kind` beze změny
+  - plán testu beze změny
+  - přehrávač u materiálu nezaloží pokus
+  - (fáze 2) trigger odmítne pokus a XP se nepřičte
+- **Prohlížeč:**
+  - učitelka vytvoří `[TEST]` materiál
+  - žák ho vidí v Materiálech bez termínu
+  - rodič ho vidí
+  - úklid jen `[TEST]` záznamu.
+
+## Otázky k materiálům
+1. Varianta A (doporučeno), B, nebo C?
+2. Má být „Oznámení“ součástí teď, nebo později (přes příspěvky třídy)?
+3. Má být „Upozornit žáky“ u nového materiálu ve výchozím stavu zapnuté, nebo vypnuté?
