@@ -1,3 +1,4 @@
+import { assignmentKind, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,7 +207,7 @@ const StudentAssignmentPlayer = () => {
       }
 
       // Check deadline
-      if (assignmentData.deadline && new Date(assignmentData.deadline) < new Date()) {
+      if (isSubmittable(assignmentData.settings) && !canSubmitNow(assignmentData)) {
         toast({ title: "Termín vypršel", description: "Tato úloha již nelze odevzdat.", variant: "destructive" });
       }
 
@@ -260,9 +261,8 @@ const StudentAssignmentPlayer = () => {
       setAllAttempts(existingAttempts as any as AttemptData[]);
       const inProgress = existingAttempts.find((a: any) => a.status === "in_progress");
       const bestSubmitted = bestAttempt(existingAttempts);
-      const deadlinePassed = assignmentData.deadline
-        ? new Date(assignmentData.deadline) < new Date()
-        : false;
+      // Po termínu (bez povolení pozdního odevzdání) a u materiálu/oznámení se pokus nezakládá.
+      const deadlinePassed = !canSubmitNow(assignmentData);
 
       // Kdo naposledy upravoval sdílený pokus
       const editedSource = inProgress || existingAttempts[0];
@@ -450,8 +450,10 @@ const StudentAssignmentPlayer = () => {
     const id = setInterval(() => setNowTick(Date.now()), 5000);
     return () => clearInterval(id);
   }, [assignment?.deadline]);
-  const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline).getTime() < nowTick : false;
-  const isReadOnly = attempt?.status !== "in_progress" || isDeadlinePassed;
+  const noSubmission = assignment ? !isSubmittable(assignment.settings) : false;
+  const isDeadlinePassed = assignment && !noSubmission ? !canSubmitNow(assignment, new Date(nowTick)) : false;
+  const isLateWindow = !!assignment?.deadline && !noSubmission && !isDeadlinePassed && new Date(assignment.deadline).getTime() < nowTick;
+  const isReadOnly = attempt?.status !== "in_progress" || isDeadlinePassed || noSubmission;
   /** Prohlížení už uzavřeného odevzdání (po termínu nebo po vyčerpání pokusů). */
   const isReviewMode = isReadOnly && !!attempt;
   /**
@@ -621,7 +623,7 @@ const StudentAssignmentPlayer = () => {
               {assignment.deadline && (
                 <span className={`flex items-center gap-1 ${isDeadlinePassed ? "text-destructive" : ""}`}>
                   <Clock className="w-3 h-3" />
-                  {isDeadlinePassed ? "Vypršelo" : `Do ${new Date(assignment.deadline).toLocaleDateString("cs")}`}
+                  {isDeadlinePassed || isLateWindow ? "Termín uplynul" : `Do ${new Date(assignment.deadline).toLocaleDateString("cs")}`}
                 </span>
               )}
               {saving && <span className="flex items-center gap-1 text-muted-foreground"><Save className="w-3 h-3 animate-pulse" /> Ukládám…</span>}
@@ -755,6 +757,20 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {noSubmission && (
+          <Card className="mb-4">
+            <CardContent className="p-4 text-sm">
+              {assignmentKind(assignment.settings) === "announcement" ? "Oznámení" : "Materiál"} – nic neodevzdáváš, stačí si ho přečíst a otevřít přílohy.
+            </CardContent>
+          </Card>
+        )}
+        {isLateWindow && attempt?.status === "in_progress" && (
+          <Card className="mb-4 border-warning/50">
+            <CardContent className="p-4 text-sm">
+              Termín už uplynul, ale učitel povolil pozdní odevzdání{(() => { const l = lateLimit(assignment.settings); return l instanceof Date ? ` do ${l.toLocaleDateString("cs-CZ")}` : ""; })()}. Odevzdáváš po termínu.
+            </CardContent>
+          </Card>
+        )}
         {/* Po termínu bez jakéhokoli pokusu */}
         {isDeadlinePassed && !attempt && (
           <Card className="mb-4 border-destructive/40">
