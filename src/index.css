@@ -33,6 +33,8 @@
     --destructive: 0 84% 60%;
     --activity-correct: 152 65% 35%;
     --destructive-foreground: 0 0% 100%;
+    --warning: 28 92% 45%;
+    --warning-foreground: 0 0% 100%;
 
     --border: 228 24% 92%;
     --input: 228 24% 88%;

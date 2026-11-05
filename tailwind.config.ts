@@ -41,6 +41,10 @@ export default {
           pastel: "hsl(var(--secondary-pastel))",
           dark: "hsl(var(--secondary-dark))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
