@@ -75,6 +75,7 @@ interface Assignment {
   group_size?: number | null;
   subject_id?: string | null;
   subject?: string | null;
+  settings?: unknown;
 }
 
 
@@ -112,6 +113,12 @@ const TeacherAssignments = () => {
   // Termín odevzdání má i konkrétní hodinu; výchozí je konec dne.
   const [deadlineTime, setDeadlineTime] = useState("23:59");
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
+  const [formKind, setFormKind] = useState<AssignmentKind>("task");
+  const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
+  const [lateCustom, setLateCustom] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [visibleUntil, setVisibleUntil] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
@@ -513,6 +520,26 @@ const TeacherAssignments = () => {
         deadlineIso = due.toISOString();
       }
 
+      const isTask = formKind === "task";
+      if (!isTask) deadlineIso = null;
+      if (formKind === "announcement" && assignmentDescriptionToText(description).length > ANNOUNCEMENT_MAX) {
+        throw new Error(`Oznámení může mít nejvýše ${ANNOUNCEMENT_MAX} znaků.`);
+      }
+      const lateFor = (due: string | null): string | null => {
+        if (!isTask || !due || lateChoice === "no") return null;
+        if (lateChoice === "unlimited") return "unlimited";
+        if (lateChoice === "custom") {
+          const d = lateCustom ? new Date(`${lateCustom}T23:59`) : null;
+          if (!d || isNaN(d.getTime()) || d.getTime() <= new Date(due).getTime()) throw new Error("Datum pro odevzdání po termínu musí být po termínu.");
+          return d.toISOString();
+        }
+        return lateUntilFromDays(due, Number(lateChoice));
+      };
+      const kindPatch = (due: string | null) => ({
+        kind: formKind, lateUntil: lateFor(due), pinned,
+        visibleUntil: visibleUntil ? new Date(`${visibleUntil}T23:59`).toISOString() : null,
+      });
+
       if (editingId) {
         // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
         // i po zveřejnění. Stav (koncept/naplánováno/publikováno) se mění podle
@@ -522,8 +549,9 @@ const TeacherAssignments = () => {
           title: title.trim(),
           description: description.trim(),
           deadline: deadlineIso,
+          settings: mergeKindSettings(assignments.find((a) => a.id === editingId)?.settings as any, kindPatch(deadlineIso)) as any,
           materials: materials as any,
-          max_attempts: maxAttempts,
+          max_attempts: isTask ? maxAttempts : 1,
           randomize_choices: randomizeChoices,
           randomize_order: randomizeOrder,
           class_id: selectedGroupId ? null : (selectedClassId || null),
@@ -576,14 +604,16 @@ const TeacherAssignments = () => {
             status = "scheduled";
           }
           if (mode === "draft") publishAt = null;
-          const ownDeadline = t.deadlineAt ? new Date(t.deadlineAt) : null;
+          const ownDeadline = isTask && t.deadlineAt ? new Date(t.deadlineAt) : null;
+          const rowDeadline = ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso;
           return {
+            settings: mergeKindSettings(null, kindPatch(rowDeadline)) as any,
             teacher_id: user.id,
             title: title.trim(),
             description: description.trim(),
-            deadline: ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso,
+            deadline: rowDeadline,
             materials: materials as any,
-            max_attempts: maxAttempts,
+            max_attempts: isTask ? maxAttempts : 1,
             randomize_choices: randomizeChoices,
             randomize_order: randomizeOrder,
             class_id: kind === "class" ? id : null,
@@ -684,6 +714,7 @@ const TeacherAssignments = () => {
     setShowManual(false);
     setCopySourceId("");
     setFormSubjectId(null);
+    setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil("");
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -699,6 +730,16 @@ const TeacherAssignments = () => {
         : "23:59",
     );
     setMaterials(parseMaterials(a.materials));
+    {
+      setFormKind(assignmentKind(a.settings));
+      const lm = lateMode(a.settings);
+      const lim = lateLimit(a.settings);
+      setLateChoice(lm === "unlimited" ? "unlimited" : lm === "until" ? "custom" : "no");
+      setLateCustom(lim instanceof Date ? format(lim, "yyyy-MM-dd") : "");
+      setPinned(isPinned(a.settings));
+      const vu = (a.settings as any)?.visibleUntil;
+      setVisibleUntil(typeof vu === "string" && !isNaN(new Date(vu).getTime()) ? format(new Date(vu), "yyyy-MM-dd") : "");
+    }
     setMaxAttempts(a.max_attempts ?? 1);
     setRandomizeChoices(!!a.randomize_choices);
     setRandomizeOrder(!!a.randomize_order);
@@ -1010,6 +1051,23 @@ const TeacherAssignments = () => {
               <CardTitle className="text-lg">{editingId ? "Upravit úlohu" : "Nová úloha"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <fieldset>
+                <legend className="text-sm font-medium">Co přidáváte?</legend>
+                <div className="mt-1 flex flex-wrap gap-2" role="radiogroup" aria-label="Druh položky">
+                  {(["task", "material", "announcement"] as AssignmentKind[]).map((k) => {
+                    const Icon = k === "task" ? ClipboardList : k === "material" ? BookOpen : Megaphone;
+                    return <Button key={k} type="button" role="radio" aria-checked={formKind === k}
+                      variant={formKind === k ? "default" : "outline"} className="min-h-11 gap-2" onClick={() => setFormKind(k)}>
+                      <Icon className="h-4 w-4" aria-hidden="true" />{KIND_LABELS[k]}
+                    </Button>;
+                  })}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formKind === "task" ? "Žáci úkol odevzdávají; má termín a hodnocení."
+                    : formKind === "material" ? "Materiál se neodevzdává – žáci ho jen otevřou. Nemá termín ani hodnocení."
+                    : `Krátká zpráva pro žáky (do ${ANNOUNCEMENT_MAX} znaků), bez odevzdání a termínu.`}
+                </p>
+              </fieldset>
               <div>
                 <Label>Název</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="např. Test – Zlomky" className="mt-1" />
@@ -1019,6 +1077,18 @@ const TeacherAssignments = () => {
                 <AssignmentDescriptionEditor content={description} onChange={setDescription} />
               </div>
 
+              {formKind === "announcement" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                    <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(v === true)} /> Připnout nahoru
+                  </label>
+                  <div>
+                    <Label htmlFor="announcement-until">Zobrazovat do (volitelné)</Label>
+                    <Input id="announcement-until" type="date" value={visibleUntil} onChange={(e) => setVisibleUntil(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              )}
+              {formKind === "task" && (
               <div className="grid grid-cols-2 gap-4">
                 {/* Deadline */}
                 <div>
@@ -1057,6 +1127,26 @@ const TeacherAssignments = () => {
                 <div>
                   <Label>Počet pokusů</Label>
                   <Input type="number" min={1} max={10} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} className="mt-1" />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="late-choice">Lze odevzdat po termínu</Label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <select id="late-choice" value={lateChoice} disabled={!deadline}
+                      onChange={(e) => setLateChoice(e.target.value as typeof lateChoice)}
+                      className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="no">Ne</option>
+                      <option value="3">Ano, ještě 3 dny</option>
+                      <option value="7">Ano, ještě 7 dní</option>
+                      <option value="14">Ano, ještě 14 dní</option>
+                      <option value="custom">Ano, do vlastního data</option>
+                      <option value="unlimited">Ano, bez omezení</option>
+                    </select>
+                    {lateChoice === "custom" && (
+                      <Input type="date" aria-label="Odevzdat lze nejpozději do" value={lateCustom}
+                        onChange={(e) => setLateCustom(e.target.value)} className="w-auto" />
+                    )}
+                  </div>
+                  {!deadline && <p className="mt-1 text-xs text-muted-foreground">Nejdřív nastavte termín odevzdání.</p>}
                 </div>
               </div>
 
