@@ -1684,7 +1684,7 @@ const TeacherAssignments = () => {
 
           if (visible.length === 0) return <div className="text-center py-12 text-muted-foreground text-sm">Žádné úlohy odpovídající filtru.</div>;
           return (
-            <AssignmentStatusGroups items={visible} storageKey="assignment-groups:teacher"
+            <AssignmentStatusGroups teacher items={visible} storageKey="assignment-groups:teacher"
               statusOf={(a) => assignmentStatus(a, [], new Date(), progress[a.id] ?? { submitted: 0, total: 0, graded: 0 })}
               renderItem={(a, visualStatus) => {
                       const targetName = a.group_id

@@ -1,3 +1,4 @@
+import { assignmentKind } from "@/lib/assignment-kind";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +59,7 @@ const UpcomingExamsCard = ({ userId }: { userId: string }) => {
         .lte("deadline", horizon.toISOString())
         .order("deadline", { ascending: true });
 
-      const rows = (assignmentsData as any[]) ?? [];
+      const rows = ((assignmentsData as any[]) ?? []).filter((a) => assignmentKind(a.settings) === "task");
       if (rows.length === 0) {
         setItems([]);
         setLoading(false);
