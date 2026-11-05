@@ -176,7 +176,7 @@ export default function StudentSchedule() {
   }, [visibleSlots, periods]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <SiteHeader />
       <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
         <div className="flex items-center justify-between mb-6 print-hide">
@@ -242,7 +242,32 @@ export default function StudentSchedule() {
             </Badge>
           </div>
 
-          <div className="w-full">
+          {/* Mobil: jeden den jako seznam, přepínač dne */}
+          <div className="md:hidden print-hide" data-testid="schedule-mobile-day">
+            <div role="tablist" aria-label="Den v týdnu" className="grid grid-cols-5 gap-1 p-2 border-b border-border">
+              {DAYS_SHORT.map((d, i) => (
+                <button key={d} type="button" role="tab" aria-selected={mobileDay === i} aria-label={DAYS[i]}
+                  onClick={() => setMobileDay(i)}
+                  className={`min-h-11 rounded-md text-sm font-semibold border transition-colors ${mobileDay === i ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-muted"}`}>
+                  {d}
+                </button>
+              ))}
+            </div>
+            <h3 className="px-3 pt-3 text-sm font-semibold">{DAYS[mobileDay]}</h3>
+            <ul className="p-3 space-y-2">
+              {periods.flatMap((period) => (slotsByCell.get(`${mobileDay}-${period}`) ?? []).map((slot) => (
+                <li key={slot.id} className="flex gap-2">
+                  <span className="w-8 shrink-0 pt-2 text-sm font-semibold text-muted-foreground">{period}.</span>
+                  <div className="min-w-0 flex-1"><ReadOnlyClassCard slot={slot} navigate={navigate} wide /></div>
+                </li>
+              )))}
+              {periods.every((p) => !(slotsByCell.get(`${mobileDay}-${p}`)?.length)) && (
+                <li className="text-sm text-muted-foreground">Tento den nemáš žádné hodiny.</li>
+              )}
+            </ul>
+          </div>
+
+          <div className="w-full hidden md:block print:block">
             <div
               className="grid w-full"
               style={{ gridTemplateColumns: `44px repeat(5, minmax(0, 1fr))` }}
@@ -313,9 +338,11 @@ export default function StudentSchedule() {
 function ReadOnlyClassCard({
   slot,
   navigate,
+  wide = false,
 }: {
   slot: ClassSlot;
   navigate: (path: string) => void;
+  wide?: boolean;
 }) {
   const canonical = slot.subjects ?? null;
   const subject = getSubjectName(slot, canonical, "Hodina");
@@ -335,29 +362,31 @@ function ReadOnlyClassCard({
             : `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
         )
       }
-      className={`w-full text-left rounded-md p-2 border-l-4 transition-all ${
+      className={`w-full min-w-0 overflow-hidden text-left rounded-md p-2 border-l-4 transition-all ${
         canNavigate ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""
       }`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
       title={`${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
-        <Clock className="w-3 h-3" />
+        <Clock className="w-3 h-3 shrink-0" />
         {fmtTime(slot.start_time)}–{fmtTime(slot.end_time)}
-        {slot.week_parity !== "every" && (
-          <span className="ml-1 text-[10px]">
-            ({slot.week_parity === "odd" ? "lichý" : "sudý"})
-          </span>
-        )}
       </div>
-      <div className="mt-0.5">
+      {slot.week_parity !== "every" && (
+        <div className="mt-0.5">
+          <span className="inline-block rounded border border-border bg-card px-1 text-[10px] leading-4 text-muted-foreground">
+            {slot.week_parity === "odd" ? "lichý" : "sudý"}
+          </span>
+        </div>
+      )}
+      <div className="mt-0.5 min-w-0">
         <span
-          className="inline-flex items-center justify-center text-xs font-bold text-white px-2 py-0.5 rounded"
+          className="inline-flex max-w-full items-center justify-center text-xs font-bold text-white px-2 py-0.5 rounded"
           style={{ backgroundColor: color }}
         >
-          {abbr}
+          <span className="truncate">{abbr}</span>
         </span>
-        <span className="ml-1 text-xs font-medium">{subject}</span>
+        <span className={`${wide ? "ml-1 inline" : "hidden xl:block mt-0.5 truncate"} text-xs font-medium`}>{subject}</span>
       </div>
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
