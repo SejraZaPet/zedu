@@ -9,6 +9,9 @@ import {
 } from "@/lib/calendar-utils";
 import { getExamTypeMeta } from "@/lib/exam-types";
 import CalendarDayAgenda from "@/components/calendar/CalendarDayAgenda";
+import DeadlineMarker from "@/components/calendar/DeadlineMarker";
+import { useState } from "react";
+import { deadlinesForDay, layoutOverlaps, loadShowDeadlines, saveShowDeadlines } from "@/lib/calendar-deadlines";
 
 interface Props {
   events: CalendarEvent[];
@@ -39,16 +42,28 @@ const CalendarWeekGrid = ({
   onReflectionClick,
 }: Props) => {
   const isMobile = useIsMobile();
+  const [showDeadlines, setShowDeadlinesState] = useState(loadShowDeadlines);
+  const setShowDeadlines = (v: boolean) => { setShowDeadlinesState(v); saveShowDeadlines(v); };
+  const timedEvents = events.filter((e) => e.type !== "assignment");
+  const deadlineToggle = (
+    <label className="mb-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+      <input type="checkbox" className="h-4 w-4" checked={showDeadlines} onChange={(e) => setShowDeadlines(e.target.checked)} />
+      Zobrazit termíny úkolů
+    </label>
+  );
 
   if (isMobile && viewMode === "day") {
     return (
+      <div>
+      {deadlineToggle}
       <CalendarDayAgenda
-        events={events}
+        events={showDeadlines ? events : timedEvents}
         day={selectedDay ?? new Date()}
         onEventClick={onEventClick}
         reflectionState={reflectionState}
         onReflectionClick={onReflectionClick}
       />
+      </div>
     );
   }
 
@@ -73,6 +88,8 @@ const CalendarWeekGrid = ({
   );
 
   return (
+    <div>
+    {deadlineToggle}
     <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Header */}
       <div
@@ -94,6 +111,11 @@ const CalendarWeekGrid = ({
                 {capitalize(format(d, "EEEEEE", { locale: cs }))}
               </div>
               <div className="text-sm font-medium">{format(d, "d.M.")}</div>
+              {showDeadlines && (
+                <div className="mt-1 flex min-h-11 items-center justify-center" aria-label="Termíny">
+                  <DeadlineMarker events={deadlinesForDay(events, d)} onOpen={onEventClick} />
+                </div>
+              )}
             </div>
           );
         })}
@@ -119,7 +141,8 @@ const CalendarWeekGrid = ({
 
         {/* Day columns */}
         {days.map((d) => {
-          const dayEvents = events.filter((e) => isSameDay(e.start, d));
+          const dayEvents = timedEvents.filter((e) => isSameDay(e.start, d));
+          const cols = layoutOverlaps(dayEvents);
           return (
             <div
               key={d.toISOString()}
@@ -140,7 +163,7 @@ const CalendarWeekGrid = ({
                   (ev.start.getHours() - HOUR_START) * 60 +
                   ev.start.getMinutes();
                 const durMin = Math.max(
-                  20,
+                  44,
                   (ev.end.getTime() - ev.start.getTime()) / 60000,
                 );
                 if (
@@ -165,8 +188,8 @@ const CalendarWeekGrid = ({
                     style={{
                       top: `${startMin}px`,
                       height: `${durMin}px`,
-                      left: "4px",
-                      right: "4px",
+                      left: `calc(${((cols[ev.id]?.col ?? 0) / (cols[ev.id]?.cols ?? 1)) * 100}% + 2px)`,
+                      width: `calc(${100 / (cols[ev.id]?.cols ?? 1)}% - 4px)`,
                     }}
                   >
                     <button
@@ -249,6 +272,7 @@ const CalendarWeekGrid = ({
           );
         })}
       </div>
+    </div>
     </div>
   );
 };
