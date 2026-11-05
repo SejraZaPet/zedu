@@ -1,3 +1,5 @@
+import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
+import { filterCalendarAssignments } from "@/lib/calendar-deadlines";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -61,7 +63,7 @@ const StudentCalendar = () => {
           .select("*, classes(name), subjects(name, color, abbreviation), subject_groups(name)"),
         supabase
           .from("assignments")
-          .select("id, title, deadline, class_id, exam_type")
+          .select("id, title, deadline, class_id, exam_type, settings")
           .not("deadline", "is", null)
           .gte("deadline", from.toISOString())
           .lte("deadline", to.toISOString())
@@ -85,7 +87,14 @@ const StudentCalendar = () => {
       if (cancelled) return;
       const lessonEvents = mergeStudentScheduleChanges(expand(from, to), changeRows, { from, to }, expand);
 
-      const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
+      const rawAssignments = ((assignmentsRes.data as any[]) ?? []);
+      let submittedIds = new Set<string>();
+      try {
+        const attempts = await loadStudentAssignmentAttempts(user.id, rawAssignments.map((a: any) => a.id));
+        submittedIds = new Set(attempts.filter((t: any) => t.status === "submitted" || t.submitted_at).map((t: any) => t.assignment_id));
+      } catch { /* bez pokusů zobrazit všechny termíny */ }
+      if (cancelled) return;
+      const assignmentEvents: CalendarEvent[] = filterCalendarAssignments(rawAssignments, submittedIds)
         .map((a: any) => {
           const start = new Date(a.deadline);
           return {
