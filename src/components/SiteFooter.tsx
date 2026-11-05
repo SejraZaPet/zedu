@@ -2,9 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Settings } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
+import { showFooterAdminLink } from "@/lib/role-switch";
+import { isPreviewStudentSession } from "@/lib/preview-student";
 
 const SiteFooter = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, realRole } = useAuth();
+  const showAdminLink = showFooterAdminLink(realRole, isPreviewStudentSession());
   const navigate = useNavigate();
 
   return (

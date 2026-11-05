@@ -10,12 +10,12 @@ const PreviewStudentBanner = () => {
   useEffect(() => {
     if (!visible) return;
     const prev = document.body.style.paddingBottom;
-    document.body.style.paddingBottom = "5rem";
+    document.body.style.paddingBottom = "calc(8rem + env(safe-area-inset-bottom))";
     return () => { document.body.style.paddingBottom = prev; };
   }, [visible]);
   if (!visible) return null;
   return (
-    <div role="status" data-testid="preview-student-pill" className="fixed bottom-3 right-3 z-50 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-card/95 backdrop-blur pl-3 pr-1 py-0.5 text-xs shadow-lg sm:text-sm" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+    <div role="status" data-testid="preview-student-pill" className="preview-student-pill fixed right-3 z-50 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-card/95 backdrop-blur pl-3 pr-1 py-0.5 text-xs shadow-lg sm:text-sm">
       <FlaskConical className="w-4 h-4 shrink-0 text-primary" aria-hidden />
       <span><span className="sr-only sm:not-sr-only">Jste </span><strong>Testovací žák</strong></span>
       <Button
