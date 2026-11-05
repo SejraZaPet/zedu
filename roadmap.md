@@ -124,3 +124,13 @@
 ## Spojování v editoru pracovního listu — bílá stránka
 - [x] Oprava náhledu, přehrávače, tisku, klíče a ochrana náhledu; 5 regresních testů
 - [ ] Nasazení až po pokynu „nasadit“; kliknutí v běžící aplikaci neověřeno
+
+## Žákovské prostředí na telefonu — schválená fáze 1 (bez DB)
+- [x] Stavy úkolů, Materiál/Oznámení a pozdní odevzdání jsou v kódu všech 5 stránek (ověřeno čtením)
+- [x] Rozvrh na telefonu: přepínač dne a seznam; lichý/sudý ve vlastním řádku, v mřížce zkratky
+- [x] Kompaktní pilulka testovacího žáka vpravo dole
+- [x] Předmět: karty/tlačítka se zalamují, záložky ve 2 řádcích, 44 px, „Otevřít“
+- [x] Přehled: Dnes nahoře na mobilu; „Moje úkoly“ v menu
+- [ ] Kontrola na 390 px v prohlížeči — čeká na přihlášení testovacím žákem (vyžaduje souhlas)
+- [ ] Nasazení — čeká na „nasadit“
+- [ ] Spodní navigační lišta — až po prověření screenshotů učitelkou
