@@ -765,7 +765,7 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
         {isLateWindow && attempt?.status === "in_progress" && (
-          <Card className="mb-4 border-warning/50">
+          <Card className="mb-4 border-primary/40">
             <CardContent className="p-4 text-sm">
               Termín už uplynul, ale učitel povolil pozdní odevzdání{(() => { const l = lateLimit(assignment.settings); return l instanceof Date ? ` do ${l.toLocaleDateString("cs-CZ")}` : ""; })()}. Odevzdáváš po termínu.
             </CardContent>
