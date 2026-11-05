@@ -408,6 +408,12 @@ body.a11y-line-height main .whitespace-pre-wrap {
   background: hsl(0 0% 100%); color: hsl(var(--assignment-badge-text));
 }
 .assignment-status-card .assignment-card-action:hover { opacity: .9; }
+.assignment-card-action { min-height: 44px; }
+/* Žákovské stránky na telefonu: dotykové plochy min. 44 px, nic nepřetéká do strany */
+@media (max-width: 767px) {
+  .student-touch button:not([role="tab"] *):not(.touch-exempt) { min-height: 44px; }
+  .student-touch { overflow-wrap: anywhere; }
+}
 .assignment-status-card .assignment-card-outline {
   color: hsl(var(--assignment-foreground));
   border-color: hsl(var(--assignment-foreground) / .55);

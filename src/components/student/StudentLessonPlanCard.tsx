@@ -60,7 +60,7 @@ export default function StudentLessonPlanCard({ plan, studentId, subjectLabel }:
   };
 
   return (
-    <Card className="p-3 mt-2 border-dashed bg-muted/20">
+    <Card className="p-3 mt-2 min-w-0 max-w-full overflow-hidden border-dashed bg-muted/20">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-xs font-medium text-muted-foreground">Plán hodiny</div>
@@ -98,12 +98,12 @@ export default function StudentLessonPlanCard({ plan, studentId, subjectLabel }:
             </Button>
           )}
           {plan.worksheets.map((w) => (
-            <div key={w.id} className="flex gap-1">
+            <div key={w.id} className="flex min-w-0 max-w-full flex-wrap gap-1">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => navigate(`/student/pracovni-list/${w.id}`)}
-                className="max-w-[14rem]"
+                className="max-w-full sm:max-w-[14rem]"
               >
                 <ClipboardList className="h-3.5 w-3.5 mr-1 shrink-0" />
                 <span className="truncate">{w.title}</span>
