@@ -1,16 +1,21 @@
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
-import { Clock, Check, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight, Hourglass } from "lucide-react";
+import { Clock, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight, Hourglass, ClipboardCheck, Lock, BookOpen, Megaphone, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ASSIGNMENT_GROUPS, sortStatusAssignments, type AssignmentStatus, type StatusAssignment } from "@/lib/assignment-status";
+import { ASSIGNMENT_GROUPS, TEACHER_ASSIGNMENT_GROUPS, sortStatusAssignments, type AssignmentStatus, type StatusAssignment } from "@/lib/assignment-status";
 
-const ICONS = { pending: Clock, soon: Clock, submitted: Hourglass, overdue: CircleAlert, graded: CircleCheck, preparing: CalendarClock };
+const ICONS = { pending: Clock, soon: Clock, submitted: Hourglass, overdue: CircleAlert, graded: CircleCheck, preparing: CalendarClock, review: ClipboardCheck, closed: Lock, material: BookOpen, announcement: Megaphone };
 export function AssignmentStateIcon({ status }: { status: AssignmentStatus }) {
   const Icon = ICONS[status.state];
   return <span className="assignment-state-icon"><Icon aria-hidden="true" className="h-5 w-5" /></span>;
 }
 export function AssignmentStateBadge({ status }: { status: AssignmentStatus }) {
-  return <span className="assignment-state-badge">{status.label}</span>;
+  return <span className="inline-flex flex-wrap items-center justify-end gap-1">
+    <span className="assignment-state-badge">{status.label}</span>
+    {status.badges?.map((b) => <span key={b} className="assignment-state-badge assignment-extra-badge">{b}</span>)}
+    {status.progress && <span className={`assignment-progress-badge assignment-progress-${status.progress.tone}`}>
+      <Users aria-hidden="true" className="h-3.5 w-3.5" />{status.progress.text}</span>}
+  </span>;
 }
 
 export function AssignmentStatusCard({ status, title, children, actions }: {
@@ -31,18 +36,18 @@ export function AssignmentStatusCard({ status, title, children, actions }: {
   </Card>;
 }
 
-export function AssignmentStatusGroups<T extends StatusAssignment & { id: string }>({ items, statusOf, storageKey, renderItem }: {
-  items: readonly T[]; statusOf: (item: T) => AssignmentStatus; storageKey: string;
+export function AssignmentStatusGroups<T extends StatusAssignment & { id: string }>({ items, statusOf, storageKey, renderItem, teacher = false }: {
+  items: readonly T[]; statusOf: (item: T) => AssignmentStatus; storageKey: string; teacher?: boolean;
   renderItem: (item: T, status: AssignmentStatus) => ReactNode;
 }) {
   const uid = useId();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    try { return { submitted: true, graded: true, ...JSON.parse(sessionStorage.getItem(storageKey) ?? "{}") }; }
+    try { return { submitted: true, graded: true, closed: true, material: true, ...JSON.parse(sessionStorage.getItem(storageKey) ?? "{}") }; }
     catch { return { submitted: true, graded: true }; }
   });
   useEffect(() => { try { sessionStorage.setItem(storageKey, JSON.stringify(collapsed)); } catch { /* unavailable storage */ } }, [collapsed, storageKey]);
   const sorted = sortStatusAssignments(items, statusOf);
-  return <div className="space-y-5">{ASSIGNMENT_GROUPS.map((group) => {
+  return <div className="space-y-5">{(teacher ? TEACHER_ASSIGNMENT_GROUPS : ASSIGNMENT_GROUPS).map((group) => {
     const rows = sorted.filter((item) => statusOf(item).group === group.key);
     if (!rows.length) return null;
     const id = `${uid}-${group.key}`;
