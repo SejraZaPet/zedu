@@ -53,12 +53,27 @@ export function announcementVisible(settings: unknown, now: Date = new Date()): 
   return !Number.isFinite(t) || now.getTime() <= t;
 }
 
+/** E-mail žákům při zveřejnění: chybí-li volba, úkol a oznámení ano, materiál ne. */
+export function notifyEmailEnabled(settings: unknown): boolean {
+  const v = obj(settings).notifyEmail;
+  return typeof v === "boolean" ? v : assignmentKind(settings) !== "material";
+}
+/** Automatické upozornění „neodevzdáno“: jen úkol, výchozí zapnuto. */
+export function notifyOverdueEnabled(settings: unknown): boolean {
+  if (assignmentKind(settings) !== "task") return false;
+  return obj(settings).notifyOverdue !== false;
+}
+
 /** Sloučí volby formuláře do stávajícího settings (zachová např. `plan`). */
 export function mergeKindSettings(current: Settings, patch: {
   kind: AssignmentKind; lateUntil?: string | null; pinned?: boolean; visibleUntil?: string | null;
+  notifyEmail?: boolean | null; notifyOverdue?: boolean | null;
 }): Record<string, unknown> {
   const next: Record<string, unknown> = { ...obj(current) };
   delete next.kind; delete next.lateUntil; delete next.pinned; delete next.visibleUntil;
+  if (typeof patch.notifyEmail === "boolean") next.notifyEmail = patch.notifyEmail;
+  if (patch.kind === "task" && typeof patch.notifyOverdue === "boolean") next.notifyOverdue = patch.notifyOverdue;
+  else if (patch.kind !== "task") delete next.notifyOverdue;
   if (patch.kind !== "task") next.kind = patch.kind;
   if (patch.kind === "task" && patch.lateUntil) next.lateUntil = patch.lateUntil;
   if (patch.kind === "announcement") {

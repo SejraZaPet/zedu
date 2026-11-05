@@ -7,6 +7,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { isTooOld } from "../_shared/email-delivery.ts";
+import { buildAssignmentEmail, shouldEmail } from "../_shared/assignment-email.ts";
 
 const APP_URL = "https://www.bezli.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -18,7 +19,7 @@ const json = (b: unknown, status = 200) =>
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function shell(title: string, body: string, url: string | null) {
+function shell(title: string, body: string, url: string | null, button = "Otevřít v Bezli") {
   return `
   <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1F2C; background: #F8FAFC;">
     <div style="background: linear-gradient(135deg, #0E8F9A 0%, #AD87C9 100%); padding: 24px; border-radius: 14px 14px 0 0; text-align: center;">
@@ -28,7 +29,7 @@ function shell(title: string, body: string, url: string | null) {
       <h2 style="margin: 0 0 12px; font-size: 20px;">${esc(title)}</h2>
       <p style="white-space: pre-line; line-height: 1.5;">${esc(body)}</p>
       ${url ? `<div style="text-align:center; margin: 24px 0 8px;">
-        <a href="${esc(url)}" style="background:#0E8F9A; color:#ffffff; padding:12px 22px; border-radius:14px; text-decoration:none; font-weight:600; display:inline-block;">Otevřít v Bezli</a>
+        <a href="${esc(url)}" style="background:#0E8F9A; color:#ffffff; padding:12px 22px; border-radius:14px; text-decoration:none; font-weight:600; display:inline-block;">${esc(button)}</a>
       </div>` : ""}
       <p style="font-size:12px; color:#64748B; text-align:center; margin-top:18px;">
         E-mailové notifikace lze vypnout v nastavení profilu na <a href="${APP_URL}/profil" style="color:#0E8F9A;">bezli.cz</a>.
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
   if (!id) return json({ error: "notification_id required" }, 400);
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-  const { data: n } = await db.from("notifications").select("id, recipient_id, title, body, link, created_at").eq("id", id).maybeSingle();
+  const { data: n } = await db.from("notifications").select("id, recipient_id, type, title, body, link, payload, created_at").eq("id", id).maybeSingle();
   if (!n) return json({ skipped: "not_found" });
   if (isTooOld((n as any).created_at)) {
     console.log("skipped: too_old", id);
@@ -79,8 +80,33 @@ Deno.serve(async (req) => {
   if (rs.includes("rodic") && !rs.some((r: string) => r !== "rodic")) return json({ skipped: "parent" });
 
   const link = n.link ? (String(n.link).startsWith("http") ? String(n.link) : `${APP_URL}${String(n.link).startsWith("/") ? "" : "/"}${n.link}`) : null;
-  const title = String(n.title ?? "Nová notifikace");
-  const text = String(n.body ?? "");
+  let title = String(n.title ?? "Nová notifikace");
+  let text = String(n.body ?? "");
+  let subject = title;
+  let button = "Otevřít v Bezli";
+
+  // Nově zveřejněná položka pro žáka: podrobná šablona (úkol / materiál / oznámení).
+  const aid = (n as any).payload?.assignment_id;
+  if ((n as any).type === "assignment_new" && typeof aid === "string" && String(n.link ?? "").startsWith("/student/")) {
+    const { data: a } = await db.from("assignments")
+      .select("title, description, deadline, settings, teacher_id, class_id, group_id, subject_id").eq("id", aid).maybeSingle();
+    if (a) {
+      if (!shouldEmail((a as any).settings)) return json({ skipped: "kind_or_option" });
+      const [t, c, g, s] = await Promise.all([
+        db.from("profiles").select("first_name, last_name").eq("id", (a as any).teacher_id).maybeSingle(),
+        (a as any).class_id ? db.from("classes").select("name").eq("id", (a as any).class_id).maybeSingle() : Promise.resolve({ data: null }),
+        (a as any).group_id ? db.from("subject_groups").select("name").eq("id", (a as any).group_id).maybeSingle() : Promise.resolve({ data: null }),
+        (a as any).subject_id ? db.from("subjects").select("name").eq("id", (a as any).subject_id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+      const e = buildAssignmentEmail({
+        title: String((a as any).title ?? ""), description: (a as any).description, deadline: (a as any).deadline,
+        settings: (a as any).settings, teacher: [(t.data as any)?.first_name, (t.data as any)?.last_name].filter(Boolean).join(" ") || null,
+        target: (g.data as any)?.name ?? (c.data as any)?.name ?? null, subject: (s.data as any)?.name ?? null,
+        url: link ?? APP_URL,
+      });
+      subject = e.subject; title = e.heading; text = e.lines.join("\n\n"); button = e.button;
+    }
+  }
 
   // send-email zapisuje email_log (pending → sent/failed).
   const r = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
@@ -88,9 +114,9 @@ Deno.serve(async (req) => {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_KEY}` },
     body: JSON.stringify({
       to: p.email,
-      subject: title,
-      html: shell(title, text, link),
-      text: `${title}\n\n${text}${link ? `\n\n${link}` : ""}`,
+      subject,
+      html: shell(title, text, link, button),
+      text: `${title}\n\n${text}${link ? `\n\n${button}: ${link}` : ""}`,
       emailType: "notification",
     }),
   }).catch((e) => { console.error("send-email call failed", e); return null; });

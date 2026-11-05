@@ -59,3 +59,22 @@ describe("material and announcement", () => {
     expect(mergeKindSettings({ kind: "material" }, { kind: "task" })).toEqual({});
   });
 });
+
+import { notifyEmailEnabled, notifyOverdueEnabled, mergeKindSettings as mergeNotify } from "@/lib/assignment-kind";
+describe("e-mailové volby úkolu", () => {
+  it("výchozí: úkol a oznámení e-mail ano, materiál ne", () => {
+    expect(notifyEmailEnabled({})).toBe(true);
+    expect(notifyEmailEnabled({ kind: "announcement" })).toBe(true);
+    expect(notifyEmailEnabled({ kind: "material" })).toBe(false);
+  });
+  it("upozornění neodevzdáno: výchozí zapnuto jen u úkolu", () => {
+    expect(notifyOverdueEnabled({})).toBe(true);
+    expect(notifyOverdueEnabled({ notifyOverdue: false })).toBe(false);
+    expect(notifyOverdueEnabled({ kind: "material" })).toBe(false);
+  });
+  it("uloží volby a zachová plan", () => {
+    const s = mergeNotify({ plan: { x: 1 } }, { kind: "task", notifyEmail: false, notifyOverdue: true });
+    expect(s).toMatchObject({ plan: { x: 1 }, notifyEmail: false, notifyOverdue: true });
+    expect(mergeNotify(s, { kind: "material" }).notifyOverdue).toBeUndefined();
+  });
+});
