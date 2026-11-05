@@ -134,3 +134,8 @@
 - [ ] Kontrola na 390 px v prohlížeči — čeká na přihlášení testovacím žákem (vyžaduje souhlas)
 - [ ] Nasazení — čeká na „nasadit“
 - [ ] Spodní navigační lišta — až po prověření screenshotů učitelkou
+
+## Přepínání rolí a druhy úkolů (schváleno 5. 11. 2026)
+- [x] Menu „Přepnout roli“ podle stávajících oprávnění, návrat z testovacího žáka, pilulka nad lištou Safari, Administrace v patičce jen pro admina
+- [x] Žák: souhrn Úkoly/Materiály/Oznámení; učitel: „Přidat“ s volbou druhu a předvyplnění ?kind=
+- [ ] Ověření na iPhonu v přihlášené relaci (bez souhlasu nepřihlašovat za žáky); nenasazeno
