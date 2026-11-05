@@ -82,3 +82,15 @@ export function mergeKindSettings(current: Settings, patch: {
   }
   return next;
 }
+
+/** Počty položek podle druhu (úkol / materiál / oznámení). */
+export function countByKind(items: { settings?: unknown }[]): Record<AssignmentKind, number> {
+  const out: Record<AssignmentKind, number> = { task: 0, material: 0, announcement: 0 };
+  for (const i of items) out[assignmentKind(i.settings)]++;
+  return out;
+}
+
+/** Druh z URL `?kind=` (neznámá hodnota = null, formulář pak zůstane u úkolu). */
+export function kindFromParam(v: string | null | undefined): AssignmentKind | null {
+  return v === "task" || v === "material" || v === "announcement" ? v : null;
+}
