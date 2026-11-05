@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { assignmentStatus } from "@/lib/assignment-status";
 
-afterEach(() => { cleanup(); sessionStorage.clear(); });
+afterEach(() => { cleanup(); localStorage.clear(); });
 const items = [{ id: "1", title: "Čekající", deadline: null, attempts: [] }, { id: "2", title: "Odevzdaný", deadline: null, attempts: [{ status: "submitted", score: null, max_score: null }] }, { id: "3", title: "Hodnocený", deadline: null, attempts: [{ status: "submitted", score: 10, max_score: 13 }] }];
 const list = () => <AssignmentStatusGroups items={items} storageKey="test-groups" statusOf={(a) => assignmentStatus(a, a.attempts)} renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title} />} />;
 describe("assignment disclosure", () => {
