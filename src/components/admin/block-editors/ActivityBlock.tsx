@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import { Block } from "@/lib/textbook-config";
+import { normalizeAiProps, assertAiFillContent } from "@/lib/activity-ai-normalize";
 import { getQuizQuestions, emptyQuizQuestion, setQuizQuestions, type QuizQuestion } from "@/lib/quiz-questions";
 import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
@@ -1365,33 +1366,6 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
 };
 
 /** Doplní chybějící tokeny u doplňovaček z textu ve formátu {{slovo}}. */
-const normalizeAiProps = (incoming: Record<string, any>) => {
-  const next = { ...incoming };
-  // Kvíz sjednotíme na { questions: [...] } – AI může vrátit pole i jednu otázku.
-  if (next.quiz || Array.isArray(next.questions)) {
-    const qs = getQuizQuestions(next.quiz ?? next.questions);
-    if (qs.length > 0) next.quiz = setQuizQuestions(qs);
-  }
-  if (next.fillChoice?.text && !Array.isArray(next.fillChoice.tokens)) {
-    const tokens = legacyTextToTokens(String(next.fillChoice.text)).map((t) =>
-      t.type === "blank" ? { type: "blank", answer: t.answer } : { type: "text", value: t.value },
-    );
-    const answers = tokens.filter((t: any) => t.type === "blank").map((t: any) => t.answer);
-    next.fillChoice = {
-      ...next.fillChoice,
-      tokens,
-      options: [...new Set([...(next.fillChoice.options || []), ...answers])].filter(Boolean),
-    };
-  }
-  if (next.fillBlanks?.text && !Array.isArray(next.fillBlanks.tokens)) {
-    next.fillBlanks = { ...next.fillBlanks, tokens: legacyTextToTokens(String(next.fillBlanks.text)) };
-  }
-  if (next.matching && Array.isArray(next.matching.left)) {
-    next.matching = { ...next.matching, pairs: next.matching.left.map((_: any, i: number) => [i, i]) };
-  }
-  return next;
-};
-
 interface LearningMethodOption {
   id: string;
   name: string;
@@ -1535,9 +1509,11 @@ const AiSuggestPanel = ({
       if ((data as any)?.error) throw new Error((data as any).error);
       const generated = (data as any)?.props;
       if (!generated || typeof generated !== "object") throw new Error("AI nevrátila obsah aktivity.");
+      const normalized = normalizeAiProps(generated);
+      assertAiFillContent(activityType, normalized);
       onChange({
         ...p,
-        ...normalizeAiProps(generated),
+        ...normalized,
         activityType,
         title: generated.title || p.title || "Aktivita",
         aiSourceText: context || undefined,
@@ -1548,9 +1524,14 @@ const AiSuggestPanel = ({
         ai_generated: true,
         ai_modified_at: null,
       });
+      toast.success("Návrh vložen, zkontrolujte ho.");
     } catch (e: any) {
       console.error("generate-activity-content failed:", e);
-      setError(e?.message || "Návrh se nepodařilo vytvořit. Zkuste to prosím znovu.");
+      const msg = e?.message && !/non-2xx/i.test(e.message)
+        ? e.message
+        : "AI se nepodařilo vygenerovat, zkuste to znovu.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
