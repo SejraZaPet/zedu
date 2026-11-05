@@ -19,7 +19,7 @@ Deno.test("úkol: termín, pozdní odevzdání, tlačítko", () => {
   assertEquals(e.subject, "Nový úkol: Zlomky (Matematika)");
   assertEquals(e.button, "Otevřít úkol");
   assert(e.lines.includes("Termín odevzdání: čtvrtek 12. 11. 2026, 23:59"));
-  assert(e.lines.some((l) => l.includes("nejpozději do neděle 15. 11. 2026") || l.includes("nejpozději do neděle")) || e.lines.some((l) => l.includes("15. 11. 2026, 23:59")));
+  assert(e.lines.includes("Odevzdat můžeš i po termínu, nejpozději do neděle 15. 11. 2026, 23:59."));
 });
 
 Deno.test("materiál a oznámení mají vlastní texty", () => {
