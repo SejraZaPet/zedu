@@ -8,6 +8,7 @@ import {
   getEventColors,
 } from "@/lib/calendar-utils";
 import { getExamTypeMeta } from "@/lib/exam-types";
+import CalendarDayAgenda from "@/components/calendar/CalendarDayAgenda";
 
 interface Props {
   events: CalendarEvent[];
@@ -38,6 +39,18 @@ const CalendarWeekGrid = ({
   onReflectionClick,
 }: Props) => {
   const isMobile = useIsMobile();
+
+  if (isMobile && viewMode === "day") {
+    return (
+      <CalendarDayAgenda
+        events={events}
+        day={selectedDay ?? new Date()}
+        onEventClick={onEventClick}
+        reflectionState={reflectionState}
+        onReflectionClick={onReflectionClick}
+      />
+    );
+  }
 
   let days: Date[];
   if (viewMode === "day") {
