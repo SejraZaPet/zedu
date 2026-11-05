@@ -155,6 +155,7 @@ export default function StudentSubjectClass() {
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const kindCounts = countByKind(assignments);
   const upcomingHere = useMemo(() => upcomingForSubject(assignments), [assignments]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [extraTextbookId, setExtraTextbookId] = useState<string | null>(null);
