@@ -127,7 +127,13 @@ const StudentDashboard = () => {
           {user && <BannersNewsButton />}
         </div>
 
+        {/* Mobil: „co mám udělat teď“ (Dnes) nahoře, liga a profil níž; od md původní pořadí */}
+        <div className="flex flex-col md:block" data-testid="student-dashboard-stack">
         {user && <DashboardBanners />}
+
+        <div className="max-md:order-first" data-testid="student-today-slot">
+          <TodayWidget role="student" />
+        </div>
 
         {user && <MyLeagueCard />}
 
@@ -139,8 +145,6 @@ const StudentDashboard = () => {
           />
         )}
 
-        <TodayWidget role="student" />
-
         {user && <UpcomingExamsCard userId={user.id} />}
 
 
@@ -151,6 +155,7 @@ const StudentDashboard = () => {
             <RecognitionWidget studentId={user.id} />
           </div>
         )}
+        </div>
 
 
 
