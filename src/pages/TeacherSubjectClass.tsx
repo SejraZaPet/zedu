@@ -1,4 +1,6 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
+import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
+import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -1129,10 +1131,10 @@ export default function TeacherSubjectClass() {
   }
 
 
-  function newAssignment() {
+  function newAssignment(kind: AssignmentKind = "task") {
     const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
     const subjectParam = resolvedSubjectId ? `&subjectId=${resolvedSubjectId}` : "";
-    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}${subjectParam}`);
+    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}${subjectParam}&kind=${kind}`);
   }
 
 
@@ -1696,11 +1698,8 @@ export default function TeacherSubjectClass() {
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">Zadané úkoly a testy</h2>
-              <Button size="sm" onClick={newAssignment}>
-                <Plus className="h-4 w-4 mr-1" />
-                Nový úkol
-              </Button>
+              <h2 className="font-semibold">Úkoly, materiály a oznámení</h2>
+              <AddAssignmentMenu onPick={newAssignment} />
             </div>
             {assignments.length === 0 ? (
               <Card className="p-6 text-center text-sm text-muted-foreground">

@@ -2,9 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Settings } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
+import { showFooterAdminLink } from "@/lib/role-switch";
+import { isPreviewStudentSession } from "@/lib/preview-student";
 
 const SiteFooter = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, realRole } = useAuth();
+  const showAdminLink = showFooterAdminLink(realRole, isPreviewStudentSession());
   const navigate = useNavigate();
 
   return (
@@ -65,8 +68,9 @@ const SiteFooter = () => {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Bezli. Všechna práva vyhrazena.
           </p>
+          {showAdminLink && (
           <a
-            href="/auth"
+            href="/admin"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
             aria-label="Administrace"
             title="Administrace"
@@ -74,6 +78,7 @@ const SiteFooter = () => {
             <Settings className="w-3.5 h-3.5" />
             Administrace
           </a>
+          )}
         </div>
 
       </div>

@@ -1,5 +1,6 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
+import { countByKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -154,6 +155,7 @@ export default function StudentSubjectClass() {
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const kindCounts = countByKind(assignments);
   const upcomingHere = useMemo(() => upcomingForSubject(assignments), [assignments]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [extraTextbookId, setExtraTextbookId] = useState<string | null>(null);
@@ -667,7 +669,7 @@ export default function StudentSubjectClass() {
             </TabsTrigger>
             <TabsTrigger value="assignments">
               <ClipboardList className="h-4 w-4 mr-2" />
-              Úkoly ({assignments.length})
+              Úkoly ({kindCounts.task})
             </TabsTrigger>
             <TabsTrigger value="results">
               <TrendingUp className="h-4 w-4 mr-2" />
@@ -851,9 +853,14 @@ export default function StudentSubjectClass() {
 
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
+            {assignments.length > 0 && (
+              <p className="mb-3 text-sm text-muted-foreground" data-testid="kind-summary">
+                Úkoly {kindCounts.task} · Materiály {kindCounts.material} · Oznámení {kindCounts.announcement}
+              </p>
+            )}
             {assignments.length === 0 ? (
               <Card className="p-6 text-center text-sm text-muted-foreground">
-                Pro tuto třídu zatím nemáš žádné úkoly.
+                Pro tuto třídu zatím nemáš žádné úkoly, materiály ani oznámení.
               </Card>
             ) : (
               <AssignmentStatusGroups items={assignments} storageKey={`assignment-groups:student:${classId || groupId}`}

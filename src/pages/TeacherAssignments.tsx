@@ -1,4 +1,5 @@
 import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
+import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
 import { AssignmentStatusGroups, AssignmentStateIcon, AssignmentStateBadge } from "@/components/assignments/AssignmentStatusGroups";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -41,7 +42,7 @@ import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, type AssignmentKind } from "@/lib/assignment-kind";
+import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
 import {
@@ -116,7 +117,7 @@ const TeacherAssignments = () => {
   const [deadlineTime, setDeadlineTime] = useState("23:59");
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
-  const [formKind, setFormKind] = useState<AssignmentKind>("task");
+  const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
   const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(null);
   const [notifyOverdueOpt, setNotifyOverdueOpt] = useState<boolean | null>(null);
   const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
@@ -1036,20 +1037,11 @@ const TeacherAssignments = () => {
                 </SelectContent>
               </Select>
               </div>
-              <Button
-                onClick={() => {
-                  if (showForm && !editingId) {
-                    setShowForm(false);
-                    return;
-                  }
-                  resetForm();
-                  setShowForm(true);
-                }}
-              >
-
-                <Plus className="w-4 h-4 mr-2" />
-                Nová úloha
-              </Button>
+              <AddAssignmentMenu size="default" onPick={(k) => {
+                resetForm();
+                setFormKind(k);
+                setShowForm(true);
+              }} />
             </div>
 
         {/* Create form */}
