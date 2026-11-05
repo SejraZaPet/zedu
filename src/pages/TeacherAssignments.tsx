@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, Check, ClipboardList, FolderCheck, ListTodo, BookOpen, Megaphone } from "lucide-react";
 import AssignmentFormActions from "@/components/assignments/AssignmentFormActions";
 import { showSaveChangesOnly, editSaveOutcome } from "@/lib/assignment-edit-save";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -40,6 +40,8 @@ import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDesc
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
 import {
@@ -75,6 +77,7 @@ interface Assignment {
   group_size?: number | null;
   subject_id?: string | null;
   subject?: string | null;
+  settings?: unknown;
 }
 
 
@@ -112,6 +115,12 @@ const TeacherAssignments = () => {
   // Termín odevzdání má i konkrétní hodinu; výchozí je konec dne.
   const [deadlineTime, setDeadlineTime] = useState("23:59");
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
+  const [formKind, setFormKind] = useState<AssignmentKind>("task");
+  const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
+  const [lateCustom, setLateCustom] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [visibleUntil, setVisibleUntil] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
@@ -513,6 +522,26 @@ const TeacherAssignments = () => {
         deadlineIso = due.toISOString();
       }
 
+      const isTask = formKind === "task";
+      if (!isTask) deadlineIso = null;
+      if (formKind === "announcement" && assignmentDescriptionToText(description).length > ANNOUNCEMENT_MAX) {
+        throw new Error(`Oznámení může mít nejvýše ${ANNOUNCEMENT_MAX} znaků.`);
+      }
+      const lateFor = (due: string | null): string | null => {
+        if (!isTask || !due || lateChoice === "no") return null;
+        if (lateChoice === "unlimited") return "unlimited";
+        if (lateChoice === "custom") {
+          const d = lateCustom ? new Date(`${lateCustom}T23:59`) : null;
+          if (!d || isNaN(d.getTime()) || d.getTime() <= new Date(due).getTime()) throw new Error("Datum pro odevzdání po termínu musí být po termínu.");
+          return d.toISOString();
+        }
+        return lateUntilFromDays(due, Number(lateChoice));
+      };
+      const kindPatch = (due: string | null) => ({
+        kind: formKind, lateUntil: lateFor(due), pinned,
+        visibleUntil: visibleUntil ? new Date(`${visibleUntil}T23:59`).toISOString() : null,
+      });
+
       if (editingId) {
         // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
         // i po zveřejnění. Stav (koncept/naplánováno/publikováno) se mění podle
@@ -522,8 +551,9 @@ const TeacherAssignments = () => {
           title: title.trim(),
           description: description.trim(),
           deadline: deadlineIso,
+          settings: mergeKindSettings(assignments.find((a) => a.id === editingId)?.settings as any, kindPatch(deadlineIso)) as any,
           materials: materials as any,
-          max_attempts: maxAttempts,
+          max_attempts: isTask ? maxAttempts : 1,
           randomize_choices: randomizeChoices,
           randomize_order: randomizeOrder,
           class_id: selectedGroupId ? null : (selectedClassId || null),
@@ -576,14 +606,16 @@ const TeacherAssignments = () => {
             status = "scheduled";
           }
           if (mode === "draft") publishAt = null;
-          const ownDeadline = t.deadlineAt ? new Date(t.deadlineAt) : null;
+          const ownDeadline = isTask && t.deadlineAt ? new Date(t.deadlineAt) : null;
+          const rowDeadline = ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso;
           return {
+            settings: mergeKindSettings(null, kindPatch(rowDeadline)) as any,
             teacher_id: user.id,
             title: title.trim(),
             description: description.trim(),
-            deadline: ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso,
+            deadline: rowDeadline,
             materials: materials as any,
-            max_attempts: maxAttempts,
+            max_attempts: isTask ? maxAttempts : 1,
             randomize_choices: randomizeChoices,
             randomize_order: randomizeOrder,
             class_id: kind === "class" ? id : null,
@@ -684,6 +716,7 @@ const TeacherAssignments = () => {
     setShowManual(false);
     setCopySourceId("");
     setFormSubjectId(null);
+    setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil("");
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -699,6 +732,16 @@ const TeacherAssignments = () => {
         : "23:59",
     );
     setMaterials(parseMaterials(a.materials));
+    {
+      setFormKind(assignmentKind(a.settings));
+      const lm = lateMode(a.settings);
+      const lim = lateLimit(a.settings);
+      setLateChoice(lm === "unlimited" ? "unlimited" : lm === "until" ? "custom" : "no");
+      setLateCustom(lim instanceof Date ? format(lim, "yyyy-MM-dd") : "");
+      setPinned(isPinned(a.settings));
+      const vu = (a.settings as any)?.visibleUntil;
+      setVisibleUntil(typeof vu === "string" && !isNaN(new Date(vu).getTime()) ? format(new Date(vu), "yyyy-MM-dd") : "");
+    }
     setMaxAttempts(a.max_attempts ?? 1);
     setRandomizeChoices(!!a.randomize_choices);
     setRandomizeOrder(!!a.randomize_order);
@@ -1010,6 +1053,23 @@ const TeacherAssignments = () => {
               <CardTitle className="text-lg">{editingId ? "Upravit úlohu" : "Nová úloha"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <fieldset>
+                <legend className="text-sm font-medium">Co přidáváte?</legend>
+                <div className="mt-1 flex flex-wrap gap-2" role="radiogroup" aria-label="Druh položky">
+                  {(["task", "material", "announcement"] as AssignmentKind[]).map((k) => {
+                    const Icon = k === "task" ? ClipboardList : k === "material" ? BookOpen : Megaphone;
+                    return <Button key={k} type="button" role="radio" aria-checked={formKind === k}
+                      variant={formKind === k ? "default" : "outline"} className="min-h-11 gap-2" onClick={() => setFormKind(k)}>
+                      <Icon className="h-4 w-4" aria-hidden="true" />{KIND_LABELS[k]}
+                    </Button>;
+                  })}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formKind === "task" ? "Žáci úkol odevzdávají; má termín a hodnocení."
+                    : formKind === "material" ? "Materiál se neodevzdává – žáci ho jen otevřou. Nemá termín ani hodnocení."
+                    : `Krátká zpráva pro žáky (do ${ANNOUNCEMENT_MAX} znaků), bez odevzdání a termínu.`}
+                </p>
+              </fieldset>
               <div>
                 <Label>Název</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="např. Test – Zlomky" className="mt-1" />
@@ -1019,6 +1079,18 @@ const TeacherAssignments = () => {
                 <AssignmentDescriptionEditor content={description} onChange={setDescription} />
               </div>
 
+              {formKind === "announcement" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                    <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(v === true)} /> Připnout nahoru
+                  </label>
+                  <div>
+                    <Label htmlFor="announcement-until">Zobrazovat do (volitelné)</Label>
+                    <Input id="announcement-until" type="date" value={visibleUntil} onChange={(e) => setVisibleUntil(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              )}
+              {formKind === "task" && (
               <div className="grid grid-cols-2 gap-4">
                 {/* Deadline */}
                 <div>
@@ -1058,7 +1130,28 @@ const TeacherAssignments = () => {
                   <Label>Počet pokusů</Label>
                   <Input type="number" min={1} max={10} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} className="mt-1" />
                 </div>
+                <div className="col-span-2">
+                  <Label htmlFor="late-choice">Lze odevzdat po termínu</Label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <select id="late-choice" value={lateChoice} disabled={!deadline}
+                      onChange={(e) => setLateChoice(e.target.value as typeof lateChoice)}
+                      className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="no">Ne</option>
+                      <option value="3">Ano, ještě 3 dny</option>
+                      <option value="7">Ano, ještě 7 dní</option>
+                      <option value="14">Ano, ještě 14 dní</option>
+                      <option value="custom">Ano, do vlastního data</option>
+                      <option value="unlimited">Ano, bez omezení</option>
+                    </select>
+                    {lateChoice === "custom" && (
+                      <Input type="date" aria-label="Odevzdat lze nejpozději do" value={lateCustom}
+                        onChange={(e) => setLateCustom(e.target.value)} className="w-auto" />
+                    )}
+                  </div>
+                  {!deadline && <p className="mt-1 text-xs text-muted-foreground">Nejdřív nastavte termín odevzdání.</p>}
+                </div>
               </div>
+              )}
 
               {/* Materiály k úkolu (odkazy, dokumenty, obrázky, zvuk, video) */}
               {userId && (
@@ -1684,7 +1777,7 @@ const TeacherAssignments = () => {
 
           if (visible.length === 0) return <div className="text-center py-12 text-muted-foreground text-sm">Žádné úlohy odpovídající filtru.</div>;
           return (
-            <AssignmentStatusGroups items={visible} storageKey="assignment-groups:teacher"
+            <AssignmentStatusGroups teacher items={visible} storageKey="assignment-groups:teacher"
               statusOf={(a) => assignmentStatus(a, [], new Date(), progress[a.id] ?? { submitted: 0, total: 0, graded: 0 })}
               renderItem={(a, visualStatus) => {
                       const targetName = a.group_id
@@ -1746,7 +1839,7 @@ const TeacherAssignments = () => {
                                     </p>
                                   )}
 
-                                  {a.status === "published" && (
+                                  {a.status === "published" && assignmentKind(a.settings) === "task" && (
                                     <div className="space-y-1 pt-1 max-w-xs">
                                       <div className="assignment-card-meta flex justify-between text-xs text-muted-foreground">
                                         <span>{prog.submitted}/{prog.total} odevzdáno</span>
@@ -1763,10 +1856,10 @@ const TeacherAssignments = () => {
                                         {format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}
                                       </span>
                                     )}
-                                    <span className="flex items-center gap-1">
+                                    {assignmentKind(a.settings) === "task" && <span className="flex items-center gap-1">
                                       <RotateCcw className="w-3 h-3" />
                                       {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
-                                    </span>
+                                    </span>}
                                     {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
                                     {a.lockdown_mode && (
                                       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
@@ -1780,7 +1873,7 @@ const TeacherAssignments = () => {
 
                               <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                 <Button size="sm" variant="outline" className="assignment-card-action" onClick={() => setDetailAssignment(a)}>Detail</Button>
-                                {a.status === "published" && a.class_id && (
+                                {a.status === "published" && a.class_id && assignmentKind(a.settings) === "task" && (
                                   <RemindButton
                                     mode="teacher"
                                     receiverType="class"

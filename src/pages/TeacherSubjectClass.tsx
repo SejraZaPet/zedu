@@ -289,7 +289,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at")
+        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings")
         .eq("teacher_id", user.id);
       if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
       else assignQuery = assignQuery.eq("class_id", classId);
@@ -1707,7 +1707,7 @@ export default function TeacherSubjectClass() {
                 Zatím nejsou zadané žádné úkoly pro tuto třídu.
               </Card>
             ) : (
-              <AssignmentStatusGroups items={assignments} storageKey={`assignment-groups:teacher:${classId || groupId}`}
+              <AssignmentStatusGroups teacher items={assignments} storageKey={`assignment-groups:teacher:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
                 renderItem={(a, status) => {
                   const rows = attempts.filter((t) => t.assignment_id === a.id);

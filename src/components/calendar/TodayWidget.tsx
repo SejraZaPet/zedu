@@ -1,4 +1,5 @@
 import { assignmentStatus, type StatusAttempt } from "@/lib/assignment-status";
+import { assignmentKind, announcementVisible } from "@/lib/assignment-kind";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
@@ -48,6 +49,7 @@ interface UpcomingAssignment {
   deadline: string | null;
   exam_type?: string | null;
   attempts?: StatusAttempt[];
+  settings?: unknown;
   kind: "assignment" | "todo";
 }
 
@@ -196,7 +198,7 @@ const TodayWidget = ({ role }: Props) => {
 
       let assignmentsQuery = supabase
         .from("assignments")
-        .select("id, title, deadline, teacher_id, status, exam_type")
+        .select("id, title, deadline, teacher_id, status, exam_type, settings")
         .order("deadline", { ascending: true });
 
       if (role === "student") {
@@ -222,7 +224,15 @@ const TodayWidget = ({ role }: Props) => {
         todosQuery ?? Promise.resolve({ data: [] as any[] }),
       ]);
 
-      let visibleAssignmentRows = (assignmentsRes.data ?? []) as any[];
+      let visibleAssignmentRows = ((assignmentsRes.data ?? []) as any[]).filter((a) => {
+        const k = assignmentKind(a.settings);
+        if (role !== "student") return k === "task";
+        return k === "task" || (k === "announcement" && announcementVisible(a.settings));
+      });
+      if (role === "student") {
+        let shown = 0;
+        visibleAssignmentRows = visibleAssignmentRows.filter((a) => assignmentKind(a.settings) !== "announcement" || ++shown <= 3);
+      }
       if (role === "student" && user && visibleAssignmentRows.length > 0) {
         const assignmentIds = visibleAssignmentRows.map((assignment) => assignment.id);
         const submittedAttempts = await loadStudentAssignmentAttempts(user.id, assignmentIds);
@@ -232,7 +242,7 @@ const TodayWidget = ({ role }: Props) => {
       }
 
       const assignments: UpcomingAssignment[] = visibleAssignmentRows.map(
-        (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, exam_type: a.exam_type, attempts: a.attempts, kind: "assignment" as const }),
+        (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, exam_type: a.exam_type, settings: a.settings, attempts: a.attempts, kind: "assignment" as const }),
       );
       const todos: UpcomingAssignment[] = (((todosRes as any).data ?? []) as any[]).map(
         (t: any) => ({

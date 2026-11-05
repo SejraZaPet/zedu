@@ -371,6 +371,15 @@ body.a11y-line-height main .whitespace-pre-wrap {
 .assignment-status-graded { --assignment-from: var(--assignment-graded-from); --assignment-mid: var(--assignment-graded-mid); --assignment-to: var(--assignment-graded-to); --assignment-badge-text: var(--assignment-graded-badge); }
 .assignment-status-preparing { --assignment-from: var(--assignment-preparing-from); --assignment-mid: var(--assignment-preparing-mid); --assignment-to: var(--assignment-preparing-to); --assignment-badge-text: var(--assignment-preparing-badge); }
 
+.assignment-status-review { --assignment-from: var(--assignment-submitted-from); --assignment-mid: var(--assignment-submitted-mid); --assignment-to: var(--assignment-submitted-to); --assignment-badge-text: var(--assignment-submitted-badge); }
+.assignment-status-closed, .assignment-status-material, .assignment-status-announcement { --assignment-from: var(--assignment-preparing-from); --assignment-mid: var(--assignment-preparing-mid); --assignment-to: var(--assignment-preparing-to); --assignment-badge-text: var(--assignment-preparing-badge); }
+.assignment-progress-badge { display: inline-flex; align-items: center; gap: .25rem; border-radius: 9999px; padding: .125rem .5rem; font-size: 12px; font-weight: 600; background: hsl(0 0% 100%); border: 2px solid currentColor; }
+.assignment-progress-all { color: hsl(var(--assignment-graded-badge)); }
+.assignment-progress-some { color: hsl(var(--assignment-soon-badge)); }
+.assignment-progress-none { color: hsl(var(--assignment-preparing-badge)); }
+.assignment-progress-none-overdue { color: hsl(var(--assignment-overdue-badge)); }
+.assignment-extra-badge { color: hsl(var(--assignment-soon-badge)); }
+
 .assignment-status-card {
   color: hsl(var(--assignment-foreground));
   background-image: linear-gradient(100deg, hsl(var(--assignment-from)), hsl(var(--assignment-mid)) 55%, hsl(var(--assignment-to)));

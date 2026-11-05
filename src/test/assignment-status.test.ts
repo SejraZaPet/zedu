@@ -7,7 +7,7 @@ const ungraded = { student_id: "a", status: "submitted", score: null, max_score:
 const graded = { ...ungraded, score: 10, max_score: 13 };
 
 describe("assignment display state", () => {
-  it("uses the requested group order", () => expect(ASSIGNMENT_GROUPS.slice(0, 4).map((g) => g.label)).toEqual(["K odevzdání", "Odevzdáno", "Po termínu", "Ohodnoceno"]));
+  it("uses the requested group order", () => expect(ASSIGNMENT_GROUPS.map((g) => g.label)).toEqual(["Oznámení", "K odevzdání", "Po termínu", "Odevzdané", "Zkontrolované", "Materiály", "Připravuje se"]));
   it.each([[23, "soon"], [24, "soon"], [25, "pending"], [0, "overdue"], [-1, "overdue"]])("deadline %s hours: %s", (hours, expected) => {
     expect(assignmentStatus({ deadline: deadline(Number(hours)) }, [], now).state).toBe(expected);
   });
@@ -27,8 +27,8 @@ describe("assignment display state", () => {
     expect(assignmentStatus({ deadline: new Date(2026, 9, 16, 17).toISOString() }, [], morning).label).toBe("Končí dnes");
     expect(assignmentStatus({ deadline: new Date(2026, 9, 17, 7).toISOString() }, [], morning).label).toBe("Končí zítra");
   });
-  it("teacher overdue if at least one student is missing", () => expect(assignmentStatus({ deadline: deadline(-1) }, [], now, { submitted: 12, total: 24, graded: 12 }).state).toBe("overdue"));
-  it("teacher completed roster awaiting grading", () => expect(assignmentStatus({ deadline: deadline(-1) }, [], now, { submitted: 24, total: 24, graded: 23 }).state).toBe("submitted"));
+  it("teacher: graded submissions after deadline are reviewed even if some are missing", () => expect(assignmentStatus({ deadline: deadline(-1) }, [], now, { submitted: 12, total: 24, graded: 12 })).toMatchObject({ state: "graded", progress: { text: "Odevzdalo 12/24", tone: "some" } }));
+  it("teacher: one ungraded submission means Ke kontrole", () => expect(assignmentStatus({ deadline: deadline(-1) }, [], now, { submitted: 24, total: 24, graded: 23 })).toMatchObject({ state: "review", progress: { tone: "all" } }));
   it("teacher fully graded roster", () => expect(assignmentStatus({}, [], now, { submitted: 24, total: 24, graded: 24 }).state).toBe("graded"));
   it("empty roster is not automatically graded", () => expect(assignmentStatus({}, [], now, { submitted: 0, total: 0, graded: 0 }).state).toBe("pending"));
   it("future publication is preparing, not overdue", () => expect(assignmentStatus({ status: "scheduled", scheduled_publish_at: deadline(4), deadline: deadline(-2) }, [], now, { submitted: 0, total: 24, graded: 0 })).toMatchObject({ state: "preparing", label: expect.stringContaining("Od ") }));

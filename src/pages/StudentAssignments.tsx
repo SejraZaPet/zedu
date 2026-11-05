@@ -1,3 +1,4 @@
+import { assignmentKind, canSubmitNow, isSubmittable } from "@/lib/assignment-kind";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,7 @@ interface AssignmentWithAttempt {
   id: string;
   title: string;
   description: string;
+  settings?: unknown;
   deadline: string | null;
   max_attempts: number;
   status: string;
@@ -106,9 +108,15 @@ const StudentAssignments = () => {
             <p>Zatím nemáš žádné zadané úlohy.</p>
           </div>
         ) : (
-          <AssignmentStatusGroups items={assignments} storageKey="assignment-groups:student" statusOf={(a) => assignmentStatus(a, a.attempts)} renderItem={(a, visualStatus) => {
+          <AssignmentStatusGroups items={assignments.filter((a) => assignmentKind(a.settings) !== "announcement")} storageKey="assignment-groups:student" statusOf={(a) => assignmentStatus(a, a.attempts)} renderItem={(a, visualStatus) => {
+              if (!isSubmittable(a.settings)) return (
+                <AssignmentStatusCard status={visualStatus} title={a.title}
+                  actions={<Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>}>
+                  {a.description && <p className="line-clamp-2 text-sm">{assignmentDescriptionToText(a.description)}</p>}
+                </AssignmentStatusCard>
+              );
               const status = getAssignmentStatus(a);
-              const deadlinePassed = isDeadlinePassed(a.deadline);
+              const deadlinePassed = !canSubmitNow(a);
               const best = bestAttempt(a.attempts);
               const bestScore = best?.score ?? 0;
               const bestMaxScore = best?.max_score ?? 0;

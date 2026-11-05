@@ -10,11 +10,11 @@ describe("assignment disclosure", () => {
   it("defaults pending open, submitted and graded closed and remembers a change", () => {
     const view = render(list());
     expect(screen.getByRole("button", { name: "K odevzdání (1)" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("button", { name: "Odevzdáno (1)" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "Ohodnoceno (1)" })).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(screen.getByRole("button", { name: "Odevzdáno (1)" }));
+    expect(screen.getByRole("button", { name: "Odevzdané (1)" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Zkontrolované (1)" })).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("button", { name: "Odevzdané (1)" }));
     view.unmount(); render(list());
-    expect(screen.getByRole("button", { name: "Odevzdáno (1)" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Odevzdané (1)" })).toHaveAttribute("aria-expanded", "true");
   });
   it("every card exposes a text status and decorative accessible icon", () => {
     render(<AssignmentStatusCard status={assignmentStatus({}, items[2].attempts)} title="Výsledek" />);
