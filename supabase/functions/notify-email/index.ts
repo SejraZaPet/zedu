@@ -93,14 +93,14 @@ Deno.serve(async (req) => {
     if (a) {
       if (!shouldEmail((a as any).settings)) return json({ skipped: "kind_or_option" });
       const [t, c, g, s] = await Promise.all([
-        db.from("profiles").select("full_name").eq("id", (a as any).teacher_id).maybeSingle(),
+        db.from("profiles").select("first_name, last_name").eq("id", (a as any).teacher_id).maybeSingle(),
         (a as any).class_id ? db.from("classes").select("name").eq("id", (a as any).class_id).maybeSingle() : Promise.resolve({ data: null }),
         (a as any).group_id ? db.from("subject_groups").select("name").eq("id", (a as any).group_id).maybeSingle() : Promise.resolve({ data: null }),
         (a as any).subject_id ? db.from("subjects").select("name").eq("id", (a as any).subject_id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       const e = buildAssignmentEmail({
         title: String((a as any).title ?? ""), description: (a as any).description, deadline: (a as any).deadline,
-        settings: (a as any).settings, teacher: (t.data as any)?.full_name ?? null,
+        settings: (a as any).settings, teacher: [(t.data as any)?.first_name, (t.data as any)?.last_name].filter(Boolean).join(" ") || null,
         target: (g.data as any)?.name ?? (c.data as any)?.name ?? null, subject: (s.data as any)?.name ?? null,
         url: link ?? APP_URL,
       });
