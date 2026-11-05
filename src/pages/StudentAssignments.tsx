@@ -23,6 +23,7 @@ interface AssignmentWithAttempt {
   id: string;
   title: string;
   description: string;
+  settings?: unknown;
   deadline: string | null;
   max_attempts: number;
   status: string;
