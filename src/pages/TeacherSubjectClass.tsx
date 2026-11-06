@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LessonTopicEditor } from "@/components/teacher/LessonTopicEditor";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
 import UnitCurriculumPlansCard from "@/components/teaching/UnitCurriculumPlansCard";
@@ -268,8 +269,6 @@ export default function TeacherSubjectClass() {
   const [reflections, setReflections] = useState<Record<string, LessonReflection>>({});
   const [reflectionEvent, setReflectionEvent] = useState<{ date: string; subject: string; classId: string; label: string } | null>(null);
   const [lessonTopics, setLessonTopics] = useState<Record<string, LessonTopicRow>>({});
-  const [topicEditDate, setTopicEditDate] = useState<string | null>(null);
-  const [topicDraft, setTopicDraft] = useState("");
   const [materialsDate, setMaterialsDate] = useState<string | null>(null);
   const [materialsDraft, setMaterialsDraft] = useState<AssignmentMaterial[]>([]);
 
@@ -571,8 +570,8 @@ export default function TeacherSubjectClass() {
   const saveLessonTopic = async (
     dateKey: string,
     patch: { topic?: string | null; materials?: AssignmentMaterial[] },
-  ) => {
-    if (!user) return;
+  ): Promise<boolean> => {
+    if (!user) return false;
     const existing = lessonTopics[dateKey];
     const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (patch.topic !== undefined) payload.topic = patch.topic;
@@ -582,7 +581,7 @@ export default function TeacherSubjectClass() {
       const { error } = await supabase.from("lesson_topics").update(payload).eq("id", existing.id);
       if (error) {
         toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
-        return;
+        return false;
       }
       setLessonTopics((prev) => ({
         ...prev,
@@ -608,7 +607,7 @@ export default function TeacherSubjectClass() {
         .maybeSingle();
       if (error || !data) {
         toast({ title: "Nepodařilo se uložit", description: error?.message, variant: "destructive" });
-        return;
+        return false;
       }
       setLessonTopics((prev) => ({
         ...prev,
@@ -621,6 +620,7 @@ export default function TeacherSubjectClass() {
       }));
     }
     toast({ title: "Uloženo" });
+    return true;
   };
 
   // Nadcházející hodiny: jen nejbližších 30 dní, ať přehled není zahlcený.
@@ -1376,7 +1376,6 @@ export default function TeacherSubjectClass() {
                       const planForDate = findPlanForDate(dateKey);
                       const refl = reflections[reflectionKey({ subject: subjectLabel, classId, date: dateKey })];
                       const topicRow = lessonTopics[dateKey];
-                      const editingTopic = topicEditDate === dateKey;
 
                       return (
                         <Card key={e.id} className="p-3" data-testid="lesson-row">
@@ -1400,45 +1399,10 @@ export default function TeacherSubjectClass() {
                                   Bez plánu hodiny
                                 </div>
                               )}
-                              {editingTopic ? (
-                                <div className="mt-1 flex items-center gap-1">
-                                  <Input
-                                    autoFocus
-                                    value={topicDraft}
-                                    onChange={(ev) => setTopicDraft(ev.target.value)}
-                                    placeholder="Téma hodiny"
-                                    className="h-7 text-xs"
-                                    onKeyDown={async (ev) => {
-                                      if (ev.key === "Enter") {
-                                        await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
-                                        setTopicEditDate(null);
-                                      }
-                                      if (ev.key === "Escape") setTopicEditDate(null);
-                                    }}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    className="h-7"
-                                    onClick={async () => {
-                                      await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
-                                      setTopicEditDate(null);
-                                    }}
-                                  >
-                                    Uložit
-                                  </Button>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className={`mt-0.5 text-xs text-left truncate hover:underline ${topicRow?.topic ? "text-foreground" : "text-muted-foreground italic"}`}
-                                  onClick={() => {
-                                    setTopicDraft(topicRow?.topic ?? "");
-                                    setTopicEditDate(dateKey);
-                                  }}
-                                >
-                                  {topicRow?.topic ? `Téma: ${topicRow.topic}` : "Přidat téma hodiny"}
-                                </button>
-                              )}
+                              <LessonTopicEditor
+                                topic={topicRow?.topic ?? null}
+                                onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                              />
                             </div>
                             <div className="flex items-center gap-1">
                               <Button

@@ -708,7 +708,7 @@ export default function StudentSubjectClass() {
                           <LessonRowBadges badges={badges} />
                         </div>
                         {topicRow?.topic && (
-                          <div className="text-xs text-muted-foreground truncate">
+                          <div className="text-xs text-muted-foreground whitespace-normal break-words">
                             {topicRow.topic}
                           </div>
                         )}
