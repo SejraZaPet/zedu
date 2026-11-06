@@ -864,7 +864,7 @@ export default function StudentSubjectClass() {
               badge={(k, list) => k === "task" ? list.filter((a) => ["pending", "overdue"].includes(assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id)).group)).length : 0}
               empty={{ task: "Zatím tu nemáš žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
               render={(kind, items) => (
-              <AssignmentStatusGroups items={items as typeof assignments} storageKey={`assignment-groups:student:${kind}:${classId || groupId}`}
+              <AssignmentStatusGroups items={items} storageKey={`assignment-groups:student:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id))}
                 renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
                   actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>

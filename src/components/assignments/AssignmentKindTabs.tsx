@@ -29,7 +29,7 @@ interface Props<T> {
 }
 
 /** Pod-záložky Úkoly | Materiály | Oznámení; sekce v `?sekce=` + localStorage. */
-export default function AssignmentKindTabs<T extends { settings?: unknown }>({ items, storageKey, teacher, badge, badgeLabel = "nové", onAdd, empty, render }: Props<T>) {
+export default function AssignmentKindTabs<T extends object>({ items, storageKey, teacher, badge, badgeLabel = "nové", onAdd, empty, render }: Props<T>) {
   const [params, setParams] = useSearchParams();
   const [section, setSection] = useState<KindSection>(() => {
     const fromUrl = sectionFromParam(params.get("sekce"));
@@ -51,7 +51,8 @@ export default function AssignmentKindTabs<T extends { settings?: unknown }>({ i
   };
 
   const kind = SECTION_KIND[section];
-  const list = filterByKind(items, kind, { teacher });
+  const byKind = (k: AssignmentKind) => filterByKind(items as (T & { settings?: unknown })[], k, { teacher }) as T[];
+  const list = byKind(kind);
   const m = META[kind];
 
   return (
@@ -59,8 +60,9 @@ export default function AssignmentKindTabs<T extends { settings?: unknown }>({ i
       <div role="tablist" aria-label="Druh položek" className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
         {ORDER.map((k) => {
           const Icon = META[k].icon;
-          const count = filterByKind(items, k, { teacher }).length;
-          const b = badge ? badge(k, filterByKind(items, k, { teacher })) : 0;
+          const inKind = byKind(k);
+          const count = inKind.length;
+          const b = badge ? badge(k, inKind) : 0;
           const active = k === kind;
           return (
             <button key={k} type="button" role="tab" aria-selected={active} data-testid={`kind-tab-${k}`}

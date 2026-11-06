@@ -1759,7 +1759,7 @@ export default function TeacherSubjectClass() {
               badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers)).group === "review").length : 0}
               empty={{ task: "Zatím tu nejsou žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
               render={(kind, items) => (
-              <AssignmentStatusGroups teacher items={items as typeof assignments} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
+              <AssignmentStatusGroups teacher items={items} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
                 renderItem={(a, status) => {
                   const rows = attempts.filter((t) => t.assignment_id === a.id);
