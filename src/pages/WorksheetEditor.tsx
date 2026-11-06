@@ -1835,9 +1835,16 @@ export default function WorksheetEditor() {
 
       updateSpec((s) => {
         const variantId = s.variants[0].variantId;
-        const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
+        // Blok „Případová studie“ z návrhu metody se při nahrazení zachová.
+        const keptCase = s.variants[0].items.filter(
+          (it) => it.type === "instruction_box" && /^Případová studie/.test(it.prompt ?? ""),
+        );
+        const keptIds = new Set(keptCase.map((it) => it.id));
+        const existingItems = aiReplaceMode === "replace" ? keptCase : s.variants[0].items;
         const existingKeys =
-          aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+          aiReplaceMode === "replace"
+            ? (s.answerKeys[variantId] ?? []).filter((k: any) => keptIds.has(k.itemId))
+            : s.answerKeys[variantId] ?? [];
         // V režimu „Technika s videi“ připravíme prázdné QR placeholdery pro videa.
         const qrCodes =
           aiMode === "technique" && (s.header.qrCodes ?? []).length === 0
