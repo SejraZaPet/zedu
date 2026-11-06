@@ -441,3 +441,9 @@ body.a11y-line-height main .whitespace-pre-wrap {
 /* Pilulka testovacího žáka: nad dolní lištou Safari (iOS) a nad safe-area. */
 .preview-student-pill { bottom: calc(5rem + env(safe-area-inset-bottom)); }
 @media (min-width: 640px) { .preview-student-pill { bottom: calc(0.75rem + env(safe-area-inset-bottom)); } }
+.view-as-pill { bottom: calc(5rem + env(safe-area-inset-bottom)); }
+.view-as-pill--stacked { bottom: calc(8.5rem + env(safe-area-inset-bottom)); }
+@media (min-width: 640px) {
+  .view-as-pill { bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+  .view-as-pill--stacked { bottom: calc(4rem + env(safe-area-inset-bottom)); }
+}

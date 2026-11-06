@@ -139,3 +139,7 @@
 - [x] Menu „Přepnout roli“ podle stávajících oprávnění, návrat z testovacího žáka, pilulka nad lištou Safari, Administrace v patičce jen pro admina
 - [x] Žák: souhrn Úkoly/Materiály/Oznámení; učitel: „Přidat“ s volbou druhu a předvyplnění ?kind=
 - [ ] Ověření na iPhonu v přihlášené relaci (bez souhlasu nepřihlašovat za žáky); nenasazeno
+
+## Lišta „Prohlížíš jako“ a čitelná projekce (schváleno 6. 11.)
+- [ ] Kompaktní lišta v rohu, na promítání jen ikona; návrat na admina zachován
+- [ ] Projektor: jedno škálování, překryvné ovládání, A−/A+, celá obrazovka, čistá projekce, „Kód vždy viditelný“
