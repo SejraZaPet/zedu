@@ -558,7 +558,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let q = supabase
         .from("lesson_topics")
-        .select("id, lesson_date, topic, materials")
+        .select("id, lesson_date, topic, note, materials")
         .eq("teacher_id", user.id)
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId!) : q.eq("class_id", classId!);
@@ -570,6 +570,7 @@ export default function TeacherSubjectClass() {
           id: r.id,
           lesson_date: r.lesson_date,
           topic: r.topic ?? null,
+          note: r.note ?? null,
           materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
         };
       }
@@ -580,12 +581,13 @@ export default function TeacherSubjectClass() {
 
   const saveLessonTopic = async (
     dateKey: string,
-    patch: { topic?: string | null; materials?: AssignmentMaterial[] },
+    patch: { topic?: string | null; note?: string | null; materials?: AssignmentMaterial[] },
   ): Promise<boolean> => {
     if (!user) return false;
     const existing = lessonTopics[dateKey];
     const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (patch.topic !== undefined) payload.topic = patch.topic;
+    if (patch.note !== undefined) payload.note = patch.note;
     if (patch.materials !== undefined) payload.materials = patch.materials as unknown as any;
 
     if (existing) {
@@ -599,6 +601,7 @@ export default function TeacherSubjectClass() {
         [dateKey]: {
           ...existing,
           topic: patch.topic !== undefined ? patch.topic : existing.topic,
+          note: patch.note !== undefined ? patch.note : existing.note ?? null,
           materials: patch.materials !== undefined ? patch.materials : existing.materials,
         },
       }));
@@ -612,9 +615,10 @@ export default function TeacherSubjectClass() {
           group_id: isGroup ? groupId : null,
           lesson_date: dateKey,
           topic: patch.topic ?? null,
+          note: patch.note ?? null,
           materials: (patch.materials ?? []) as unknown as any,
         })
-        .select("id, lesson_date, topic, materials")
+        .select("id, lesson_date, topic, note, materials")
         .maybeSingle();
       if (error || !data) {
         toast({ title: "Nepodařilo se uložit", description: error?.message, variant: "destructive" });
@@ -626,6 +630,7 @@ export default function TeacherSubjectClass() {
           id: data.id,
           lesson_date: data.lesson_date,
           topic: data.topic ?? null,
+          note: data.note ?? null,
           materials: Array.isArray(data.materials) ? (data.materials as unknown as AssignmentMaterial[]) : [],
         },
       }));
@@ -1464,7 +1469,9 @@ export default function TeacherSubjectClass() {
                               )}
                               <LessonTopicEditor
                                 topic={topicRow?.topic ?? null}
+                                note={topicRow?.note ?? null}
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                                onSaveNote={(n) => saveLessonTopic(dateKey, { note: n })}
                               />
                             </div>
                             <div className="flex flex-wrap items-center gap-1">
@@ -1585,7 +1592,9 @@ export default function TeacherSubjectClass() {
                               ) : null}
                               <LessonTopicEditor
                                 topic={lessonTopics[dateKey]?.topic ?? null}
+                                note={lessonTopics[dateKey]?.note ?? null}
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                                onSaveNote={(n) => saveLessonTopic(dateKey, { note: n })}
                               />
                             </div>
                             <LessonPlanActions
