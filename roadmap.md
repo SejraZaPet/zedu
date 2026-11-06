@@ -141,5 +141,6 @@
 - [ ] Ověření na iPhonu v přihlášené relaci (bez souhlasu nepřihlašovat za žáky); nenasazeno
 
 ## Lišta „Prohlížíš jako“ a čitelná projekce (schváleno 6. 11.)
-- [ ] Kompaktní lišta v rohu, na promítání jen ikona; návrat na admina zachován
-- [ ] Projektor: jedno škálování, překryvné ovládání, A−/A+, celá obrazovka, čistá projekce, „Kód vždy viditelný“
+- [x] Kompaktní lišta v rohu, na promítání jen ikona; návrat na admina zachován
+- [x] Projektor: jedno škálování, překryvné ovládání, A−/A+, celá obrazovka, čistá projekce, „Kód vždy viditelný“
+- [ ] Ověření v prohlížeči na skutečné projekci (1920×1080, 1440×900, 390×844) – chybí vlastní ukázková relace bez zápisu do databáze
