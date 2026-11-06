@@ -796,6 +796,11 @@ export default function StudentSubjectClass() {
                         {e.scheduleStatus === "cancelled" && e.publicReason && (
                           <div className="text-xs text-muted-foreground whitespace-normal">Důvod: {e.publicReason}</div>
                         )}
+                        {!isLessonNotHeld(e) && lessonTopics[dk]?.topic && (
+                          <div className="text-xs text-foreground whitespace-normal break-words" data-testid="upcoming-topic">
+                            Téma: {lessonTopics[dk]!.topic}
+                          </div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}

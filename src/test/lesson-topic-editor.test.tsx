@@ -38,3 +38,15 @@ describe("LessonTopicEditor", () => {
     expect(screen.getByDisplayValue("X")).toBeTruthy();
   });
 });
+
+describe("LessonTopicEditor u budoucí hodiny", () => {
+  it("uloží téma pro budoucí datum", async () => {
+    const save = vi.fn().mockResolvedValue(true);
+    const future = "2099-01-15";
+    render(<LessonTopicEditor topic={null} onSave={(t) => save(future, { topic: t })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Přidat téma hodiny" }));
+    fireEvent.change(screen.getByLabelText("Téma hodiny", { selector: "input" }), { target: { value: "Dělení masa" } });
+    fireEvent.click(screen.getByRole("button", { name: "Uložit" }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(future, { topic: "Dělení masa" }));
+  });
+});

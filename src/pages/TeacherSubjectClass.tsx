@@ -1555,7 +1555,7 @@ export default function TeacherSubjectClass() {
                           data-testid="lesson-row"
                           data-today={isTodayLesson(e, now) ? "true" : undefined}
                         >
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate flex items-center gap-2">
                                 <span className="truncate">
@@ -1576,6 +1576,10 @@ export default function TeacherSubjectClass() {
                               ) : e.room ? (
                                 <div className="text-xs text-muted-foreground truncate">{e.room}</div>
                               ) : null}
+                              <LessonTopicEditor
+                                topic={lessonTopics[dateKey]?.topic ?? null}
+                                onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                              />
                             </div>
                             {planForDate ? (
                               <div className="flex items-center gap-1">

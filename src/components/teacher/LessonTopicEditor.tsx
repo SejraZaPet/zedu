@@ -61,7 +61,7 @@ export function LessonTopicEditor({ topic, onSave }: Props) {
           if (ev.key === "Escape") { ev.preventDefault(); close(); }
         }}
       />
-      <p className="text-[11px] text-muted-foreground">Uvidí žáci v „Co jste probrali“.</p>
+      <p className="text-[11px] text-muted-foreground">Uvidí to žáci u této hodiny (Nadcházející / Co jste probrali).</p>
       <div className="flex flex-wrap gap-1.5">
         <Button type="button" size="sm" className="min-h-11" disabled={busy} onClick={() => save(draft.trim() || null)}>
           Uložit
