@@ -244,7 +244,7 @@ export default function StudentSubjectClass() {
 
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, class_id, lesson_id, lesson_source, worksheet_id, exam_type, settings")
+        .select("id, title, description, status, deadline, created_at, class_id, teacher_id, lesson_id, lesson_source, worksheet_id, exam_type, settings")
         .eq("status", "published");
       assignQuery = isGroup
         ? assignQuery.eq("group_id", groupId)
@@ -690,7 +690,7 @@ export default function StudentSubjectClass() {
           {/* PAST */}
           <TabsContent value="past" className="mt-4">
             <ClassWall items={assignments as any} openPath={(a) => `/student/ulohy/${a.id}`} onShowAllAnnouncements={showAllAnnouncements} />
-            <div className="mt-6" />
+            <div className="mt-6" aria-hidden />
             <h2 className="font-semibold mb-3 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
               Co jste probrali
