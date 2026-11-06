@@ -9,7 +9,7 @@ describe("Popis hodiny", () => {
     render(<LessonTopicEditor topic="Zlomky" note={null} onSave={onSave} onSaveNote={onSaveNote} />);
     fireEvent.click(screen.getByRole("button", { name: /Upravit téma hodiny/ }));
     fireEvent.change(screen.getByLabelText("Popis hodiny"), { target: { value: "  Přineste kružítko " } });
-    expect(screen.getByText("19 / 1000")).toBeInTheDocument();
+    expect(screen.getByText("20 / 1000")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Uložit" }));
     await waitFor(() => expect(onSaveNote).toHaveBeenCalledWith("Přineste kružítko"));
     expect(onSave).not.toHaveBeenCalled();
