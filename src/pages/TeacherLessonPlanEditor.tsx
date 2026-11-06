@@ -1,3 +1,4 @@
+import { semesterStart } from "@/lib/plan-linked-slots";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { addDays, format, getISOWeek, startOfDay, subDays } from "date-fns";
@@ -670,8 +671,10 @@ export default function TeacherLessonPlanEditor() {
   const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
     const today = startOfDay(new Date());
-    // 8 týdnů zpět i dopředu – plán hodiny lze doplnit i zpětně
-    const from = subDays(today, 8 * 7);
+    // celé pololetí (min. 8 týdnů) zpět, 8 týdnů dopředu – plán hodiny lze doplnit i zpětně
+    const eightWeeks = subDays(today, 8 * 7);
+    const semStart = semesterStart(today);
+    const from = semStart < eightWeeks ? semStart : eightWeeks;
     const to = addDays(today, 8 * 7);
     const personal = expandTeacherSchedule(loadSchedule(), from, to);
     const dbExpanded = expandScheduleSlots(dbSlots as any, from, to);

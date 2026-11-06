@@ -71,7 +71,7 @@ export function assignableLessonDates<T extends { start: Date; scheduleStatus?: 
 ): T[] {
   const from = semesterStart(now).getTime();
   const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const notHeld = (s?: string | null) => s === "cancelled" || s === "moved_from" || s === "replaced";
+  const notHeld = (s?: string | null) => s === "cancelled" || s === "moved_from";
   return past
     .filter((e) => e.start.getTime() <= now.getTime() && !notHeld(e.scheduleStatus))
     .filter((e) => e.start.getTime() >= from || key(e.start) === keepDate)

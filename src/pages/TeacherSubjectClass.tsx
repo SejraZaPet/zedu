@@ -41,7 +41,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { inputDataWithoutLesson, assignablePastLessons } from "@/lib/plan-linked-slots";
+import { inputDataWithoutLesson, assignableLessonDates, semesterStart } from "@/lib/plan-linked-slots";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
@@ -519,6 +519,9 @@ export default function TeacherSubjectClass() {
   const now = new Date();
   const past = new Date(now);
   past.setDate(past.getDate() - 60);
+  // Dialog přiřazení nabízí celé pololetí zpět.
+  const semStart = semesterStart(now);
+  if (semStart < past) past.setTime(semStart.getTime());
   const future = new Date(now);
   future.setDate(future.getDate() + 60);
 
@@ -651,7 +654,7 @@ export default function TeacherSubjectClass() {
     .slice(0, 200);
   const upcomingList = useLessonListDisclosure(upcomingLessons);
   const upcomingKeys = new Set(upcomingLessons.map((e) => format(e.start, "yyyy-MM-dd")));
-  const assignPast = assignablePastLessons(pastLessons, now, assignPlanDate).filter((e) => !upcomingKeys.has(format(e.start, "yyyy-MM-dd")));
+  const assignPast = assignableLessonDates(pastLessons as any[], now, assignPlanDate).filter((e) => !upcomingKeys.has(format(e.start, "yyyy-MM-dd")));
 
 
   const room = slots[0]?.room || "";
