@@ -113,7 +113,11 @@ export const signedMaterialUrl = async (
 /** Bezpečně přečte materiály z jsonb sloupce. */
 export const parseMaterials = (value: unknown): AssignmentMaterial[] => {
   if (!Array.isArray(value)) return [];
-  return value.filter((m): m is AssignmentMaterial => !!m && typeof m === "object" && "kind" in (m as any));
+  // Jen známé druhy (odkaz/soubor); neznámé – např. položky knihovny hodiny – přeskočí.
+  return value.filter(
+    (m): m is AssignmentMaterial =>
+      !!m && typeof m === "object" && ((m as any).kind === "link" || (m as any).kind === "file"),
+  );
 };
 
 /** Doplní chybějící protokol, aby odkaz fungoval i po vložení „www.…“. */
