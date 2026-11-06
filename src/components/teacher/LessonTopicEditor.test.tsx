@@ -1,3 +1,6 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { LessonTopicEditor } from "./LessonTopicEditor";
 
 describe("Popis hodiny", () => {
   it("uloží jen popis, téma neposílá znovu", async () => {
