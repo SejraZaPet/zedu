@@ -2,12 +2,13 @@ import { Pin as PinnedIcon } from "lucide-react";
 import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import LessonPlanActions from "@/components/subject-class/LessonPlanActions";
+import ClassWall from "@/components/class-wall/ClassWall";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams , useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
@@ -231,6 +232,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export default function TeacherSubjectClass() {
   const { subjectId = "", classId = "", groupId = "" } = useParams();
   const navigate = useNavigate();
+  const [mainTab, setMainTab] = useState("stream");
+  const [, setWallParams] = useSearchParams();
+  const showAllAnnouncements = () => { setWallParams((p) => { const n = new URLSearchParams(p); n.set("sekce", "oznameni"); return n; }, { replace: true }); setMainTab("assignments"); };
   const location = useLocation();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -1420,7 +1424,7 @@ export default function TeacherSubjectClass() {
           </div>
         </Card>
 
-        <Tabs defaultValue="stream" className="w-full">
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
           <TabsList>
             <TabsTrigger value="stream">
               <CalendarIcon className="h-4 w-4 mr-2" />
@@ -1438,6 +1442,7 @@ export default function TeacherSubjectClass() {
 
           {/* STREAM */}
           <TabsContent value="stream" className="mt-4 space-y-6">
+            <ClassWall items={assignments as any} teacher openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements} />
             <div className="grid md:grid-cols-2 gap-6">
               {/* Past */}
               <section className="order-2" data-testid="section-past">

@@ -3,10 +3,11 @@ import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { countByKind } from "@/lib/assignment-kind";
+import ClassWall from "@/components/class-wall/ClassWall";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams , useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
@@ -148,6 +149,9 @@ export default function StudentSubjectClass() {
   const { subjectId = "", classId = "", groupId = "" } = useParams();
   const isGroup = !!groupId;
   const navigate = useNavigate();
+  const [mainTab, setMainTab] = useState("past");
+  const [, setWallParams] = useSearchParams();
+  const showAllAnnouncements = () => { setWallParams((p) => { const n = new URLSearchParams(p); n.set("sekce", "oznameni"); return n; }, { replace: true }); setMainTab("assignments"); };
   const { user, loading: authLoading } = useAuth();
 
   const rawSubjectParam = useMemo(() => decodeSubject(subjectId), [subjectId]);
@@ -663,7 +667,7 @@ export default function StudentSubjectClass() {
           </section>
         )}
 
-        <Tabs defaultValue="past" className="w-full min-w-0">
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full min-w-0">
           <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
             <TabsTrigger value="past">
               <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -685,6 +689,8 @@ export default function StudentSubjectClass() {
 
           {/* PAST */}
           <TabsContent value="past" className="mt-4">
+            <ClassWall items={assignments as any} openPath={(a) => `/student/ulohy/${a.id}`} onShowAllAnnouncements={showAllAnnouncements} />
+            <div className="mt-6" />
             <h2 className="font-semibold mb-3 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
               Co jste probrali
