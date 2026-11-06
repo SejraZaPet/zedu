@@ -1,4 +1,5 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
+import LessonPlanActions from "@/components/subject-class/LessonPlanActions";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
@@ -38,7 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { inputDataWithoutLesson } from "@/lib/plan-linked-slots";
+import { inputDataWithoutLesson, assignablePastLessons } from "@/lib/plan-linked-slots";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
@@ -79,6 +80,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -638,6 +641,8 @@ export default function TeacherSubjectClass() {
     .filter((e) => isUpcomingLesson(e, now) && e.start <= upcomingLimit)
     .slice(0, 200);
   const upcomingList = useLessonListDisclosure(upcomingLessons);
+  const upcomingKeys = new Set(upcomingLessons.map((e) => format(e.start, "yyyy-MM-dd")));
+  const assignPast = assignablePastLessons(pastLessons, now, assignPlanDate).filter((e) => !upcomingKeys.has(format(e.start, "yyyy-MM-dd")));
 
 
   const room = slots[0]?.room || "";
@@ -1437,7 +1442,7 @@ export default function TeacherSubjectClass() {
 
                       return (
                         <Card key={e.id} className="p-3" data-testid="lesson-row">
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate flex items-center gap-2">
                                 <span className="truncate">{dateStr} · {formatTime(e.start)}</span>
@@ -1462,7 +1467,7 @@ export default function TeacherSubjectClass() {
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
                               />
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1">
                               <Button
                                 size="sm"
                                 variant={topicRow?.materials?.length ? "secondary" : "ghost"}
@@ -1478,13 +1483,15 @@ export default function TeacherSubjectClass() {
                                 ) : null}
                               </Button>
 
-                              {planForDate && <PlanLinkIcons links={rowLinks[planForDate.id]} />}
-                              {planForDate && (
-                                <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}>
-                                  <FileText className="h-3.5 w-3.5 mr-1" />
-                                  Otevřít
-                                </Button>
-                              )}
+                              <LessonPlanActions
+                                hasPlan={!!planForDate}
+                                dateLabel={format(e.start, "d. M.", { locale: cs })}
+                                icons={planForDate ? <PlanLinkIcons links={rowLinks[planForDate.id]} /> : null}
+                                onOpen={() => planForDate && navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}
+                                onAssign={() => openAssignPlanDialog(e.start)}
+                                onNew={() => newLessonPlan(e.start)}
+                                onUnlink={() => planForDate && setUnlinkTarget({ planId: planForDate.id, title: planForDate.title, dateKey })}
+                              />
                               <Button
                                 size="sm"
                                 variant={refl ? "ghost" : "outline"}
@@ -1581,69 +1588,15 @@ export default function TeacherSubjectClass() {
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
                               />
                             </div>
-                            {planForDate ? (
-                              <div className="flex items-center gap-1">
-                              <PlanLinkIcons links={rowLinks[planForDate.id]} />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="min-h-[44px] sm:min-h-0"
-                                onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}
-                              >
-                                <FileText className="h-3.5 w-3.5 mr-1" />
-                                Otevřít
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="min-h-[44px] sm:min-h-0"
-                                    aria-label={`Změnit plán hodiny ${format(e.start, "d. M.", { locale: cs })}`}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5 mr-1" />
-                                    Změnit
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem className="min-h-[44px]" onSelect={() => openAssignPlanDialog(e.start)}>
-                                    <Link2 className="h-3.5 w-3.5 mr-2" />
-                                    Přiřadit jiný plán
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="min-h-[44px]" onSelect={() => newLessonPlan(e.start)}>
-                                    <Plus className="h-3.5 w-3.5 mr-2" />
-                                    Nový plán
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="min-h-[44px] text-destructive"
-                                    onSelect={() => setUnlinkTarget({ planId: planForDate.id, title: planForDate.title, dateKey })}
-                                  >
-                                    <X className="h-3.5 w-3.5 mr-2" />
-                                    Odebrat plán z hodiny
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              </div>
-                            ) : (
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => openAssignPlanDialog(e.start)}
-                                >
-                                  <Link2 className="h-3.5 w-3.5 mr-1" />
-                                  Přiřadit
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => newLessonPlan(e.start)}
-                                >
-                                  <Plus className="h-3.5 w-3.5 mr-1" />
-                                  Nový
-                                </Button>
-                              </div>
-                            )}
+                            <LessonPlanActions
+                              hasPlan={!!planForDate}
+                              dateLabel={format(e.start, "d. M.", { locale: cs })}
+                              icons={planForDate ? <PlanLinkIcons links={rowLinks[planForDate.id]} /> : null}
+                              onOpen={() => planForDate && navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}
+                              onAssign={() => openAssignPlanDialog(e.start)}
+                              onNew={() => newLessonPlan(e.start)}
+                              onUnlink={() => planForDate && setUnlinkTarget({ planId: planForDate.id, title: planForDate.title, dateKey })}
+                            />
                           </div>
                         </Card>
                       );
@@ -2185,20 +2138,32 @@ export default function TeacherSubjectClass() {
 
             <div className="space-y-1.5">
               <Label htmlFor="assign-plan-date">Termín z rozvrhu</Label>
-              {upcomingLessons.length > 0 ? (
+              {upcomingLessons.length + assignPast.length > 0 ? (
                 <Select value={assignPlanDate} onValueChange={setAssignPlanDate}>
                   <SelectTrigger id="assign-plan-date">
                     <SelectValue placeholder="Vyberte termín" />
                   </SelectTrigger>
                   <SelectContent>
-                    {upcomingLessons.map((e) => {
-                      const key = format(e.start, "yyyy-MM-dd");
-                      return (
-                        <SelectItem key={e.id} value={key}>
-                          {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
-                        </SelectItem>
-                      );
-                    })}
+                    {upcomingLessons.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Nadcházející</SelectLabel>
+                        {upcomingLessons.map((e) => (
+                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
+                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {assignPast.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Proběhlé</SelectLabel>
+                        {assignPast.map((e) => (
+                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
+                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               ) : (

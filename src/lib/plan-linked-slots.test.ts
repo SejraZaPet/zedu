@@ -34,3 +34,16 @@ describe("plan-linked-slots", () => {
     expect(out).toEqual([{ groupId: "g2", date: "2026-11-06" }]);
   });
 });
+
+import { assignablePastLessons } from "./plan-linked-slots";
+describe("assignablePastLessons", () => {
+  const now = new Date("2026-11-06T12:00:00");
+  const ev = (d: string) => ({ start: new Date(d) });
+  it("nabídne proběhlé hodiny posledních 8 týdnů, nejnovější první", () => {
+    const r = assignablePastLessons([ev("2026-10-01T08:00:00"), ev("2026-11-05T08:00:00"), ev("2026-08-01T08:00:00")], now);
+    expect(r.map((e) => e.start.getDate())).toEqual([5, 1]);
+  });
+  it("starší hodinu ponechá, pokud je právě zvolená z karty", () => {
+    expect(assignablePastLessons([ev("2026-08-01T08:00:00")], now, "2026-08-01")).toHaveLength(1);
+  });
+});
