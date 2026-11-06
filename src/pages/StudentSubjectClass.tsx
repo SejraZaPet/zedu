@@ -1,6 +1,7 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { countByKind } from "@/lib/assignment-kind";
+import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -669,7 +670,7 @@ export default function StudentSubjectClass() {
             </TabsTrigger>
             <TabsTrigger value="assignments">
               <ClipboardList className="h-4 w-4 mr-2" />
-              Úkoly ({kindCounts.task})
+              Úkoly ({assignments.length})
             </TabsTrigger>
             <TabsTrigger value="results">
               <TrendingUp className="h-4 w-4 mr-2" />
@@ -858,24 +859,19 @@ export default function StudentSubjectClass() {
 
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
-            {assignments.length > 0 && (
-              <p className="mb-3 text-sm text-muted-foreground" data-testid="kind-summary">
-                Úkoly {kindCounts.task} · Materiály {kindCounts.material} · Oznámení {kindCounts.announcement}
-              </p>
-            )}
-            {assignments.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                Pro tuto třídu zatím nemáš žádné úkoly, materiály ani oznámení.
-              </Card>
-            ) : (
-              <AssignmentStatusGroups items={assignments} storageKey={`assignment-groups:student:${classId || groupId}`}
+            <AssignmentKindTabs items={assignments} storageKey={`assignment-section:student:${classId || groupId}`}
+              badgeLabel="k odevzdání"
+              badge={(k, list) => k === "task" ? list.filter((a) => ["pending", "overdue"].includes(assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id)).group)).length : 0}
+              empty={{ task: "Zatím tu nemáš žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
+              render={(kind, items) => (
+              <AssignmentStatusGroups items={items} storageKey={`assignment-groups:student:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id))}
                 renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
                   actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>
                   {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
                   {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</p>}
                 </AssignmentStatusCard>} />
-            )}
+              )} />
           </TabsContent>
 
           {/* RESULTS */}
