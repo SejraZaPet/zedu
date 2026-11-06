@@ -534,6 +534,8 @@ export default function TeacherSuggestByMethod() {
           activities: p?.activities ?? [],
         };
       }
+      const enrichedPhases = enrichPhases(phasesForEditor, suggestion.modelSituation);
+      const modelSituationData = normalizeModelSituation(suggestion.modelSituation);
 
       const methodSummary = suggestion.methodNotes
         .map((n) => {
@@ -570,7 +572,9 @@ export default function TeacherSuggestByMethod() {
           input_data: {
             description: suggestion.summary || "",
             subject: suggestion.subject || subject,
-            phases: phasesForEditor,
+            phases: enrichedPhases,
+            ...(modelSituationData ? { modelSituation: modelSituationData } : {}),
+            ...(methodSummary ? { methodRationale: methodSummary } : {}),
             generatedFromMethods: selectedMethodIds,
             aiSource: "suggest-lesson-from-methods",
           } as any,
@@ -650,12 +654,22 @@ export default function TeacherSuggestByMethod() {
       const context = lines.join("\n");
       const title = `Pracovní list – ${topic}`;
       const subj = suggestion.subject || subject || "";
+      // Případová studie se vloží doslovně jako první blok (nezávisle na AI i sessionStorage).
+      const specWithCase = emptyWorksheetSpec({ title });
+      const casePatch = buildCaseStudyItemPatch(suggestion.modelSituation);
+      if (casePatch && specWithCase.variants[0]) {
+        specWithCase.variants[0].items = [
+          { ...createDefaultItem("instruction_box", 1), ...casePatch } as any,
+          ...specWithCase.variants[0].items,
+        ];
+        (specWithCase.header as any).caseStudy = normalizeModelSituation(suggestion.modelSituation);
+      }
       const { data: created, error } = await supabase
         .from("worksheets" as any)
         .insert({
           teacher_id: user.id,
           title,
-          spec: emptyWorksheetSpec({ title }) as any,
+          spec: specWithCase as any,
           ...(subj ? { subject: subj } : {}),
           ai_generated: true,
         } as any)
