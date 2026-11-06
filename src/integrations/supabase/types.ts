@@ -3953,6 +3953,7 @@ export type Database = {
           id: string
           lesson_date: string
           materials: Json
+          note: string | null
           subject: string
           teacher_id: string
           topic: string | null
@@ -3965,6 +3966,7 @@ export type Database = {
           id?: string
           lesson_date: string
           materials?: Json
+          note?: string | null
           subject: string
           teacher_id: string
           topic?: string | null
@@ -3977,6 +3979,7 @@ export type Database = {
           id?: string
           lesson_date?: string
           materials?: Json
+          note?: string | null
           subject?: string
           teacher_id?: string
           topic?: string | null

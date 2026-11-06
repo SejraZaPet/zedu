@@ -19,3 +19,9 @@ describe("pod-záložky Úkoly/Materiály/Oznámení", () => {
     expect(sectionFromParam("xyz")).toBeNull();
   });
 });
+describe("materiály od nejnovějších", () => {
+  it("řadí podle created_at sestupně", () => {
+    const r = filterByKind([{ id: "old", created_at: "2026-01-01", settings: { kind: "material" } }, { id: "new", created_at: "2026-11-01", settings: { kind: "material" } }], "material");
+    expect(r.map((i) => i.id)).toEqual(["new", "old"]);
+  });
+});

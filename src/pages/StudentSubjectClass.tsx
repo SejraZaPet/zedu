@@ -1,3 +1,5 @@
+import { Pin as PinnedIcon } from "lucide-react";
+import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { countByKind } from "@/lib/assignment-kind";
@@ -65,6 +67,7 @@ import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 
 interface StudentLessonTopic {
   topic: string | null;
+  note?: string | null;
   materials: AssignmentMaterial[];
 }
 
@@ -434,7 +437,7 @@ export default function StudentSubjectClass() {
     (async () => {
       let q = supabase
         .from("lesson_topics")
-        .select("lesson_date, topic, materials")
+        .select("lesson_date, topic, note, materials")
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
       // Zveřejněné plány hodin pro tuhle třídu/skupinu a předmět (učitel zapne „Zobrazit žákům“).
@@ -452,6 +455,7 @@ export default function StudentSubjectClass() {
         if (map[r.lesson_date]) continue;
         map[r.lesson_date] = {
           topic: r.topic ?? null,
+          note: r.note ?? null,
           materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
         };
       }
@@ -713,6 +717,9 @@ export default function StudentSubjectClass() {
                             {topicRow.topic}
                           </div>
                         )}
+                        {topicRow?.note && (
+                          <div className="text-xs text-muted-foreground whitespace-pre-line break-words" data-testid="past-note">{topicRow.note}</div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}
@@ -802,6 +809,9 @@ export default function StudentSubjectClass() {
                             Téma: {lessonTopics[dk]!.topic}
                           </div>
                         )}
+                        {!isLessonNotHeld(e) && lessonTopics[dk]?.note && (
+                          <div className="text-xs text-muted-foreground whitespace-pre-line break-words" data-testid="upcoming-note">{lessonTopics[dk]!.note}</div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}
@@ -863,7 +873,22 @@ export default function StudentSubjectClass() {
               badgeLabel="k odevzdání"
               badge={(k, list) => k === "task" ? list.filter((a) => ["pending", "overdue"].includes(assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id)).group)).length : 0}
               empty={{ task: "Zatím tu nemáš žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
-              render={(kind, items) => (
+              render={(kind, items) => kind !== "task" ? (
+              <ul className="space-y-2" data-testid={`kind-list-${kind}`}>
+                {items.map((a) => (
+                  <li key={a.id}>
+                    <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
+                        {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
+                        {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
+                      </div>
+                      <Button size="sm" className="assignment-card-action min-h-11 sm:min-h-0 shrink-0" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            ) : (
               <AssignmentStatusGroups items={items} storageKey={`assignment-groups:student:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id))}
                 renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}

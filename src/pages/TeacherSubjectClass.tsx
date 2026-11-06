@@ -1,3 +1,5 @@
+import { Pin as PinnedIcon } from "lucide-react";
+import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import LessonPlanActions from "@/components/subject-class/LessonPlanActions";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
@@ -103,6 +105,7 @@ interface LessonTopicRow {
   id: string;
   lesson_date: string;
   topic: string | null;
+  note?: string | null;
   materials: AssignmentMaterial[];
 }
 
@@ -195,6 +198,7 @@ interface AssignmentRow {
   worksheet_id?: string | null;
   exam_type?: string | null;
   scheduled_publish_at?: string | null;
+  settings?: unknown;
 }
 
 interface AttemptRow {
@@ -558,7 +562,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let q = supabase
         .from("lesson_topics")
-        .select("id, lesson_date, topic, materials")
+        .select("id, lesson_date, topic, note, materials")
         .eq("teacher_id", user.id)
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId!) : q.eq("class_id", classId!);
@@ -570,6 +574,7 @@ export default function TeacherSubjectClass() {
           id: r.id,
           lesson_date: r.lesson_date,
           topic: r.topic ?? null,
+          note: r.note ?? null,
           materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
         };
       }
@@ -580,12 +585,13 @@ export default function TeacherSubjectClass() {
 
   const saveLessonTopic = async (
     dateKey: string,
-    patch: { topic?: string | null; materials?: AssignmentMaterial[] },
+    patch: { topic?: string | null; note?: string | null; materials?: AssignmentMaterial[] },
   ): Promise<boolean> => {
     if (!user) return false;
     const existing = lessonTopics[dateKey];
     const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (patch.topic !== undefined) payload.topic = patch.topic;
+    if (patch.note !== undefined) payload.note = patch.note;
     if (patch.materials !== undefined) payload.materials = patch.materials as unknown as any;
 
     if (existing) {
@@ -599,6 +605,7 @@ export default function TeacherSubjectClass() {
         [dateKey]: {
           ...existing,
           topic: patch.topic !== undefined ? patch.topic : existing.topic,
+          note: patch.note !== undefined ? patch.note : existing.note ?? null,
           materials: patch.materials !== undefined ? patch.materials : existing.materials,
         },
       }));
@@ -612,9 +619,10 @@ export default function TeacherSubjectClass() {
           group_id: isGroup ? groupId : null,
           lesson_date: dateKey,
           topic: patch.topic ?? null,
+          note: patch.note ?? null,
           materials: (patch.materials ?? []) as unknown as any,
         })
-        .select("id, lesson_date, topic, materials")
+        .select("id, lesson_date, topic, note, materials")
         .maybeSingle();
       if (error || !data) {
         toast({ title: "Nepodařilo se uložit", description: error?.message, variant: "destructive" });
@@ -626,6 +634,7 @@ export default function TeacherSubjectClass() {
           id: data.id,
           lesson_date: data.lesson_date,
           topic: data.topic ?? null,
+          note: data.note ?? null,
           materials: Array.isArray(data.materials) ? (data.materials as unknown as AssignmentMaterial[]) : [],
         },
       }));
@@ -1464,7 +1473,9 @@ export default function TeacherSubjectClass() {
                               )}
                               <LessonTopicEditor
                                 topic={topicRow?.topic ?? null}
+                                note={topicRow?.note ?? null}
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                                onSaveNote={(n) => saveLessonTopic(dateKey, { note: n })}
                               />
                             </div>
                             <div className="flex flex-wrap items-center gap-1">
@@ -1585,7 +1596,9 @@ export default function TeacherSubjectClass() {
                               ) : null}
                               <LessonTopicEditor
                                 topic={lessonTopics[dateKey]?.topic ?? null}
+                                note={lessonTopics[dateKey]?.note ?? null}
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
+                                onSaveNote={(n) => saveLessonTopic(dateKey, { note: n })}
                               />
                             </div>
                             <LessonPlanActions
@@ -1711,7 +1724,22 @@ export default function TeacherSubjectClass() {
               onAdd={newAssignment} badgeLabel="ke kontrole"
               badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers)).group === "review").length : 0}
               empty={{ task: "Zatím tu nejsou žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
-              render={(kind, items) => (
+              render={(kind, items) => kind !== "task" ? (
+              <ul className="space-y-2" data-testid={`kind-list-${kind}`}>
+                {items.map((a) => (
+                  <li key={a.id}>
+                    <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
+                        {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
+                        {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
+                      </div>
+                      <Button size="sm" className="assignment-card-action min-h-11 sm:min-h-0 shrink-0" onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}>Detail</Button>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            ) : (
               <AssignmentStatusGroups teacher items={items} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
                 renderItem={(a, status) => {

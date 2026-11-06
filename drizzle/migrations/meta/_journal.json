@@ -540,6 +540,13 @@
       "when": 1793121776038,
       "tag": "0076_j2_schedule_exception_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793968745014,
+      "tag": "0077_lesson_topics_note",
+      "breakpoints": true
     }
   ]
 }
