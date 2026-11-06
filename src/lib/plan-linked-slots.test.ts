@@ -47,3 +47,27 @@ describe("assignablePastLessons", () => {
     expect(assignablePastLessons([ev("2026-08-01T08:00:00")], now, "2026-08-01")).toHaveLength(1);
   });
 });
+
+import { assignableLessonDates, semesterStart } from "./plan-linked-slots";
+describe("assignableLessonDates", () => {
+  const ev = (iso: string, scheduleStatus?: string) => ({ start: new Date(iso), scheduleStatus });
+  it("semestr: listopad → 1. 9., leden → 1. 9. loni, březen → 1. 2.", () => {
+    expect(semesterStart(new Date("2026-11-06T12:00:00")).toDateString()).toBe(new Date(2026, 8, 1).toDateString());
+    expect(semesterStart(new Date("2027-01-15T12:00:00")).toDateString()).toBe(new Date(2026, 8, 1).toDateString());
+    expect(semesterStart(new Date("2027-03-10T12:00:00")).toDateString()).toBe(new Date(2027, 1, 1).toDateString());
+  });
+  it("nabídne celé pololetí (i starší než 8 týdnů), ne loňské a ne budoucí", () => {
+    const now = new Date("2026-11-06T12:00:00");
+    const r = assignableLessonDates([ev("2026-09-02T08:00:00"), ev("2026-08-28T08:00:00"), ev("2026-11-05T08:00:00"), ev("2026-11-20T08:00:00")], now);
+    expect(r.map((e) => e.start.getDate())).toEqual([5, 2]);
+  });
+  it("vynechá zrušené a přesunuté hodiny", () => {
+    const now = new Date("2026-11-06T12:00:00");
+    const r = assignableLessonDates([ev("2026-10-01T08:00:00", "cancelled"), ev("2026-10-02T08:00:00", "moved_from"), ev("2026-10-03T08:00:00")], now);
+    expect(r).toHaveLength(1);
+  });
+  it("ponechá předvyplněné datum z karty i mimo pololetí", () => {
+    const now = new Date("2026-11-06T12:00:00");
+    expect(assignableLessonDates([ev("2026-06-01T08:00:00")], now, "2026-06-01")).toHaveLength(1);
+  });
+});

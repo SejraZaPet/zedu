@@ -41,9 +41,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { inputDataWithoutLesson, assignablePastLessons } from "@/lib/plan-linked-slots";
+import { inputDataWithoutLesson, assignableLessonDates, semesterStart } from "@/lib/plan-linked-slots";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
+import { parseLessonMaterials, splitLessonMaterials, type LessonMaterial, type LessonContentMaterial } from "@/lib/lesson-content-materials";
+import LessonLibraryPicker from "@/components/subject-class/LessonLibraryPicker";
+import LessonContentList from "@/components/subject-class/LessonContentList";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 import {
@@ -106,7 +109,7 @@ interface LessonTopicRow {
   lesson_date: string;
   topic: string | null;
   note?: string | null;
-  materials: AssignmentMaterial[];
+  materials: LessonMaterial[];
 }
 
 interface ClassRow {
@@ -286,6 +289,7 @@ export default function TeacherSubjectClass() {
   const [lessonTopics, setLessonTopics] = useState<Record<string, LessonTopicRow>>({});
   const [materialsDate, setMaterialsDate] = useState<string | null>(null);
   const [materialsDraft, setMaterialsDraft] = useState<AssignmentMaterial[]>([]);
+  const [contentDraft, setContentDraft] = useState<LessonContentMaterial[]>([]);
 
   const [reflectionVersion, setReflectionVersion] = useState(0);
 
@@ -519,6 +523,9 @@ export default function TeacherSubjectClass() {
   const now = new Date();
   const past = new Date(now);
   past.setDate(past.getDate() - 60);
+  // Dialog přiřazení nabízí celé pololetí zpět.
+  const semStart = semesterStart(now);
+  if (semStart < past) past.setTime(semStart.getTime());
   const future = new Date(now);
   future.setDate(future.getDate() + 60);
 
@@ -575,7 +582,7 @@ export default function TeacherSubjectClass() {
           lesson_date: r.lesson_date,
           topic: r.topic ?? null,
           note: r.note ?? null,
-          materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
+          materials: parseLessonMaterials(r.materials),
         };
       }
       setLessonTopics(map);
@@ -585,7 +592,7 @@ export default function TeacherSubjectClass() {
 
   const saveLessonTopic = async (
     dateKey: string,
-    patch: { topic?: string | null; note?: string | null; materials?: AssignmentMaterial[] },
+    patch: { topic?: string | null; note?: string | null; materials?: LessonMaterial[] },
   ): Promise<boolean> => {
     if (!user) return false;
     const existing = lessonTopics[dateKey];
@@ -635,7 +642,7 @@ export default function TeacherSubjectClass() {
           lesson_date: data.lesson_date,
           topic: data.topic ?? null,
           note: data.note ?? null,
-          materials: Array.isArray(data.materials) ? (data.materials as unknown as AssignmentMaterial[]) : [],
+          materials: parseLessonMaterials(data.materials),
         },
       }));
     }
@@ -651,7 +658,7 @@ export default function TeacherSubjectClass() {
     .slice(0, 200);
   const upcomingList = useLessonListDisclosure(upcomingLessons);
   const upcomingKeys = new Set(upcomingLessons.map((e) => format(e.start, "yyyy-MM-dd")));
-  const assignPast = assignablePastLessons(pastLessons, now, assignPlanDate).filter((e) => !upcomingKeys.has(format(e.start, "yyyy-MM-dd")));
+  const assignPast = assignableLessonDates(pastLessons as any[], now, assignPlanDate).filter((e) => !upcomingKeys.has(format(e.start, "yyyy-MM-dd")));
 
 
   const room = slots[0]?.room || "";
@@ -1482,13 +1489,17 @@ export default function TeacherSubjectClass() {
                               <Button
                                 size="sm"
                                 variant={topicRow?.materials?.length ? "secondary" : "ghost"}
+                                className="min-h-[44px] sm:min-h-0"
                                 onClick={() => {
-                                  setMaterialsDraft(topicRow?.materials ?? []);
+                                  const parts = splitLessonMaterials(topicRow?.materials ?? []);
+                                  setMaterialsDraft(parts.basic);
+                                  setContentDraft(parts.content);
                                   setMaterialsDate(dateKey);
                                 }}
-                                title="Materiály k hodině"
+                                aria-label={`Materiály k hodině ${format(e.start, "d. M.", { locale: cs })}`}
                               >
-                                <Paperclip className="h-3.5 w-3.5" />
+                                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                                Materiály
                                 {topicRow?.materials?.length ? (
                                   <span className="ml-1 text-[10px]">{topicRow.materials.length}</span>
                                 ) : null}
@@ -1978,11 +1989,23 @@ export default function TeacherSubjectClass() {
             </DialogDescription>
           </DialogHeader>
           {user && (
-            <AssignmentMaterialsEditor
-              materials={materialsDraft}
-              onChange={setMaterialsDraft}
-              teacherId={user.id}
-            />
+            <Tabs defaultValue="basic" className="min-w-0">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="basic" className="min-h-[44px] sm:min-h-0">Odkaz a soubor</TabsTrigger>
+                <TabsTrigger value="library" className="min-h-[44px] sm:min-h-0">Z mé knihovny</TabsTrigger>
+              </TabsList>
+              <TabsContent value="basic">
+                <AssignmentMaterialsEditor
+                  materials={materialsDraft}
+                  onChange={setMaterialsDraft}
+                  teacherId={user.id}
+                />
+              </TabsContent>
+              <TabsContent value="library" className="space-y-3">
+                <LessonContentList items={contentDraft} role="teacher" onRemove={(id) => setContentDraft((l) => l.filter((m) => m.id !== id))} />
+                <LessonLibraryPicker teacherId={user.id} selected={contentDraft} onChange={setContentDraft} />
+              </TabsContent>
+            </Tabs>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaterialsDate(null)}>
@@ -1991,7 +2014,7 @@ export default function TeacherSubjectClass() {
             <Button
               onClick={async () => {
                 if (!materialsDate) return;
-                await saveLessonTopic(materialsDate, { materials: materialsDraft });
+                await saveLessonTopic(materialsDate, { materials: [...materialsDraft, ...contentDraft] });
                 setMaterialsDate(null);
               }}
             >
