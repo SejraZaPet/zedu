@@ -1,7 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
-import { BookOpen, X } from "lucide-react";
+import { BookOpen, X, Minus, Plus, Maximize, Minimize, KeyRound } from "lucide-react";
+import { useIdleChrome } from "@/hooks/useIdleChrome";
+import { useRef } from "react";
+import { PROJECTOR_ZOOM_MAX, PROJECTOR_ZOOM_MIN, PROJECTOR_ZOOM_STEP, clampProjectorZoom, loadCodeAlwaysVisible, loadProjectorZoom, saveCodeAlwaysVisible, saveProjectorZoom } from "@/lib/presentation-routes";
 import { Button } from "@/components/ui/button";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
@@ -37,15 +40,73 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
     if (window.opener) window.close();
     else navigate(-1);
   };
-  const renderCloseButton = () => (
-    <Button
-      onClick={handleClose}
-      variant="ghost"
-      size="sm"
-      className="fixed top-4 right-4 z-50 gap-1.5 bg-background/80 hover:bg-background backdrop-blur"
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const chromeVisible = useIdleChrome(true, 3000, controlsRef);
+  const [userZoom, setUserZoom] = useState(loadProjectorZoom);
+  const [codeAlwaysVisible, setCodeAlwaysVisible] = useState(loadCodeAlwaysVisible);
+  const [isFullscreen, setIsFullscreen] = useState(() => !!document.fullscreenElement);
+  const changeZoom = (next: number) => {
+    const v = clampProjectorZoom(next);
+    setUserZoom(v);
+    saveProjectorZoom(v);
+  };
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "+" || e.key === "=") setUserZoom((z) => { const v = clampProjectorZoom(z + PROJECTOR_ZOOM_STEP); saveProjectorZoom(v); return v; });
+      else if (e.key === "-") setUserZoom((z) => { const v = clampProjectorZoom(z - PROJECTOR_ZOOM_STEP); saveProjectorZoom(v); return v; });
+      else if (e.key === "0") { setUserZoom(PROJECTOR_ZOOM_MIN); saveProjectorZoom(PROJECTOR_ZOOM_MIN); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch { /* prohlížeč nepovolil */ }
+  };
+  const chromeClass = `transition-opacity duration-300 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`;
+  const renderCloseButton = (withViewControls = false) => (
+    <div
+      ref={controlsRef}
+      data-testid="projector-controls"
+      className={`fixed top-3 right-3 z-50 flex items-center gap-1 rounded-full bg-background/80 p-1 backdrop-blur ${chromeClass}`}
     >
-      <X className="w-4 h-4" /> Zavřít
-    </Button>
+      {withViewControls && (
+        <>
+          <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Zmenšit" title="Zmenšit (−)" disabled={userZoom <= PROJECTOR_ZOOM_MIN} onClick={() => changeZoom(userZoom - PROJECTOR_ZOOM_STEP)}>
+            <Minus className="h-4 w-4" />
+          </Button>
+          <button type="button" className="min-w-[3.5rem] rounded px-1 text-sm tabular-nums" aria-label="Přizpůsobit obrazovce" title="Přizpůsobit obrazovce (0)" onClick={() => changeZoom(PROJECTOR_ZOOM_MIN)}>
+            {userZoom} %
+          </button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Zvětšit" title="Zvětšit (+)" disabled={userZoom >= PROJECTOR_ZOOM_MAX} onClick={() => changeZoom(userZoom + PROJECTOR_ZOOM_STEP)}>
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={codeAlwaysVisible ? "secondary" : "ghost"} size="icon" className="h-9 w-9"
+            aria-pressed={codeAlwaysVisible} aria-label="Kód vždy viditelný" title="Kód vždy viditelný"
+            onClick={() => { const v = !codeAlwaysVisible; setCodeAlwaysVisible(v); saveCodeAlwaysVisible(v); }}
+          >
+            <KeyRound className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+      <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"} title={isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"} onClick={toggleFullscreen}>
+        {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+      </Button>
+      <Button onClick={handleClose} variant="ghost" size="sm" className="gap-1.5">
+        <X className="w-4 h-4" /> Zavřít
+      </Button>
+    </div>
   );
   const { session, players, responses, loading } = game;
 
@@ -231,8 +292,11 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
 
   return (
     <div className="relative">
-      {renderCloseButton()}
+      {renderCloseButton(true)}
       <ProjectorSlideView
+        userZoom={userZoom}
+        chromeVisible={chromeVisible}
+        codeAlwaysVisible={codeAlwaysVisible}
         sessionId={sessionId!}
         session={session}
         currentSlide={currentSlide}
