@@ -1,5 +1,5 @@
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
-import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
+import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { BetaBadge } from "@/components/common/BetaBadge";
@@ -1754,16 +1754,12 @@ export default function TeacherSubjectClass() {
 
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">Úkoly, materiály a oznámení</h2>
-              <AddAssignmentMenu onPick={newAssignment} />
-            </div>
-            {assignments.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                Zatím nejsou zadané žádné úkoly pro tuto třídu.
-              </Card>
-            ) : (
-              <AssignmentStatusGroups teacher items={assignments} storageKey={`assignment-groups:teacher:${classId || groupId}`}
+            <AssignmentKindTabs teacher items={assignments} storageKey={`assignment-section:teacher:${classId || groupId}`}
+              onAdd={newAssignment} badgeLabel="ke kontrole"
+              badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers)).group === "review").length : 0}
+              empty={{ task: "Zatím tu nejsou žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
+              render={(kind, items) => (
+              <AssignmentStatusGroups teacher items={items} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
                 renderItem={(a, status) => {
                   const rows = attempts.filter((t) => t.assignment_id === a.id);
@@ -1777,7 +1773,7 @@ export default function TeacherSubjectClass() {
                     </div>
                   </AssignmentStatusCard>;
                 }} />
-            )}
+              )} />
           </TabsContent>
 
           {/* RESULTS */}

@@ -94,3 +94,19 @@ export function countByKind(items: { settings?: unknown }[]): Record<AssignmentK
 export function kindFromParam(v: string | null | undefined): AssignmentKind | null {
   return v === "task" || v === "material" || v === "announcement" ? v : null;
 }
+
+/** Pod-záložky v záložce Úkoly (`?sekce=`). */
+export type KindSection = "ukoly" | "materialy" | "oznameni";
+export const SECTION_KIND: Record<KindSection, AssignmentKind> = { ukoly: "task", materialy: "material", oznameni: "announcement" };
+export const KIND_SECTION: Record<AssignmentKind, KindSection> = { task: "ukoly", material: "materialy", announcement: "oznameni" };
+/** Neplatná/chybějící hodnota = null (volající pak použije uloženou nebo Úkoly). */
+export function sectionFromParam(v: string | null | undefined): KindSection | null {
+  return v === "ukoly" || v === "materialy" || v === "oznameni" ? v : null;
+}
+/** Položky jednoho druhu; oznámení: jen viditelná (učitel vidí i prošlá), připnutá první. */
+export function filterByKind<T extends { settings?: unknown }>(items: T[], kind: AssignmentKind, opts: { teacher?: boolean; now?: Date } = {}): T[] {
+  const list = items.filter((i) => assignmentKind(i.settings) === kind);
+  if (kind !== "announcement") return list;
+  const vis = opts.teacher ? list : list.filter((i) => announcementVisible(i.settings, opts.now));
+  return [...vis.filter((i) => isPinned(i.settings)), ...vis.filter((i) => !isPinned(i.settings))];
+}
