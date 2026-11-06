@@ -147,4 +147,4 @@
 
 ## Plán u přiřazené hodiny a tisk AI metody (6. 11.)
 - [x] „Změnit“ na kartě hodiny: jiný plán / nový / odebrat s potvrzením; odpojení z ostatních plánů
-- [ ] Diagnostika tisku AI metody a modelové situace – jen plán
+- [x] Diagnostika tisku AI metody – zapsána v plánu, čeká na schválení

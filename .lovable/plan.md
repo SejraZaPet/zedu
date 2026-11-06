@@ -141,7 +141,7 @@ Plán, jeho obsah, téma hodiny ani reflexe se tím nesmažou.
 - Tisk prohlížečem (Ctrl+P) vyjde prázdný: `src/index.css` ř. 215–224 při tisku skryje vše kromě `.print-area`, která je jen v rozvrzích (TeacherSchedule/StudentSchedule). Závěr z kódu, v prohlížeči nereprodukováno.
 - Data: `modelSituation.{scenario, task}` (edge `suggest-lesson-from-methods` ř. 214–223). Při „Vytvořit plán hodiny“ se uloží do `lesson_plans.student_description` jako „scénář + Úkol: …“ (ř. 555–568); souhrn do `input_data.description`.
 - Plán hodiny: tlačítko „Tisk“ v náhledu (`TeacherLessonPlanEditor.tsx` ř. 1422) volá **detailní** šablonu; `src/lib/lesson-plan-pdf-export.ts` krátká (ř. 74–104) ani detailní (ř. 106–165) `studentDescription` nevykreslují; jen „Studentský plán“ (ř. 168–194) má sekci „Zadání“. Proto v tisku plánu zadání chybí.
-- DB (anonymně): viz počty níže; 3 ze 40 plánů mají ve fázích text o modelové situaci.
+- DB (anonymně): 41 plánů, 16 má vyplněné zadání pro žáky, 5 obsahuje „Úkol:“; 3 mají ve fázích text o modelové situaci.
 
 ## Okamžitý náhradní postup pro učitelku
 1. Na výsledku metody klikněte „Vytvořit plán hodiny z tohoto návrhu“.
