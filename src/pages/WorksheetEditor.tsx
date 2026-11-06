@@ -1708,7 +1708,9 @@ export default function WorksheetEditor() {
     setAiGenerating(true);
     try {
       // Kratší lekce posíláme vcelku (bez ořezávání), delší po úryvcích.
-      const lessonText = hasLessonText
+      // Případová studie z návrhu metody (uložená v hlavičce listu).
+      const caseStudy = (spec.header as any)?.caseStudy as { scenario?: string; task?: string } | undefined;
+      const lessonTextBase = hasLessonText
         ? activeLessonContent.length <= 20000
           ? activeLessonContent
           : lessonBlocks
@@ -1716,6 +1718,11 @@ export default function WorksheetEditor() {
               .filter(Boolean)
               .join("\n\n") || activeLessonContent
         : suggestionContext;
+      // Kontext návrhu metody má přednost; text lekce se jen přidá.
+      const lessonText =
+        suggestionContext && hasLessonText
+          ? `${suggestionContext}\n\n## Doplňující text lekce\n${lessonTextBase}`
+          : lessonTextBase || suggestionContext;
 
       // ── Kontext z lekce: tabulky 1:1, QR na aktivity, aktivity k převodu ──
       // Aktivity vnořené v kartách nemají vlastní odkaz → vždy se převádějí na úlohu.
@@ -1762,6 +1769,7 @@ export default function WorksheetEditor() {
           ...(aiKind === "project" ? {} : { sections: sanitizeSections(aiSections) }),
           difficulty: aiDifficulty,
           hint: aiCustomHint,
+          ...(caseStudy && (caseStudy.scenario || caseStudy.task) ? { caseStudy } : {}),
           notesRatio: aiNotesRatio,
           ...(topicParam
             ? {
@@ -1827,9 +1835,16 @@ export default function WorksheetEditor() {
 
       updateSpec((s) => {
         const variantId = s.variants[0].variantId;
-        const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
+        // Blok „Případová studie“ z návrhu metody se při nahrazení zachová.
+        const keptCase = s.variants[0].items.filter(
+          (it) => it.type === "instruction_box" && /^Případová studie/.test(it.prompt ?? ""),
+        );
+        const keptIds = new Set(keptCase.map((it) => it.id));
+        const existingItems = aiReplaceMode === "replace" ? keptCase : s.variants[0].items;
         const existingKeys =
-          aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+          aiReplaceMode === "replace"
+            ? (s.answerKeys[variantId] ?? []).filter((k: any) => keptIds.has(k.itemId))
+            : s.answerKeys[variantId] ?? [];
         // V režimu „Technika s videi“ připravíme prázdné QR placeholdery pro videa.
         const qrCodes =
           aiMode === "technique" && (s.header.qrCodes ?? []).length === 0

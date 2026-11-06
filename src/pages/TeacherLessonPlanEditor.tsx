@@ -155,6 +155,10 @@ interface PhaseValue {
   activities?: SuggestedActivity[];
   /** Aktivity připnuté učitelem ke kroku (existující obsah nebo externí odkaz). */
   attached?: AttachedItem[];
+  /** Cíl fáze (předvyplněný z návrhu metody nebo ručně). */
+  goal?: string;
+  /** Forma práce (např. práce ve dvojicích). */
+  workForm?: string;
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
@@ -208,6 +212,9 @@ export default function TeacherLessonPlanEditor() {
   const [description, setDescription] = useState("");
   const [studentDescription, setStudentDescription] = useState("");
   const [teacherInstructions, setTeacherInstructions] = useState("");
+  /** Strukturovaná modelová situace z návrhu metody (input_data.modelSituation), jen zachováváme. */
+  const [modelSituation, setModelSituation] = useState<{ scenario?: string; task?: string } | null>(null);
+  const [methodRationale, setMethodRationale] = useState("");
   /** Pomůcky ke každé fázi – jen pro učitele (lesson_plan_phases.equipment). */
   const [equipment, setEquipment] = useState<PhaseEquipment>({});
   const [phases, setPhases] = useState<PhasesState>(emptyPhases);
@@ -276,6 +283,8 @@ export default function TeacherLessonPlanEditor() {
       setTitle(data.title || "Plán hodiny");
       const input = (data.input_data as any) || {};
       if (input.description) setDescription(input.description);
+      if (input.modelSituation && typeof input.modelSituation === "object") setModelSituation(input.modelSituation);
+      if (typeof input.methodRationale === "string") setMethodRationale(input.methodRationale);
       setStudentDescription((data as any).student_description ?? "");
       setTeacherInstructions((data as any).teacher_instructions ?? "");
       void loadPlanEquipment(data.id).then(setEquipment);
@@ -873,7 +882,12 @@ export default function TeacherLessonPlanEditor() {
         end: end || undefined,
         description: description || undefined,
         studentDescription: studentDescription.trim() || undefined,
+        modelSituation: modelSituation ?? undefined,
+        teacherInstructions: teacherInstructions.trim() || undefined,
+        methodRationale: methodRationale || undefined,
         phases: PHASES.map((p) => ({
+          goal: phases[p.key]?.goal?.trim() || undefined,
+          workForm: phases[p.key]?.workForm?.trim() || undefined,
           key: p.key,
           title: p.title,
           equipment: equipment[p.key]?.trim() || undefined,
@@ -1215,6 +1229,8 @@ export default function TeacherLessonPlanEditor() {
           targetKind: selectedTarget?.kind ?? (classId ? "class" : undefined),
           targetName: selectedTargetName,
           phases,
+          ...(modelSituation ? { modelSituation } : {}),
+          ...(methodRationale ? { methodRationale } : {}),
         } as any,
 
       };
@@ -2439,6 +2455,32 @@ export default function TeacherLessonPlanEditor() {
                   placeholder="Popiš aktivity v této fázi…"
                   rows={3}
                 />
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`goal-${phase.key}`} className="text-xs text-muted-foreground shrink-0">
+                      Cíl fáze
+                    </Label>
+                    <Input
+                      id={`goal-${phase.key}`}
+                      value={value.goal ?? ""}
+                      onChange={(e) => updatePhase(phase.key, { goal: e.target.value })}
+                      placeholder="např. žáci rozliší partie hovězího"
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`form-${phase.key}`} className="text-xs text-muted-foreground shrink-0">
+                      Forma práce
+                    </Label>
+                    <Input
+                      id={`form-${phase.key}`}
+                      value={value.workForm ?? ""}
+                      onChange={(e) => updatePhase(phase.key, { workForm: e.target.value })}
+                      placeholder="např. práce ve dvojicích"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
                 <div className="mt-2 flex items-center gap-2">
                   <Label htmlFor={`equip-${phase.key}`} className="text-xs text-muted-foreground shrink-0">
                     Pomůcky

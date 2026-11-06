@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parseCaseStudy, caseStudyPromptBlock } from "../_shared/worksheet-case-study.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { parseSections, missingByType, assembleSections, projectBriefToItems, type ProjectBrief } from "../_shared/worksheet-sections.ts";
@@ -165,7 +166,10 @@ serve(async (req) => {
       sections: rawSections,
       // Zaměření AI (general | study | technique | worksheet) – nezávislé na druhu listu
       focus,
+      // Případová studie z návrhu podle metody (volitelné)
+      caseStudy: rawCaseStudy,
     } = body ?? {};
+    const caseStudy = parseCaseStudy(rawCaseStudy);
     const requestedSections = parseSections(rawSections);
     const isProject = worksheetMode === "project";
     const guidanceKey: string = typeof focus === "string" && focus && focus !== "general" ? focus : worksheetMode;
@@ -368,7 +372,7 @@ ${planSubject ? `Předmět: ${planSubject}\n` : ""}${deadline ? `Termín odevzd�
 Obsah:
 ${chunk}
 
-${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${sections.join(" | ")}.\n\n` : ""}${lessonTables.length > 0 ? `Pozor: pracovní list už bude obsahovat ${lessonTables.length} tabulku/tabulky převzatou z lekce (vloží se automaticky). Tabulky sám negeneruj, ale můžeš na ně v úlohách odkazovat („podle tabulky…“).\n\n` : ""}${lessonQrLinks.length > 0 ? `Pozor: pro tyto aktivity z lekce se automaticky vloží QR kód, takže je NEpřepisuj do úloh: ${lessonQrLinks.map((q) => q.label).join(", ")}.\n\n` : ""}${lessonActivityPlan.length > 0 ? `Pozor: tyto aktivity z lekce už budou v listu převedené na tisknutelné úlohy (mcq / matching / ordering / true_false / fill_blank) se stejným zadáním – NEgeneruj je znovu, jen na ně navazuj:\n${lessonActivityPlan.map((a) => `- ${a.title} (${a.activityType})${a.detail ? `: ${a.detail}` : ""}`).join("\n")}\n\n` : ""}${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (cca ${count} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}${isStudyMode ? `, poměr: ${notesRatio}` : ""}) tak, aby pokrýval všechny sekce výše.`;
+${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${sections.join(" | ")}.\n\n` : ""}${lessonTables.length > 0 ? `Pozor: pracovní list už bude obsahovat ${lessonTables.length} tabulku/tabulky převzatou z lekce (vloží se automaticky). Tabulky sám negeneruj, ale můžeš na ně v úlohách odkazovat („podle tabulky…“).\n\n` : ""}${lessonQrLinks.length > 0 ? `Pozor: pro tyto aktivity z lekce se automaticky vloží QR kód, takže je NEpřepisuj do úloh: ${lessonQrLinks.map((q) => q.label).join(", ")}.\n\n` : ""}${lessonActivityPlan.length > 0 ? `Pozor: tyto aktivity z lekce už budou v listu převedené na tisknutelné úlohy (mcq / matching / ordering / true_false / fill_blank) se stejným zadáním – NEgeneruj je znovu, jen na ně navazuj:\n${lessonActivityPlan.map((a) => `- ${a.title} (${a.activityType})${a.detail ? `: ${a.detail}` : ""}`).join("\n")}\n\n` : ""}${caseStudyPromptBlock(caseStudy)}${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (cca ${count} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}${isStudyMode ? `, poměr: ${notesRatio}` : ""}) tak, aby pokrýval všechny sekce výše.`;
 
     const runAi = async (
       chunk: string,

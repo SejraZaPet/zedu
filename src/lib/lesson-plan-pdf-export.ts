@@ -13,6 +13,14 @@ export interface LessonPlanPhaseInput {
   /** Pomůcky pro fázi (jen učitelské šablony). */
   equipment?: string;
   activities?: { kind?: string; title: string }[];
+  /** Cíl fáze (předvyplněný nebo ručně zapsaný). */
+  goal?: string;
+  /** Forma práce (např. práce ve dvojicích). */
+  workForm?: string;
+  /** Rozvíjené kompetence. */
+  competencies?: string;
+  /** Poznámky pro hospitaci. */
+  notes?: string;
 }
 
 export interface LessonPlanExportData {
@@ -25,7 +33,59 @@ export interface LessonPlanExportData {
   description?: string;
   /** Zadání pro žáky – zobrazí se ve studentské šabloně. */
   studentDescription?: string;
+  /** Modelová situace a úkol (strukturovaně); fallback je `studentDescription`. */
+  modelSituation?: { scenario?: string; task?: string };
+  /** Instrukce pro učitele (jen učitelské šablony). */
+  teacherInstructions?: string;
+  /** Proč tyto metody sedí (jen detailní šablona). */
+  methodRationale?: string;
   phases: LessonPlanPhaseInput[];
+}
+
+const ACTIVITY_KIND_LABEL: Record<string, string> = {
+  quiz: "Kvíz",
+  worksheet: "Pracovní list",
+  live_game: "Živá hra",
+  lesson_block: "Blok z učebnice",
+  offline_activity: "Offline aktivita",
+  discussion: "Diskuse",
+};
+
+/** Modelová situace pro tisk: strukturovaná data, jinak rozdělení `studentDescription` podle „Úkol:“. */
+export function resolveModelSituation(
+  data: Pick<LessonPlanExportData, "modelSituation" | "studentDescription">,
+): { scenario: string; task: string } | null {
+  const scenario = (data.modelSituation?.scenario ?? "").trim();
+  const task = (data.modelSituation?.task ?? "").trim();
+  if (scenario || task) return { scenario, task };
+  const sd = (data.studentDescription ?? "").trim();
+  if (!sd) return null;
+  const m = sd.match(/^([\s\S]*?)(?:^|\n)\s*Úkol\s*:\s*([\s\S]+)$/);
+  if (m) return { scenario: m[1].trim(), task: m[2].trim() };
+  return { scenario: sd, task: "" };
+}
+
+function renderModelSituation(data: LessonPlanExportData): string {
+  const ms = resolveModelSituation(data);
+  if (!ms) return "";
+  return `<section class="overview"><h2>Modelová situace</h2>${
+    ms.scenario ? `<p style="white-space:pre-wrap">${escapeHtml(ms.scenario)}</p>` : ""
+  }${
+    ms.task
+      ? `<div style="border:1px solid #999;border-radius:6px;padding:6px 10px;margin-top:6px"><strong>Úkol:</strong> <span style="white-space:pre-wrap">${escapeHtml(ms.task)}</span></div>`
+      : ""
+  }</section>`;
+}
+
+function renderTextSection(title: string, text?: string): string {
+  if (!text?.trim()) return "";
+  return `<section class="overview"><h2>${escapeHtml(title)}</h2><p style="white-space:pre-wrap">${escapeHtml(text.trim())}</p></section>`;
+}
+
+function filledOrLines(text?: string): string {
+  return text?.trim()
+    ? `<div class="cell-content" style="white-space:pre-wrap">${escapeHtml(text.trim())}</div>`
+    : `<div class="cell-content lines"></div>`;
 }
 
 const TEMPLATE_LABEL: Record<LessonPlanTemplate, string> = {
@@ -67,7 +127,10 @@ function activitiesList(phase: LessonPlanPhaseInput): string {
   const acts = (phase.activities ?? []).filter((a) => (a.title ?? "").trim());
   if (acts.length === 0) return "";
   return `<ul class="acts">${acts
-    .map((a) => `<li>${escapeHtml(a.title)}</li>`)
+    .map((a) => {
+      const label = a.kind ? ACTIVITY_KIND_LABEL[a.kind] : undefined;
+      return `<li>${label ? `<strong>${escapeHtml(label)}:</strong> ` : ""}${escapeHtml(a.title)}</li>`;
+    })
     .join("")}</ul>`;
 }
 
@@ -89,7 +152,7 @@ function renderShort(data: LessonPlanExportData): string {
     })
     .join("");
 
-  return `
+  return `${renderModelSituation(data)}${renderTextSection("Instrukce pro učitele", data.teacherInstructions)}
     <table class="phases">
       <thead>
         <tr>
@@ -124,11 +187,11 @@ function renderDetailed(data: LessonPlanExportData): string {
             </div>
             <div class="cell">
               <div class="cell-label">Cíle fáze</div>
-              <div class="cell-content lines"></div>
+              ${filledOrLines(p.goal)}
             </div>
             <div class="cell">
               <div class="cell-label">Rozvíjené kompetence</div>
-              <div class="cell-content lines"></div>
+              ${filledOrLines(p.competencies)}
             </div>
             <div class="cell">
               <div class="cell-label">Pomůcky</div>
@@ -140,11 +203,11 @@ function renderDetailed(data: LessonPlanExportData): string {
             </div>
             <div class="cell">
               <div class="cell-label">Forma práce</div>
-              <div class="cell-content lines"></div>
+              ${filledOrLines(p.workForm)}
             </div>
             <div class="cell">
               <div class="cell-label">Poznámky pro hospitaci</div>
-              <div class="cell-content lines"></div>
+              ${filledOrLines(p.notes)}
             </div>
           </div>
         </section>`;
@@ -160,7 +223,10 @@ function renderDetailed(data: LessonPlanExportData): string {
         <div class="lines big"></div>
       </section>`;
 
-  return `${overall}${blocks}`;
+  return `${overall}${renderModelSituation(data)}${renderTextSection(
+    "Instrukce pro učitele",
+    data.teacherInstructions,
+  )}${renderTextSection("Proč tyto metody sedí", data.methodRationale)}${blocks}`;
 }
 
 function renderStudent(data: LessonPlanExportData): string {
@@ -186,6 +252,10 @@ function renderStudent(data: LessonPlanExportData): string {
   return `${task}
     <h2 class="s-heading">Co budeme dnes dělat</h2>
     <ol class="s-list">${items}</ol>`;
+}
+
+export function buildLessonPlanHtml(template: LessonPlanTemplate, data: LessonPlanExportData): string {
+  return buildHtml(template, data);
 }
 
 function buildHtml(template: LessonPlanTemplate, data: LessonPlanExportData): string {

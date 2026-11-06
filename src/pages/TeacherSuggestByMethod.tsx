@@ -28,7 +28,16 @@ import { extractPdfText } from "@/lib/pdf-page-renderer";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { savePlanEquipment } from "@/lib/lesson-plan-equipment";
-import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import { emptyWorksheetSpec, createDefaultItem } from "@/lib/worksheet-defaults";
+import {
+  buildCaseStudyItemPatch,
+  enrichPhases,
+  normalizeModelSituation,
+  suggestionToExportData,
+} from "@/lib/method-suggestion";
+import { exportLessonPlanPdf, type LessonPlanTemplate } from "@/lib/lesson-plan-pdf-export";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Printer } from "lucide-react";
 import { BookOpen } from "lucide-react";
 
 interface LearningMethod {
@@ -534,6 +543,8 @@ export default function TeacherSuggestByMethod() {
           activities: p?.activities ?? [],
         };
       }
+      const enrichedPhases = enrichPhases(phasesForEditor, suggestion.modelSituation);
+      const modelSituationData = normalizeModelSituation(suggestion.modelSituation);
 
       const methodSummary = suggestion.methodNotes
         .map((n) => {
@@ -570,7 +581,9 @@ export default function TeacherSuggestByMethod() {
           input_data: {
             description: suggestion.summary || "",
             subject: suggestion.subject || subject,
-            phases: phasesForEditor,
+            phases: enrichedPhases,
+            ...(modelSituationData ? { modelSituation: modelSituationData } : {}),
+            ...(methodSummary ? { methodRationale: methodSummary } : {}),
             generatedFromMethods: selectedMethodIds,
             aiSource: "suggest-lesson-from-methods",
           } as any,
@@ -626,6 +639,39 @@ export default function TeacherSuggestByMethod() {
     }
   };
 
+  /** Tisk / PDF přímo z návrhu (stejný renderer jako plán hodiny, nic se neukládá). */
+  const printSuggestion = (template: LessonPlanTemplate) => {
+    if (!suggestion) return;
+    const rationale = suggestion.methodNotes
+      .map((n) => {
+        const m = methods.find((x) => x.id === n.method_id);
+        return m ? `• ${m.name}: ${n.note}` : null;
+      })
+      .filter(Boolean)
+      .join("\n");
+    try {
+      exportLessonPlanPdf(
+        template,
+        suggestionToExportData({
+          title: suggestion.title,
+          subject: suggestion.subject || subject,
+          summary: suggestion.summary,
+          modelSituation: suggestion.modelSituation,
+          teacherInstructions: suggestion.teacherInstructions,
+          methodRationale: rationale,
+          phaseLabels: PHASE_LABELS,
+          phases: suggestion.phases ?? {},
+        }),
+      );
+    } catch (e: any) {
+      toast({
+        title: "Tisk se nezdařil",
+        description: e?.message || "Povolte vyskakovací okna pro tento web a zkuste to znovu.",
+        variant: "destructive",
+      });
+    }
+  };
+
   /** Otevře generátor pracovního listu předvyplněný z návrhu (bez automatického generování). */
   const createWorksheetFromSuggestion = async () => {
     if (!user || !suggestion) return;
@@ -650,12 +696,22 @@ export default function TeacherSuggestByMethod() {
       const context = lines.join("\n");
       const title = `Pracovní list – ${topic}`;
       const subj = suggestion.subject || subject || "";
+      // Případová studie se vloží doslovně jako první blok (nezávisle na AI i sessionStorage).
+      const specWithCase = emptyWorksheetSpec({ title });
+      const casePatch = buildCaseStudyItemPatch(suggestion.modelSituation);
+      if (casePatch && specWithCase.variants[0]) {
+        specWithCase.variants[0].items = [
+          { ...createDefaultItem("instruction_box", 1), ...casePatch } as any,
+          ...specWithCase.variants[0].items,
+        ];
+        (specWithCase.header as any).caseStudy = normalizeModelSituation(suggestion.modelSituation);
+      }
       const { data: created, error } = await supabase
         .from("worksheets" as any)
         .insert({
           teacher_id: user.id,
           title,
-          spec: emptyWorksheetSpec({ title }) as any,
+          spec: specWithCase as any,
           ...(subj ? { subject: subj } : {}),
           ai_generated: true,
         } as any)
@@ -1264,6 +1320,19 @@ export default function TeacherSuggestByMethod() {
               )}
 
               <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Printer className="w-4 h-4" />
+                      Vytisknout / Uložit PDF
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => printSuggestion("detailed")}>Verze pro učitele (detailní)</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => printSuggestion("short")}>Krátký plán</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => printSuggestion("student")}>Zadání pro žáky</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="outline" className="gap-2" onClick={() => setInsertSlidesOpen(true)}>
                   <MonitorPlay className="w-4 h-4" />
                   Vložit fáze jako slidy

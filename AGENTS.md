@@ -46,3 +46,4 @@
 - Student "new assignment" email copy lives only in `_shared/assignment-email.ts` (pure, tested); `settings.notifyEmail`/`notifyOverdue` default by kind via `assignment-kind.ts`, so missing keys keep existing behaviour.
 - AI activity output is normalized only in `src/lib/activity-ai-normalize.ts` (tolerates AI shape variants, rejects fill activities without blanks), so editors never silently receive empty content.
 - Notebook finger pan/pinch is view-only via `notebook-gestures.ts` (pen always draws; finger pans in pen-only/hand mode), so strokes and exports are unaffected. Calendar deadlines show only as per-day markers (`calendar-deadlines.ts`: tasks only, student-submitted hidden), never timed blocks; mobile day view is the `CalendarDayAgenda` list.
+- Method-suggestion case study is inserted deterministically (`method-suggestion.ts`, `spec.header.caseStudy`, `input_data.modelSituation`); AI only adds linked questions, so the task is never lost.
