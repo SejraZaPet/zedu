@@ -15,6 +15,7 @@ import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import { gameBackgroundStyle } from "@/lib/game-backgrounds";
+import { projectorStageScale } from "@/lib/presentation-routes";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
@@ -92,6 +93,12 @@ interface Props {
   backgroundUrl?: string | null;
   /** Odpovědi žáků – když jsou předané, projekce po zveřejnění MCQ ukáže pořadí. */
   responses?: any[];
+  /** Uživatelské přiblížení projekce v % (100–150), odděleně od zoomStageStyle. */
+  userZoom?: number;
+  /** Viditelnost překryvného ovládání (čistá projekce). */
+  chromeVisible?: boolean;
+  /** Kód pro připojení zůstane vidět i při skrytém ovládání. */
+  codeAlwaysVisible?: boolean;
 }
 
 /**
@@ -99,7 +106,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl, responses }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl, responses, userZoom = 100, chromeVisible = true, codeAlwaysVisible = false }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -108,6 +115,12 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   );
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const userZoomRef = useRef(userZoom);
+  const updateScaleRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    userZoomRef.current = userZoom;
+    updateScaleRef.current();
+  }, [userZoom]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -117,8 +130,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
       const width = frame.clientWidth;
       const height = frame.clientHeight;
       if (!width || !height) return;
-      setScale(Math.min(width / STAGE_WIDTH, height / STAGE_HEIGHT));
+      setScale(projectorStageScale(width, height, userZoomRef.current, STAGE_WIDTH, STAGE_HEIGHT));
     };
+    updateScaleRef.current = updateScale;
 
     updateScale();
     const observer = new ResizeObserver(updateScale);
@@ -211,12 +225,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
               </div>
 
-              <div className="flex justify-between items-center px-12 py-6 text-gray-300 shrink-0">
-                <span className="text-lg">{session.title}</span>
-                <span className="text-lg font-medium">Snímek {currentIndex + 1} / {slides.length}</span>
-              </div>
-
-              <div className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-hidden">
+              <div className={`flex-1 flex flex-col items-center justify-start gap-4 min-h-0 overflow-hidden ${hasCanvasContent ? "" : "px-6 pt-20 pb-24"}`}>
                 {currentSlide.type === "explain" && (
                   <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                     <BookOpen className="w-4 h-4" /> Výklad
@@ -297,20 +306,31 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 ) : null}
               </div>
 
-              <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
-                <span className="text-lg">Kód: <span className="font-mono font-bold text-foreground">{gameCode}</span></span>
-                <span className="text-lg">{players.length} žáků online</span>
-              </div>
-
               {overlayContent}
-            </div>
-
-            {/* Nenápadný ukazatel postupu – viditelný žákům po celou dobu. */}
-            <div className="pointer-events-none absolute bottom-3 right-4 rounded-full bg-black/30 px-3 py-1 text-sm font-medium text-white/70 backdrop-blur-sm">
-              Snímek {currentIndex + 1}/{slides.length}
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Překryvné ovládání mimo scénu: nebere snímku plochu a nepřibližuje se. */}
+      <div
+        data-testid="projector-chrome"
+        aria-hidden={!chromeVisible}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 bg-gradient-to-b from-black/50 to-transparent px-6 pb-6 pt-3 text-white/90 transition-opacity duration-300 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "opacity-0"}`}
+      >
+        <span className="truncate pl-10 text-base">{session.title}</span>
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-4 px-4 pb-3">
+        <span
+          data-testid="projector-code"
+          className={`rounded-full bg-black/50 px-3 py-1 text-base text-white backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${chromeVisible || codeAlwaysVisible ? "opacity-100" : "opacity-0"}`}
+        >
+          Kód: <span className="font-mono font-bold">{gameCode}</span>
+          <span className={chromeVisible ? "" : "hidden"}> · {players.length} žáků online</span>
+        </span>
+        <span className="rounded-full bg-black/30 px-3 py-1 text-sm font-medium text-white/70 backdrop-blur-sm">
+          Snímek {currentIndex + 1}/{slides.length}
+        </span>
       </div>
     </div>
   );
