@@ -103,6 +103,7 @@ interface LessonTopicRow {
   id: string;
   lesson_date: string;
   topic: string | null;
+  note?: string | null;
   materials: AssignmentMaterial[];
 }
 
