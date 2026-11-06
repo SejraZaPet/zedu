@@ -67,11 +67,12 @@ export function notifyOverdueEnabled(settings: unknown): boolean {
 /** Sloučí volby formuláře do stávajícího settings (zachová např. `plan`). */
 export function mergeKindSettings(current: Settings, patch: {
   kind: AssignmentKind; lateUntil?: string | null; pinned?: boolean; visibleUntil?: string | null;
-  notifyEmail?: boolean | null; notifyOverdue?: boolean | null;
+  notifyEmail?: boolean | null; notifyOverdue?: boolean | null; commentsEnabled?: boolean | null;
 }): Record<string, unknown> {
   const next: Record<string, unknown> = { ...obj(current) };
   delete next.kind; delete next.lateUntil; delete next.pinned; delete next.visibleUntil;
   if (typeof patch.notifyEmail === "boolean") next.notifyEmail = patch.notifyEmail;
+  if (typeof patch.commentsEnabled === "boolean") next.commentsEnabled = patch.commentsEnabled;
   if (patch.kind === "task" && typeof patch.notifyOverdue === "boolean") next.notifyOverdue = patch.notifyOverdue;
   else if (patch.kind !== "task") delete next.notifyOverdue;
   if (patch.kind !== "task") next.kind = patch.kind;

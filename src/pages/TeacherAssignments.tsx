@@ -119,6 +119,7 @@ const TeacherAssignments = () => {
   // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
   const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
   const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(null);
+  const [commentsOpt, setCommentsOpt] = useState<boolean | null>(null);
   const [notifyOverdueOpt, setNotifyOverdueOpt] = useState<boolean | null>(null);
   const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
   const [lateCustom, setLateCustom] = useState("");
@@ -542,7 +543,7 @@ const TeacherAssignments = () => {
       };
       const kindPatch = (due: string | null) => ({
         kind: formKind, lateUntil: lateFor(due), pinned,
-        notifyEmail: notifyEmailOpt, notifyOverdue: notifyOverdueOpt,
+        notifyEmail: notifyEmailOpt, notifyOverdue: notifyOverdueOpt, commentsEnabled: commentsOpt,
         visibleUntil: visibleUntil ? new Date(`${visibleUntil}T23:59`).toISOString() : null,
       });
 
@@ -720,7 +721,7 @@ const TeacherAssignments = () => {
     setShowManual(false);
     setCopySourceId("");
     setFormSubjectId(null);
-    setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil(""); setNotifyEmailOpt(null); setNotifyOverdueOpt(null);
+    setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil(""); setNotifyEmailOpt(null); setNotifyOverdueOpt(null); setCommentsOpt(null);
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -745,6 +746,8 @@ const TeacherAssignments = () => {
       setPinned(isPinned(a.settings));
       const ne = (a.settings as any)?.notifyEmail, no = (a.settings as any)?.notifyOverdue;
       setNotifyEmailOpt(typeof ne === "boolean" ? ne : null);
+      const ce = (a.settings as any)?.commentsEnabled;
+      setCommentsOpt(typeof ce === "boolean" ? ce : null);
       setNotifyOverdueOpt(typeof no === "boolean" ? no : null);
       const vu = (a.settings as any)?.visibleUntil;
       setVisibleUntil(typeof vu === "string" && !isNaN(new Date(vu).getTime()) ? format(new Date(vu), "yyyy-MM-dd") : "");
@@ -1085,6 +1088,13 @@ const TeacherAssignments = () => {
                     onCheckedChange={(v) => setNotifyEmailOpt(v === true)}
                   />
                   Poslat žákům e-mail
+                </label>
+                <label className="flex min-h-11 items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={commentsOpt ?? formKind !== "task"}
+                    onCheckedChange={(v) => setCommentsOpt(v === true)}
+                  />
+                  Povolit komentáře na zdi třídy
                 </label>
                 {formKind === "task" && (
                   <div>

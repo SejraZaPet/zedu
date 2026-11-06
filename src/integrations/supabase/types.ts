@@ -593,6 +593,47 @@ export type Database = {
           },
         ]
       }
+      assignment_comments: {
+        Row: {
+          assignment_id: string
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          author_id?: string
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_comments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_group_members: {
         Row: {
           group_id: string
@@ -8792,6 +8833,10 @@ export type Database = {
             }
             Returns: number
           }
+      assignment_comments_enabled: {
+        Args: { _assignment_id: string }
+        Returns: boolean
+      }
       calculate_all_subscription_shares: {
         Args: { _period_month: string }
         Returns: number
@@ -8846,6 +8891,10 @@ export type Database = {
       }
       can_manage_school_meeting: {
         Args: { _meeting_id: string }
+        Returns: boolean
+      }
+      can_moderate_assignment_comments: {
+        Args: { _assignment_id: string; _uid: string }
         Returns: boolean
       }
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
@@ -9222,6 +9271,7 @@ export type Database = {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
+      is_parent_only: { Args: { _uid: string }; Returns: boolean }
       is_player_in_game_session: {
         Args: { _session_id: string }
         Returns: boolean
