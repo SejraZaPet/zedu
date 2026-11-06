@@ -93,3 +93,41 @@ Tabulka je blok uvnitř `SlideCanvas` s pozicí a velikostí písma z editoru (s
 
 ## Zakázáno bez dalšího souhlasu
 DB/RLS, změny her nebo bodování, úpravy obsahu snímků, deploy.
+
+---
+
+# Diagnostika: špatně přiřazený plán k hodině (Co nás čeká)
+
+## Zjištění (ověřeno čtením kódu, DB jen SELECT)
+- Karta: `src/pages/TeacherSubjectClass.tsx` ř. 1490–1556. Když `findPlanForDate(dateKey)` najde plán, vykreslí jen ikony příloh + „Otevřít"; větev s „Přiřadit"/„Nový" je jen v `else` (bez plánu). Neexistuje „Změnit" ani „Odebrat" – není skryté v menu ani jen na mobilu; je to chybějící funkce, ne záměrné omezení.
+- Ukládání: žádná vazební tabulka. Přiřazení = položka v `lesson_plans.input_data.linkedSlots[]` (`{subject, classId|groupId, className, date, time}`), zapisuje `assignPlanToDate()` (ř. 1160–1213) přes `update({input_data})` na vlastním plánu (RLS vlastníka, beze změny).
+- Chyba navíc: `assignPlanToDate` při novém přiřazení čistí stejné datum jen v **nově vybraném** plánu. Starý (špatný) plán svůj slot dál drží, takže dva plány jsou na stejném termínu a `findPlanForDate` vrátí první nalezený – po „Přiřadit existující plán" (tlačítko v hlavičce) může karta dál ukazovat špatný plán.
+- Téma (`lesson_topics`) a reflexe se párují podle třídy/skupiny + předmětu + data, ne podle plánu → odpojení plánu je neovlivní. Přílohy/listy/úkol patří plánu (zůstanou v plánu).
+- DB: 29 plánů má aspoň jeden termín, 22 z nich je `visible_to_students`.
+- Žáci: `StudentSubjectClass` nečte `linkedSlots`; žákovská viditelnost plánu se řídí `visible_to_students`/`visible_from`, nikoli přiřazením k datu (podrobně neověřeno ve všech žákovských pohledech, ověřit v etapě 1).
+
+## Okamžitý ruční postup pro učitelku (bez kódu)
+1. Na kartě dnešní hodiny klikněte „Otevřít" (otevře špatný plán).
+2. V sekci „Další přiřazené termíny" u štítku „… · 6. 11. · 10:40" klikněte na křížek „Odebrat termín".
+3. Pokud je termín nastaven i nahoře jako hlavní datum/čas plánu, vymažte ho tam.
+4. Uložte plán a vraťte se na předmět – karta ukáže „Přiřadit"/„Nový"; vyberte správný plán.
+Plán, jeho obsah, téma hodiny ani reflexe se tím nesmažou.
+
+## Návrh (jen frontend, bez DB)
+- Na přiřazené kartě přidat tlačítko „Změnit" (menu): „Přiřadit jiný plán" (otevře stávající dialog předvyplněný datem) a „Odebrat plán z hodiny" (potvrzovací dialog).
+- Nová funkce `unlinkPlanFromDate(planId, dateKey)`: odstraní z `linkedSlots` jen položky daného data + kontextu (třída/skupina, předmět); zbytek `input_data` zachová.
+- `assignPlanToDate`: před zapsáním nového plánu odpojit stejné datum+kontext ze **všech ostatních** vlastních plánů (sekvenčně, při chybě toast a žádné částečné tvrzení o úspěchu).
+- Text v potvrzení: „Plán zůstane uložen v Plánech hodin. Téma hodiny, reflexe a materiály plánu se nemění. Viditelnost plánu pro žáky se tím nemění."
+- Logiku čištění slotů vyčlenit do čisté funkce (`src/lib/plan-linked-slots.ts`) pro testy.
+- DB změna není potřeba (zápis do vlastního plánu už RLS povoluje).
+
+## Rizika
+- Plány přiřazené ke skupině bez `classId/groupId` (staré sloty) – odpojovat jen se shodným předmětem.
+- Dvouhodinovka ve stejný den: klíč je datum (čas se v kartě neporovnává) – zachovat stávající chování, nerozšiřovat.
+- Cizí plán (sdílený) nelze upravit RLS → zobrazit srozumitelnou chybu.
+
+## Testy (Vitest)
+- odpojení odstraní jen slot daného data/kontextu, ostatní termíny a pole zůstanou;
+- nové přiřazení odpojí stejné datum z jiného plánu, jiné datum nechá;
+- karta s plánem nabízí „Změnit"; po odebrání se vrátí „Přiřadit"/„Nový";
+- téma hodiny (`lesson_topics`) se při odpojení nevolá.
