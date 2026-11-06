@@ -163,3 +163,37 @@ Plán, jeho obsah, téma hodiny ani reflexe se tím nesmažou.
 - detailní i krátká šablona obsahují „Modelová situace“ a úkol, když je `studentDescription`; bez něj sekce chybí;
 - převod návrhu metody na export zachová fáze, minuty, pomůcky, scénář a úkol;
 - studentská verze neobsahuje učitelské poznámky.
+
+---
+
+# Diagnostika: modelová situace v tisku, pracovním listu a plánu hodiny
+
+## Příčiny
+1. **Pracovní list z návrhu** (`TeacherSuggestByMethod.tsx:629-692` → sessionStorage `bezli.worksheetPrefill:<id>` → `WorksheetEditor.tsx:1379-1402, 1699-1778` → edge `generate-full-worksheet`). Modelová situace i úkol se předávají, ale jen jako volný text v `lessonContent`. Prompt (`generate-full-worksheet/index.ts:325-371`) je nemusí zachovat. Při zvolených sekcích platí „Dodrž PŘESNĚ typy… nic jiného negeneruj“ (ř. 341), takže vzniknou jen obecné otázky. Text navázané lekce má navíc přednost před kontextem návrhu (ř. 1699-1718). Pomůcky, instrukce pro učitele ani zdůvodnění metod se nepředávají. Kontext zmizí, pokud se sessionStorage ztratí.
+2. **Plán hodiny z návrhu** (`TeacherSuggestByMethod.tsx:523-578`): situace a úkol se uloží jen do `student_description`, instrukce a zdůvodnění do `teacher_instructions`, fáze do `input_data.phases` (čas, popis, aktivity). Cíl, forma práce, kompetence a poznámky pro hospitaci se neukládají vůbec, protože je metoda nemá jako samostatná pole. `lesson_plan_phases` obsahuje jen pomůcky (`lesson-plan-equipment.ts:23-47`).
+3. **Tisk** (`lesson-plan-pdf-export.ts`): pole „Cíle fáze / Kompetence / Forma práce / Poznámky pro hospitaci“ jsou natvrdo prázdná (ř. 125-147). Krátký ani detailní tisk nevykreslí situaci, úkol, instrukce ani zdůvodnění, protože je export nedostává. Studentský tisk úkol ukazuje pod „Zadání“. Třída a datum jsou `selectedTargetName`/`linkedDate`, takže u plánu bez termínu se zobrazí „—“. U odkazů se vypisuje jen název bez typu (ř. 66-71), materiály a `worksheet_ids` se netisknou.
+4. U metody není tlačítko tisku (ř. 1266-1315).
+
+## Návrh minimální opravy (bez DB)
+1. **Pracovní list:** předat strukturovaný parametr `caseStudy {scenario, task}` do `generate-full-worksheet`. Na začátek listu dát deterministicky (bez AI) `instruction_box` „Případová studie“ s doslovným textem situace a úkolu. AI dostane pokyn, aby otázky navazovaly na zadání. Sekce zůstanou dodrženy, blok se k nim přidá. Kontext návrhu bude mít přednost před textem lekce, když přichází z návrhu. Navíc se uloží do `spec.meta`, aby nezávisel na sessionStorage.
+2. **Plán hodiny:** navíc ukládat `input_data.modelSituation {scenario, task}`, `input_data.methodRationale` a `input_data.teacherInstructions`. `student_description` zůstane beze změny, takže žákovský pohled se nemění. Editor ukáže blok „Modelová situace“ a dovolí ho upravit.
+3. **Fáze:** do `input_data.phases[i]` přidat volitelná pole `goal`, `workForm`, `notes`. Forma práce se odvodí z textu („ve dvojicích“ → práce ve dvojicích, „skupin“ → skupinová, „individuálně/samostatně“ → individuální). Cíl fáze se předvyplní u Hlavní části odkazem „Práce na zadání případové studie“, u ostatních fází zůstane prázdný a učitel ho upraví. Kompetence se nevymýšlejí, zůstanou prázdné k doplnění.
+4. **Tisk:** detailní a krátký tisk dostanou blok „Modelová situace a úkol“, „Instrukce pro učitele“ a „Proč tyto metody“ (jen v detailním). Vyplněná pole fází se vykreslí, prázdná zůstanou jako řádky k ručnímu dopsání. U odkazů se doplní typ: „Pracovní list: …“, „Kvíz: …“, „Aktivita: …“. U plánu bez termínu se zobrazí třída/skupina plánu, jinak „—“ (datum se nevymýšlí).
+5. **Tlačítko „Vytisknout / Uložit PDF“** u výstupu metody: mapování návrhu na stejný `exportLessonPlanPdf`, volba Krátký / Detailní / Pro žáky, bez ukládání.
+
+## Rizika
+- AI může i tak generovat obecné otázky. Proto bude situace a úkol vložena deterministicky, AI připíše jen otázky.
+- Staré plány nemají `input_data.modelSituation`. Tisk proto použije záložně `student_description`.
+- Odvozená forma práce může být nepřesná, je jen předvyplněná a upravitelná.
+- Úprava edge funkce `generate-full-worksheet` vyžaduje její nasazení. Funkce zůstane zpětně kompatibilní, protože parametr je volitelný.
+- Vyhnout se dvojímu bloku „Zadání“ ve studentském tisku.
+
+## Testy
+- Čistá funkce `buildCaseStudyBlock`: obsahuje doslovné zadání a úkol, prázdné pro chybějící data.
+- `inferWorkForm`: dvojice/skupina/individuální/neznámé.
+- Mapování návrhu na plán: `modelSituation`, fáze s `goal/workForm`; `student_description` beze změny.
+- PDF export: detailní obsahuje situaci, úkol, instrukce a vyplněná pole fází. Starý plán použije záložní hodnotu. Odkazy mají typ. Třída bez data → „—“ pro datum.
+- Deno test promptu: `caseStudy` je v promptu a sekce se zachovají.
+
+## DB
+Není potřeba.
