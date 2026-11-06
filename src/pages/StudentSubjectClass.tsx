@@ -65,6 +65,7 @@ import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 
 interface StudentLessonTopic {
   topic: string | null;
+  note?: string | null;
   materials: AssignmentMaterial[];
 }
 
@@ -434,7 +435,7 @@ export default function StudentSubjectClass() {
     (async () => {
       let q = supabase
         .from("lesson_topics")
-        .select("lesson_date, topic, materials")
+        .select("lesson_date, topic, note, materials")
         .eq("subject", subjectLabel);
       q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
       // Zveřejněné plány hodin pro tuhle třídu/skupinu a předmět (učitel zapne „Zobrazit žákům“).
@@ -452,6 +453,7 @@ export default function StudentSubjectClass() {
         if (map[r.lesson_date]) continue;
         map[r.lesson_date] = {
           topic: r.topic ?? null,
+          note: r.note ?? null,
           materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
         };
       }
@@ -713,6 +715,9 @@ export default function StudentSubjectClass() {
                             {topicRow.topic}
                           </div>
                         )}
+                        {topicRow?.note && (
+                          <div className="text-xs text-muted-foreground whitespace-pre-line break-words" data-testid="past-note">{topicRow.note}</div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}
@@ -801,6 +806,9 @@ export default function StudentSubjectClass() {
                           <div className="text-xs text-foreground whitespace-normal break-words" data-testid="upcoming-topic">
                             Téma: {lessonTopics[dk]!.topic}
                           </div>
+                        )}
+                        {!isLessonNotHeld(e) && lessonTopics[dk]?.note && (
+                          <div className="text-xs text-muted-foreground whitespace-pre-line break-words" data-testid="upcoming-note">{lessonTopics[dk]!.note}</div>
                         )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
