@@ -30,7 +30,15 @@ import {
   Check,
   Paperclip,
   NotebookPen,
+  X,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { inputDataWithoutLesson } from "@/lib/plan-linked-slots";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
@@ -1151,10 +1159,41 @@ export default function TeacherSubjectClass() {
     navigate(`/ucitel/plany-hodin/novy?${params.toString()}`);
   }
 
+  const [unlinkTarget, setUnlinkTarget] = useState<{ planId: string; title: string; dateKey: string } | null>(null);
+  const [unlinking, setUnlinking] = useState(false);
+
   function openAssignPlanDialog(date?: Date) {
     setAssignPlanId("");
     setAssignPlanDate(date ? format(date, "yyyy-MM-dd") : "");
     setAssignPlanOpen(true);
+  }
+
+  function lessonCtx(dateKey: string) {
+    return { date: dateKey, isGroup, contextId: isGroup ? groupId : classId, subjectKey };
+  }
+
+  async function unlinkPlanFromDate(planId: string, dateKey: string) {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const input = inputDataWithoutLesson(plan.input_data, lessonCtx(dateKey));
+    if (!input) {
+      setUnlinkTarget(null);
+      return;
+    }
+    setUnlinking(true);
+    const { error } = await supabase.from("lesson_plans").update({ input_data: input as any }).eq("id", plan.id);
+    setUnlinking(false);
+    if (error) {
+      toast({
+        title: "Plán se nepodařilo odebrat",
+        description: "Plán možná patří jinému učiteli. Otevřete ho a termín odeberte tam, nebo požádejte autora.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPlans((prev) => prev.map((p) => (p.id === plan.id ? { ...p, input_data: input } : p)));
+    setUnlinkTarget(null);
+    toast({ title: "Plán odebrán z hodiny" });
   }
 
   async function assignPlanToDate() {
@@ -1194,6 +1233,25 @@ export default function TeacherSubjectClass() {
           date: assignPlanDate,
           time,
         };
+    // Odpojit stejný termín ze všech ostatních vlastních plánů, aby karta neukazovala starý plán.
+    const ctx = lessonCtx(assignPlanDate);
+    const others = relevantPlans
+      .filter((p) => p.id !== plan.id)
+      .map((p) => ({ p, input: inputDataWithoutLesson(p.input_data, ctx) }))
+      .filter((x) => x.input !== null);
+    for (const { p, input } of others) {
+      const { error: unErr } = await supabase.from("lesson_plans").update({ input_data: input as any }).eq("id", p.id);
+      if (unErr) {
+        setAssigning(false);
+        toast({
+          title: "Nepodařilo se odpojit původní plán",
+          description: `Plán „${p.title}" nejde upravit. Nový plán nebyl přiřazen.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      setPlans((prev) => prev.map((x) => (x.id === p.id ? { ...x, input_data: input } : x)));
+    }
     const next: LinkedSlot[] = [...cleaned, nextEntry];
     const newInput = { ...(plan.input_data || {}), linkedSlots: next };
     const { error } = await supabase
@@ -1525,11 +1583,42 @@ export default function TeacherSubjectClass() {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                className="min-h-[44px] sm:min-h-0"
                                 onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}
                               >
                                 <FileText className="h-3.5 w-3.5 mr-1" />
                                 Otevřít
                               </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="min-h-[44px] sm:min-h-0"
+                                    aria-label={`Změnit plán hodiny ${format(e.start, "d. M.", { locale: cs })}`}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                                    Změnit
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem className="min-h-[44px]" onSelect={() => openAssignPlanDialog(e.start)}>
+                                    <Link2 className="h-3.5 w-3.5 mr-2" />
+                                    Přiřadit jiný plán
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="min-h-[44px]" onSelect={() => newLessonPlan(e.start)}>
+                                    <Plus className="h-3.5 w-3.5 mr-2" />
+                                    Nový plán
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="min-h-[44px] text-destructive"
+                                    onSelect={() => setUnlinkTarget({ planId: planForDate.id, title: planForDate.title, dateKey })}
+                                  >
+                                    <X className="h-3.5 w-3.5 mr-2" />
+                                    Odebrat plán z hodiny
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               </div>
                             ) : (
                               <div className="flex gap-1">
@@ -2127,6 +2216,33 @@ export default function TeacherSubjectClass() {
             <Button variant="ghost" onClick={() => setAssignPlanOpen(false)}>Zrušit</Button>
             <Button onClick={assignPlanToDate} disabled={assigning || !assignPlanId || !assignPlanDate}>
               {assigning ? "Ukládám…" : "Přiřadit plán"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!unlinkTarget} onOpenChange={(o) => !o && !unlinking && setUnlinkTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Odebrat plán z hodiny?</DialogTitle>
+            <DialogDescription>
+              Plán „{unlinkTarget?.title}“ se odpojí od hodiny
+              {unlinkTarget ? ` ${format(new Date(unlinkTarget.dateKey), "d. M. yyyy", { locale: cs })}` : ""}.
+              Plán zůstane uložen v Plánech hodin. Téma hodiny, reflexe a materiály plánu se nemění.
+              Viditelnost plánu pro žáky se tím nemění.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" className="min-h-[44px]" disabled={unlinking} onClick={() => setUnlinkTarget(null)}>
+              Zrušit
+            </Button>
+            <Button
+              variant="destructive"
+              className="min-h-[44px]"
+              disabled={unlinking}
+              onClick={() => unlinkTarget && unlinkPlanFromDate(unlinkTarget.planId, unlinkTarget.dateKey)}
+            >
+              {unlinking ? "Odebírám…" : "Odebrat plán"}
             </Button>
           </DialogFooter>
         </DialogContent>
