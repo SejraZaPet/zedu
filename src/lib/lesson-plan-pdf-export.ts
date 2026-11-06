@@ -254,6 +254,10 @@ function renderStudent(data: LessonPlanExportData): string {
     <ol class="s-list">${items}</ol>`;
 }
 
+export function buildLessonPlanHtml(template: LessonPlanTemplate, data: LessonPlanExportData): string {
+  return buildHtml(template, data);
+}
+
 function buildHtml(template: LessonPlanTemplate, data: LessonPlanExportData): string {
   const headerMeta = `
     <div class="meta">
