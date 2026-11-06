@@ -2221,6 +2221,33 @@ export default function TeacherSubjectClass() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!unlinkTarget} onOpenChange={(o) => !o && !unlinking && setUnlinkTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Odebrat plán z hodiny?</DialogTitle>
+            <DialogDescription>
+              Plán „{unlinkTarget?.title}“ se odpojí od hodiny
+              {unlinkTarget ? ` ${format(new Date(unlinkTarget.dateKey), "d. M. yyyy", { locale: cs })}` : ""}.
+              Plán zůstane uložen v Plánech hodin. Téma hodiny, reflexe a materiály plánu se nemění.
+              Viditelnost plánu pro žáky se tím nemění.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" className="min-h-[44px]" disabled={unlinking} onClick={() => setUnlinkTarget(null)}>
+              Zrušit
+            </Button>
+            <Button
+              variant="destructive"
+              className="min-h-[44px]"
+              disabled={unlinking}
+              onClick={() => unlinkTarget && unlinkPlanFromDate(unlinkTarget.planId, unlinkTarget.dateKey)}
+            >
+              {unlinking ? "Odebírám…" : "Odebrat plán"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
