@@ -131,3 +131,35 @@ Plán, jeho obsah, téma hodiny ani reflexe se tím nesmažou.
 - nové přiřazení odpojí stejné datum z jiného plánu, jiné datum nechá;
 - karta s plánem nabízí „Změnit"; po odebrání se vrátí „Přiřadit"/„Nový";
 - téma hodiny (`lesson_topics`) se při odpojení nevolá.
+
+---
+
+# Diagnostika: tisk AI metody a modelové situace (jen čtení)
+
+## Zjištění
+- Obrazovka je `TeacherSuggestByMethod` na `/ucitel/navrh-podle-metody` (`src/pages/TeacherSuggestByMethod.tsx` ř. 1175–1235: nadpis, souhrn, „Modelová situace“ + Bezlai, „Úkol / otázka“, fáze s časy a pomůckami). Akce u výsledku (ř. 1266–1302): slidy, aktivity do lekce, pracovní list, plán hodiny – **žádný tisk/PDF**.
+- Tisk prohlížečem (Ctrl+P) vyjde prázdný: `src/index.css` ř. 215–224 při tisku skryje vše kromě `.print-area`, která je jen v rozvrzích (TeacherSchedule/StudentSchedule). Závěr z kódu, v prohlížeči nereprodukováno.
+- Data: `modelSituation.{scenario, task}` (edge `suggest-lesson-from-methods` ř. 214–223). Při „Vytvořit plán hodiny“ se uloží do `lesson_plans.student_description` jako „scénář + Úkol: …“ (ř. 555–568); souhrn do `input_data.description`.
+- Plán hodiny: tlačítko „Tisk“ v náhledu (`TeacherLessonPlanEditor.tsx` ř. 1422) volá **detailní** šablonu; `src/lib/lesson-plan-pdf-export.ts` krátká (ř. 74–104) ani detailní (ř. 106–165) `studentDescription` nevykreslují; jen „Studentský plán“ (ř. 168–194) má sekci „Zadání“. Proto v tisku plánu zadání chybí.
+- DB (anonymně): viz počty níže; 3 ze 40 plánů mají ve fázích text o modelové situaci.
+
+## Okamžitý náhradní postup pro učitelku
+1. Na výsledku metody klikněte „Vytvořit plán hodiny z tohoto návrhu“.
+2. V plánu hodiny zvolte „Exportovat PDF“ → **„Studentský plán“** (obsahuje Zadání = modelová situace + úkol), případně zvlášť „Detailní plán“ pro fáze, časy a pomůcky.
+3. Pokud se nic neotevře, povolte vyskakovací okna pro bezli.cz. Ctrl+P na stránce metody nepomůže (vyjde prázdná stránka).
+
+## Návrh (frontend, bez DB)
+- `lesson-plan-pdf-export.ts`: do krátké i detailní šablony přidat sekci „Modelová situace / Zadání“ z `studentDescription` (jen pokud vyplněno), rozdělit „Úkol:“ do vlastního rámečku; štítek „AI generováno“ (EU AI Act).
+- Na `TeacherSuggestByMethod` tlačítko „Vytisknout / Uložit PDF“: převést návrh na stejný `LessonPlanPdfInput` (fáze, minuty, pomůcky, popis, modelová situace) a použít existující exportér – jeden renderer pro metodu i plán.
+- Přepínač „Verze pro učitele / Zadání pro žáky“ = existující šablony detailní / studentská.
+- Volitelně: tiskové CSS neskrývat obsah stránek mimo `.print-area` – NEdělat globálně (rozvrhy na tom závisí), jen přes vlastní exportér.
+
+## Rizika
+- Blokování vyskakovacích oken – exportér už hlásí chybu; zvážit tisk přes iframe jako u pracovních listů.
+- Starší plány bez `student_description` – sekce se jen nezobrazí.
+- Formát „Úkol:“ je textová konvence; dělení musí tolerovat ručně upravený text.
+
+## Testy
+- detailní i krátká šablona obsahují „Modelová situace“ a úkol, když je `studentDescription`; bez něj sekce chybí;
+- převod návrhu metody na export zachová fáze, minuty, pomůcky, scénář a úkol;
+- studentská verze neobsahuje učitelské poznámky.
