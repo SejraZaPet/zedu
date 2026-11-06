@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   buildCaseStudyItemPatch,
@@ -30,13 +31,13 @@ describe("method-suggestion", () => {
       {
         main: { timeMin: "20", description: "Žáci pracují ve dvojicích na zadání případové studie" },
         intro: { timeMin: "5", description: "Pozdrav", goal: "Vlastní cíl" },
-      },
+      } as Record<string, any>,
       ms,
     );
     expect(out.main.goal).toMatch(/případové studie/);
     expect(out.main.workForm).toBe("práce ve dvojicích");
     expect(out.intro.goal).toBe("Vlastní cíl");
-    expect(enrichPhases({ main: { description: "x" } }, null).main.goal).toBeUndefined();
+    expect(enrichPhases({ main: { description: "x" } } as Record<string, any>, null).main.goal).toBeUndefined();
   });
 
   it("detailní tisk z návrhu obsahuje situaci, úkol, instrukce a vyplněná pole fází", () => {
