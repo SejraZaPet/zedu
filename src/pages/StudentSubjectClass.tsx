@@ -34,7 +34,8 @@ import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterial
 import { LessonListDisclosure, useLessonListDisclosure } from "@/components/lesson/LessonListDisclosure";
 import LessonRowBadges, { TODAY_ROW_CLASS } from "@/components/lesson/LessonRowBadges";
 import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-row-badges";
-import type { AssignmentMaterial } from "@/lib/assignment-materials";
+import { parseLessonMaterials, splitLessonMaterials, type LessonMaterial } from "@/lib/lesson-content-materials";
+import LessonContentList from "@/components/subject-class/LessonContentList";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 
@@ -68,7 +69,7 @@ import StudentLessonPlanCard from "@/components/student/StudentLessonPlanCard";
 interface StudentLessonTopic {
   topic: string | null;
   note?: string | null;
-  materials: AssignmentMaterial[];
+  materials: LessonMaterial[];
 }
 
 interface ClassRow {
@@ -456,7 +457,7 @@ export default function StudentSubjectClass() {
         map[r.lesson_date] = {
           topic: r.topic ?? null,
           note: r.note ?? null,
-          materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
+          materials: parseLessonMaterials(r.materials),
         };
       }
       setLessonTopics(map);
@@ -730,10 +731,12 @@ export default function StudentSubjectClass() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="min-h-[44px] sm:min-h-0"
                           onClick={() => setMaterialsDate(dateKey)}
-                          title="Materiály k hodině"
+                          aria-label="Materiály k hodině"
                         >
-                          <Paperclip className="h-3.5 w-3.5" />
+                          <Paperclip className="h-3.5 w-3.5 mr-1" />
+                          Materiály
                           <span className="ml-1 text-[10px]">{topicRow.materials.length}</span>
                         </Button>
                       )}
@@ -986,10 +989,15 @@ export default function StudentSubjectClass() {
           <DialogHeader>
             <DialogTitle>Materiály k hodině</DialogTitle>
           </DialogHeader>
-          <AssignmentMaterialsList
-            materials={materialsDate ? lessonTopics[materialsDate]?.materials ?? [] : []}
-            title="Materiály k hodině"
-          />
+          {(() => {
+            const parts = splitLessonMaterials(materialsDate ? lessonTopics[materialsDate]?.materials ?? [] : []);
+            return (
+              <div className="space-y-3 min-w-0">
+                {parts.basic.length > 0 && <AssignmentMaterialsList materials={parts.basic} title="Materiály k hodině" />}
+                <LessonContentList items={parts.content} role="student" />
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
       <SiteFooter />

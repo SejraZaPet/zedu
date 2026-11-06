@@ -47,7 +47,6 @@ import type { AssignmentMaterial } from "@/lib/assignment-materials";
 import { parseLessonMaterials, splitLessonMaterials, type LessonMaterial, type LessonContentMaterial } from "@/lib/lesson-content-materials";
 import LessonLibraryPicker from "@/components/subject-class/LessonLibraryPicker";
 import LessonContentList from "@/components/subject-class/LessonContentList";
-import { Tabs as MatTabs, TabsContent as MatTabsContent, TabsList as MatTabsList, TabsTrigger as MatTabsTrigger } from "@/components/ui/tabs";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 
 import {
@@ -110,7 +109,7 @@ interface LessonTopicRow {
   lesson_date: string;
   topic: string | null;
   note?: string | null;
-  materials: AssignmentMaterial[];
+  materials: LessonMaterial[];
 }
 
 interface ClassRow {
@@ -1990,23 +1989,23 @@ export default function TeacherSubjectClass() {
             </DialogDescription>
           </DialogHeader>
           {user && (
-            <MatTabs defaultValue="basic" className="min-w-0">
-              <MatTabsList className="grid w-full grid-cols-2">
-                <MatTabsTrigger value="basic" className="min-h-[44px] sm:min-h-0">Odkaz a soubor</MatTabsTrigger>
-                <MatTabsTrigger value="library" className="min-h-[44px] sm:min-h-0">Z mé knihovny</MatTabsTrigger>
-              </MatTabsList>
-              <MatTabsContent value="basic">
+            <Tabs defaultValue="basic" className="min-w-0">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="basic" className="min-h-[44px] sm:min-h-0">Odkaz a soubor</TabsTrigger>
+                <TabsTrigger value="library" className="min-h-[44px] sm:min-h-0">Z mé knihovny</TabsTrigger>
+              </TabsList>
+              <TabsContent value="basic">
                 <AssignmentMaterialsEditor
                   materials={materialsDraft}
                   onChange={setMaterialsDraft}
                   teacherId={user.id}
                 />
-              </MatTabsContent>
-              <MatTabsContent value="library" className="space-y-3">
+              </TabsContent>
+              <TabsContent value="library" className="space-y-3">
                 <LessonContentList items={contentDraft} role="teacher" onRemove={(id) => setContentDraft((l) => l.filter((m) => m.id !== id))} />
                 <LessonLibraryPicker teacherId={user.id} selected={contentDraft} onChange={setContentDraft} />
-              </MatTabsContent>
-            </MatTabs>
+              </TabsContent>
+            </Tabs>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaterialsDate(null)}>
