@@ -1,3 +1,5 @@
+import { Pin as PinnedIcon } from "lucide-react";
+import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import LessonPlanActions from "@/components/subject-class/LessonPlanActions";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
@@ -1727,7 +1729,7 @@ export default function TeacherSubjectClass() {
                   <li key={a.id}>
                     <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
                       <div className="min-w-0 flex-1">
-                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <Pin className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
+                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
                         {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
                         {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
                       </div>
