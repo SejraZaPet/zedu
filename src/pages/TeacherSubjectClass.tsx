@@ -198,6 +198,7 @@ interface AssignmentRow {
   worksheet_id?: string | null;
   exam_type?: string | null;
   scheduled_publish_at?: string | null;
+  settings?: unknown;
 }
 
 interface AttemptRow {
