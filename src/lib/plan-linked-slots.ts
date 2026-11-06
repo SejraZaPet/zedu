@@ -51,3 +51,29 @@ export function assignablePastLessons<T extends { start: Date }>(past: T[], now:
     .filter((e) => e.start.getTime() <= now.getTime() && (e.start.getTime() >= from || key(e.start) === keepDate))
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 }
+
+/** Začátek aktuálního pololetí: září–leden → 1. 9., únor–srpen → 1. 2. (lokální čas). */
+export function semesterStart(now: Date): Date {
+  const m = now.getMonth();
+  if (m >= 8) return new Date(now.getFullYear(), 8, 1);
+  if (m === 0) return new Date(now.getFullYear() - 1, 8, 1);
+  return new Date(now.getFullYear(), 1, 1);
+}
+
+/**
+ * Proběhlé hodiny nabízené v dialogu přiřazení: celé aktuální pololetí (od nejnovější),
+ * bez zrušených/neodučených hodin; právě zvolené datum zůstane vždy.
+ */
+export function assignableLessonDates<T extends { start: Date; scheduleStatus?: string | null }>(
+  past: T[],
+  now: Date,
+  keepDate?: string,
+): T[] {
+  const from = semesterStart(now).getTime();
+  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const notHeld = (s?: string | null) => s === "cancelled" || s === "moved_from" || s === "replaced";
+  return past
+    .filter((e) => e.start.getTime() <= now.getTime() && !notHeld(e.scheduleStatus))
+    .filter((e) => e.start.getTime() >= from || key(e.start) === keepDate)
+    .sort((a, b) => b.start.getTime() - a.start.getTime());
+}
