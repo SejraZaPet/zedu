@@ -42,3 +42,12 @@ export function inputDataWithoutLesson<T extends { linkedSlots?: PlanLinkedSlot[
   if (next.length === current.length) return null;
   return { ...(inputData as T), linkedSlots: next };
 }
+
+/** Proběhlé hodiny nabízené v dialogu přiřazení: posledních `weeks` týdnů (od nejnovější), plus právě zvolené datum. */
+export function assignablePastLessons<T extends { start: Date }>(past: T[], now: Date, keepDate?: string, weeks = 8): T[] {
+  const from = now.getTime() - weeks * 7 * 86400000;
+  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return past
+    .filter((e) => e.start.getTime() <= now.getTime() && (e.start.getTime() >= from || key(e.start) === keepDate))
+    .sort((a, b) => b.start.getTime() - a.start.getTime());
+}
