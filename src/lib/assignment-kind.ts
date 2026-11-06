@@ -106,6 +106,10 @@ export function sectionFromParam(v: string | null | undefined): KindSection | nu
 /** Položky jednoho druhu; oznámení: jen viditelná (učitel vidí i prošlá), připnutá první. */
 export function filterByKind<T extends { settings?: unknown }>(items: T[], kind: AssignmentKind, opts: { teacher?: boolean; now?: Date } = {}): T[] {
   const list = items.filter((i) => assignmentKind(i.settings) === kind);
+  if (kind === "task") return list;
+  // Materiály a oznámení: od nejnovějších (bez created_at pořadí beze změny).
+  const t = (i: T) => { const v = (i as { created_at?: string }).created_at; const n = v ? new Date(v).getTime() : NaN; return Number.isFinite(n) ? n : -Infinity; };
+  list.sort((a, b) => t(b) - t(a));
   if (kind !== "announcement") return list;
   const vis = opts.teacher ? list : list.filter((i) => announcementVisible(i.settings, opts.now));
   return [...vis.filter((i) => isPinned(i.settings)), ...vis.filter((i) => !isPinned(i.settings))];

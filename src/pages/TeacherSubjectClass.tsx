@@ -1721,7 +1721,22 @@ export default function TeacherSubjectClass() {
               onAdd={newAssignment} badgeLabel="ke kontrole"
               badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers)).group === "review").length : 0}
               empty={{ task: "Zatím tu nejsou žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
-              render={(kind, items) => (
+              render={(kind, items) => kind !== "task" ? (
+              <ul className="space-y-2" data-testid={`kind-list-${kind}`}>
+                {items.map((a) => (
+                  <li key={a.id}>
+                    <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <Pin className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
+                        {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
+                        {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
+                      </div>
+                      <Button size="sm" className="assignment-card-action min-h-11 sm:min-h-0 shrink-0" onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}>Detail</Button>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            ) : (
               <AssignmentStatusGroups teacher items={items} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
                 renderItem={(a, status) => {
