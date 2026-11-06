@@ -58,7 +58,7 @@ export function splitLessonMaterials(list: LessonMaterial[]): { basic: Assignmen
 }
 
 /** Přidá položku knihovny; stejný obsah se nepřidá dvakrát. */
-export function addContentMaterial(list: LessonContentMaterial[], item: Omit<LessonContentMaterial, "id" | "kind">, id = crypto.randomUUID()): LessonContentMaterial[] {
+export function addContentMaterial(list: LessonContentMaterial[], item: Omit<LessonContentMaterial, "id" | "kind">, id: string = crypto.randomUUID()): LessonContentMaterial[] {
   if (list.some((m) => m.contentType === item.contentType && m.refId === item.refId)) return list;
   return [...list, { id, kind: "content", ...item }];
 }
