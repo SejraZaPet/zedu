@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { Pin as PinnedIcon } from "lucide-react";
 import { isPinned } from "@/lib/assignment-kind";
@@ -2183,51 +2184,14 @@ export default function TeacherSubjectClass() {
                   </button>
                 </p>
               ) : (
-                <Select value={assignPlanId} onValueChange={setAssignPlanId}>
-                  <SelectTrigger id="assign-plan-select">
-                    <SelectValue placeholder="Vyberte plán" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {relevantPlans.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.title || "Bez názvu"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect id="assign-plan-select" value={assignPlanId} onValueChange={setAssignPlanId} growing label="Hledat plán" placeholder="Vyberte plán" options={relevantPlans.map(p => ({ value: p.id, label: p.title || "Bez názvu", subtitle: `${p.subject} · ${format(new Date(p.updated_at), "d. M. yyyy", { locale: cs })}` }))} />
               )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="assign-plan-date">Termín z rozvrhu</Label>
               {upcomingLessons.length + assignPast.length > 0 ? (
-                <Select value={assignPlanDate} onValueChange={setAssignPlanDate}>
-                  <SelectTrigger id="assign-plan-date">
-                    <SelectValue placeholder="Vyberte termín" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {upcomingLessons.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Nadcházející</SelectLabel>
-                        {upcomingLessons.map((e) => (
-                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
-                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {assignPast.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Proběhlé</SelectLabel>
-                        {assignPast.map((e) => (
-                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
-                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect id="assign-plan-date" value={assignPlanDate} onValueChange={setAssignPlanDate} label="Hledat termín" placeholder="Vyberte termín" options={[...upcomingLessons, ...assignPast].filter((e, i, all) => all.findIndex(x => format(x.start, "yyyy-MM-dd") === format(e.start, "yyyy-MM-dd")) === i).map(e => ({ value: format(e.start, "yyyy-MM-dd"), label: `${format(e.start, "EEE d. M. yyyy", { locale: cs })} · ${formatTime(e.start)}`, subtitle: `${klass?.name ?? ""} · ${subjectLabel}` }))} />
               ) : (
                 <Input
                   id="assign-plan-date"

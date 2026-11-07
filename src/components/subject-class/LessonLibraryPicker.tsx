@@ -10,6 +10,8 @@ import {
   type LessonContentMaterial,
   type LessonContentType,
 } from "@/lib/lesson-content-materials";
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
 import type { LessonSource } from "@/lib/linked-lesson";
 
 interface Item { refId: string; title: string; contentType: LessonContentType; lessonSource?: LessonSource; extra?: string }
@@ -33,17 +35,15 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
     let cancelled = false;
     const t = setTimeout(async () => {
       setLoading(true);
-      const term = q.trim().replace(/[%,()]/g, " ");
+      
       let out: Item[] = [];
       try {
         if (type === "worksheet") {
-          let qb = supabase.from("worksheets").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(30);
-          if (term) qb = qb.ilike("title", `%${term}%`);
+          let qb = supabase.from("worksheets").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
           const { data } = await qb;
           out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Pracovní list", contentType: "worksheet" }));
         } else if (type === "presentation") {
-          let qb = supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(30);
-          if (term) qb = qb.ilike("title", `%${term}%`);
+          let qb = supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
           const { data } = await qb;
           out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Prezentace", contentType: "presentation" }));
         } else {
@@ -51,9 +51,8 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
           const tbList = (tbs as any[]) ?? [];
           const tbTitle = new Map(tbList.map((t) => [t.id, t.title]));
           if (tbList.length) {
-            let qb = supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id").in("textbook_id", tbList.map((t) => t.id)).order("updated_at", { ascending: false }).limit(30);
-            if (term) qb = qb.ilike("title", `%${term}%`);
-            const { data } = await qb;
+            let qb = supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id").in("textbook_id", tbList.map((t) => t.id)).order("updated_at", { ascending: false }).limit(1000);
+              const { data } = await qb;
             out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Lekce", contentType: "lesson", lessonSource: "teacher_textbook_lessons", extra: tbTitle.get(r.textbook_id) }));
           }
         }
@@ -63,7 +62,7 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
       if (!cancelled) { setItems(out); setLoading(false); }
     }, 250);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [type, q, teacherId]);
+  }, [type, teacherId]);
 
   const isSelected = (i: Item) => selected.some((m) => m.contentType === i.contentType && m.refId === i.refId);
 
@@ -76,16 +75,10 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
           </Button>
         ))}
       </div>
-      <div>
-        <Label htmlFor="library-search" className="text-xs">Hledat</Label>
-        <div className="relative mt-1">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input id="library-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Název…" className="pl-8 min-h-[44px] sm:min-h-0" />
-        </div>
-      </div>
+      <SearchField value={q} onChange={setQ} label="Hledat materiál" count={items.filter(i => matchesSearch(q, i.title, i.extra)).length} />
       <ul className="max-h-64 overflow-y-auto space-y-1 min-w-0" aria-busy={loading}>
-        {!loading && items.length === 0 && <li className="text-sm text-muted-foreground p-2">Nic nenalezeno.</li>}
-        {items.map((i) => {
+        {!loading && items.filter(i => matchesSearch(q, i.title, i.extra)).length === 0 && <li><SearchEmpty onClear={() => setQ("")} /></li>}
+        {items.filter(i => matchesSearch(q, i.title, i.extra)).map((i) => {
           const sel = isSelected(i);
           return (
             <li key={i.refId}>
