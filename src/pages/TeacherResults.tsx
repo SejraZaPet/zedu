@@ -76,6 +76,7 @@ const TeacherResults = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
+  const [recipientsMap, setRecipientsMap] = useState<Record<string, string[]>>({});
   const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
   const [detailAssignment, setDetailAssignment] = useState<AssignmentDetailAssignment | null>(null);
   const [richStrengthRows, setRichStrengthRows] = useState<ReturnType<typeof summarizePerformance>[]>([]);
@@ -175,6 +176,7 @@ const TeacherResults = () => {
           (a.lesson_plan_id ? (plans[a.lesson_plan_id] || null) : null),
       }));
       setAssignments(enriched);
+      setRecipientsMap(await fetchRecipientsMap(enriched.map((a) => a.id)));
 
       // Class members for those classes
       const classIds = classOpts.map((c) => c.id);
@@ -245,8 +247,8 @@ const TeacherResults = () => {
     const byGroup = new Map<string, string[]>();
     groupMembers.forEach((m) => byGroup.set(m.group_id, [...(byGroup.get(m.group_id) ?? []), m.student_id]));
     return (a: Assignment): string[] =>
-      a.class_id ? byClass.get(a.class_id) ?? [] : a.group_id ? byGroup.get(a.group_id) ?? [] : [];
-  }, [classMembers, groupMembers]);
+      effectiveRecipients(a.class_id ? byClass.get(a.class_id) ?? [] : a.group_id ? byGroup.get(a.group_id) ?? [] : [], recipientsMap[a.id]);
+  }, [classMembers, groupMembers, recipientsMap]);
   /** Žáci ve vybraném rozsahu. */
   const scopeStudentIds = useMemo(() => {
     const p = parseScope(classFilter);
