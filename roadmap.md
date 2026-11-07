@@ -148,3 +148,9 @@
 ## Plán u přiřazené hodiny a tisk AI metody (6. 11.)
 - [x] „Změnit“ na kartě hodiny: jiný plán / nový / odebrat s potvrzením; odpojení z ostatních plánů
 - [x] Diagnostika tisku AI metody – zapsána v plánu, čeká na schválení
+
+## Lišta „Prohlížíš jako“ na mobilu
+- [x] Dole uprostřed, rezerva pod obsahem, desktop beze změny
+
+## Vyhledávání ve výběrech
+- [ ] Čeká na „schvaluji“ a rozhodnutí o etapách
