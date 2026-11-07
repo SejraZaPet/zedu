@@ -1,148 +1,98 @@
-# Úkol jen pro vybrané žáky – ROLLBACK (NESPOUŠTĚT bez pokynu)
+# Vyhledávání všude, kde se vybírá – diagnostika a návrh
 
-Proběhlé migrace: `0080_assignment_recipients.sql`, `0081_fix_todo_deadline_interval.sql`.
+Jen diagnostika. Kód, databáze ani e-maily se nemění, dokud nenapíšete „schvaluji“.
 
-## Rollback (jedna migrace, v tomto pořadí)
+## Zjištění
+- Aplikace má 107 souborů s rozbalovacím výběrem (`Select`). Žádný z nich hledat neumí.
+- Hledání s lupou (`Command`) má jen 7 míst: WorksheetEditor, SubjectPicker, LessonPlacementEditor, LessonAssignments, UnassignedTeachersManager, StaffTaskDialog a samotná `ui/command`.
+- Hledání bez ohledu na diakritiku už existuje v `src/lib/lesson-picker-search.ts` (`foldText`, `filterByTitle`). Na zhruba 15 dalších místech je napsané znovu po svém.
+- Každý dialog s vlastním hledáním ho řeší jinak: jiný vzhled, bez počtu výsledků, bez tlačítka „vymazat“ a s jiným prázdným stavem.
 
-```sql
-DROP TRIGGER IF EXISTS trg_assignment_recipient_added ON public.assignment_recipients;
-DROP FUNCTION IF EXISTS public.notify_on_recipient_added();
-DROP POLICY IF EXISTS attempts_recipients_only ON public.assignment_attempts;
-DROP POLICY IF EXISTS recipients_only ON public.assignments;
--- obnovit původní těla funkcí (níže) PŘED smazáním tabulky, na kterou odkazují
--- <ORIGINAL notify_on_assignment_published>
--- <ORIGINAL notify_deadline_soon>
-DROP TABLE IF EXISTS public.assignment_recipients;
-DROP FUNCTION IF EXISTS public.can_see_targeted_assignment(uuid, uuid);
-DROP FUNCTION IF EXISTS public.assignment_is_targeted(uuid);
-```
+## 1) Kde se něco vybírá
+Tabulka vznikla prohledáním kódu. Počty položek jsou odhad podle toho, co se načítá; prohlížečem ani skutečnými daty jsem je neověřovala.
 
-### Původní notify_on_assignment_published (doslova)
-```sql
-CREATE OR REPLACE FUNCTION public.notify_on_assignment_published() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+| Soubor / komponenta | Co se vybírá | Položek | Hledání dnes |
+|---|---|---|---|
+| lesson-plan/AttachExistingDialog | existující plán / list k hodině | desítky | ne (jen zmínka) |
+| lesson-plan/PlanWorksheetsSection | pracovní listy do plánu | desítky | ne |
+| subject-class/LessonLibraryPicker | lekce z knihovny | stovky | ano, vlastní |
+| TeacherSubjectClass – dialog přiřazení plánu, Materiály „Z mé knihovny“ | plán, termín, materiál | desítky | částečně (knihovna ano, termíny ne) |
+| TeacherLessonPlanEditor (15× Select) | třída, předmět, termín, metody, listy | 5–100 | částečně |
+| teacher/LessonMethodsPicker | metody výuky | ~30 | ne |
+| teacher/LessonCurriculumTopicsPicker | témata RVP | desítky | ano, vlastní |
+| admin/block-editors/LessonSourcePickerDialog | zdrojová lekce | stovky | ano, vlastní |
+| admin/LinkedLessonsDialog | propojené lekce | stovky | ano, vlastní |
+| worksheet/QuestionBankPickerDialog | otázky z banky | stovky | ano, vlastní |
+| worksheet/PublishWorksheetDialog (3× Select) | třída/skupina/předmět | 5–30 | ne |
+| notebook/InsertWorksheetButton | pracovní list do sešitu | desítky | ne |
+| assignments/AssignmentTargetsPicker | třídy a skupiny pro úkol | 5–40 | ne |
+| assignments/AssignmentRecipientsPicker | žáci příjemci | 10–35 | ano, vlastní |
+| TeacherAssignments (15× Select) | třída, předmět, list, aktivita, učebnice | 5–200 | částečně |
+| assignments/AssignmentListFilters | filtry seznamu | do 30 | částečně |
+| TeacherSubjectGroups (2× Select) | členové skupiny, třída | 10–35 | ano, vlastní |
+| subjects/SubjectPicker | předmět | ~40 | ano (Command) |
+| sharing/ShareContentDialog | kolegové ke sdílení | desítky | ano, vlastní |
+| MessagesPage | kontakty / nová konverzace | desítky až stovky | ano, vlastní (bez diakritiky) |
+| class-wall/ClassWall | „Zeptat se učitele“ (kontakt) | 1–5 | ne (není třeba) |
+| activities/ActivityWizardDialog | lekce, typ aktivity | desítky | ano, vlastní |
+| TeacherSuggestByMethod (5× Select) | předmět, ročník, metoda | 5–40 | ano, vlastní |
+| media/MediaPickerDialog | obrázky a soubory | stovky | ano, vlastní |
+| game/GameBackgroundPickerDialog, GameBackgroundSelect | pozadí her | desítky | ano, vlastní |
+| game/QuickGameDialog, LiveGameButton | aktivita / lekce pro hru | desítky | ne |
+| admin/IconPickerDialog | ikony | stovky | ano, vlastní |
+| calendar/ScheduleExceptionDialog, PlanForClassFields, schedule/LessonFormDialog | třída, předmět, hodina | 5–40 | ne |
+| teaching/UnitCurriculumPlansCard | tematický plán | do 20 | ne |
+| portfolio/AddPortfolioItemDialog, RubricEvaluator | práce, kritéria | do 30 | ne |
+| classroom/PeopleTools | žáci ve třídě | 10–35 | ne |
+| notifications/NotificationComposer | příjemci (třídy/role) | desítky | ne |
+| TeacherWorksheets, TeacherTextbooks, TeacherLessonPlans, TeacherGames, TeacherQuestionBank | filtry seznamů | do 40 | seznam ano, rozbalovací filtry ne |
+| school/SchoolResourcesManager, SchoolMeetings | místnosti, kolegové | desítky | ne |
+| admin/UsersManager, CRM, StaffTaskDialog | uživatelé, školy | stovky | ano |
+| drobné volby (téma, barva, jazyk, velikost písma, žebříček, ročník, ...) | pevné volby | 2–7 | ne (není třeba) |
 
-BEGIN
-  IF NEW.status = 'published' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'published') THEN
-    IF NEW.class_id IS NOT NULL THEN
-      INSERT INTO public.notifications (recipient_id, type, title, body, payload, link)
-      SELECT
-        cm.user_id,
-        'assignment_new',
-        CASE COALESCE(NEW.settings->>'kind', 'task')
-          WHEN 'material' THEN 'Nový materiál: '
-          WHEN 'announcement' THEN 'Nové oznámení: '
-          ELSE 'Nový úkol: '
-        END || NEW.title,
-        COALESCE(NEW.description, ''),
-        jsonb_build_object('assignment_id', NEW.id, 'class_id', NEW.class_id, 'deadline', NEW.deadline, 'kind', COALESCE(NEW.settings->>'kind', 'task')),
-        '/student/ulohy/' || NEW.id::text
-      FROM public.class_members cm
-      WHERE cm.class_id = NEW.class_id
-        AND NOT public.is_preview_student(cm.user_id);
+## 2) Sjednocení
+Navrhuji tři sdílené součásti:
 
-      INSERT INTO public.notifications (recipient_id, type, title, body, payload, link)
-      SELECT
-        ct.user_id,
-        'assignment_new',
-        'Nový úkol ve třídě: ' || NEW.title,
-        'Úkol byl publikován ve vaší třídě.',
-        jsonb_build_object('assignment_id', NEW.id, 'class_id', NEW.class_id),
-        '/ucitel/ulohy'
-      FROM public.class_teachers ct
-      WHERE ct.class_id = NEW.class_id AND ct.user_id != NEW.teacher_id;
-    END IF;
+- **Hledací pole s lupou** – políčko na hledání pro seznamy a dialogy. Má ikonu lupy, tlačítko „vymazat“ (✕), vymazání klávesou Esc, výšku nejméně 44 px a popisek pro čtečky obrazovky. Pod polem oznámí čtečce „Nalezeno 12“.
+- **Rozbalovací výběr s hledáním** – náhrada rozbalovacích nabídek s více než 7 položkami. Je postavený na stávající nabídce s hledáním (`Command` v okně). Ovládá se šipkami, Enter vybírá a Esc zavírá. Na telefonu se otevře přes celou šířku.
+- **Seznam s hledáním** – pro seznamy se zaškrtávacími políčky (žáci, lekce, materiály). Umí „Vybrat vše z nalezených“, zachová dříve vybrané položky i mimo hledání a zobrazí počet vybraných.
 
-    IF NEW.group_id IS NOT NULL THEN
-      INSERT INTO public.notifications (recipient_id, type, title, body, payload, link)
-      SELECT
-        m.student_id,
-        'assignment_new',
-        CASE COALESCE(NEW.settings->>'kind', 'task')
-          WHEN 'material' THEN 'Nový materiál: '
-          WHEN 'announcement' THEN 'Nové oznámení: '
-          ELSE 'Nový úkol: '
-        END || NEW.title,
-        COALESCE(NEW.description, ''),
-        jsonb_build_object('assignment_id', NEW.id, 'group_id', NEW.group_id, 'deadline', NEW.deadline, 'kind', COALESCE(NEW.settings->>'kind', 'task')),
-        '/student/ulohy/' || NEW.id::text
-      FROM public.subject_group_members m
-      WHERE m.group_id = NEW.group_id
-        AND NOT public.is_preview_student(m.student_id);
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
+Pravidla hledání:
+- Hledání nerozlišuje velká a malá písmena ani diakritiku: „zlomky“ najde „Zlomky“ a „cestina“ najde „Čeština“.
+- Prohledává název i podtitul (třídu, předmět, datum). Víc slov znamená, že musí sedět všechna.
+- Prázdný stav ukáže text „Nic nenalezeno“ a tlačítko „Vymazat hledání“.
+- Funkce hledání bude jedna a společná, rozšíření dnešní `foldText`. Ostatní vlastní kopie se na ni postupně převedou.
 
-$$;
-```
+**Pravidlo počtu položek:** hledání se ukáže vždy od 8 položek výš. U 7 a méně se schová. Výjimka: seznamy, které rostou (lekce, listy, žáci, kontakty, materiály), mají hledání vždy, i když jsou zatím krátké.
 
-### Původní notify_deadline_soon (doslova)
-```sql
-CREATE OR REPLACE FUNCTION public.notify_deadline_soon() RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+## 3) Etapy
+1. **Nejčastější výběry učitele:** přiřazení plánu a pracovního listu k hodině, Materiály z knihovny, výběr lekce, list do sešitu, rychlá a živá hra. Soubory: AttachExistingDialog, PlanWorksheetsSection, LessonLibraryPicker, TeacherSubjectClass, InsertWorksheetButton, QuickGameDialog, LiveGameButton, TeacherLessonPlanEditor.
+2. **Žáci a lidé:** příjemci úkolu, členové skupiny, žáci v nástrojích do hodiny, kontakty ve Zprávách, sdílení s kolegy. Soubory: AssignmentRecipientsPicker, TeacherSubjectGroups, PeopleTools, MessagesPage, ShareContentDialog.
+3. **Třídy, skupiny a předměty:** výběr cílů úkolu, rozbalovací nabídky v editoru úkolu a plánu, zveřejnění listu, kalendář a rozvrh. Soubory: AssignmentTargetsPicker, TeacherAssignments, PublishWorksheetDialog, ScheduleExceptionDialog, PlanForClassFields, LessonFormDialog, NotificationComposer.
+4. **Sjednocení stávajících hledání:** převést vlastní hledání na společné součásti, aby fungovala stejně. Patří sem MediaPicker, IconPicker, QuestionBank, LessonSourcePicker, LinkedLessons, ActivityWizard, SuggestByMethod, GameBackground a SubjectPicker.
+5. **Administrace a škola:** UsersManager, CRM, SchoolResources, SchoolMeetings a filtry seznamů.
 
-BEGIN
-  INSERT INTO public.notifications (recipient_id, type, title, body, payload, link)
-  SELECT DISTINCT
-    r.user_id,
-    'assignment_deadline_soon',
-    'Brzy končí termín úkolu',
-    'Úkol „' || r.title || '" má termín do ' || to_char(r.deadline AT TIME ZONE 'Europe/Prague', 'DD.MM. HH24:MI') || '.',
-    jsonb_build_object('assignment_id', r.assignment_id, 'class_id', r.class_id, 'group_id', r.group_id, 'deadline', r.deadline),
-    '/student/ulohy/' || r.assignment_id::text
-  FROM (
-    SELECT a.id AS assignment_id, a.title, a.deadline, a.class_id, a.group_id, cm.user_id
-    FROM public.assignments a
-    JOIN public.class_members cm ON cm.class_id = a.class_id
-    UNION ALL
-    SELECT a.id, a.title, a.deadline, a.class_id, a.group_id, m.student_id
-    FROM public.assignments a
-    JOIN public.subject_group_members m ON m.group_id = a.group_id
-  ) r
-  WHERE EXISTS (
-      SELECT 1 FROM public.assignments a
-      WHERE a.id = r.assignment_id
-        AND a.status = 'published'
-        AND a.deadline IS NOT NULL
-        AND a.deadline > now()
-        AND a.deadline <= now() + interval '24 hours'
-    )
-    AND NOT public.is_preview_student(r.user_id)
-    AND NOT EXISTS (
-      SELECT 1 FROM public.assignment_attempts att
-      WHERE att.assignment_id = r.assignment_id
-        AND att.student_id = r.user_id
-        AND att.status = 'submitted'
-    )
-    AND NOT EXISTS (
-      SELECT 1 FROM public.notifications n
-      WHERE n.recipient_id = r.user_id
-        AND n.type = 'assignment_deadline_soon'
-        AND n.payload->>'assignment_id' = r.assignment_id::text
-        AND n.created_at > now() - interval '20 hours'
-    );
+**Rizika**
+- Nahrazení rozbalovací nabídky může změnit, co se uloží. Proto se zachová stejná hodnota i stejný popis vybrané položky a výběr se jen přebalí.
+- Uvnitř celé obrazovky nebo projekce musí nabídka zůstat viditelná, takže použije stávající pravidlo pro zobrazení nad vrstvou.
+- U vícenásobného výběru nesmí hledání ztratit skryté vybrané položky.
+- Velké seznamy (ikony, média) se načítají po částech. Hledání tam zůstane takové, jaké je dnes; mění se jen vzhled.
+- Žádné oprávnění se nemění. Hledá se jen v tom, co si stránka už načetla.
 
-  -- Osobní úkoly (todos): termín zítra, nesplněné (beze změny)
-  INSERT INTO public.notifications (recipient_id, type, title, body, payload, link)
-  SELECT
-    t.user_id,
-    'todo_deadline_soon',
-    'Zítra vyprší termín úkolu',
-    left(t.title, 80),
-    jsonb_build_object('todo_id', t.id, 'due_date', t.due_date),
-    '/todo'
-  FROM public.todos t
-  WHERE t.due_date = CURRENT_DATE + 1
-    AND t.status <> 'done'
-    AND NOT EXISTS (
-      SELECT 1 FROM public.notifications n
-      WHERE n.recipient_id = t.user_id
-        AND n.type = 'todo_deadline_soon'
-        AND n.payload->>'todo_id' = t.id::text
-        AND n.created_at > now() - interval '24 hours'
-    );
-END;
+**Testy**
+- Společná funkce hledání: diakritika, velikost písmen, víc slov, podtitul.
+- Hledací pole: tlačítko vymazat, Esc a počet výsledků pro čtečku obrazovky.
+- Rozbalovací výběr: šipky, Enter, prázdný stav, pravidlo „od 8 položek“.
+- Seznam s hledáním: zachování skrytých vybraných a „Vybrat vše z nalezených“.
+- Po každé etapě proběhnou stávající testy, kontrola typů a sestavení. Pak ověření v prohlížeči na šířce 390 a 1440 px.
 
-$$;
-```
+## 4) Databáze
+Databázi nic z toho nepotřebuje. Hledá se v datech, která stránka už má, takže jde čistě o úpravu aplikace bez nasazení serverových funkcí.
+
+Jediná výhrada se týká seznamů načítaných po částech. Tam hledání pokryje jen načtenou část. Případné hledání přímo v databázi by byla samostatná pozdější etapa a teď se nenavrhuje.
+
+## Na čem se rozhodnout
+1. Které etapy schválit (doporučuji začít 1 a 2).
+2. Pravidlo: hledání od 8 položek, rostoucí seznamy vždy – souhlas?
+3. Mají se nahradit i rozbalovací nabídky s více než 7 položkami, nebo jen dialogy a seznamy?
+4. Má hledání u lekcí a listů prohledávat i podtitul (učebnici, předmět, třídu)?
