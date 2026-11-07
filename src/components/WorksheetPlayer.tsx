@@ -82,7 +82,7 @@ const WRITING_TYPES = new Set(["write_lines", "two_boxes", "blank_box"]);
 /** Je položka zodpovězená? Psací bloky jen tehdy, když obsahují text. */
 export function isItemAnswered(item: WorksheetItem, value: unknown): boolean {
   if (WRITING_TYPES.has(item.type)) return hasWrittenText(value);
-  if (item.type === "table") return Array.isArray(value) && value.some((v) => String(v ?? "").trim() !== "");
+  if (item.type === "table" || item.type === "mind_map") return Array.isArray(value) && value.some((v) => String(v ?? "").trim() !== "");
   return value !== undefined && value !== "" && value !== null;
 }
 
@@ -111,6 +111,13 @@ export function scoreWorksheet(
 
     let correct = false;
     const ca = key.correctAnswer;
+
+    if (item.type === "mind_map") {
+      const r = scoreMindMap(answer, ca, item.points);
+      perItem[item.id] = { correct: r.allCorrect, points: r.points };
+      score += r.points;
+      continue;
+    }
 
     switch (item.type) {
       case "mcq":
