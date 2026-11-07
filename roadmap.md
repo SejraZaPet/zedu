@@ -160,5 +160,7 @@
 - [x] Přejmenování hlavní záložky Úkoly → Práce
 
 ## Zeď jako stream
-- [ ] B: Pouze učitelský příspěvek jako oznámení, výchozí bez e-mailu; kontextové Přidat a návrat
-- [ ] B: Testy a ověření na 390 px bez skutečných zápisů a bez nasazení
+- [x] B: Pouze učitelský příspěvek jako oznámení, výchozí bez e-mailu; kontextové Přidat a návrat
+- [x] B: 61 cílených testů obou částí; build OK, místní editor 390/1440 px, text/odkaz/zveřejnění/nabídka Přidat ověřeny bez skutečných zápisů
+- [ ] Přihlášené načtení nového příspěvku ze skutečné třídy, upload souboru a celostránkové výběry neověřeny: testovací zápisy zakázané; samostatná kontrola typů neprovedena (kontroly spravuje prostředí)
+- [ ] Samostatné commity A/B a nasazení: git i publikování spravuje prostředí, agent gitové commity nespouští; nasazení provede Claude

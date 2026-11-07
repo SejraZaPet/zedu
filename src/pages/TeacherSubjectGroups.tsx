@@ -1,4 +1,6 @@
 import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { selectFound } from "@/lib/picker-search";
 import { matchesSearch } from "@/lib/picker-search";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
@@ -66,6 +68,7 @@ const TeacherSubjectGroups = () => {
   const [newYear, setNewYear] = useState(currentSchoolYear());
   // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
   const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
+  const [seedQuery, setSeedQuery] = useState("");
   const [saving, setSaving] = useState(false);
   // Upozornění (neblokující): název skupiny se shoduje s názvem existující třídy
   const nameClashesWithClass = useMemo(() => {
@@ -631,11 +634,13 @@ const TeacherSubjectGroups = () => {
                 Vyberte existující třídy — do skupiny se rovnou přidají všichni jejich žáci
                 (např. „Č1.A + Č2.A – Anglický jazyk“). Žáky pak můžete ručně upravit.
               </p>
+              <SearchField value={seedQuery} onChange={setSeedQuery} label="Hledat třídu" count={classes.filter(c => matchesSearch(seedQuery, c.name)).length} />
+              <Button type="button" variant="ghost" className="min-h-11 h-auto whitespace-normal" onClick={() => setSeedClassIds(selectFound(seedClassIds, classes.filter(c => matchesSearch(seedQuery, c.name)).map(c => c.id)))}>Vybrat vše z nalezených</Button>
               <div className="max-h-40 overflow-y-auto rounded-md border border-border divide-y">
                 {classes.length === 0 ? (
                   <p className="p-3 text-xs text-muted-foreground">Žádné dostupné třídy.</p>
-                ) : classes.map((c) => (
-                  <label key={c.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer text-sm">
+                ) : classes.filter(c => matchesSearch(seedQuery, c.name)).map((c) => (
+                  <label key={c.id} className="flex min-h-11 items-center gap-3 px-3 py-2 cursor-pointer text-sm">
                     <Checkbox
                       checked={seedClassIds.includes(c.id)}
                       onCheckedChange={(v) =>
@@ -649,6 +654,7 @@ const TeacherSubjectGroups = () => {
                   </label>
                 ))}
               </div>
+              {!!classes.length && !classes.some(c => matchesSearch(seedQuery, c.name)) && <SearchEmpty onClear={() => setSeedQuery("")} />}
               {seedClassIds.length > 1 && !newName.trim() && (
                 <Button
                   type="button"

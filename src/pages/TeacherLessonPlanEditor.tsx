@@ -1,4 +1,6 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
 import { semesterStart } from "@/lib/plan-linked-slots";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -237,6 +239,7 @@ export default function TeacherLessonPlanEditor() {
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[] | null>(null);
+  const [unitQuery, setUnitQuery] = useState("");
   const [lessonMinutes, setLessonMinutes] = useState<number>(DEFAULT_LESSON_MINUTES);
   const [customMinutes, setCustomMinutes] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -1746,17 +1749,18 @@ export default function TeacherLessonPlanEditor() {
             {selectedLesson && lessonUnits.length > 0 && (
               <fieldset className="space-y-2 rounded-lg border border-border p-3">
                 <legend className="px-1 text-sm font-medium">Celky lekce pro tuto hodinu</legend>
-                <div className="flex gap-2 text-xs">
-                  <Button type="button" variant="ghost" size="sm" className="h-7"
-                    onClick={() => setSelectedBlockIds(null)}>Vybrat vše</Button>
-                  <Button type="button" variant="ghost" size="sm" className="h-7"
+                <SearchField value={unitQuery} onChange={setUnitQuery} label="Hledat celek lekce" count={lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).length} />
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Button type="button" variant="ghost" size="sm" className="min-h-11 h-auto whitespace-normal"
+                    onClick={() => setSelectedBlockIds(prev => prev === null ? null : [...new Set([...prev, ...lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).flatMap(u => u.blockIds)])])}>Vybrat vše z nalezených</Button>
+                  <Button type="button" variant="ghost" size="sm" className="min-h-11"
                     onClick={() => setSelectedBlockIds([])}>Zrušit výběr</Button>
                 </div>
                 <ul className="space-y-1.5">
-                  {lessonUnits.map((u) => {
+                  {lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).map((u) => {
                     const checked = isUnitSelected(u);
                     return (
-                      <li key={u.id} className="flex items-start gap-2">
+                      <li key={u.id} className="flex min-h-11 items-center gap-2">
                         <Checkbox
                           id={`unit-${u.id}`}
                           checked={checked}
@@ -1770,6 +1774,7 @@ export default function TeacherLessonPlanEditor() {
                     );
                   })}
                 </ul>
+                {!lessonUnits.some(u => matchesSearch(unitQuery, u.title)) && <SearchEmpty onClear={() => setUnitQuery("")} />}
                 {hiddenUnitCount > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {hiddenUnitCount === 1
