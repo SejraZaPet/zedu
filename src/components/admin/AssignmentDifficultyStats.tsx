@@ -1,3 +1,4 @@
+import { scoreMindMap } from "@/lib/mind-map";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,8 @@ export const isWorksheetAnswerCorrect = (item: any, answer: unknown, correct: st
   const type = String(item?.type ?? "");
   if (answer === undefined || answer === null || answer === "") return false;
   switch (type) {
+    case "mind_map":
+      return scoreMindMap(answer, correct, 1).allCorrect;
     case "matching": {
       if (!Array.isArray(correct) || !Array.isArray(answer)) return false;
       return correct.length === answer.length
@@ -111,6 +114,7 @@ export const SCORABLE_WORKSHEET_TYPES = new Set([
   "ordering",
   "sorting",
   "image_label",
+  "mind_map",
 ]);
 
 const barColor = (pct: number) =>

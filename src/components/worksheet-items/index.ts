@@ -12,6 +12,7 @@ export { default as LayoutBlockItem } from "./LayoutBlockItem";
 export { default as ActivityBlockItem } from "./ActivityBlockItem";
 export { default as TableItem } from "./TableItem";
 export { default as LessonVisualBlockItem } from "./LessonVisualBlockItem";
+export { default as MindMapItem } from "./MindMapItem";
 
 import type { ItemType } from "@/lib/worksheet-spec";
 import type { FC } from "react";
@@ -30,6 +31,7 @@ import ActivityBlockItem from "./ActivityBlockItem";
 import ImageLabelPlayer from "./ImageLabelPlayer";
 import TableItem from "./TableItem";
 import LessonVisualBlockItem from "./LessonVisualBlockItem";
+import MindMapItem from "./MindMapItem";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -60,4 +62,5 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   image_text: LessonVisualBlockItem,
   gallery: LessonVisualBlockItem,
   callout: LessonVisualBlockItem,
+  mind_map: MindMapItem,
 };

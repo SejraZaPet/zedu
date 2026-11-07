@@ -1,4 +1,5 @@
 import type { Block, BlockType } from "./textbook-config";
+import { mindMapToOutline, normalizeMindMap } from "@/lib/mind-map";
 
 /**
  * Client-side helpers for the "Change to…" action in BlockEditor.
@@ -231,6 +232,8 @@ export const blockToPlainText = (block: Block): string => {
         .filter(Boolean)
         .join("\n");
     }
+    case "mind_map":
+      return [stripHtml(p.title), mindMapToOutline(normalizeMindMap(p.map))].filter(Boolean).join("\n");
     case "activity":
       return [stripHtml(p.title), stripHtml(p.instructions)].filter(Boolean).join("\n");
     case "slide_group": {

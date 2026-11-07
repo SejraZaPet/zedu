@@ -44,7 +44,8 @@ export type ItemType =
   | "gallery"
   | "callout"
   // v1.5 — samostatné prázdné místo
-  | "blank_box";
+  | "blank_box"
+  | "mind_map";
 
 /** Hustota tisku (výchozí compact i pro starší listy bez pole). */
 export type PrintDensity = "compact" | "normal" | "loose";
@@ -279,6 +280,10 @@ export interface WorksheetItem {
   calloutBackgroundColor?: string;
   /** Vlastní barva akcentu převzatá z lekce. */
   calloutAccentColor?: string;
+
+  // ─── v1.5 — Myšlenková mapa (strom, bez správných odpovědí) ───
+  /** Mapa; doplňované uzly mají blank=true a prázdný text. Odpovědi jen v answerKeys. */
+  mindMap?: import("@/lib/mind-map").MindMapData;
 }
 
 export interface AnswerKeyEntry {
@@ -399,7 +404,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout", "blank_box"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout", "blank_box", "mind_map"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },

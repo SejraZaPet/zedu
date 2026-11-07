@@ -129,6 +129,7 @@ import GalleryBlock from "./block-editors/GalleryBlock";
 import SummaryBlock from "./block-editors/SummaryBlock";
 import ActivityBlock from "./block-editors/ActivityBlock";
 import HierarchyBlock from "./block-editors/HierarchyBlock";
+import MindMapBlock from "./block-editors/MindMapBlock";
 import ShapeBlock from "./block-editors/ShapeBlock";
 import ChartBlock from "./block-editors/ChartBlock";
 import FormulaBlock from "./block-editors/FormulaBlock";
@@ -194,7 +195,7 @@ const BLOCK_ICON: Record<string, React.ComponentType<{ className?: string; style
 const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: boolean }[] = [
   { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout", "formula"] },
   { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube", "video", "audio", "embed"] },
-  { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "accordion", "shape", "chart", "divider"] },
+  { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "mind_map", "accordion", "shape", "chart", "divider"] },
   { key: "interactive", label: "Interaktivní a AI", types: ["activity", "summary", "lesson_link"], accent: true },
 ];
 
@@ -250,6 +251,7 @@ const BlockRenderer = React.memo(({ block, onChange, showControls = true }: { bl
     case "summary": return <SummaryBlock block={block} onChange={onChange} />;
     case "activity": return <ActivityBlock block={block} onChange={onChange} />;
     case "hierarchy": return <HierarchyBlock block={block} onChange={onChange} />;
+    case "mind_map": return <MindMapBlock block={block} onChange={onChange} />;
     case "shape": return <ShapeBlock block={block} onChange={onChange} />;
     case "chart": return <ChartBlock block={block} onChange={onChange} />;
     case "formula": return <FormulaBlock block={block} onChange={onChange} />;

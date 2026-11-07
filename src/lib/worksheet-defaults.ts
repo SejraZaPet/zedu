@@ -10,6 +10,7 @@ import type {
   AnswerKeyEntry,
 } from "@/lib/worksheet-spec";
 import { WORKSHEET_SPEC_VERSION } from "@/lib/worksheet-spec";
+import { blankNodeIds, createDefaultMindMap } from "@/lib/mind-map";
 
 export function emptyWorksheetSpec(opts?: {
   title?: string;
@@ -228,6 +229,10 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
       return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
         calloutVariant: "note", calloutTitle: "", calloutText: "",
         answerSpace: { type: "none", heightMm: 0 }, tags: ["lesson_visual"] };
+    case "mind_map":
+      return { ...base, prompt: "Doplň chybějící pojmy do myšlenkové mapy:", points: 2, timeEstimateSec: 240, difficulty: "medium",
+        mindMap: createDefaultMindMap(),
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
@@ -245,6 +250,9 @@ export function createDefaultAnswerKey(item: WorksheetItem): AnswerKeyEntry {
       break;
     case "ordering":
       correct = item.orderItems ?? [];
+      break;
+    case "mind_map":
+      correct = item.mindMap ? blankNodeIds(item.mindMap).map(() => "") : [];
       break;
     default:
       correct = "";
@@ -315,6 +323,7 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   image_text: { label: "Obrázek + text", description: "Vlastní obrázek (nahrání z počítače, knihovna) nebo obrázek z lekce + text" },
   gallery: { label: "Galerie", description: "Vlastní obrázky (nahrání z počítače, knihovna) nebo galerie z lekce" },
   callout: { label: "Zvýrazněný rámeček", description: "Needitovatelný rámeček převzatý z lekce" },
+  mind_map: { label: "Doplň myšlenkovou mapu", description: "Strom pojmů; žák doplní prázdné uzly" },
   lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 

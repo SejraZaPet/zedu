@@ -13,6 +13,7 @@ import { worksheetKindPrintLabel, worksheetDocumentTitle } from "@/lib/worksheet
 
 import { isTableCellEditable, tableCellAnswer } from "@/lib/worksheet-table";
 import { qrSvgDataUrl } from "@/lib/qr-inline";
+import { normalizeMindMap, type MindMapNode } from "@/lib/mind-map";
 import { seededShuffleNonIdentity } from "@/lib/shuffle";
 import type {
   WorksheetSpec,
@@ -1150,6 +1151,34 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         )
         .join("");
       return `<div style="text-align:center;margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${boxes}</div>`;
+    }
+
+    case "mind_map": {
+      const map = normalizeMindMap(item.mindMap);
+      const given = printAnswers?.[item.id];
+      const filled = Array.isArray(given) ? given.map((v) => String(v ?? "")) : [];
+      let bi = 0;
+      const label = (n: MindMapNode) => {
+        if (!n.blank) return esc(n.text);
+        const v = (filled[bi++] ?? "").trim();
+        return v ? esc(v) : `<span style="display:inline-block;min-width:32mm;border-bottom:1px solid #555;">&nbsp;</span>`;
+      };
+      const sub = (n: MindMapNode): string =>
+        n.children.length
+          ? `<ul style="margin:2px 0 0 0;padding-left:14px;border-left:1.5px solid #9aa;list-style:none;">${n.children
+              .map((c) => `<li style="margin:3px 0;font-size:9.5pt;">${label(c)}${sub(c)}</li>`)
+              .join("")}</ul>`
+          : "";
+      const rootLabel = label(map.root);
+      const branches = map.root.children
+        .map((b) => `<div style="border:1.5px solid #7c3aed;border-radius:8px;padding:5px 8px;break-inside:avoid;"><div style="font-weight:600;font-size:10pt;">${label(b)}</div>${sub(b)}</div>`)
+        .join("");
+      return `<div style="margin:10px 0;page-break-inside:avoid;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}
+        <div style="text-align:center;margin-bottom:6px;"><span style="display:inline-block;border:2px solid #2f7fa3;border-radius:12px;padding:5px 14px;font-weight:700;font-size:11pt;">${rootLabel}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, map.root.children.length))},1fr);gap:6px;">${branches}</div>
+        ${printInlineKeys?.get(item.id) ? renderInlineKey(item, printInlineKeys.get(item.id)!, false) : ""}
+      </div>`;
     }
 
     case "table": {
