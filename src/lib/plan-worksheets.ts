@@ -1,3 +1,4 @@
+import { matchesSearch } from "./picker-search";
 /** Pracovní listy připnuté k plánu hodiny (`lesson_plans.worksheet_ids`). */
 export interface PlanWorksheetOption {
   id: string;
@@ -55,11 +56,10 @@ export function filterWorksheetOptions(
   list: PlanWorksheetOption[],
   opts: { query?: string; subjectId?: string | null; subject?: string | null; onlySubject?: boolean },
 ): PlanWorksheetOption[] {
-  const q = (opts.query ?? "").trim().toLowerCase();
   const subj = (opts.subject ?? "").trim().toLowerCase();
   const hasSubject = !!opts.subjectId || !!subj;
   return [...list]
-    .filter((w) => !q || (w.title || "").toLowerCase().includes(q))
+    .filter((w) => matchesSearch(opts.query ?? "", w.title, w.subject, new Date(w.created_at).toLocaleDateString("cs-CZ")))
     .filter((w) => {
       if (!opts.onlySubject || !hasSubject) return true;
       if (opts.subjectId && w.subject_id) return w.subject_id === opts.subjectId;

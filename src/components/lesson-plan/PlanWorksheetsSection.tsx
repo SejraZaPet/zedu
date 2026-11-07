@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, FileText, Plus, Send, Trash2, AlertTriangle } from 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableList } from "@/components/ui/searchable-list";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -101,17 +102,16 @@ export default function PlanWorksheetsSection({ teacherId, value, onChange, subj
             <DialogTitle>Přidat pracovní list</DialogTitle>
             <DialogDescription>Vyberte jeden nebo více svých pracovních listů.</DialogDescription>
           </DialogHeader>
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Hledat podle názvu…" aria-label="Hledat pracovní list" />
           {(subjectId || subject) && (
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={onlySubject} onCheckedChange={(v) => setOnlySubject(v === true)} />
               Jen předmět plánu{subject ? ` (${subject})` : ""}
             </label>
           )}
+          <SearchableList query={query} onQueryChange={setQuery} count={options.length} label="Hledat pracovní list" foundIds={options.map(w => w.id)} selected={picked} onSelectionChange={setPicked}>
           <div className="max-h-72 space-y-1 overflow-y-auto">
-            {options.length === 0 && <p className="p-2 text-sm text-muted-foreground">Žádný list nenalezen.</p>}
             {options.map((w) => (
-              <label key={w.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/60">
+              <label key={w.id} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/60">
                 <Checkbox
                   checked={picked.includes(w.id)}
                   onCheckedChange={(v) => setPicked((p) => (v === true ? addIds(p, [w.id]) : removeId(p, w.id)))}
@@ -121,6 +121,7 @@ export default function PlanWorksheetsSection({ teacherId, value, onChange, subj
               </label>
             ))}
           </div>
+          </SearchableList>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Zrušit</Button>
             <Button disabled={picked.length === 0} onClick={() => { onChange(addIds(value, picked)); setOpen(false); }}>
