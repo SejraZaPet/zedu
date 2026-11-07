@@ -246,3 +246,7 @@ Dva `CREATE OR REPLACE FUNCTION` s těly z bodu 1, doslova (uloženo i v tomto p
 
 ## Na co se rozhodnout
 - Schvalujete oba CREATE OR REPLACE přesně v této podobě? Po „schvaluji“ spustím jednu migraci, ověřím body 1–4 a napíšu výsledek. Nic se nenasadí ani neodešle žákům.
+
+## Provedeno 7. 11. 2026 (migrace 0079_notify_groups_and_kind_titles)
+- Odchylka: `notify_deadline_soon` vrací `void` (ne trigger) – použito `RETURNS void`, tělo beze změny proti bodu 2.
+- Rollback (NESPOUŠTĚT): `CREATE OR REPLACE FUNCTION public.notify_on_assignment_published() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ <tělo z bodu 1> $$;` a `CREATE OR REPLACE FUNCTION public.notify_deadline_soon() RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ <tělo z bodu 1> $$;` – v jedné migraci.
