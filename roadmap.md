@@ -153,8 +153,8 @@
 - [x] Dole uprostřed, rezerva pod obsahem, desktop beze změny
 
 ## Vyhledávání ve výběrech
-- [ ] A: Schválené etapy 1–2, společné hledání a výběry; etapy 3–5 se neprovádějí
-- [ ] A: Testy a ověření na 390 px; dokončit před částí B
+- [x] A: Schválené etapy 1–2, společné hledání a výběry; etapy 3–5 se neprovádějí
+- [x] A: 21 testů, build OK; společný výběr 390/1440 px a klávesnice ověřeny bez účtů; celé přihlášené stránky a samostatná kontrola typů neověřeny
 
 ## Záložka „Práce“
 - [x] Přejmenování hlavní záložky Úkoly → Práce
