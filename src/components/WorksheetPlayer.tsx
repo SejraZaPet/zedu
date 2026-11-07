@@ -37,6 +37,7 @@ import { RotateCcw, Hourglass } from "lucide-react";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
 import { displayableMatchPairs } from "@/components/worksheet-items/MatchingItem";
 import { hasWrittenText } from "@/components/worksheet-items/LayoutBlockItem";
+import { scoreMindMap } from "@/lib/mind-map";
 import type {
   WorksheetSpec,
   WorksheetVariant,
