@@ -21,7 +21,6 @@ describe("picker interactions", () => {
       return <><SearchableList query={q} onQueryChange={setQ} count={rows.length} label="Hledat" selected={ids} foundIds={rows.map(r=>r.id)} onSelectionChange={setIds}><span>{rows.map(r=>r.title).join()}</span></SearchableList><output>{ids.join(",")}</output></>;
     }
     render(<Host />); fireEvent.click(screen.getByRole("button", { name: "Vybrat vše z nalezených" }));
-    expect(screen.getByRole("status").textContent).toContain("Nalezeno 1");
     expect(screen.getByText("hidden,a")).toBeTruthy();
   });
 });

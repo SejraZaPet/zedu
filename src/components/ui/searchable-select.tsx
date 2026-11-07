@@ -21,7 +21,13 @@ export function SearchableSelect({ value, onValueChange, options, placeholder = 
     </Button></PopoverTrigger>
     <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0">
       <Command shouldFilter={false}>
-        {needsSearch(options.length, growing) && <CommandInput value={query} onValueChange={setQuery} placeholder={`${label}…`} aria-label={label} />}
+        {needsSearch(options.length, growing) && <>
+          <div className="flex min-w-0 items-center">
+            <div className="min-w-0 flex-1"><CommandInput value={query} onValueChange={setQuery} placeholder={`${label}…`} aria-label={label} /></div>
+            {query && <Button type="button" variant="ghost" className="h-11 w-11 shrink-0" aria-label="Vymazat hledání" onClick={() => setQuery("")}>×</Button>}
+          </div>
+          <p role="status" className="px-3 py-1 text-xs text-muted-foreground">Nalezeno {visible.length}</p>
+        </>}
         <CommandList>
           {visible.length === 0 && <SearchEmpty onClear={() => setQuery("")} />}
           {visible.map((o) => <CommandItem key={o.value} value={o.value} disabled={o.disabled} className="min-h-11 gap-2 whitespace-normal"
