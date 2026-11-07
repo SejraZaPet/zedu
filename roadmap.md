@@ -164,3 +164,10 @@
 - [x] B: 61 cílených testů obou částí; build OK, místní editor 390/1440 px, text/odkaz/zveřejnění/nabídka Přidat ověřeny bez skutečných zápisů
 - [ ] Přihlášené načtení nového příspěvku ze skutečné třídy, upload souboru a celostránkové výběry neověřeny: testovací zápisy zakázané; samostatná kontrola typů neprovedena (kontroly spravuje prostředí)
 - [ ] Samostatné commity A/B a nasazení: git i publikování spravuje prostředí, agent gitové commity nespouští; nasazení provede Claude
+
+## Myšlenkové mapy — schválená etapa 1
+- [ ] Sdílená mapa (strom, 60 uzlů, hloubka 4), blok učebnice, „Doplň mapu“ v pracovním listu, hodnocení, tisk, testy
+- [ ] Etapy 2–5 (vlastní mapa žáka, AI, aktivita, společná mapa) čekají na schválení
+
+## Tahák – krátké poznámky
+- [ ] Pouze návrh (bez AI, karta 90 × 55 mm); dokončit po myšlenkových mapách, neimplementovat
