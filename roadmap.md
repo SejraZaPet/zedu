@@ -154,3 +154,9 @@
 
 ## Vyhledávání ve výběrech
 - [ ] Čeká na „schvaluji“ a rozhodnutí o etapách
+
+## Záložka „Práce“
+- [x] Přejmenování hlavní záložky Úkoly → Práce
+
+## Zeď jako stream
+- [ ] Čeká na „schvaluji“ a rozhodnutí
