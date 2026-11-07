@@ -533,40 +533,7 @@ const TeacherSubjectGroups = () => {
               <div className="flex flex-wrap items-end gap-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Třída</Label>
-                  <Select
-                    value={assignClassId}
-                    onValueChange={async (v) => {
-                      setAssignClassId(v);
-                      // Existující třída školy: učitel se k ní rovnou přihlásí jako vyučující
-                      if (classes.find((c) => c.id === v)?.source === "school") {
-                        await claimSchoolClass(v);
-                        refetchClasses();
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[240px]"><SelectValue placeholder="Vyberte třídu" /></SelectTrigger>
-                    <SelectContent>
-                      {myClasses.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Moje třídy</div>
-                          {myClasses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </>
-                      )}
-                      {schoolClasses.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Třídy školy</div>
-                          {schoolClasses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                              {c.year ? ` · ${c.year}. ročník` : ""}
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect value={assignClassId} label="Hledat třídu" onValueChange={async v => { setAssignClassId(v); if (classes.find(c => c.id === v)?.source === "school") { await claimSchoolClass(v); refetchClasses(); } }} options={[...myClasses.map(c => ({value:c.id,label:c.name,subtitle:"Moje třídy"})), ...schoolClasses.map(c => ({value:c.id,label:c.name,subtitle:`Třídy školy ${c.year ? `${c.year}. ročník` : ""}`}))]} />
                 </div>
                 <Button className="gap-2" onClick={() => void assignSubjectToClass()}>
                   <Plus size={16} /> Přiřadit {subjectName || "předmět"}
