@@ -1,3 +1,5 @@
+import { createDefaultMindMap } from "@/lib/mind-map";
+
 export const SUBJECTS = [
   { id: "technologie", label: "Technologie", grades: [1, 2, 3] },
   { id: "potraviny", label: "Potraviny", grades: [1, 2, 3] },

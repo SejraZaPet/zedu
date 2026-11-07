@@ -1,4 +1,6 @@
 import type { Block } from "@/lib/textbook-config";
+import MindMapView from "@/components/mind-map/MindMapView";
+import { normalizeMindMap } from "@/lib/mind-map";
 import { getQuizQuestions } from "@/lib/quiz-questions";
 import LessonLinkButton from "@/components/LessonLinkButton";
 import DOMPurify from "dompurify";

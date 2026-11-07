@@ -1,4 +1,5 @@
 import type { Block, BlockType } from "./textbook-config";
+import { mindMapToOutline, normalizeMindMap } from "@/lib/mind-map";
 
 /**
  * Client-side helpers for the "Change to…" action in BlockEditor.
