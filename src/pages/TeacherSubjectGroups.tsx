@@ -1,3 +1,5 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -424,9 +426,7 @@ const TeacherSubjectGroups = () => {
   };
 
   const filteredStudents = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) => s.name.toLowerCase().includes(q) || s.className.toLowerCase().includes(q));
+    return students.filter(s => matchesSearch(search, s.name, s.className));
   }, [students, search]);
 
   const subjectName = subjects.find((s) => s.id === subjectId)?.name ?? "";
@@ -450,7 +450,7 @@ const TeacherSubjectGroups = () => {
               Skupiny jsou nezávislé na třídách — do jedné skupiny můžete zařadit žáky z různých tříd i ročníků.
             </p>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <div>
               <Label className="text-xs text-muted-foreground">Předmět</Label>
               <SubjectPicker
@@ -686,22 +686,25 @@ const TeacherSubjectGroups = () => {
               Vyhledávejte napříč všemi svými třídami — skupina není omezená na jednu třídu.
             </DialogDescription>
           </DialogHeader>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Hledat žáka nebo třídu…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+          <SearchField value={search} onChange={setSearch} label="Hledat žáka nebo třídu" count={filteredStudents.length} />
+          <Button type="button" variant="outline" className="min-h-11 h-auto whitespace-normal" onClick={async () => {
+            if (!rosterGroup) return;
+            for (const student of filteredStudents) {
+              if (!members.some(m => m.group_id === rosterGroup.id && m.student_id === student.id)) await toggleStudent(rosterGroup, student.id, true);
+            }
+          }}>Vybrat vše z nalezených</Button>
           <div className="max-h-[50vh] overflow-y-auto divide-y">
             {filteredStudents.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Žádní žáci nenalezeni.</p>
+              <SearchEmpty onClear={() => setSearch("")} />
             ) : filteredStudents.map((s) => {
               const checked = !!rosterGroup && members.some((m) => m.group_id === rosterGroup.id && m.student_id === s.id);
               return (
-                <label key={s.id} className="flex items-center gap-3 py-2 cursor-pointer">
+                <label key={s.id} className="flex min-h-11 items-center gap-3 py-2 cursor-pointer">
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(v) => rosterGroup && void toggleStudent(rosterGroup, s.id, !!v)}
                   />
-                  <span className="flex-1">{s.name}</span>
+                  <span className="min-w-0 flex-1 break-words">{s.name}</span>
                   <span className="text-xs text-muted-foreground">{s.className}</span>
                 </label>
               );
