@@ -1,3 +1,4 @@
+import { filterToRecipients, loadRecipients } from "../_shared/assignment-recipients.ts";
 // Automatická připomenutí úkolů s blížícím se termínem.
 // Spouští se každý den (pg_cron). Posílá notifikaci žákům, kteří mají
 // publikovaný úkol s deadlinem v rozmezí ~24-48h a ještě ho nedokončili.
@@ -67,7 +68,8 @@ Deno.serve(async (req) => {
       (id) => id,
       previewMap,
     );
-    if (studentIds.length === 0) continue;
+    const recipientIds = filterToRecipients(studentIds, await loadRecipients(supabase, a.id));
+    if (recipientIds.length === 0) continue;
 
     // Žáci, kteří už úkol odevzdali
     const { data: submitted } = await supabase
@@ -77,7 +79,7 @@ Deno.serve(async (req) => {
       .eq("status", "submitted");
     const submittedSet = new Set((submitted ?? []).map((s: any) => s.student_id));
 
-    const targets = studentIds.filter((id: string) => !submittedSet.has(id));
+    const targets = recipientIds.filter((id: string) => !submittedSet.has(id));
     if (targets.length === 0) continue;
 
     // Idempotence: zkontroluj existující notifikaci pro tento assignment + recipient

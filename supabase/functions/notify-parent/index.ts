@@ -1,3 +1,4 @@
+import { filterToRecipients, loadRecipients } from "../_shared/assignment-recipients.ts";
 // notify-parent: posílá rodičům emailové notifikace.
 // Volá se z DB triggerů (pg_net) nebo přímo přes invoke.
 // Body: { kind: 'new_assignment', assignment_id } | { kind: 'new_result', attempt_id }
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
         .from("class_members")
         .select("user_id")
         .eq("class_id", a.class_id);
-      studentIds = (members ?? []).map((m: any) => m.user_id);
+      studentIds = filterToRecipients((members ?? []).map((m: any) => m.user_id), await loadRecipients(supabase, a.id));
 
       const deadlineStr = a.deadline
         ? new Date(a.deadline).toLocaleString("cs-CZ", { dateStyle: "long", timeStyle: "short" })
