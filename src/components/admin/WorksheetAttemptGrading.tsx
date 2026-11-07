@@ -1,3 +1,4 @@
+import { scoreMindMap } from "@/lib/mind-map";
 import { useEffect, useMemo, useState } from "react";
 import { hasEditableTableCells } from "@/lib/worksheet-table";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,8 @@ interface Row {
   max: number | null;
   answer: unknown;
   correct: boolean | null;
+  /** Částečné automatické body (myšlenková mapa). */
+  autoPoints?: number;
   unknown?: boolean;
   choices?: string[];
   tableRows?: string[][];
@@ -80,6 +83,10 @@ const isEmpty = (v: unknown) =>
 function checkCorrect(item: any, answer: unknown, key: any): boolean | null {
   if (!key || OPEN_TYPES.has(item.type)) return null;
   const ca = key.correctAnswer;
+  if (item.type === "mind_map") {
+    if (!Array.isArray(ca) || ca.length === 0) return null;
+    return scoreMindMap(answer, ca, 1).allCorrect;
+  }
   if (ca === undefined || ca === null || ca === "") return null;
   if (isEmpty(answer)) return false;
   if (item.type === "short_answer" && !Array.isArray(ca) && norm(ca) === "") return null;
@@ -162,6 +169,9 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
         max: Number.isFinite(pts) && pts > 0 ? pts : null,
         answer: ans[it.id],
         correct: checkCorrect(it, ans[it.id], keys.get(it.id)),
+        autoPoints: it.type === "mind_map" && keys.get(it.id)
+          ? scoreMindMap(ans[it.id], keys.get(it.id).correctAnswer, Number(it.points) || 0).points
+          : undefined,
         choices: Array.isArray(it.choices) ? it.choices : undefined,
         tableRows: Array.isArray(it.tableRows) ? it.tableRows : undefined,
       });
@@ -189,7 +199,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
       const g = existing?.items?.[r.id];
       const max = g?.max ?? r.max ?? 1;
       m[r.id] = String(max);
-      p[r.id] = g ? String(g.points) : r.correct === true ? String(max) : r.correct === false ? "0" : "";
+      p[r.id] = g ? String(g.points) : r.autoPoints !== undefined ? String(r.autoPoints) : r.correct === true ? String(max) : r.correct === false ? "0" : "";
       cm[r.id] = g?.comment ?? "";
     }
     setPoints(p); setMaxes(m); setComments(cm);

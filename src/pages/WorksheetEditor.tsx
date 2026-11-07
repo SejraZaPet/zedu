@@ -3509,7 +3509,7 @@ function SortableItemBlock({
   };
   const measureRef = useRef<HTMLDivElement | null>(null);
   const Renderer = ITEM_RENDERERS[item.type];
-  const numberedTypes: ItemType[] = ["mcq", "true_false", "fill_blank", "matching", "ordering", "short_answer", "open_answer", "offline_activity"];
+  const numberedTypes: ItemType[] = ["mcq", "true_false", "fill_blank", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "mind_map"];
   const showQuestionHeader = numberedTypes.includes(item.type);
 
   useEffect(() => {
