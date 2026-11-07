@@ -679,7 +679,7 @@ export default function StudentSubjectClass() {
             </TabsTrigger>
             <TabsTrigger value="assignments">
               <ClipboardList className="h-4 w-4 mr-2" />
-              Úkoly ({assignments.length})
+              Práce ({assignments.length})
             </TabsTrigger>
             <TabsTrigger value="results">
               <TrendingUp className="h-4 w-4 mr-2" />

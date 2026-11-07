@@ -96,7 +96,7 @@ export function kindFromParam(v: string | null | undefined): AssignmentKind | nu
   return v === "task" || v === "material" || v === "announcement" ? v : null;
 }
 
-/** Pod-záložky v záložce Úkoly (`?sekce=`). */
+/** Pod-záložky v záložce Práce (`?sekce=`). */
 export type KindSection = "ukoly" | "materialy" | "oznameni";
 export const SECTION_KIND: Record<KindSection, AssignmentKind> = { ukoly: "task", materialy: "material", oznameni: "announcement" };
 export const KIND_SECTION: Record<AssignmentKind, KindSection> = { task: "ukoly", material: "materialy", announcement: "oznameni" };
