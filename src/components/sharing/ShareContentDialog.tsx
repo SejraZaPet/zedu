@@ -1,3 +1,5 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
 import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
@@ -132,7 +134,8 @@ export default function ShareContentDialog({
     setSearching(true);
     const t = setTimeout(async () => {
       try {
-        const r = await searchTeachers(q);
+        const term = q.includes("@") ? q : q.split(/\s+/).filter(Boolean).sort((a, b) => b.length - a.length)[0] ?? q;
+        const r = (await searchTeachers(term)).filter(r => matchesSearch(q, r.label, r.email, r.sameSchool ? "vaše škola" : ""));
         if (!cancel) setTeacherResults(r);
       } catch (e: any) {
         if (!cancel) setTeacherResults([]);
@@ -363,11 +366,7 @@ export default function ShareContentDialog({
                   </div>
                 ) : (
                   <>
-                    <Input
-                      placeholder="Jméno, příjmení nebo celý e-mail"
-                      value={teacherQuery}
-                      onChange={(e) => setTeacherQuery(e.target.value)}
-                    />
+                    <SearchField value={teacherQuery} onChange={setTeacherQuery} label="Hledat učitele podle jména nebo celého e-mailu" count={searched ? teacherResults.length : undefined} />
                     <p className="text-xs text-muted-foreground">
                       Stačí {TEACHER_SEARCH_MIN_LENGTH} znaky jména. E-mail musí být zadaný celý.
                     </p>
@@ -377,16 +376,15 @@ export default function ShareContentDialog({
                       </div>
                     )}
                     {!searching && searched && teacherResults.length === 0 && (
-                      <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                        Nikdo nenalezen. Zkuste jiné jméno nebo zadejte celý e-mail kolegy.
-                      </div>
+                      <SearchEmpty onClear={() => setTeacherQuery("")} />
                     )}
                     {teacherResults.length > 0 && (
                       <div className="max-h-56 overflow-auto rounded-md border border-border">
                         {teacherResults.map((r) => (
-                          <button
+                          <Button
+                            type="button" variant="ghost"
                             key={r.id}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
+                            className="block h-auto min-h-11 whitespace-normal w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
                             onClick={() => setSelectedTeacher(r)}
                           >
                             <div className="font-medium">
@@ -402,7 +400,7 @@ export default function ShareContentDialog({
                                 {r.email}
                               </div>
                             )}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     )}

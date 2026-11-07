@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -174,15 +175,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
               </div>
               <div className="space-y-1.5">
                 <Label>Předmět (nepovinné)</Label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Bez předmětu</SelectItem>
-                    {subjects.map((s: any) => (
-                      <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect value={subject} onValueChange={setSubject} label="Hledat předmět" options={[{ value: NONE, label: "Bez předmětu" }, ...subjects.map(s => ({ value: s.label, label: s.label }))]} />
               </div>
             </div>
 

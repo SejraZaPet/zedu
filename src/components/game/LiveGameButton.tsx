@@ -1,3 +1,5 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch, needsSearch } from "@/lib/picker-search";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, Settings } from "lucide-react";
@@ -27,6 +29,8 @@ export const LiveGameButton = ({ title, questions }: Props) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [modeQuery, setModeQuery] = useState("");
+  const [themeQuery, setThemeQuery] = useState("");
   const currentMode = getModeDef(settings.gameMode);
 
   const setMode = (id: GameMode) => {
@@ -88,8 +92,10 @@ export const LiveGameButton = ({ title, questions }: Props) => {
             {/* Mode picker */}
             <div>
               <Label className="text-sm mb-2 block">Herní mód</Label>
+              {needsSearch(GAME_MODES.length) && <SearchField value={modeQuery} onChange={setModeQuery} label="Hledat herní mód" />}
+              {!GAME_MODES.some(m => matchesSearch(modeQuery, m.name, m.description)) && <SearchEmpty onClear={() => setModeQuery("")} />}
               <div className="grid grid-cols-2 gap-2">
-                {GAME_MODES.map((m) => {
+                {GAME_MODES.filter(m => matchesSearch(modeQuery, m.name, m.description)).map((m) => {
                   const active = settings.gameMode === m.id;
                   return (
                     <button
@@ -229,8 +235,10 @@ export const LiveGameButton = ({ title, questions }: Props) => {
             </div>
             <div>
               <Label className="text-sm mb-2 block">Vizuální téma</Label>
+              {needsSearch(VISUAL_THEMES.length) && <SearchField value={themeQuery} onChange={setThemeQuery} label="Hledat vizuální téma" />}
+              {!VISUAL_THEMES.some(v => matchesSearch(themeQuery, v.name, v.description)) && <SearchEmpty onClear={() => setThemeQuery("")} />}
               <div className="grid grid-cols-2 gap-2">
-                {VISUAL_THEMES.map((vt) => {
+                {VISUAL_THEMES.filter(v => matchesSearch(themeQuery, v.name, v.description)).map((vt) => {
                   const active = (settings.visualTheme ?? "default") === vt.id;
                   return (
                     <button

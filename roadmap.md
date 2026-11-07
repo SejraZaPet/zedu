@@ -153,10 +153,14 @@
 - [x] Dole uprostřed, rezerva pod obsahem, desktop beze změny
 
 ## Vyhledávání ve výběrech
-- [ ] Čeká na „schvaluji“ a rozhodnutí o etapách
+- [x] A: Schválené etapy 1–2, společné hledání a výběry; etapy 3–5 se neprovádějí
+- [x] A: 21 testů, build OK; společný výběr 390/1440 px a klávesnice ověřeny bez účtů; celé přihlášené stránky a samostatná kontrola typů neověřeny
 
 ## Záložka „Práce“
 - [x] Přejmenování hlavní záložky Úkoly → Práce
 
 ## Zeď jako stream
-- [ ] Čeká na „schvaluji“ a rozhodnutí
+- [x] B: Pouze učitelský příspěvek jako oznámení, výchozí bez e-mailu; kontextové Přidat a návrat
+- [x] B: 61 cílených testů obou částí; build OK, místní editor 390/1440 px, text/odkaz/zveřejnění/nabídka Přidat ověřeny bez skutečných zápisů
+- [ ] Přihlášené načtení nového příspěvku ze skutečné třídy, upload souboru a celostránkové výběry neověřeny: testovací zápisy zakázané; samostatná kontrola typů neprovedena (kontroly spravuje prostředí)
+- [ ] Samostatné commity A/B a nasazení: git i publikování spravuje prostředí, agent gitové commity nespouští; nasazení provede Claude

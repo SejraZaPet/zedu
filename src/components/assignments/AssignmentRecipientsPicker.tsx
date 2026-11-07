@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch, selectFound } from "@/lib/picker-search";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -48,8 +50,7 @@ export default function AssignmentRecipientsPicker({ classId, groupId, mode, onM
   }, [classId, groupId]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("cs");
-    return q ? students.filter((s) => s.name.toLocaleLowerCase("cs").includes(q)) : students;
+    return students.filter((s) => matchesSearch(query, s.name));
   }, [students, query]);
   const set = new Set(selected);
   const toggle = (id: string) => onSelectedChange(set.has(id) ? selected.filter((x) => x !== id) : [...selected, id]);
@@ -70,10 +71,9 @@ export default function AssignmentRecipientsPicker({ classId, groupId, mode, onM
       {disabledReason && <p className="text-xs text-muted-foreground">{disabledReason}</p>}
       {mode === "selected" && !disabledReason && (
         <div className="space-y-2 rounded-md border p-2 min-w-0">
-          <Label htmlFor="recipient-search" className="sr-only">Hledat žáka</Label>
-          <Input id="recipient-search" placeholder="Hledat žáka…" value={query} onChange={(e) => setQuery(e.target.value)} className="min-h-11" />
+          <SearchField value={query} onChange={setQuery} label="Hledat žáka" count={filtered.length} />
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => onSelectedChange(students.map((s) => s.id))}>Vybrat vše</Button>
+            <Button type="button" variant="outline" size="sm" className="min-h-11 h-auto whitespace-normal" onClick={() => onSelectedChange(selectFound(selected, filtered.map((s) => s.id)))}>Vybrat vše z nalezených</Button>
             <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => onSelectedChange([])}>Nikdo</Button>
             <span className="text-sm text-muted-foreground" aria-live="polite">Vybráno {selected.filter((id) => students.some((s) => s.id === id)).length} z {students.length}</span>
           </div>
@@ -86,7 +86,7 @@ export default function AssignmentRecipientsPicker({ classId, groupId, mode, onM
                 </label>
               </li>
             ))}
-            {filtered.length === 0 && <li className="p-2 text-sm text-muted-foreground">Žádný žák neodpovídá.</li>}
+            {filtered.length === 0 && <li><SearchEmpty onClear={() => setQuery("")} /></li>}
           </ul>
         </div>
       )}

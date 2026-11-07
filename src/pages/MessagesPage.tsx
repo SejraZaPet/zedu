@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableList } from "@/components/ui/searchable-list";
+import { matchesSearch } from "@/lib/picker-search";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,6 +49,7 @@ const MessagesPage = () => {
   const [newOpen, setNewOpen] = useState<null | "direct" | "group">(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [groupTitle, setGroupTitle] = useState("");
+  const [contactQuery, setContactQuery] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   const names = useMemo(() => {
@@ -148,7 +151,8 @@ const MessagesPage = () => {
 
   const create = async () => {
     if (!uid || picked.size === 0) return;
-    const type = newOpen!;
+    const type = newOpen;
+    if (!type) return;
     if (type === "direct") {
       const target = [...picked][0];
       const existing = convs.find((c) => c.type === "direct" && parts.some((p) => p.conversation_id === c.id && p.user_id === target));
@@ -188,6 +192,7 @@ const MessagesPage = () => {
   });
 
   const active = convs.find((c) => c.id === activeId);
+  const foundContacts = uniqueContacts.filter(c => matchesSearch(contactQuery, c.name, c.class_name, c.is_teacher ? "učitel" : "žák"));
 
   return (
     <div className="min-h-screen bg-background">
@@ -284,16 +289,17 @@ const MessagesPage = () => {
               )}
             </>
           )}
+          <SearchableList query={contactQuery} onQueryChange={setContactQuery} count={foundContacts.length} label="Hledat kontakt" foundIds={foundContacts.map(c => c.id)} selected={[...picked]} onSelectionChange={newOpen === "group" ? (ids => setPicked(new Set(ids))) : undefined}>
           <div className="space-y-1 max-h-[45vh] overflow-y-auto">
-            {uniqueContacts.length === 0 && <p className="text-sm text-muted-foreground">Nemáte zatím žádné kontakty.</p>}
-            {uniqueContacts.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/40 cursor-pointer">
+            {foundContacts.map((c) => (
+              <label key={c.id} className="flex min-h-11 items-center gap-2 p-2 rounded hover:bg-muted/40 cursor-pointer">
                 <Checkbox checked={picked.has(c.id)} onCheckedChange={() => toggle(c.id)} />
-                <span className="text-sm">{c.name || "Uživatel"}</span>
+                <span className="min-w-0 break-words text-sm">{c.name || "Uživatel"}{c.class_name && <span className="block text-xs text-muted-foreground">{c.class_name}</span>}</span>
                 {c.is_teacher && <span className="text-xs text-muted-foreground">učitel</span>}
               </label>
             ))}
           </div>
+          </SearchableList>
           <Button onClick={create} disabled={picked.size === 0}>
             {newOpen === "group" ? `Vytvořit skupinu (${picked.size})` : "Otevřít konverzaci"}
           </Button>

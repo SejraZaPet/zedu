@@ -1,3 +1,6 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { matchesSearch } from "@/lib/picker-search";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookPlus, FileText, Loader2, PenTool, Search } from "lucide-react";
@@ -80,8 +83,7 @@ export default function InsertWorksheetButton({
   }, [open, targetNotebook?.id, wsId]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? sheets.filter((s) => `${s.title} ${s.subject ?? ""}`.toLowerCase().includes(q)) : sheets;
+    return sheets.filter(s => matchesSearch(query, s.title, s.subject));
   }, [sheets, query]);
 
   const openIn = (nb: string, pages: NotebookPage[]) => {
@@ -131,12 +133,7 @@ export default function InsertWorksheetButton({
                   {notebooks.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Zatím nemáš žádný sešit. Založ si ho v části Sešit.</p>
                   ) : (
-                    <Select value={nbId} onValueChange={setNbId}>
-                      <SelectTrigger><SelectValue placeholder="Vyber sešit" /></SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {notebooks.map((n) => <SelectItem key={n.id} value={n.id}>{n.title}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect value={nbId} onValueChange={setNbId} options={notebooks.map(n => ({ value: n.id, label: n.title }))} label="Hledat sešit" />
                   )}
                 </div>
               )}
@@ -144,25 +141,23 @@ export default function InsertWorksheetButton({
               {!worksheetId && (
                 <div className="space-y-2">
                   <Label htmlFor="ws-insert-q">Pracovní list</Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input id="ws-insert-q" className="pl-8" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Hledat list" />
-                  </div>
+                  <SearchField value={query} onChange={setQuery} label="Hledat list" count={filtered.length} />
                   <div className="max-h-56 overflow-y-auto overscroll-contain rounded-md border" role="listbox" aria-label="Pracovní listy">
                     {filtered.length === 0 ? (
-                      <p className="p-3 text-sm text-muted-foreground">Žádný dostupný list.</p>
+                      <SearchEmpty onClear={() => setQuery("")} />
                     ) : filtered.map((s) => (
-                      <button
+                      <Button
+                        variant="ghost"
                         key={s.id}
                         type="button"
                         role="option"
                         aria-selected={wsId === s.id}
                         onClick={() => setWsId(s.id)}
-                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-muted ${wsId === s.id ? "bg-muted font-medium" : ""}`}
+                        className={`block h-auto min-h-11 whitespace-normal w-full px-3 py-2 text-left text-sm hover:bg-muted ${wsId === s.id ? "bg-muted font-medium" : ""}`}
                       >
                         {s.title}
                         <span className="ml-2 text-xs text-muted-foreground">{[s.subject, s.assignmentId ? "úkol" : null].filter(Boolean).join(" · ")}</span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>

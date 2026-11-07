@@ -1,3 +1,7 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { selectFound } from "@/lib/picker-search";
+import { matchesSearch } from "@/lib/picker-search";
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -64,6 +68,7 @@ const TeacherSubjectGroups = () => {
   const [newYear, setNewYear] = useState(currentSchoolYear());
   // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
   const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
+  const [seedQuery, setSeedQuery] = useState("");
   const [saving, setSaving] = useState(false);
   // Upozornění (neblokující): název skupiny se shoduje s názvem existující třídy
   const nameClashesWithClass = useMemo(() => {
@@ -424,9 +429,7 @@ const TeacherSubjectGroups = () => {
   };
 
   const filteredStudents = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) => s.name.toLowerCase().includes(q) || s.className.toLowerCase().includes(q));
+    return students.filter(s => matchesSearch(search, s.name, s.className));
   }, [students, search]);
 
   const subjectName = subjects.find((s) => s.id === subjectId)?.name ?? "";
@@ -450,7 +453,7 @@ const TeacherSubjectGroups = () => {
               Skupiny jsou nezávislé na třídách — do jedné skupiny můžete zařadit žáky z různých tříd i ročníků.
             </p>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <div>
               <Label className="text-xs text-muted-foreground">Předmět</Label>
               <SubjectPicker
@@ -530,40 +533,7 @@ const TeacherSubjectGroups = () => {
               <div className="flex flex-wrap items-end gap-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Třída</Label>
-                  <Select
-                    value={assignClassId}
-                    onValueChange={async (v) => {
-                      setAssignClassId(v);
-                      // Existující třída školy: učitel se k ní rovnou přihlásí jako vyučující
-                      if (classes.find((c) => c.id === v)?.source === "school") {
-                        await claimSchoolClass(v);
-                        refetchClasses();
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[240px]"><SelectValue placeholder="Vyberte třídu" /></SelectTrigger>
-                    <SelectContent>
-                      {myClasses.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Moje třídy</div>
-                          {myClasses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </>
-                      )}
-                      {schoolClasses.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Třídy školy</div>
-                          {schoolClasses.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                              {c.year ? ` · ${c.year}. ročník` : ""}
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect value={assignClassId} label="Hledat třídu" onValueChange={async v => { setAssignClassId(v); if (classes.find(c => c.id === v)?.source === "school") { await claimSchoolClass(v); refetchClasses(); } }} options={[...myClasses.map(c => ({value:c.id,label:c.name,subtitle:"Moje třídy"})), ...schoolClasses.map(c => ({value:c.id,label:c.name,subtitle:`Třídy školy ${c.year ? `${c.year}. ročník` : ""}`}))]} />
                 </div>
                 <Button className="gap-2" onClick={() => void assignSubjectToClass()}>
                   <Plus size={16} /> Přiřadit {subjectName || "předmět"}
@@ -631,11 +601,13 @@ const TeacherSubjectGroups = () => {
                 Vyberte existující třídy — do skupiny se rovnou přidají všichni jejich žáci
                 (např. „Č1.A + Č2.A – Anglický jazyk“). Žáky pak můžete ručně upravit.
               </p>
+              <SearchField value={seedQuery} onChange={setSeedQuery} label="Hledat třídu" count={classes.filter(c => matchesSearch(seedQuery, c.name)).length} />
+              <Button type="button" variant="ghost" className="min-h-11 h-auto whitespace-normal" onClick={() => setSeedClassIds(selectFound(seedClassIds, classes.filter(c => matchesSearch(seedQuery, c.name)).map(c => c.id)))}>Vybrat vše z nalezených</Button>
               <div className="max-h-40 overflow-y-auto rounded-md border border-border divide-y">
                 {classes.length === 0 ? (
                   <p className="p-3 text-xs text-muted-foreground">Žádné dostupné třídy.</p>
-                ) : classes.map((c) => (
-                  <label key={c.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer text-sm">
+                ) : classes.filter(c => matchesSearch(seedQuery, c.name)).map((c) => (
+                  <label key={c.id} className="flex min-h-11 items-center gap-3 px-3 py-2 cursor-pointer text-sm">
                     <Checkbox
                       checked={seedClassIds.includes(c.id)}
                       onCheckedChange={(v) =>
@@ -649,6 +621,7 @@ const TeacherSubjectGroups = () => {
                   </label>
                 ))}
               </div>
+              {!!classes.length && !classes.some(c => matchesSearch(seedQuery, c.name)) && <SearchEmpty onClear={() => setSeedQuery("")} />}
               {seedClassIds.length > 1 && !newName.trim() && (
                 <Button
                   type="button"
@@ -686,22 +659,25 @@ const TeacherSubjectGroups = () => {
               Vyhledávejte napříč všemi svými třídami — skupina není omezená na jednu třídu.
             </DialogDescription>
           </DialogHeader>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Hledat žáka nebo třídu…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+          <SearchField value={search} onChange={setSearch} label="Hledat žáka nebo třídu" count={filteredStudents.length} />
+          <Button type="button" variant="outline" className="min-h-11 h-auto whitespace-normal" onClick={async () => {
+            if (!rosterGroup) return;
+            for (const student of filteredStudents) {
+              if (!members.some(m => m.group_id === rosterGroup.id && m.student_id === student.id)) await toggleStudent(rosterGroup, student.id, true);
+            }
+          }}>Vybrat vše z nalezených</Button>
           <div className="max-h-[50vh] overflow-y-auto divide-y">
             {filteredStudents.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Žádní žáci nenalezeni.</p>
+              <SearchEmpty onClear={() => setSearch("")} />
             ) : filteredStudents.map((s) => {
               const checked = !!rosterGroup && members.some((m) => m.group_id === rosterGroup.id && m.student_id === s.id);
               return (
-                <label key={s.id} className="flex items-center gap-3 py-2 cursor-pointer">
+                <label key={s.id} className="flex min-h-11 items-center gap-3 py-2 cursor-pointer">
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(v) => rosterGroup && void toggleStudent(rosterGroup, s.id, !!v)}
                   />
-                  <span className="flex-1">{s.name}</span>
+                  <span className="min-w-0 flex-1 break-words">{s.name}</span>
                   <span className="text-xs text-muted-foreground">{s.className}</span>
                 </label>
               );

@@ -1,3 +1,6 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
 import { semesterStart } from "@/lib/plan-linked-slots";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -236,6 +239,7 @@ export default function TeacherLessonPlanEditor() {
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[] | null>(null);
+  const [unitQuery, setUnitQuery] = useState("");
   const [lessonMinutes, setLessonMinutes] = useState<number>(DEFAULT_LESSON_MINUTES);
   const [customMinutes, setCustomMinutes] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -1660,34 +1664,7 @@ export default function TeacherLessonPlanEditor() {
 
             <div className="space-y-1.5">
               <Label htmlFor="plan-class">Třída / skupina</Label>
-              <Select
-                value={classId || undefined}
-                onValueChange={(v) => {
-                  setClassId(v);
-                  setLinkedDate("");
-                  setLinkedTime("");
-                }}
-              >
-                <SelectTrigger id="plan-class">
-                  <SelectValue
-                    placeholder={
-                      filteredClasses.length
-                        ? "Vyber třídu nebo skupinu…"
-                        : subject
-                          ? "Žádná třída ani skupina nemá tento předmět v rozvrhu"
-                          : "Žádné třídy ani skupiny"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredClasses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                      {c.kind === "group" ? " · skupina" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect id="plan-class" value={classId} onValueChange={(v) => { setClassId(v); setLinkedDate(""); setLinkedTime(""); }} label="Hledat třídu nebo skupinu" options={filteredClasses.map(c => ({ value: c.id, label: c.name, subtitle: c.kind === "group" ? "Skupina" : "Třída" }))} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground -mt-2">
@@ -1702,78 +1679,12 @@ export default function TeacherLessonPlanEditor() {
                 <BookOpen className="w-3.5 h-3.5" />
                 Učebnice
               </Label>
-              <Select
-                value={textbookId || undefined}
-                onValueChange={(v) => {
-                  setTextbookId(v);
-                  setTextbookType(textbooks.find((t) => t.id === v)?.type ?? "teacher");
-                  setLessonId("");
-                }}
-              >
-                <SelectTrigger id="plan-textbook">
-                  <SelectValue
-                    placeholder={loadingTextbooks ? "Načítám učebnice…" : textbooks.length ? "Vyber učebnici…" : "Žádné učebnice"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {textbooks.some((t) => t.type === "teacher") && (
-                    <SelectGroup>
-                      <SelectLabel>Moje učebnice</SelectLabel>
-                      {textbooks
-                        .filter((t) => t.type === "teacher")
-                        .map((t) => (
-                          <SelectItem key={`teacher-${t.id}`} value={t.id}>
-                            {t.title}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  )}
-                  {textbooks.some((t) => t.type === "global") && (
-                    <SelectGroup>
-                      <SelectLabel>Společné učebnice</SelectLabel>
-                      {textbooks
-                        .filter((t) => t.type === "global")
-                        .map((t) => (
-                          <SelectItem key={`global-${t.id}`} value={t.id}>
-                            {t.title}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  )}
-                </SelectContent>
-              </Select>
+              <SearchableSelect id="plan-textbook" value={textbookId} growing onValueChange={(v) => { setTextbookId(v); setTextbookType(textbooks.find(t => t.id === v)?.type ?? "teacher"); setLessonId(""); }} label="Hledat učebnici" options={textbooks.map(t => ({ value: t.id, label: t.title, subtitle: t.type === "teacher" ? "Moje učebnice" : "Společná učebnice" }))} />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="plan-lesson">Lekce z učebnice</Label>
-              <Select
-                value={lessonId || undefined}
-                onValueChange={(v) => {
-                  setLessonId(v);
-                  setSelectedBlockIds(null);
-                }}
-                disabled={!textbookId}
-              >
-                <SelectTrigger id="plan-lesson">
-                  <SelectValue
-                    placeholder={
-                      !textbookId
-                        ? "Nejprve vyber učebnici"
-                        : lessons.length
-                          ? "Vyber lekci…"
-                          : "V této učebnici nejsou lekce"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {lessons.map((l) => (
-                    <SelectItem key={`${l.source}-${l.id}`} value={l.id}>
-                      {l.title}
-                      {l.source === "lessons" ? " · společná učebnice" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect id="plan-lesson" value={lessonId} growing onValueChange={(v) => { setLessonId(v); setSelectedBlockIds(null); }} disabled={!textbookId} label="Hledat lekci" options={lessons.map(l => ({ value: l.id, label: l.title, subtitle: textbooks.find(t => t.id === textbookId)?.title }))} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground -mt-2">
@@ -1838,17 +1749,18 @@ export default function TeacherLessonPlanEditor() {
             {selectedLesson && lessonUnits.length > 0 && (
               <fieldset className="space-y-2 rounded-lg border border-border p-3">
                 <legend className="px-1 text-sm font-medium">Celky lekce pro tuto hodinu</legend>
-                <div className="flex gap-2 text-xs">
-                  <Button type="button" variant="ghost" size="sm" className="h-7"
-                    onClick={() => setSelectedBlockIds(null)}>Vybrat vše</Button>
-                  <Button type="button" variant="ghost" size="sm" className="h-7"
+                <SearchField value={unitQuery} onChange={setUnitQuery} label="Hledat celek lekce" count={lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).length} />
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Button type="button" variant="ghost" size="sm" className="min-h-11 h-auto whitespace-normal"
+                    onClick={() => setSelectedBlockIds(prev => prev === null ? null : [...new Set([...prev, ...lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).flatMap(u => u.blockIds)])])}>Vybrat vše z nalezených</Button>
+                  <Button type="button" variant="ghost" size="sm" className="min-h-11"
                     onClick={() => setSelectedBlockIds([])}>Zrušit výběr</Button>
                 </div>
                 <ul className="space-y-1.5">
-                  {lessonUnits.map((u) => {
+                  {lessonUnits.filter(u => matchesSearch(unitQuery, u.title)).map((u) => {
                     const checked = isUnitSelected(u);
                     return (
-                      <li key={u.id} className="flex items-start gap-2">
+                      <li key={u.id} className="flex min-h-11 items-center gap-2">
                         <Checkbox
                           id={`unit-${u.id}`}
                           checked={checked}
@@ -1862,6 +1774,7 @@ export default function TeacherLessonPlanEditor() {
                     );
                   })}
                 </ul>
+                {!lessonUnits.some(u => matchesSearch(unitQuery, u.title)) && <SearchEmpty onClear={() => setUnitQuery("")} />}
                 {hiddenUnitCount > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {hiddenUnitCount === 1
@@ -1905,49 +1818,7 @@ export default function TeacherLessonPlanEditor() {
                             }}
                           />
                         ) : (
-                          <Select
-                            value={linkedDate || undefined}
-                            onValueChange={(v) => {
-                              setLinkedDate(v);
-                              setLinkedTime("");
-                            }}
-                          >
-                            <SelectTrigger id="plan-date">
-                              <SelectValue placeholder="Vyber datum…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {pastDates.length > 0 && (
-                                <SelectGroup>
-                                  <SelectLabel>Proběhlé</SelectLabel>
-                                  {pastDates.map((d) => {
-                                    const dateObj = new Date(d);
-                                    return (
-                                      <SelectItem key={d} value={d}>
-                                        <span className="text-muted-foreground">
-                                          {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t.{" "}
-                                          {getISOWeek(dateObj)})
-                                        </span>
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectGroup>
-                              )}
-                              {upcomingDates.length > 0 && (
-                                <SelectGroup>
-                                  <SelectLabel>Nadcházející</SelectLabel>
-                                  {upcomingDates.map((d) => {
-                                    const dateObj = new Date(d);
-                                    return (
-                                      <SelectItem key={d} value={d}>
-                                        {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t.{" "}
-                                        {getISOWeek(dateObj)})
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectGroup>
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect id="plan-date" value={linkedDate} onValueChange={(v) => { setLinkedDate(v); setLinkedTime(""); }} label="Hledat datum" options={availableDates.map(d => ({ value: d, label: format(new Date(d), "EEEE d. M. yyyy", { locale: cs }), subtitle: `${selectedTargetName} · ${subject} · ${d < todayKey ? "Proběhlé" : "Nadcházející"}` }))} />
                         )}
                       </div>
 
@@ -1977,29 +1848,7 @@ export default function TeacherLessonPlanEditor() {
                             />
                           </div>
                         ) : (
-                          <Select
-                            value={linkedTime || undefined}
-                            onValueChange={setLinkedTime}
-                            disabled={!linkedDate}
-                          >
-                            <SelectTrigger id="plan-time">
-                              <SelectValue
-                                placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {timeSlotsForDate.map((o) => {
-                                const v = `${o.start}-${o.end}`;
-                                const meta = [o.className, o.room].filter(Boolean).join(" · ");
-                                return (
-                                  <SelectItem key={v} value={v}>
-                                    {o.start} – {o.end}
-                                    {meta ? ` · ${meta}` : ""}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect id="plan-time" value={linkedTime} onValueChange={setLinkedTime} disabled={!linkedDate} label="Hledat čas" options={timeSlotsForDate.map(o => ({ value: `${o.start}-${o.end}`, label: `${o.start} – ${o.end}`, subtitle: [o.className, o.room].filter(Boolean).join(" · ") }))} />
                         )}
                       </div>
                     </div>
@@ -2351,24 +2200,7 @@ export default function TeacherLessonPlanEditor() {
           <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
             <div className="space-y-1.5">
               <Label htmlFor="plan-method">Metoda</Label>
-              <Select
-                value={selectedMethodId || undefined}
-                onValueChange={handleSelectMethod}
-              >
-                <SelectTrigger id="plan-method">
-                  <SelectValue
-                    placeholder={methods.length ? "Vyber metodu…" : "Načítání metod…"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {methods.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                      {m.category ? ` · ${m.category}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect id="plan-method" value={selectedMethodId} onValueChange={handleSelectMethod} label="Hledat metodu" options={methods.map(m => ({ value: m.id, label: m.name, subtitle: m.category }))} />
             </div>
             {selectedMethodId && (
               <Button

@@ -1,4 +1,6 @@
 import { fetchRecipientsMap } from "@/lib/assignment-recipients";
+import type { ReactNode } from "react";
+import { isWallPost } from "@/lib/wall-composer";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -26,6 +28,7 @@ export interface WallPost {
 interface Props {
   items: WallPost[];
   teacher?: boolean;
+  composer?: ReactNode;
   openPath: (a: WallPost) => string;
   onShowAllAnnouncements: () => void;
 }
@@ -35,7 +38,7 @@ const ICON: Record<AssignmentKind, typeof ClipboardList> = { task: ClipboardList
 const shortName = (n?: string) => { const p = (n ?? "").trim().split(/\s+/).filter(Boolean); return p.length >= 2 ? `${p[0]} ${p[p.length - 1][0]}.` : p[0] ?? ""; };
 const fmt = (v?: string | null) => (v ? format(new Date(v), "d. M. yyyy HH:mm", { locale: cs }) : "");
 
-export default function ClassWall({ items, teacher, openPath, onShowAllAnnouncements }: Props) {
+export default function ClassWall({ items, teacher, composer, openPath, onShowAllAnnouncements }: Props) {
   const { user } = useAuth();
   const uid = user?.id;
   const navigate = useNavigate();
@@ -156,6 +159,7 @@ export default function ClassWall({ items, teacher, openPath, onShowAllAnnouncem
 
   return (
     <section className="min-w-0 space-y-4" data-testid="class-wall">
+      {teacher && composer}
       <Card className="min-w-0 overflow-hidden">
         <div className="h-1 bg-gradient-to-r from-primary to-accent" aria-hidden />
         <div className="space-y-2 p-4">
@@ -195,7 +199,7 @@ export default function ClassWall({ items, teacher, openPath, onShowAllAnnouncem
                   <div className="flex flex-wrap items-start gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground"><Icon className="h-4 w-4" aria-hidden /></span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">{KIND_LABELS[kind]} · {fmt(post.created_at)}</p>
+                      <p className="text-xs text-muted-foreground">{isWallPost(post.settings) ? "Příspěvek" : KIND_LABELS[kind]} · {fmt(post.created_at)}</p>
                       <p className="break-words font-medium">{post.title}</p>
                       {teacher && (recipients[post.id]?.length ?? 0) > 0 && <p className="text-xs text-muted-foreground">Jen vybraní žáci ({recipients[post.id].length})</p>}
                       {post.description && <p className="line-clamp-3 break-words text-sm text-muted-foreground">{assignmentDescriptionToText(post.description)}</p>}

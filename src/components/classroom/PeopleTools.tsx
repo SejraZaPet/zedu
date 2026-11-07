@@ -1,3 +1,6 @@
+import { SearchField, SearchEmpty } from "@/components/ui/search-field";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { matchesSearch } from "@/lib/picker-search";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dices, RotateCcw, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +25,7 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   const [absent, setAbsent] = useState<string[]>([]);
   const [fromPlan, setFromPlan] = useState(false);
   const [hideList, setHideList] = useState(false);
+  const [query, setQuery] = useState("");
   const preselected = useRef(false);
   const userPicked = useRef(false);
   const listsLoading = classesLoading || groupsLoading;
@@ -67,7 +71,7 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   const present = useMemo(() => presentClassroomPeople(people, absent), [people, absent]);
   useEffect(() => { onPeople(source === "manual" ? manualPeople : present); }, [source, manualPeople, present, onPeople]);
   return <div className="space-y-3">
-    <label className="block space-y-2"><span>Třída nebo skupina</span><Select value={source} onValueChange={pickSource} disabled={listsLoading}><SelectTrigger aria-label="Třída nebo skupina"><SelectValue placeholder="Načítám třídy…" />{listsLoading && <span className="sr-only">Načítám třídy…</span>}</SelectTrigger><SelectContent>{myClasses.length > 0 && <SelectGroup><SelectLabel>Třídy</SelectLabel>{myClasses.map(c => <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>)}</SelectGroup>}{groups.length > 0 && <SelectGroup><SelectLabel>Skupiny</SelectLabel>{groups.map(g => <SelectItem key={g.id} value={`group:${g.id}`}>{g.name}</SelectItem>)}</SelectGroup>}<SelectGroup><SelectLabel>Jiné</SelectLabel><SelectItem value="manual">Vlastní seznam</SelectItem></SelectGroup></SelectContent></Select></label>
+    <label className="block space-y-2"><span>Třída nebo skupina</span><SearchableSelect value={source} onValueChange={pickSource} disabled={listsLoading} label="Hledat třídu nebo skupinu" options={[...myClasses.map(c => ({ value: `class:${c.id}`, label: c.name, subtitle: "Třída" })), ...groups.map(g => ({ value: `group:${g.id}`, label: g.name, subtitle: "Skupina" })), { value: "manual", label: "Vlastní seznam" }]} /></label>
     {listsLoading && <p className="text-sm text-muted-foreground">Načítám třídy a skupiny…</p>}
     {listsEmpty && <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><span>Nenalezeny žádné třídy ani skupiny – zkuste Obnovit.</span><Button type="button" size="sm" variant="outline" onClick={refreshLists}>Obnovit seznam tříd</Button></div>}
     {fromPlan && <p className="text-sm text-muted-foreground">Předvybráno z plánu hodiny.</p>}
@@ -75,11 +79,13 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
     {source !== "manual" && people.length > 0 && <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">Kdo je dnes ve škole</span>
-        <Button type="button" size="sm" variant="outline" onClick={() => updateAbsent([])}>Všichni přítomni</Button>
+        <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={() => updateAbsent(absent.filter(id => !people.some(p => p.id === id && matchesSearch(query, p.name))))}>Vybrat vše z nalezených</Button>
         <Button type="button" size="sm" variant="outline" onClick={() => updateAbsent(people.map(p => p.id))}>Odznačit všechny</Button>
         <Button type="button" size="sm" variant="ghost" aria-expanded={!hideList} onClick={() => setHideList(v => !v)}>{hideList ? "Zobrazit seznam žáků" : "Skrýt seznam žáků"}</Button>
       </div>
-      {!hideList && <ul className="flex flex-wrap gap-2" aria-label="Přítomnost žáků">{people.map(p => { const isAbsent = absent.includes(p.id); return <li key={p.id}><button type="button" aria-pressed={!isAbsent} aria-label={`${p.name}: ${isAbsent ? "nepřítomen" : "přítomen"}`} onClick={() => updateAbsent(isAbsent ? absent.filter(id => id !== p.id) : [...absent, p.id])} className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAbsent ? "border-border bg-muted text-muted-foreground line-through" : "border-primary bg-primary/10 text-foreground"}`}>{p.name}</button></li>; })}</ul>}
+      {!hideList && <SearchField value={query} onChange={setQuery} label="Hledat žáka" count={people.filter(p => matchesSearch(query, p.name)).length} />}
+      {!hideList && !people.some(p => matchesSearch(query, p.name)) && <SearchEmpty onClear={() => setQuery("")} />}
+      {!hideList && <ul className="flex flex-wrap gap-2" aria-label="Přítomnost žáků">{people.filter(p => matchesSearch(query, p.name)).map(p => { const isAbsent = absent.includes(p.id); return <li key={p.id}><Button variant="outline" type="button" aria-pressed={!isAbsent} aria-label={`${p.name}: ${isAbsent ? "nepřítomen" : "přítomen"}`} onClick={() => updateAbsent(isAbsent ? absent.filter(id => id !== p.id) : [...absent, p.id])} className={`h-auto min-h-11 whitespace-normal border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAbsent ? "border-border bg-muted text-muted-foreground line-through" : "border-primary bg-primary/10 text-foreground"}`}>{p.name}</Button></li>; })}</ul>}
     </div>}
     <p className="text-sm text-muted-foreground" role="status">{loading || listsLoading ? "Načítání…" : error || (source === "manual" ? `${manualPeople.length} žáků` : `Přítomno ${present.length} z ${people.length}`)}</p>
   </div>;

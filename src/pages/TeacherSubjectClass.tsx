@@ -1,3 +1,6 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import WallComposer from "@/components/class-wall/WallComposer";
+import { wallCreateUrl, wallDraftRow, isWallPost, type WallDraft } from "@/lib/wall-composer";
 import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { Pin as PinnedIcon } from "lucide-react";
 import { isPinned } from "@/lib/assignment-kind";
@@ -1175,6 +1178,26 @@ export default function TeacherSubjectClass() {
     navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}${subjectParam}&kind=${kind}`);
   }
 
+  const wallContext = { classId: isGroup ? null : classId, groupId: isGroup ? groupId : null, subjectId: resolvedSubjectId, subject: subjectLabel, targetName: klass?.name ?? "Třída/skupina" };
+  async function publishWallPost(draft: WallDraft, previousId: string | null, onDraftSaved: (id: string) => void) {
+    if (!user) throw new Error("Pro zveřejnění se přihlaste.");
+    const row = wallDraftRow(wallContext, draft, user.id);
+    let id = previousId;
+    if (id) {
+      const { error } = await supabase.from("assignments").update(row as any).eq("id", id).eq("teacher_id", user.id).eq("status", "draft");
+      if (error) throw new Error("Koncept se nepodařilo uložit. Zkuste to znovu.");
+    } else {
+      const { data, error } = await supabase.from("assignments").insert(row as any).select("id").single();
+      if (error || !data) throw new Error("Příspěvek se nepodařilo uložit. Zkuste to znovu.");
+      id = data.id;
+      onDraftSaved(id);
+    }
+    const { data, error } = await supabase.from("assignments").update({ status: "published" }).eq("id", id).eq("teacher_id", user.id).eq("status", "draft").select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings").single();
+    if (error || !data) throw new Error("Koncept je uložený, ale zveřejnění se nepodařilo. Zkuste to znovu.");
+    setAssignments(list => [data as AssignmentRow, ...list.filter(a => a.id !== data.id)]);
+    toast({ title: "Příspěvek zveřejněn" });
+  }
+
 
 
   function newLessonPlan(date?: Date) {
@@ -1447,7 +1470,9 @@ export default function TeacherSubjectClass() {
 
           {/* STREAM */}
           <TabsContent value="stream" className="mt-4 space-y-6">
-            <ClassWall items={assignments as any} teacher openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements} />
+            <ClassWall items={assignments as any} teacher
+              composer={user && <WallComposer teacherId={user.id} targetName={wallContext.targetName} onPublish={publishWallPost} onCreate={kind => navigate(wallCreateUrl(wallContext, kind, location.pathname))} />}
+              openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements} />
             <div className="grid md:grid-cols-2 gap-6">
               {/* Past */}
               <section className="order-2" data-testid="section-past">
@@ -1752,6 +1777,7 @@ export default function TeacherSubjectClass() {
                     <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
                       <div className="min-w-0 flex-1">
                         <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
+                        {isWallPost(a.settings) && <Badge variant="secondary">Příspěvek</Badge>}
                         {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
                         {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
                       </div>
@@ -2183,51 +2209,14 @@ export default function TeacherSubjectClass() {
                   </button>
                 </p>
               ) : (
-                <Select value={assignPlanId} onValueChange={setAssignPlanId}>
-                  <SelectTrigger id="assign-plan-select">
-                    <SelectValue placeholder="Vyberte plán" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {relevantPlans.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.title || "Bez názvu"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect id="assign-plan-select" value={assignPlanId} onValueChange={setAssignPlanId} growing label="Hledat plán" placeholder="Vyberte plán" options={relevantPlans.map(p => ({ value: p.id, label: p.title || "Bez názvu", subtitle: `${p.subject} · ${format(new Date(p.updated_at), "d. M. yyyy", { locale: cs })}` }))} />
               )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="assign-plan-date">Termín z rozvrhu</Label>
               {upcomingLessons.length + assignPast.length > 0 ? (
-                <Select value={assignPlanDate} onValueChange={setAssignPlanDate}>
-                  <SelectTrigger id="assign-plan-date">
-                    <SelectValue placeholder="Vyberte termín" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {upcomingLessons.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Nadcházející</SelectLabel>
-                        {upcomingLessons.map((e) => (
-                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
-                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {assignPast.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Proběhlé</SelectLabel>
-                        {assignPast.map((e) => (
-                          <SelectItem key={e.id} value={format(e.start, "yyyy-MM-dd")}>
-                            {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect id="assign-plan-date" value={assignPlanDate} onValueChange={setAssignPlanDate} label="Hledat termín" placeholder="Vyberte termín" options={[...upcomingLessons, ...assignPast].filter((e, i, all) => all.findIndex(x => format(x.start, "yyyy-MM-dd") === format(e.start, "yyyy-MM-dd")) === i).map(e => ({ value: format(e.start, "yyyy-MM-dd"), label: `${format(e.start, "EEE d. M. yyyy", { locale: cs })} · ${formatTime(e.start)}`, subtitle: `${klass?.name ?? ""} · ${subjectLabel}` }))} />
               ) : (
                 <Input
                   id="assign-plan-date"
