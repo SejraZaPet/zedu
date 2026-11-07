@@ -36,7 +36,7 @@ export default function WallComposer({ teacherId, targetName, onCreate, onPublis
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-    {open && <div className="min-w-0 space-y-3 [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11">
+    {open && <div className="min-w-0 space-y-3 [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_input]:min-w-0 [&_.ProseMirror]:break-words">
       <p className="break-words text-sm">Komu: {targetName} · celá třída/skupina</p>
       <AssignmentDescriptionEditor content={draft.description} onChange={description => setDraft(d => ({...d,description}))} />
       <p role="status" className={count > ANNOUNCEMENT_MAX ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>{count}/{ANNOUNCEMENT_MAX}</p>

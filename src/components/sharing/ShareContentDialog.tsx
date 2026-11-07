@@ -134,7 +134,7 @@ export default function ShareContentDialog({
     setSearching(true);
     const t = setTimeout(async () => {
       try {
-        const term = q.includes("@") ? q : q.split(/\s+/).filter(Boolean)[0] ?? q;
+        const term = q.includes("@") ? q : q.split(/\s+/).filter(Boolean).sort((a, b) => b.length - a.length)[0] ?? q;
         const r = (await searchTeachers(term)).filter(r => matchesSearch(q, r.label, r.email, r.sameSchool ? "vaše škola" : ""));
         if (!cancel) setTeacherResults(r);
       } catch (e: any) {
