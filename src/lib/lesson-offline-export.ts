@@ -1,4 +1,4 @@
-import { flattenMindMap, normalizeMindMap } from "@/lib/mind-map";
+import { normalizeMindMap } from "@/lib/mind-map";
 /**
  * Offline export lekce do samostatného HTML souboru (inline CSS, bez závislosti
  * na aplikaci). Interaktivní aktivity se vynechávají – místo nich je poznámka.
@@ -118,7 +118,6 @@ const renderBlock = async (block: any): Promise<string> => {
       const map = normalizeMindMap(p.map);
       const render = (n: any): string =>
         `<li>${n.blank ? "………" : esc(n.text || "")}${n.children.length ? `<ul>${n.children.map(render).join("")}</ul>` : ""}</li>`;
-      void flattenMindMap;
       return `${p.title ? `<h3>${esc(p.title)}</h3>` : ""}<ul class="mind-map">${render(map.root)}</ul>`;
     }
     case "formula":
