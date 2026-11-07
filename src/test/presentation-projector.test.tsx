@@ -67,6 +67,14 @@ describe("ViewAsBanner", () => {
     expect(screen.getByTestId("view-as-pill").className).toContain("whitespace-nowrap");
     expect(document.body.style.paddingBottom).toBe("");
   });
+  it("pilulka rezervuje místo pod obsahem; na projekci ne; po odchodu se uklidí", () => {
+    const { unmount } = render(<MemoryRouter initialEntries={["/ucitel"]}><ViewAsBanner /></MemoryRouter>);
+    expect(document.body.classList.contains("has-view-as-pill")).toBe(true);
+    unmount();
+    expect(document.body.classList.contains("has-view-as-pill")).toBe(false);
+    render(<MemoryRouter initialEntries={["/live/projektor/x"]}><ViewAsBanner /></MemoryRouter>);
+    expect(document.body.classList.contains("has-view-as-pill")).toBe(false);
+  });
   it("mimo admina se nevykreslí", () => {
     authState.realRole = "teacher";
     const { container } = render(<MemoryRouter><ViewAsBanner /></MemoryRouter>);
