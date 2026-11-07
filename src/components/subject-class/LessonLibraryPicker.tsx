@@ -39,9 +39,9 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
       let out: Item[] = [];
       try {
         if (type === "worksheet") {
-          let qb = supabase.from("worksheets").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
+          let qb = supabase.from("worksheets").select("id, title, subject").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
           const { data } = await qb;
-          out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Pracovní list", contentType: "worksheet" }));
+          out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Pracovní list", contentType: "worksheet", extra: r.subject ?? undefined }));
         } else if (type === "presentation") {
           let qb = supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
           const { data } = await qb;

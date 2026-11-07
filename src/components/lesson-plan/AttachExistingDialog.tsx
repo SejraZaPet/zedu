@@ -48,17 +48,17 @@ export default function AttachExistingDialog({ teacherId, open, onOpenChange, al
     setLoading(true);
     void (async () => {
       const [ws, games, pres, books] = await Promise.all([
-        supabase.from("worksheets").select("id, title").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
-        supabase.from("teacher_game_templates").select("id, title").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
+        supabase.from("worksheets").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
+        supabase.from("teacher_game_templates").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
         supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
         supabase.from("teacher_textbooks").select("id, title").eq("teacher_id", teacherId).limit(100),
       ]);
       const out: Option[] = [];
       for (const w of (ws.data as any[]) ?? []) {
-        out.push({ key: `w:${w.id}`, item: { type: "worksheet", id: w.id, title: w.title || "Pracovní list" } });
+        out.push({ key: `w:${w.id}`, subtitle: `${w.subject ?? ""} ${new Date(w.created_at).toLocaleDateString("cs-CZ")}`, item: { type: "worksheet", id: w.id, title: w.title || "Pracovní list" } });
       }
       for (const g of (games.data as any[]) ?? []) {
-        out.push({ key: `g:${g.id}`, item: { type: "game_template", id: g.id, title: g.title || "Hra" } });
+        out.push({ key: `g:${g.id}`, subtitle: `${g.subject ?? ""} ${new Date(g.created_at).toLocaleDateString("cs-CZ")}`, item: { type: "game_template", id: g.id, title: g.title || "Hra" } });
       }
       for (const p of (pres.data as any[]) ?? []) {
         out.push({ key: `p:${p.id}`, item: { type: "presentation", id: p.id, title: p.title || "Prezentace" } });
@@ -74,6 +74,7 @@ export default function AttachExistingDialog({ teacherId, open, onOpenChange, al
         for (const l of (lessons as any[]) ?? []) {
           out.push({
             key: `l:${l.id}`,
+            subtitle: ((books.data as any[]) ?? []).find(b => b.id === l.textbook_id)?.title,
             item: { type: "lesson", id: l.id, title: l.title || "Lekce", lessonSource: "teacher_textbook_lessons", textbookId: l.textbook_id },
           });
         }
