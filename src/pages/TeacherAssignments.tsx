@@ -1,5 +1,6 @@
 import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
 import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
+import { safeWallReturn } from "@/lib/wall-composer";
 import { AssignmentStatusGroups, AssignmentStateIcon, AssignmentStateBadge } from "@/components/assignments/AssignmentStatusGroups";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -95,6 +96,7 @@ const TeacherAssignments = () => {
   const navigate = useNavigate();
   const { groups } = useSubjectGroups();
   const [searchParams, setSearchParams] = useSearchParams();
+  const wallReturn = searchParams.get("fromWall") === "1" ? safeWallReturn(searchParams.get("return_to")) : null;
 
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
@@ -120,7 +122,7 @@ const TeacherAssignments = () => {
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
   const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
-  const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(null);
+  const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(wallReturn ? false : null);
   const [commentsOpt, setCommentsOpt] = useState<boolean | null>(null);
   const [notifyOverdueOpt, setNotifyOverdueOpt] = useState<boolean | null>(null);
   const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
@@ -670,13 +672,13 @@ const TeacherAssignments = () => {
           };
         });
         // S výběrem žáků: vložit jako koncept → uložit příjemce → teprve pak zveřejnit.
-        const insertRows = nextRecipients.length
+        const insertRows = nextRecipients.length || wallReturn
           ? rows.map((r) => ({ ...r, status: "draft", scheduled_publish_at: null }))
           : rows;
         const { data: created, error } = await supabase.from("assignments" as any).insert(insertRows as any).select("id");
 
         if (error) throw error;
-        if (nextRecipients.length) {
+        if (nextRecipients.length || wallReturn) {
           for (let i = 0; i < ((created as any[]) ?? []).length; i++) {
             const row = (created as any[])[i];
             await syncRecipients(row.id, nextRecipients);
@@ -709,6 +711,7 @@ const TeacherAssignments = () => {
       setShowForm(false);
       resetForm();
       loadData();
+      if (wallReturn) navigate(wallReturn);
     } catch (e: any) {
       toast({ title: "Chyba", description: e.message, variant: "destructive" });
     } finally {
@@ -1846,7 +1849,7 @@ const TeacherAssignments = () => {
                 onSaveDraft={handleSaveDraft}
                 onSchedule={handleSchedule}
                 onPublish={handlePublishForm}
-                onCancel={() => { setShowForm(false); resetForm(); }}
+                onCancel={() => { setShowForm(false); resetForm(); if (wallReturn) navigate(wallReturn); }}
               />
             </CardContent>
           </Card>
