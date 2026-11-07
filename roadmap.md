@@ -166,8 +166,9 @@
 - [ ] Samostatné commity A/B a nasazení: git i publikování spravuje prostředí, agent gitové commity nespouští; nasazení provede Claude
 
 ## Myšlenkové mapy — schválená etapa 1
-- [ ] Sdílená mapa (strom, 60 uzlů, hloubka 4), blok učebnice, „Doplň mapu“ v pracovním listu, hodnocení, tisk, testy
+- [x] Sdílená mapa (strom, 60 uzlů, hloubka 4), blok učebnice, „Doplň mapu“ v pracovním listu, hodnocení, tisk, testy
+- [ ] Ověření v prohlížeči a na 390 px
 - [ ] Etapy 2–5 (vlastní mapa žáka, AI, aktivita, společná mapa) čekají na schválení
 
 ## Tahák – krátké poznámky
-- [ ] Pouze návrh (bez AI, karta 90 × 55 mm); dokončit po myšlenkových mapách, neimplementovat
+- [x] Pouze návrh (bez AI, karta 90 × 55 mm) uložen; čeká na „schvaluji“
