@@ -1,3 +1,4 @@
+import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { Pin as PinnedIcon } from "lucide-react";
 import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
@@ -272,6 +273,8 @@ export default function TeacherSubjectClass() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [assignmentGroupMembers, setAssignmentGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [recipientsMap, setRecipientsMap] = useState<Record<string, string[]>>({});
+  const targetsOf = (aid: string) => effectiveRecipients(members.map((m) => m.user_id), recipientsMap[aid]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -489,6 +492,8 @@ export default function TeacherSubjectClass() {
         const { data: groupRows } = await supabase.from("assignment_groups").select("id").in("assignment_id", _assignments.map((a) => a.id));
         const { data: groupMembers } = groupRows?.length ? await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", groupRows.map((g) => g.id)) : { data: [] };
         if (!cancelled) setAssignmentGroupMembers(groupMembers ?? []);
+        const rec = await fetchRecipientsMap(_assignments.map((a) => a.id));
+        if (!cancelled) setRecipientsMap(rec);
         if (!cancelled) setAttempts((aData as AttemptRow[]) ?? []);
       } else {
         setAttempts([]);
@@ -800,7 +805,7 @@ export default function TeacherSubjectClass() {
   const studentScores = useMemo(() => {
     const map = new Map<string, { total: number; max: number; submitted: number; total_assigned: number }>();
     for (const m of members) {
-      map.set(m.user_id, { total: 0, max: 0, submitted: 0, total_assigned: assignments.length });
+      map.set(m.user_id, { total: 0, max: 0, submitted: 0, total_assigned: assignments.filter((a) => !recipientsMap[a.id]?.length || recipientsMap[a.id].includes(m.user_id)).length });
     }
     for (const a of attempts) {
       if (a.status !== "submitted") continue;
@@ -811,7 +816,7 @@ export default function TeacherSubjectClass() {
       e.submitted += 1;
     }
     return map;
-  }, [members, attempts, assignments]);
+  }, [members, attempts, assignments, recipientsMap]);
 
   const classAvg = useMemo(() => {
     let total = 0;
@@ -1738,7 +1743,7 @@ export default function TeacherSubjectClass() {
           <TabsContent value="assignments" className="mt-4">
             <AssignmentKindTabs teacher items={assignments} storageKey={`assignment-section:teacher:${classId || groupId}`}
               onAdd={newAssignment} badgeLabel="ke kontrole"
-              badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers)).group === "review").length : 0}
+              badge={(k, list) => k === "task" ? list.filter((a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), targetsOf(a.id), assignmentGroupMembers)).group === "review").length : 0}
               empty={{ task: "Zatím tu nejsou žádné úkoly.", material: "Zatím tu nejsou žádné materiály.", announcement: "Zatím tu nejsou žádná oznámení." }}
               render={(kind, items) => kind !== "task" ? (
               <ul className="space-y-2" data-testid={`kind-list-${kind}`}>
@@ -1757,11 +1762,12 @@ export default function TeacherSubjectClass() {
               </ul>
             ) : (
               <AssignmentStatusGroups teacher items={items} storageKey={`assignment-groups:teacher:${kind}:${classId || groupId}`}
-                statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), members.map((m) => m.user_id), assignmentGroupMembers))}
+                statusOf={(a) => assignmentStatus(a, [], new Date(), assignmentClassProgress(attempts.filter((t) => t.assignment_id === a.id), targetsOf(a.id), assignmentGroupMembers))}
                 renderItem={(a, status) => {
                   const rows = attempts.filter((t) => t.assignment_id === a.id);
-                  const progress = assignmentClassProgress(rows, members.map((m) => m.user_id), assignmentGroupMembers);
+                  const progress = assignmentClassProgress(rows, targetsOf(a.id), assignmentGroupMembers);
                   return <AssignmentStatusCard status={status} title={a.title} actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}>Detail</Button>}>
+                    {(recipientsMap[a.id]?.length ?? 0) > 0 && <Badge variant="outline" className="text-xs w-fit">Jen vybraní žáci ({recipientsMap[a.id].length})</Badge>}
                     {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
                     <div className="assignment-card-meta flex flex-wrap gap-3 text-xs">
                       {a.deadline && <span>Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</span>}

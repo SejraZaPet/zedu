@@ -1,3 +1,4 @@
+import { fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -63,6 +64,12 @@ export default function ClassWall({ items, teacher, openPath, onShowAllAnnouncem
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
   useEffect(() => { load(); }, [load]);
+  const [recipients, setRecipients] = useState<Record<string, string[]>>({});
+  const pageKey = page.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (!teacher || !pageKey) return;
+    fetchRecipientsMap(pageKey.split(",")).then(setRecipients).catch(() => {});
+  }, [teacher, pageKey]);
   useEffect(() => {
     if (!uid) return;
     db.rpc("messenger_contacts").then(({ data }: { data: { id: string; name: string }[] | null }) => {
@@ -190,6 +197,7 @@ export default function ClassWall({ items, teacher, openPath, onShowAllAnnouncem
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground">{KIND_LABELS[kind]} · {fmt(post.created_at)}</p>
                       <p className="break-words font-medium">{post.title}</p>
+                      {teacher && (recipients[post.id]?.length ?? 0) > 0 && <p className="text-xs text-muted-foreground">Jen vybraní žáci ({recipients[post.id].length})</p>}
                       {post.description && <p className="line-clamp-3 break-words text-sm text-muted-foreground">{assignmentDescriptionToText(post.description)}</p>}
                     </div>
                   </div>

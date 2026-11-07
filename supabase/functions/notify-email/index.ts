@@ -1,3 +1,4 @@
+import { loadRecipients } from "../_shared/assignment-recipients.ts";
 // notify-email: e-mailová kopie in-app notifikace pro žáky a učitele.
 // Volá se asynchronně z DB triggeru na `notifications` (pg_net) s X-Internal-Secret.
 // Body: { notification_id }  |  admin JWT: { action: "domain_status" }
@@ -92,6 +93,8 @@ Deno.serve(async (req) => {
       .select("title, description, deadline, settings, teacher_id, class_id, group_id, subject_id").eq("id", aid).maybeSingle();
     if (a) {
       if (!shouldEmail((a as any).settings)) return json({ skipped: "kind_or_option" });
+      const chosen = await loadRecipients(db, aid);
+      if (chosen && !chosen.includes(String(n.recipient_id))) return json({ skipped: "not_recipient" });
       const [t, c, g, s] = await Promise.all([
         db.from("profiles").select("first_name, last_name").eq("id", (a as any).teacher_id).maybeSingle(),
         (a as any).class_id ? db.from("classes").select("name").eq("id", (a as any).class_id).maybeSingle() : Promise.resolve({ data: null }),

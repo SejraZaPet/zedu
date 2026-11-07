@@ -44,6 +44,8 @@ import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
+import AssignmentRecipientsPicker from "@/components/assignments/AssignmentRecipientsPicker";
+import { audienceAllowed, audienceError, effectiveRecipients, fetchRecipientsMap, syncRecipients, type AudienceMode } from "@/lib/assignment-recipients";
 import AssignmentListFilters, { readAssignmentFilter, saveAssignmentFilter } from "@/components/assignments/AssignmentListFilters";
 import {
   ALL_SCOPE, ALL_STATUS, courseSubjectOptions, filterAssignments, groupsFullyInClass, keepSubject, statusCounts,
@@ -175,6 +177,9 @@ const TeacherAssignments = () => {
   const [filterGroupMembers, setFilterGroupMembers] = useState<{ group_id: string; student_id: string }[]>([]);
   /** Odevzdanost pro publikované úlohy: id úlohy → {odevzdáno, celkem}. */
   const [progress, setProgress] = useState<Record<string, ClassProgress>>({});
+  const [recipientsMap, setRecipientsMap] = useState<Record<string, string[]>>({});
+  const [audienceMode, setAudienceMode] = useState<AudienceMode>("all");
+  const [recipientIds, setRecipientIds] = useState<string[]>([]);
   /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
   const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
   /** Úloha, pro kterou se mají zobrazit výsledky. */
@@ -444,6 +449,8 @@ const TeacherAssignments = () => {
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
+    const recMap = await fetchRecipientsMap(ids);
+    setRecipientsMap(recMap);
     const { data: sharedGroups } = await supabase.from("assignment_groups").select("id").in("assignment_id", ids);
     const { data: sharedMembers } = sharedGroups?.length ? await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", sharedGroups.map((g) => g.id)) : { data: [] };
     const next: Record<string, ClassProgress> = {};
@@ -453,7 +460,8 @@ const TeacherAssignments = () => {
         ? ((groupMembersRes.data ?? []) as any[]).filter((m) => m.group_id === a.group_id).map((m) => m.student_id)
         : a.class_id ? ((membersRes.data ?? []) as any[]).filter((m) => m.class_id === a.class_id).map((m) => m.user_id)
         : rows.map((t) => t.student_id);
-      next[a.id] = assignmentClassProgress(rows, memberIds, sharedMembers ?? []);
+      const targetIds = effectiveRecipients(memberIds, recMap[a.id]);
+      next[a.id] = assignmentClassProgress(rows, targetIds, sharedMembers ?? []);
     });
     setProgress(next);
   };
@@ -476,6 +484,15 @@ const TeacherAssignments = () => {
       });
       return;
     }
+    const useSelected = audienceAllowed(formKind) && audienceMode === "selected";
+    const audErr = useSelected && mode !== "draft"
+      ? audienceError("selected", recipientIds.length, audienceTarget.count)
+      : useSelected && audienceTarget.count !== 1 ? audienceError("selected", 1, audienceTarget.count) : null;
+    if (audErr) {
+      toast({ title: "Pro koho", description: audErr, variant: "destructive" });
+      return;
+    }
+    const nextRecipients = useSelected ? recipientIds : [];
 
     setCreating(true);
     try {
@@ -588,11 +605,24 @@ const TeacherAssignments = () => {
           patch.scheduled_publish_at = null;
           patch.status = outcome.status;
         }
-        const { error } = await supabase
-          .from("assignments" as any)
-          .update(patch as any)
-          .eq("id", editingId);
-        if (error) throw error;
+        // Pořadí: nejdřív příjemci, až pak případné zveřejnění (upozornění dostanou jen vybraní).
+        const finalStatus = patch.status as string | undefined;
+        if (finalStatus === "published" && original?.status !== "published") {
+          const { error: e1 } = await supabase.from("assignments" as any)
+            .update({ ...patch, status: "draft" } as any).eq("id", editingId);
+          if (e1) throw e1;
+          await syncRecipients(editingId, nextRecipients);
+          const { error: e2 } = await supabase.from("assignments" as any)
+            .update({ status: "published" } as any).eq("id", editingId);
+          if (e2) throw e2;
+        } else {
+          await syncRecipients(editingId, nextRecipients);
+          const { error } = await supabase
+            .from("assignments" as any)
+            .update(patch as any)
+            .eq("id", editingId);
+          if (error) throw error;
+        }
         // Už publikovaná úloha se jen upravuje – status se nemění, toast není "publikováno".
         toast({ title: outcome.toastTitle });
       } else {
@@ -639,9 +669,25 @@ const TeacherAssignments = () => {
             group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
           };
         });
-        const { data: created, error } = await supabase.from("assignments" as any).insert(rows as any).select("id");
+        // S výběrem žáků: vložit jako koncept → uložit příjemce → teprve pak zveřejnit.
+        const insertRows = nextRecipients.length
+          ? rows.map((r) => ({ ...r, status: "draft", scheduled_publish_at: null }))
+          : rows;
+        const { data: created, error } = await supabase.from("assignments" as any).insert(insertRows as any).select("id");
 
         if (error) throw error;
+        if (nextRecipients.length) {
+          for (let i = 0; i < ((created as any[]) ?? []).length; i++) {
+            const row = (created as any[])[i];
+            await syncRecipients(row.id, nextRecipients);
+            if (rows[i].status !== "draft") {
+              const { error: pe } = await supabase.from("assignments" as any)
+                .update({ status: rows[i].status, scheduled_publish_at: rows[i].scheduled_publish_at } as any)
+                .eq("id", row.id);
+              if (pe) throw pe;
+            }
+          }
+        }
         toast({
           title: rows.length > 1
             ? `Vytvořeno úloh: ${rows.length}`
@@ -669,6 +715,16 @@ const TeacherAssignments = () => {
       setCreating(false);
     }
   };
+
+  const audienceTarget = (() => {
+    if (editingId) {
+      const n = selectedGroupId || selectedClassId ? 1 : 0;
+      return { classId: selectedGroupId ? null : selectedClassId || null, groupId: selectedGroupId || null, count: n };
+    }
+    if (newTargets.length !== 1) return { classId: null, groupId: null, count: newTargets.length };
+    const [k, id] = newTargets[0].key.split(":");
+    return { classId: k === "class" ? id : null, groupId: k === "group" ? id : null, count: 1 };
+  })();
 
   const handleSaveDraft = () => submitAssignment("draft");
   const handleSchedule = () => submitAssignment("scheduled");
@@ -721,12 +777,18 @@ const TeacherAssignments = () => {
     setShowManual(false);
     setCopySourceId("");
     setFormSubjectId(null);
+    setAudienceMode("all"); setRecipientIds([]);
     setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil(""); setNotifyEmailOpt(null); setNotifyOverdueOpt(null); setCommentsOpt(null);
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
   const startEdit = (a: Assignment) => {
     setEditingId(a.id);
+    {
+      const rec = recipientsMap[a.id] ?? [];
+      setRecipientIds(rec);
+      setAudienceMode(rec.length ? "selected" : "all");
+    }
     setFormSubjectId(a.subject_id ?? null);
     setTitle(a.title ?? "");
     setDescription(a.description ?? "");
@@ -1356,6 +1418,19 @@ const TeacherAssignments = () => {
                 </div>
                 )}
 
+                {audienceAllowed(formKind) && (
+                  <div className="col-span-2 min-w-0">
+                    <AssignmentRecipientsPicker
+                      classId={audienceTarget.classId}
+                      groupId={audienceTarget.groupId}
+                      mode={audienceMode}
+                      onModeChange={setAudienceMode}
+                      selected={recipientIds}
+                      onSelectedChange={setRecipientIds}
+                      disabledReason={audienceTarget.count === 1 ? null : "Vybrané žáky lze určit, jen když je zvolená jedna třída nebo skupina."}
+                    />
+                  </div>
+                )}
 
                 {/* Exam type */}
                 <div>
@@ -1832,6 +1907,9 @@ const TeacherAssignments = () => {
                                     <h3 className="font-semibold break-words">{a.title}</h3>
                                     <AssignmentStateBadge status={visualStatus} />
                                     <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {(recipientsMap[a.id]?.length ?? 0) > 0 && (
+                                      <Badge variant="outline" className="text-xs">Jen vybraní žáci ({recipientsMap[a.id].length})</Badge>
+                                    )}
                                     {isPlanWithoutContent(a) && (
                                       <Badge variant="outline" className="text-xs" title="Naplánováno z přehledu Dnes. Obsah připojíte přes Upravit → Uložit změny.">
                                         Plán · bez obsahu

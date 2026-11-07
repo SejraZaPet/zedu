@@ -681,6 +681,35 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_recipients: {
+        Row: {
+          added_at: string
+          added_by: string
+          assignment_id: string
+          student_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string
+          assignment_id: string
+          student_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          assignment_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_recipients_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           activity_data: Json
@@ -8837,6 +8866,7 @@ export type Database = {
         Args: { _assignment_id: string }
         Returns: boolean
       }
+      assignment_is_targeted: { Args: { _aid: string }; Returns: boolean }
       calculate_all_subscription_shares: {
         Args: { _period_month: string }
         Returns: number
@@ -8900,6 +8930,10 @@ export type Database = {
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
       can_resolve_message_report: {
         Args: { _report: string; _user: string }
+        Returns: boolean
+      }
+      can_see_targeted_assignment: {
+        Args: { _aid: string; _uid: string }
         Returns: boolean
       }
       can_student_view_lesson_plan: {
