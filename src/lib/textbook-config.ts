@@ -29,6 +29,7 @@ export type BlockType =
   | "summary"
   | "activity"
   | "hierarchy"
+  | "mind_map"
   | "shape"
   | "chart"
   | "formula"
@@ -120,6 +121,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "summary", label: "Shrnutí lekce", icon: "📋" },
   { type: "activity", label: "Aktivita", icon: "🎯" },
   { type: "hierarchy", label: "Hierarchie/Pyramida", icon: "🔺" },
+  { type: "mind_map", label: "Myšlenková mapa", icon: "🕸" },
   { type: "shape", label: "Tvar", icon: "◼" },
   { type: "chart", label: "Graf", icon: "📊" },
   { type: "formula", label: "Vzorec", icon: "∑" },
@@ -216,6 +218,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
       };
     case "slide_group":
       return { ...base, props: { layout: 2, children: [] } };
+    case "mind_map":
+      return { ...base, props: { title: "", map: createDefaultMindMap() } };
     default:
       return { ...base, props: {} };
   }

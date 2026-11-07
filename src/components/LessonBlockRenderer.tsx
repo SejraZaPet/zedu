@@ -694,6 +694,12 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
         </div>
       );
     }
+    case "mind_map":
+      return (
+        <div className="my-4 min-w-0 max-w-full">
+          <MindMapView data={normalizeMindMap(p.map)} title={p.title || undefined} />
+        </div>
+      );
     case "hierarchy": {
       const shape: "pyramid" | "layers" | "steps" = p.shape || "pyramid";
       const direction: "top-to-bottom" | "bottom-to-top" = p.direction || "top-to-bottom";
