@@ -35,6 +35,15 @@ const ViewAsBanner = () => {
   const visible = realRole === "admin" && !!viewAsRole && viewAsRole !== "admin";
   const compactMode = isPresentationRoute(pathname) || fullscreen;
   const chromeVisible = useIdleChrome(visible && compactMode);
+  const pillShown = visible && !compactMode;
+  const stackedSession = pillShown && isPreviewStudentSession();
+  useEffect(() => {
+    if (!pillShown) return;
+    const b = document.body.classList;
+    b.add("has-view-as-pill");
+    if (stackedSession) b.add("has-view-as-pill--stacked");
+    return () => b.remove("has-view-as-pill", "has-view-as-pill--stacked");
+  }, [pillShown, stackedSession]);
   if (!visible) return null;
 
   const label = LABELS[viewAsRole] ?? viewAsRole;
@@ -64,7 +73,7 @@ const ViewAsBanner = () => {
     <div
       data-testid="view-as-pill"
       title={fullLabel}
-      className={`view-as-pill ${stacked ? "view-as-pill--stacked" : ""} fixed right-3 z-50 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-card/95 py-0.5 pl-3 pr-1 text-xs shadow-lg backdrop-blur sm:text-sm`}
+      className={`view-as-pill ${stacked ? "view-as-pill--stacked" : ""} fixed z-50 flex max-w-[calc(100vw-1.5rem)] items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-card/95 py-0.5 pl-3 pr-1 text-xs shadow-lg backdrop-blur sm:text-sm`}
     >
       <Eye className="h-4 w-4 shrink-0 text-primary" aria-hidden />
       <span className="hidden sm:inline">Prohlížíš jako <strong>{label}</strong></span>
