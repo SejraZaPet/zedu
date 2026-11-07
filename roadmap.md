@@ -153,10 +153,12 @@
 - [x] Dole uprostřed, rezerva pod obsahem, desktop beze změny
 
 ## Vyhledávání ve výběrech
-- [ ] Čeká na „schvaluji“ a rozhodnutí o etapách
+- [ ] A: Schválené etapy 1–2, společné hledání a výběry; etapy 3–5 se neprovádějí
+- [ ] A: Testy a ověření na 390 px; dokončit před částí B
 
 ## Záložka „Práce“
 - [x] Přejmenování hlavní záložky Úkoly → Práce
 
 ## Zeď jako stream
-- [ ] Čeká na „schvaluji“ a rozhodnutí
+- [ ] B: Pouze učitelský příspěvek jako oznámení, výchozí bez e-mailu; kontextové Přidat a návrat
+- [ ] B: Testy a ověření na 390 px bez skutečných zápisů a bez nasazení
