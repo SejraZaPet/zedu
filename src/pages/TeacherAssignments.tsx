@@ -166,6 +166,8 @@ const TeacherAssignments = () => {
     "textbook_lessons" | "teacher_textbook_lessons" | null
   >(null);
   const [lessonOptionsLoading, setLessonOptionsLoading] = useState(false);
+  /** Materiál: libovolný počet lekcí v pořadí (settings.lessons). */
+  const [materialLessons, setMaterialLessons] = useState<PlanLesson[]>([]);
 
   /** Portfoliový úkol a lockdown se vylučují — zapnutí portfolia lockdown vypne. */
   const togglePortfolioTask = (next: boolean) => {
@@ -320,6 +322,24 @@ const TeacherAssignments = () => {
       }
     })();
   }, [linkedLessonId, linkedLessonSource, selectedLessonTextbookId]);
+
+  // Starší záznamy mají u lekce jen ID – dohledáme názvy pro seznam materiálu.
+  useEffect(() => {
+    const missing = materialLessons.filter((l) => l.title === "Lekce");
+    if (!missing.length) return;
+    let cancelled = false;
+    (async () => {
+      const names = new Map<string, string>();
+      for (const table of ["teacher_textbook_lessons", "textbook_lessons"] as const) {
+        const ids = missing.filter((l) => l.source === table).map((l) => l.id);
+        if (!ids.length) continue;
+        const { data } = await supabase.from(table as any).select("id, title").in("id", ids);
+        for (const r of ((data as any[]) ?? [])) if (r?.title) names.set(r.id, r.title);
+      }
+      if (!cancelled && names.size) setMaterialLessons((list) => list.map((l) => (names.has(l.id) ? { ...l, title: names.get(l.id)! } : l)));
+    })();
+    return () => { cancelled = true; };
+  }, [materialLessons]);
 
 
   // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
