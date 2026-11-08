@@ -18,7 +18,7 @@ import { assignmentKind, isPinned, KIND_LABELS, type AssignmentKind } from "@/li
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import {
   buildWallFeed, wallAnnouncements, commentsEnabled, canEditComment, canDeleteComment, threadFor,
-  commentErrorMessage, WALL_PAGE, COMMENT_MAX, type WallComment,
+  commentErrorMessage, WALL_PAGE, WALL_PREVIEW, wallVisible, COMMENT_MAX, type WallComment,
 } from "@/lib/class-wall";
 
 export interface WallPost {
@@ -47,7 +47,8 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
   const feed = useMemo(() => buildWallFeed(withLocal), [withLocal]);
   const announcements = useMemo(() => wallAnnouncements(withLocal, 3), [withLocal]);
   const [limit, setLimit] = useState(WALL_PAGE);
-  const page = feed.slice(0, limit);
+  const [wallOpen, setWallOpen] = useState(false);
+  const { shown: page, canExpand, hasMore } = useMemo(() => wallVisible(feed, wallOpen, limit), [feed, wallOpen, limit]);
   const [comments, setComments] = useState<WallComment[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -268,8 +269,14 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
           })}
         </ul>
       )}
-      {feed.length > limit && (
+      {canExpand && (
+        <Button variant="outline" className="min-h-11 w-full" onClick={() => { setLimit(WALL_PAGE); setWallOpen(true); }}>Otevřít vše ({feed.length})</Button>
+      )}
+      {hasMore && (
         <Button variant="outline" className="min-h-11 w-full" onClick={() => setLimit((l) => l + WALL_PAGE)}>Zobrazit další</Button>
+      )}
+      {wallOpen && feed.length > WALL_PREVIEW && (
+        <Button variant="ghost" className="min-h-11 w-full" onClick={() => setWallOpen(false)}>Sbalit</Button>
       )}
 
       <Dialog open={!!ask} onOpenChange={(o) => !o && setAsk(null)}>
