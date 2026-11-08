@@ -17,7 +17,7 @@ export async function loadCheatsheets(ownerId: string): Promise<Cheatsheet[]> {
 export async function saveCheatsheet(ownerId: string, data: CheatsheetData, existing?: Cheatsheet): Promise<Cheatsheet> {
   if (!validCheatsheet(data)) throw new Error("Zkrať každou stranu na nejvýš 8 řádků a 220 znaků.");
   await currentOwner(ownerId);
-  const content = { kind: "cheatsheet", cheatsheet: { ...data, front: data.front.replace(/\r\n?/g, "\n"), back: data.back.replace(/\r\n?/g, "\n") } };
+  const content = { kind: "cheatsheet", cheatsheet: { version: 1, title: data.title, subject: data.subject, fontPt: data.fontPt, front: data.front.replace(/\r\n?/g, "\n"), back: data.back.replace(/\r\n?/g, "\n") } };
   if (existing) {
     const { data: parent, error: parentError } = await supabase.from("notebooks").select("id").eq("id", existing.notebookId).eq("owner_id", ownerId).eq("cover_color", CHEATSHEET_STORAGE_MARKER).single();
     if (parentError || !parent) throw new Error("Tahák není dostupný. Obnov seznam.");

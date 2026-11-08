@@ -1,4 +1,4 @@
-.cheatsheet-card { aspect-ratio: 90 / 55; width: 100%; padding: 3.33%; overflow: hidden; }
+.cheatsheet-card { aspect-ratio: 90 / 55; width: 100%; max-width: 340px; padding: 11px; overflow: hidden; }
 .cheatsheet-card header { height: 14%; overflow: hidden; }
 .cheatsheet-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.15; max-height: 86%; overflow: hidden; }
 .cheatsheet-font-7 { font-size: 12px; }
