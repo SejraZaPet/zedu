@@ -325,6 +325,12 @@ const TeacherAssignments = () => {
     })();
   }, [linkedLessonId, linkedLessonSource, selectedLessonTextbookId]);
 
+  // Přepnutí na materiál: dosud vybraná jedna lekce se stane první v seznamu.
+  useEffect(() => {
+    if (formKind !== "material" || !linkedLessonId) return;
+    setMaterialLessons((x) => (x.length ? x : [{ id: linkedLessonId, source: linkedLessonSource === "textbook_lessons" ? "textbook_lessons" : "teacher_textbook_lessons", title: "Lekce" }]));
+  }, [formKind, linkedLessonId, linkedLessonSource]);
+
   // Starší záznamy mají u lekce jen ID – dohledáme názvy pro seznam materiálu.
   useEffect(() => {
     const missing = materialLessons.filter((l) => l.title === "Lekce");
@@ -802,6 +808,7 @@ const TeacherAssignments = () => {
     setSelectedLessonTextbookId("");
     setLinkedLessonId("");
     setLinkedLessonSource(null);
+    setMaterialLessons([]);
     setLockdownMode(false);
     setIsPortfolioTask(false);
     setExamType("ukol");
