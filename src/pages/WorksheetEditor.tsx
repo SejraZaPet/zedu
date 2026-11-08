@@ -3409,6 +3409,12 @@ export default function WorksheetEditor() {
         onInsert={insertFromBank}
       />
 
+      <MethodStepsPickerDialog
+        open={methodStepsPickerOpen}
+        onOpenChange={setMethodStepsPickerOpen}
+        onInsert={(pick) => insertMethodSteps(pick, methodStepsInsertAt ?? items.length)}
+      />
+
 
 
       {returnTo && id && !returnBannerDismissed && (
