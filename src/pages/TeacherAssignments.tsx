@@ -123,6 +123,8 @@ const TeacherAssignments = () => {
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
   const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
+  /** ID položek, které už mají aspoň jeden pokus žáka (druh pak nelze měnit). */
+  const [attemptedIds, setAttemptedIds] = useState<Set<string>>(() => new Set());
   const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(wallReturn ? false : null);
   const [commentsOpt, setCommentsOpt] = useState<boolean | null>(null);
   const [cheatsheetOpt, setCheatsheetOpt] = useState(false);
@@ -468,12 +470,15 @@ const TeacherAssignments = () => {
       next[a.id] = assignmentClassProgress(rows, targetIds, sharedMembers ?? []);
     });
     setProgress(next);
+    setAttemptedIds(new Set(((attemptsRes.data ?? []) as any[]).map((t) => t.assignment_id as string)));
   };
 
   /**
    * Společné jádro pro všechny tři akce uložení úlohy.
    * `mode` určuje výsledný stav: "draft" | "scheduled" | "published".
    */
+  const kindLocked = !!editingId && !canChangeKind(attemptedIds.has(editingId));
+  const hiddenTaskData = !!deadline || maxAttempts !== 1 || randomizeOrder || randomizeChoices || isPortfolioTask || lockdownMode || examType !== "ukol" || groupMode !== "individual" || cheatsheetOpt;
   const submitAssignment = async (mode: "draft" | "scheduled" | "published") => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
