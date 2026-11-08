@@ -72,7 +72,7 @@ export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Pr
         onChange={(ev) => setDraft(ev.target.value)}
         placeholder="Např. Opakování zlomků"
         aria-label="Téma hodiny"
-        className="h-11 text-sm"
+        className="h-11 text-sm text-foreground caret-foreground placeholder:text-muted-foreground"
         onKeyDown={(ev) => {
           if (ev.key === "Enter") { ev.preventDefault(); void save(draft.trim() || null); }
           if (ev.key === "Escape") { ev.preventDefault(); close(); }
@@ -87,7 +87,7 @@ export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Pr
             placeholder="Popis hodiny (nepovinné) – co budeme dělat, co si přinést…"
             aria-label="Popis hodiny"
             rows={3}
-            className="text-sm"
+            className="text-sm text-foreground caret-foreground placeholder:text-muted-foreground"
           />
           <p className="text-right text-[11px] text-muted-foreground" aria-live="polite">{noteDraft.length} / {LESSON_NOTE_MAX}</p>
         </div>
