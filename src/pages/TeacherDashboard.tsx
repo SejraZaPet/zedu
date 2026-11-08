@@ -1,35 +1,21 @@
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
 import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  User,
-  GraduationCap,
-  Sparkles,
-  School,
-  BarChart3,
-  ListTodo,
-  CalendarDays,
-  FileText,
-  Bell,
-  BookOpen,
-  Library,
-  GripVertical,
-  Wand2,
-  Award,
-  BookMarked,
-  ClipboardList,
-  Monitor,
+  User, GraduationCap, School, BarChart3, CalendarDays, FileText, Bell,
+  Library, GripVertical, Timer, SquareCheckBig, Gamepad2, WandSparkles,
+  Book, List, Landmark, ClipboardCheck, type LucideIcon,
 } from "lucide-react";
+import TeacherDashboardTile from "@/components/dashboard/TeacherDashboardTile";
+import { EMPTY_DASHBOARD_COUNTS, loadTeacherDashboardCounts } from "@/lib/teacher-dashboard-counts";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
-import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import {
   DndContext,
   closestCenter,
@@ -98,17 +84,19 @@ const SortableWrapper = ({ id, fullWidth, children }: SortableWrapperProps) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={cn("relative group", fullWidth && "md:col-span-2")}
+      className={cn("relative group", fullWidth && "col-span-full")}
     >
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         type="button"
         {...attributes}
         {...listeners}
         aria-label="Přesunout widget"
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
+        className="absolute top-1 left-1 z-10 min-h-11 min-w-11 text-foreground bg-background/90 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
       >
         <GripVertical className="w-4 h-4" />
-      </button>
+      </Button>
       {children}
     </div>
   );
@@ -116,11 +104,10 @@ const SortableWrapper = ({ id, fullWidth, children }: SortableWrapperProps) => {
 
 interface CardConfig {
   id: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   title: string;
   description: string;
-  button: string;
-  onClick: () => void;
+  to: string;
 }
 
 const TeacherDashboard = () => {
@@ -128,8 +115,7 @@ const TeacherDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { subjects } = useTeacherSubjects();
-  const { classes } = useTeacherClasses();
+  const [counts, setCounts] = useState(EMPTY_DASHBOARD_COUNTS);
   const [order, setOrder] = useState<string[]>(DEFAULT_ORDER);
 
   useEffect(() => {
@@ -172,10 +158,24 @@ const TeacherDashboard = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const subjectClassCounts = useMemo(() => {
-    // No direct mapping subject->class; show total classes as fallback per subject
-    return classes.length;
-  }, [classes]);
+  useEffect(() => {
+    setCounts(EMPTY_DASHBOARD_COUNTS);
+    if (!user || authLoading) return;
+    let cancelled = false;
+    const refresh = () => {
+      void loadTeacherDashboardCounts(user.id).then((next) => {
+        if (!cancelled) setCounts(next);
+      });
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [user?.id, authLoading]);
 
   if (loading || authLoading) {
     return (
@@ -188,117 +188,107 @@ const TeacherDashboard = () => {
   const isLektor = role === "lektor";
 
   const cards: Record<string, CardConfig> = {
+    subjects: {
+      id: "subjects", icon: Library, title: "Moje předměty",
+      description: "Přehled vyučovaných předmětů.", to: "/ucitel/predmety",
+    },
     "classroom-tools": {
       id: "classroom-tools",
-      icon: Monitor,
+      icon: Timer,
       title: "Nástroje do hodiny",
       description: "Odpočet, stopky, losování, skupiny, megatext a měřič hlasitosti.",
-      button: "Otevřít nástroje",
-      onClick: () => navigate("/ucitel/nastroje"),
+      to: "/ucitel/nastroje",
     },
     textbooks: {
       id: "textbooks",
-      icon: GraduationCap,
+      icon: Book,
       title: "Moje učebnice",
       description: "Spravujte a upravujte své digitální učebnice.",
-      button: "Otevřít učebnice",
-      onClick: () => navigate("/ucitel/ucebnice"),
+      to: "/ucitel/ucebnice",
     },
     activities: {
       id: "activities",
-      icon: Sparkles,
+      icon: Gamepad2,
       title: "Moje aktivity",
       description: "Vytvářejte kvízy a interaktivní úkoly pro studenty.",
-      button: "Otevřít aktivity",
-      onClick: () => navigate("/aktivity"),
+      to: "/aktivity",
     },
     assignments: {
       id: "assignments",
-      icon: ClipboardList,
+      icon: SquareCheckBig,
       title: "Úlohy pro žáky",
       description: "Zadávejte a spravujte úkoly, testy a pracovní listy pro žáky.",
-      button: "Otevřít úlohy",
-      onClick: () => navigate("/ucitel/ulohy"),
+      to: "/ucitel/ulohy",
     },
     classes: {
       id: "classes",
       icon: School,
       title: "Moje třídy",
       description: "Spravujte třídy a sledujte pokrok studentů.",
-      button: "Spravovat třídy",
-      onClick: () => navigate("/ucitel/tridy"),
+      to: "/ucitel/tridy",
     },
     results: {
       id: "results",
       icon: BarChart3,
       title: "Výsledky studentů",
       description: "Sledujte úspěšnost a dokončené aktivity.",
-      button: "Zobrazit výsledky",
-      onClick: () => navigate("/ucitel/vysledky"),
+      to: "/ucitel/vysledky",
     },
     calendar: {
       id: "calendar",
       icon: CalendarDays,
       title: "Můj kalendář",
       description: "Rozvrh tříd a termíny zadaných úkolů.",
-      button: "Otevřít kalendář",
-      onClick: () => navigate("/ucitel/kalendar"),
+      to: "/ucitel/kalendar",
     },
     worksheets: {
       id: "worksheets",
       icon: FileText,
       title: "Pracovní listy",
       description: "Tvořte a spravujte pracovní listy pro výuku i domácí úkoly.",
-      button: "Otevřít",
-      onClick: () => navigate("/ucitel/pracovni-listy"),
+      to: "/ucitel/pracovni-listy",
     },
     "lesson-plans": {
       id: "lesson-plans",
-      icon: BookOpen,
+      icon: List,
       title: "Plány hodin",
       description: "Organizujte lekce do tematických plánů hodin.",
-      button: "Otevřít plány",
-      onClick: () => navigate("/ucitel/plany-hodin"),
+      to: "/ucitel/plany-hodin",
     },
     "suggest-method": {
       id: "suggest-method",
-      icon: Wand2,
+      icon: WandSparkles,
       title: "Návrh podle metody",
       description: "AI navrhne strukturu lekce podle zvolené výukové metody (Bloom, Flipped, projektová výuka…).",
-      button: "Otevřít nástroj",
-      onClick: () => navigate("/ucitel/navrh-podle-metody"),
+      to: "/ucitel/navrh-podle-metody",
     },
     svp: {
       id: "svp",
-      icon: BookMarked,
+      icon: Landmark,
       title: "ŠVP k předmětům",
       description: "Uložte si školní vzdělávací plán ke každému předmětu – text nebo soubor.",
-      button: "Otevřít ŠVP",
-      onClick: () => navigate("/ucitel/svp"),
+      to: "/ucitel/svp",
     },
     academy: {
       id: "academy",
-      icon: Award,
+      icon: GraduationCap,
       title: "Bezli Akademie",
       description: "Kurzy a webináře pro učitele – rozvíjejte se s Bezli.",
-      button: "Otevřít akademii",
-      onClick: () => navigate("/ucitel/akademie"),
+      to: "/ucitel/akademie",
     },
     todos: {
       id: "todos",
-      icon: ListTodo,
+      icon: ClipboardCheck,
       title: "Moje úkoly",
       description: "Osobní seznam úkolů, příprav a termínů.",
-      button: "Otevřít úkoly",
-      onClick: () => navigate("/todo"),
+      to: "/todo",
     },
     notifications: {
       id: "notifications",
       icon: Bell,
       title: "Moje notifikace",
       description: "Pošlete zprávu nebo připomenutí třídě či konkrétním žákům.",
-      button: "Otevřít notifikace",
-      onClick: () => navigate("/ucitel/notifikace"),
+      to: "/ucitel/notifikace",
     },
   };
 
@@ -307,25 +297,6 @@ const TeacherDashboard = () => {
       return (
         <div className="bg-card border border-border rounded-xl p-1">
           <TodayWidget role="teacher" />
-        </div>
-      );
-    }
-
-    if (id === "subjects") {
-      return (
-        <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
-              <Library className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="font-heading text-lg font-semibold">Moje předměty</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4 flex-1">
-            Přehled vyučovaných předmětů.
-          </p>
-          <Button onClick={() => navigate("/ucitel/predmety")} variant="outline" className="w-full">
-            Otevřít předměty
-          </Button>
         </div>
       );
     }
@@ -367,18 +338,9 @@ const TeacherDashboard = () => {
     const card = cards[id];
     if (!card) return null;
     return (
-      <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
-            <card.icon className="w-5 h-5 text-white" />
-          </div>
-          <h2 className="font-heading text-lg font-semibold">{card.title}</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4 flex-1">{card.description}</p>
-        <Button onClick={card.onClick} variant="outline" className="w-full">
-          {card.button}
-        </Button>
-      </div>
+      <TeacherDashboardTile icon={card.icon} title={card.title}
+        description={card.description} to={card.to}
+        count={id === "assignments" ? counts.assignments : id === "todos" ? counts.todos : id === "notifications" ? counts.notifications : null} />
     );
   };
 
@@ -426,8 +388,8 @@ const TeacherDashboard = () => {
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={order} strategy={rectSortingStrategy}>
-            <div className="grid gap-6 md:grid-cols-2">
-              {order.map((id) => (
+            <div className="teacher-dashboard-grid">
+              {[...order.filter(id => id !== "profile"), "profile"].map((id) => (
                 <SortableWrapper key={id} id={id} fullWidth={FULL_WIDTH_IDS.has(id)}>
                   {renderWidget(id)}
                 </SortableWrapper>
