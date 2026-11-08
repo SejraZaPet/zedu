@@ -719,7 +719,7 @@ const StudentAssignmentPlayer = () => {
         )}
 
         {/* Propojená lekce z učebnice */}
-        {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} qrPath={`/student/ukol/${assignment.id}`} />}
+        {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} qrPath={`/student/ulohy/${assignment.id}`} />}
         {assignmentKind(assignment.settings) === "material" && planLessons(assignment).length > 1 ? (
           <MaterialLessonsCard lessons={planLessons(assignment)} />
         ) : linkedLesson && (
@@ -978,10 +978,10 @@ const StudentAssignmentPlayer = () => {
           </Card>
         ) : worksheetSpec ? (
           <>
-          {assignment.worksheet_id && (!isReadOnly || !(lockdownEnabled && attempt?.status === "in_progress")) && (
+          {assignment.worksheet_id && (
             <div className="mb-3 flex flex-wrap justify-end gap-2">
               {!(lockdownEnabled && attempt?.status !== "submitted") && (
-                <StudentWorksheetPrintButtons worksheetId={assignment.worksheet_id} spec={worksheetSpec} qrPath={`/student/ukol/${assignment.id}`} title={worksheetSpec.header?.title} />
+                <StudentWorksheetPrintButtons worksheetId={assignment.worksheet_id} spec={worksheetSpec} qrPath={`/student/ulohy/${assignment.id}`} title={worksheetSpec.header?.title} />
               )}
               {!isReadOnly && <InsertWorksheetButton worksheetId={assignment.worksheet_id} assignmentId={assignment.id} />}
             </div>
