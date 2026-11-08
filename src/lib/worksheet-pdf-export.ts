@@ -31,6 +31,8 @@ export interface PdfExportOptions {
   baseUrl?: string;
   /** Napsané odpovědi žáka (jen žákovská verze) — vytisknou se na linkách. */
   answers?: Record<string, unknown> | null;
+  /** Cesta (bez originu) pro QR odkaz — např. úkol místo samostatného listu. */
+  qrPath?: string;
 }
 
 /**
@@ -45,7 +47,7 @@ async function buildPrintHtml(
   const baseUrl =
     options.baseUrl ??
     (typeof window !== "undefined" ? window.location.origin : "https://bezli.cz");
-  const studentUrl = `${baseUrl}/student/pracovni-list/${options.worksheetId}`;
+  const studentUrl = `${baseUrl}${options.qrPath ?? `/student/pracovni-list/${options.worksheetId}`}`;
 
   const specWithConfig: WorksheetSpec = {
     ...spec,
@@ -276,9 +278,11 @@ export async function printStudentWorksheet(
   spec: WorksheetSpec,
   worksheetId: string,
   answers?: Record<string, unknown> | null,
+  qrPath?: string,
 ): Promise<void> {
   return downloadWorksheetPdf(toStudentPrintSpec(spec), {
     worksheetId,
+    qrPath,
     answers: answers ?? null,
     includeAnswerKey: false,
     includeNameField: true,

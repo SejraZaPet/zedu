@@ -14,10 +14,14 @@ interface Props {
   compact?: boolean;
   /** Klíč autosave v localStorage — napsaný text z linek se vytiskne. */
   answersStorageKey?: string;
+  /** QR odkaz v PDF (např. na úkol). */
+  qrPath?: string;
+  /** Název listu pro přístupné popisky. */
+  title?: string;
 }
 
 /** „Stáhnout PDF" a „Vytisknout" — vždy žákovská verze bez klíče a poznámek. */
-export default function StudentWorksheetPrintButtons({ worksheetId, spec, size = "sm", compact, answersStorageKey }: Props) {
+export default function StudentWorksheetPrintButtons({ worksheetId, spec, size = "sm", compact, answersStorageKey, qrPath, title }: Props) {
   const [busy, setBusy] = useState<"pdf" | "print" | null>(null);
 
   const run = async (kind: "pdf" | "print") => {
@@ -38,7 +42,7 @@ export default function StudentWorksheetPrintButtons({ worksheetId, spec, size =
       if (answersStorageKey) {
         try { answers = JSON.parse(localStorage.getItem(answersStorageKey) ?? "null")?.answers ?? null; } catch { answers = null; }
       }
-      await printStudentWorksheet(s, worksheetId, answers);
+      await printStudentWorksheet(s, worksheetId, answers, qrPath);
     } catch (e: any) {
       toast.error(e?.message || "Tisk se nepodařilo připravit.");
     } finally {
@@ -48,11 +52,11 @@ export default function StudentWorksheetPrintButtons({ worksheetId, spec, size =
 
   return (
     <>
-      <Button size={size} variant="ghost" onClick={() => run("pdf")} disabled={!!busy} title="Stáhnout PDF">
+      <Button size={size} variant="ghost" onClick={() => run("pdf")} disabled={!!busy} title="Stáhnout PDF" className="min-h-11" aria-label={title ? `Stáhnout PDF k tisku: ${title}` : undefined}>
         {busy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
         {!compact && <span className="ml-1">Stáhnout PDF</span>}
       </Button>
-      <Button size={size} variant="ghost" onClick={() => run("print")} disabled={!!busy} title="Vytisknout">
+      <Button size={size} variant="ghost" onClick={() => run("print")} disabled={!!busy} title="Vytisknout" className="min-h-11" aria-label={title ? `Vytisknout: ${title}` : undefined}>
         {busy === "print" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
         {!compact && <span className="ml-1">Vytisknout</span>}
       </Button>
