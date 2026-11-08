@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { KIND_FIELDS, kindHas, neutralizeForKind, submittableOnly, canChangeKind, assignmentKind, KIND_TEXT } from "@/lib/assignment-kind";
 
