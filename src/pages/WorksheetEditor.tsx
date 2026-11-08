@@ -158,6 +158,7 @@ import {
 import LessonSectionsPanel, {
   type BuiltWorksheetItem,
 } from "@/components/worksheet/LessonSectionsPanel";
+import CreateFromLessonDialog from "@/components/activities/CreateFromLessonDialog";
 import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import MindMapFieldsEditor from "@/components/worksheet/MindMapFieldsEditor";
 import MethodStepsFieldsEditor from "@/components/worksheet/MethodStepsFieldsEditor";
@@ -413,6 +414,7 @@ export default function WorksheetEditor() {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  const [fromLessonOpen, setFromLessonOpen] = useState(false);
   const [methodStepsPickerOpen, setMethodStepsPickerOpen] = useState(false);
   const [methodStepsInsertAt, setMethodStepsInsertAt] = useState<number | null>(null);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
@@ -694,6 +696,7 @@ export default function WorksheetEditor() {
       worksheet_mode: spec.header.worksheetMode,
       spec: spec as any,
       teacher_notes: teacherNotes.trim() ? teacherNotes : null,
+      ...(aiMeta.aiGenerated ? { ai_generated: true } : {}),
     } as Record<string, any>;
     pendingSaveRef.current = payload;
 
@@ -718,7 +721,7 @@ export default function WorksheetEditor() {
     }, 1000);
 
     // Pozor: NEMAZAT timer při cleanup — chceme, aby pending save dokončil.
-  }, [spec, id, loading, teacherNotes]);
+  }, [spec, id, loading, teacherNotes, aiMeta.aiGenerated]);
 
   // Flush při unmount (fire-and-forget)
   useEffect(() => {
@@ -2580,6 +2583,7 @@ export default function WorksheetEditor() {
                 )}
               </Tooltip>
             </TooltipProvider>
+            <Button variant="outline" className="min-h-11 whitespace-normal" onClick={() => setFromLessonOpen(true)}><Sparkles className="w-4 h-4 mr-1 shrink-0" />Vytvořit z lekce</Button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -3275,6 +3279,18 @@ export default function WorksheetEditor() {
       </Dialog>
 
       {/* Stavba listu sekce po sekci (pracovní list z lekce) */}
+      <CreateFromLessonDialog open={fromLessonOpen} onOpenChange={setFromLessonOpen} onInsert={block => {
+        const built = buildItemsFromLessonActivity({ id: block.id, title: block.props.title, activityType: block.props.activityType, props: block.props });
+        if (!built.length) return;
+        updateSpec(s => {
+          const variant = s.variants[0];
+          if (!variant) return s;
+          const inserted = built.map((b, i) => ({ ...createDefaultItem(b.type, variant.items.length + i + 1), ...b.patch, source: block.props.source, ai_generated: true }));
+          const keys = inserted.map((item, i) => ({ ...createDefaultAnswerKey(item), ...(built[i].correct !== undefined ? { correctAnswer: built[i].correct } : {}) }));
+          return { ...s, variants: s.variants.map((v, i) => i === 0 ? { ...v, items: [...v.items, ...inserted] } : v), answerKeys: { ...s.answerKeys, [variant.variantId]: [...(s.answerKeys[variant.variantId] ?? []), ...keys] } };
+        });
+        setAiMeta({ aiGenerated: true, aiModifiedAt: null });
+      }} />
       <LessonSectionsPanel
         open={sectionsPanelOpen}
         onOpenChange={setSectionsPanelOpen}
