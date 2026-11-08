@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Přiložení pracovních listů – dvě schválené opravy
-- [ ] Štítky a potvrzené zveřejnění nezveřejněných listů ve formuláři
-- [ ] Přidání do existující úlohy a varování před duplicitním novým zadáním
-- [ ] Čtecí diagnostika, cílené testy a kontrola 390 px; bez DB/RLS, edge funkcí, deploye a mazání
+- [x] Štítky a potvrzené zveřejnění nezveřejněných listů ve formuláři
+- [x] Přidání do existující úlohy a varování před duplicitním novým zadáním
+- [x] Čtecí diagnostika, cílené testy a kontrola 390 px; bez DB/RLS, edge funkcí, deploye a mazání
+- Neověřeno: původní stav před zveřejněním a skutečný zápis/čtení žákem; ověřování zápisů pouze místní simulací, data učitelky nedotčena.
 
 ## Aktivity z vlastních lekcí – schválené etapy 1+2
 - [x] Sdílené okno: vlastní lekce → část → typ/počet → upravit návrh → vložit koncept

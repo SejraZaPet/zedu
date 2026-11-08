@@ -122,7 +122,7 @@ export default function PublishWorksheetDialog({
         if (matches.length && !allowDuplicate) { setDuplicates(matches); setPendingNew(true); return; }
       }
 
-      const { error: pubErr } = await supabase
+      const { data: publishedWorksheet, error: pubErr } = await supabase
         .from("worksheets" as any)
         .update({
           status: "published",
@@ -131,6 +131,7 @@ export default function PublishWorksheetDialog({
         } as any)
         .eq("id", worksheetId).eq("teacher_id", userId).select("id").maybeSingle();
       if (pubErr) throw pubErr;
+      if (!publishedWorksheet) throw new Error("List se nepodařilo zveřejnit. Ověřte, že je Váš, a zkuste to znovu.");
 
       let assignmentCreated = false;
       if (assign && target) {
