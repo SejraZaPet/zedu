@@ -12,7 +12,6 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   },
 } }));
 import { loadCheatsheets, saveCheatsheet } from "@/lib/cheatsheet-store";
-import { loadNotebooks } from "@/lib/notebook";
 describe("private standalone cheat-sheet persistence", () => {
   beforeEach(() => { mock.calls = []; mock.responses = []; mock.userId = "test-owner"; });
   it("reads only owner-tagged cards and ignores ordinary notebook pages", async () => {
