@@ -160,15 +160,29 @@ const StudentAssignmentPlayer = () => {
   }, [assignmentId]);
 
   // Po návratu do okna načti úkol znovu (učitel mohl změnit nastavení), jen bez neuložených odpovědí.
-  const answersRef = useRef(answers);
-  answersRef.current = answers;
+  // Znovu načítá jen tehdy, když se změnilo, co se žákovi zobrazí, takže rozpracovaný list se nepřekreslí.
+  const assignmentRef = useRef<AssignmentData | null>(null);
+  assignmentRef.current = assignment;
   useEffect(() => {
     if (!assignmentId) return;
-    const onVisible = () => {
+    const onVisible = async () => {
       if (document.visibilityState !== "visible") return;
-      if (autosaveTimer.current) return;
-      if (JSON.stringify(answersRef.current || {}) !== lastSavedAnswers.current) return;
-      loadAssignment();
+      const cur = assignmentRef.current;
+      if (!cur) return;
+      const { data } = await supabase
+        .from("assignments" as any)
+        .select("is_portfolio_task, worksheet_id, status")
+        .eq("id", assignmentId)
+        .maybeSingle();
+      const d = data as any;
+      if (!d) return;
+      if (
+        !!d.is_portfolio_task !== !!cur.is_portfolio_task ||
+        (d.worksheet_id ?? null) !== ((cur as any).worksheet_id ?? null) ||
+        d.status !== (cur as any).status
+      ) {
+        loadAssignment();
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
