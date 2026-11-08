@@ -1285,7 +1285,7 @@ const TeacherAssignments = () => {
                       Naplánovat zveřejnění
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Úloha zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
+                      Položka zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
                     </p>
                   </div>
                   <Switch

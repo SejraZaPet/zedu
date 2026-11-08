@@ -183,3 +183,9 @@
 - [x] 48 cílených testů, automatické typy/build OK; izolovaný editor na 390/1280 px, počítadla, lokální save callback, 2stránkové PDF a 10 karet na A4 ověřeny bez hostovaných zápisů
 - [ ] Přihlášený žák: skutečné uložení a opětovné načtení, výběr textu z oprávněné lekce, izolace druhého účtu/demo a uložený učitelský štítek — vlastní relace je admin, přepnutí/testovací zápisy bez dalšího souhlasu neprováděny
 - [ ] Fyzický oboustranný tisk a telefon uživatelky neověřeny; nasazení provede Claude, žádné DB změny ani e-maily
+
+## Formulář podle druhu (úkol / materiál / oznámení) — schválené etapy 1–2
+- [x] KIND_FIELDS, kindHas, neutralizeForKind, texty podle druhu, zámek změny druhu při pokusech
+- [x] Skryté úkolové sekce u materiálu/oznámení, neutrální uložení, karty bez termínu/pokusů/zámku/typu
+- [x] Výsledky a detail třídy bez materiálů/oznámení; rodičovský přehled ukazuje jen pokusy (bez chyby)
+- [ ] Nadpis „Materiály k úkolu“ v editoru příloh zatím obecný; edge funkce (notify-parent, připomínky) nezměněny dle pokynu
