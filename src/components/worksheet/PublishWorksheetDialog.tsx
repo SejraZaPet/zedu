@@ -78,6 +78,7 @@ export default function PublishWorksheetDialog({
     return () => { cancelled = true; };
   }, [open, target, worksheetId]);
   useEffect(() => { setPendingNew(false); setDuplicates([]); setReplaceConfirmed(false); }, [mode, existingId, selectedSubject]);
+  useEffect(() => { if (open) { setMode("new"); setAssign(true); setTarget(""); setDeadline(""); } }, [open, worksheetId]);
 
   const submit = async (allowDuplicate = false) => {
     if (assign && !target) {
@@ -103,6 +104,11 @@ export default function PublishWorksheetDialog({
             setReplaceConfirmed(true);
             return;
           }
+          if (hasWorksheet(assignment, worksheetId)) {
+            toast({ title: "Tato úloha již obsahuje tento list" });
+            onOpenChange(false);
+            return;
+          }
           const patch = worksheetLinkPatch(assignment, { id: worksheetId, title: worksheetTitle });
           const { data: changed, error } = await supabase.from("assignments").update(patch as any).eq("id", assignment.id).eq("teacher_id", userId)
             .eq("updated_at", assignment.updated_at).select("id").maybeSingle();
@@ -123,7 +129,7 @@ export default function PublishWorksheetDialog({
           scheduled_publish_at: null,
           ...(sourceLessonId ? { show_in_lesson: showInLesson } : {}),
         } as any)
-        .eq("id", worksheetId).eq("teacher_id", userId);
+        .eq("id", worksheetId).eq("teacher_id", userId).select("id").maybeSingle();
       if (pubErr) throw pubErr;
 
       let assignmentCreated = false;
@@ -175,6 +181,7 @@ export default function PublishWorksheetDialog({
           {sourceLessonId && (
             <label className="flex items-start gap-2 cursor-pointer">
               <Checkbox
+                disabled={busy || (assign && mode === "existing")}
                 checked={showInLesson}
                 onCheckedChange={(v) => setShowInLesson(v === true)}
                 className="mt-0.5"
@@ -186,6 +193,7 @@ export default function PublishWorksheetDialog({
           <label className="flex items-start gap-2 cursor-pointer">
             <Checkbox
               checked={assign}
+              disabled={busy}
               onCheckedChange={(v) => setAssign(v === true)}
               className="mt-0.5"
             />
@@ -201,7 +209,7 @@ export default function PublishWorksheetDialog({
               <div>
                 <Label>Komu zadat *</Label>
                 <Select value={target} onValueChange={setTarget} disabled={busy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-auto min-h-11 min-w-0 [&>span]:whitespace-normal [&>span]:break-words">
                     <SelectValue placeholder="Vyberte třídu nebo skupinu" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -225,7 +233,7 @@ export default function PublishWorksheetDialog({
                 )}
               </div>
               {mode === "existing" ? <div className="space-y-3 min-w-0">
-                <SearchableSelect label="Vybrat existující úkol nebo materiál" value={existingId} disabled={busy || loadingExisting || !target} options={eligible.map(a => ({ value: a.id, label: a.title, subtitle: assignmentKind(a.settings) === "material" ? "Materiál" : "Úkol" }))} onValueChange={setExistingId} />
+                <SearchableSelect growing label="Vybrat existující úkol nebo materiál" value={existingId} disabled={busy || loadingExisting || !target} options={eligible.map(a => ({ value: a.id, label: a.title, subtitle: assignmentKind(a.settings) === "material" ? "Materiál" : "Úkol" }))} onValueChange={setExistingId} />
                 {target && !loadingExisting && !eligible.length && !loadError && <p className="text-sm text-muted-foreground">Pro tento předmět a třídu/skupinu nemáte žádný úkol ani materiál.</p>}
                 {replaceConfirmed && <p role="alert" className="text-sm text-destructive">Úkol již má jiný list. Přidáním nahradíte původní list; dosavadní odevzdání zůstanou beze změny. Opravdu pokračovat?</p>}
               </div> : <div>
