@@ -1,5 +1,6 @@
 import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
 import { buildToc } from "@/lib/notebook-toc";
+import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
 // Digitální sešit — typy, vykreslování a datová vrstva.
 // Kreslicí formát (Stroke) je záměrně shodný s živou tabulí (LiveWhiteboard),
 // aby se dala znovupoužít vykreslovací logika. Živá tabule se tímto NEMĚNÍ.
@@ -296,6 +297,7 @@ export async function loadNotebooks(ownerId: string): Promise<Notebook[]> {
     .from("notebooks")
     .select("*")
     .eq("owner_id", ownerId)
+    .or(`cover_color.is.null,cover_color.neq.${CHEATSHEET_STORAGE_MARKER}`)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Notebook[];

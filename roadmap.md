@@ -170,5 +170,10 @@
 - [ ] Ověření v prohlížeči a na 390 px
 - [ ] Etapy 2–5 (vlastní mapa žáka, AI, aktivita, společná mapa) čekají na schválení
 
-## Tahák – krátké poznámky
-- [x] Pouze návrh (bez AI, karta 90 × 55 mm) uložen; čeká na „schvaluji“
+## Tahák — schválená etapa 1
+- [x] Čtením DB ověřeno owner-only ukládání notebook_pages.content přes owns_notebook; samostatné označené kontejnery v notebooks jsou vyloučené ze sešitů i výběrů procvičování, žádná změna schématu/oprávnění
+- [x] Ruční tvorba, přístupný text lekcí, vlastní seznam, líc/rub, limity, symboly, mobil, tisk/PDF; žádné AI
+- [x] Informativní nastavení „Tahák povolen“, výchozí ne; u testů žádné nové tlačítko ani otevření sešitu
+- [x] 48 cílených testů, automatické typy/build OK; izolovaný editor na 390/1280 px, počítadla, lokální save callback, 2stránkové PDF a 10 karet na A4 ověřeny bez hostovaných zápisů
+- [ ] Přihlášený žák: skutečné uložení a opětovné načtení, výběr textu z oprávněné lekce, izolace druhého účtu/demo a uložený učitelský štítek — vlastní relace je admin, přepnutí/testovací zápisy bez dalšího souhlasu neprováděny
+- [ ] Fyzický oboustranný tisk a telefon uživatelky neověřeny; nasazení provede Claude, žádné DB změny ani e-maily

@@ -68,8 +68,10 @@ export function notifyOverdueEnabled(settings: unknown): boolean {
 export function mergeKindSettings(current: Settings, patch: {
   kind: AssignmentKind; lateUntil?: string | null; pinned?: boolean; visibleUntil?: string | null;
   notifyEmail?: boolean | null; notifyOverdue?: boolean | null; commentsEnabled?: boolean | null;
+  cheatSheetAllowed?: boolean;
 }): Record<string, unknown> {
   const next: Record<string, unknown> = { ...obj(current) };
+  if (typeof patch.cheatSheetAllowed === "boolean") next.cheatSheetAllowed = patch.kind === "task" && patch.cheatSheetAllowed;
   delete next.kind; delete next.lateUntil; delete next.pinned; delete next.visibleUntil;
   if (typeof patch.notifyEmail === "boolean") next.notifyEmail = patch.notifyEmail;
   if (typeof patch.commentsEnabled === "boolean") next.commentsEnabled = patch.commentsEnabled;

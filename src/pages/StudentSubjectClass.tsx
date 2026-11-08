@@ -1,4 +1,5 @@
 import { Pin as PinnedIcon } from "lucide-react";
+import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { isPinned } from "@/lib/assignment-kind";
 import { isWallPost } from "@/lib/wall-composer";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
@@ -651,6 +652,7 @@ export default function StudentSubjectClass() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium break-words">{a.title}</span>
                         <ExamTypeBadge examType={a.exam_type} showDefault />
+                        <CheatsheetAllowedBadge settings={a.settings} />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(a.deadline!), "EEEE d. M. HH:mm", { locale: cs })}
@@ -905,6 +907,7 @@ export default function StudentSubjectClass() {
                 renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
                   actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>
                   {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
+                  <CheatsheetAllowedBadge settings={a.settings} />
                   {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}</p>}
                 </AssignmentStatusCard>} />
               )} />

@@ -1,4 +1,5 @@
 import { assignmentKind, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
+import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -574,6 +575,7 @@ const StudentAssignmentPlayer = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-heading text-2xl font-bold break-words">{assignment.title}</h1>
                 <ExamTypeBadge examType={(assignment as any).exam_type} showDefault />
+                <CheatsheetAllowedBadge settings={assignment.settings} />
                 <Badge variant="outline">Naplánováno</Badge>
               </div>
               {assignment.deadline && (
@@ -613,6 +615,7 @@ const StudentAssignmentPlayer = () => {
           <div className="flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h1 className="text-lg font-bold">{assignment.title}</h1>
+              <CheatsheetAllowedBadge settings={assignment.settings} />
               <ReadAloudButton
                 text={`${assignment.title}. ${assignment.description ? assignmentDescriptionToText(assignment.description) : ""}`}
                 size="icon"
