@@ -457,3 +457,86 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   body.has-view-as-pill, body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: 0; }
   .view-as-pill--stacked { bottom: calc(4rem + env(safe-area-inset-bottom)); }
 }
+
+/* Teacher-only navigation tiles; other dashboards retain their existing layout. */
+.teacher-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .teacher-dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+}
+@media (min-width: 1024px) {
+  .teacher-dashboard-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.teacher-dashboard-grid > div { min-width: 0; }
+.teacher-dashboard-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border-radius: 8px;
+  white-space: normal;
+  background-image: linear-gradient(135deg, hsl(var(--teacher-tile-from)), hsl(var(--teacher-tile-to)));
+  color: hsl(var(--teacher-tile-foreground));
+  box-shadow: var(--teacher-tile-shadow);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.teacher-dashboard-tile:hover,
+.teacher-dashboard-tile:focus-visible {
+  transform: translateY(-4px);
+  filter: none;
+  box-shadow: var(--teacher-tile-shadow-raised);
+}
+.teacher-dashboard-tile svg {
+  width: 44%;
+  height: 44%;
+  margin-bottom: 18%;
+}
+.teacher-dashboard-tile-title {
+  position: absolute;
+  bottom: 8%;
+  left: 5%;
+  right: 5%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: clamp(17px, 1.5rem, 24px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-align: center;
+}
+@media (max-width: 639px) {
+  .teacher-dashboard-tile-title { font-size: 17px; }
+}
+.teacher-dashboard-tile-count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: hsl(var(--teacher-tile-foreground));
+  color: hsl(var(--teacher-tile-count-foreground));
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .teacher-dashboard-tile { transition: none; }
+  .teacher-dashboard-tile:hover, .teacher-dashboard-tile:focus-visible { transform: none; }
+}
