@@ -24,7 +24,7 @@ describe("Popis hodiny", () => {
     render(<LessonTopicEditor topic="Zlomky" note={null} onSave={vi.fn()} onSaveNote={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Upravit téma hodiny/ }));
     for (const label of ["Téma hodiny", "Popis hodiny"]) {
-      const field = screen.getByLabelText(label);
+      const field = screen.getByRole("textbox", { name: label });
       expect(field.className).toContain("text-foreground");
       expect(field.className).toContain("caret-foreground");
       expect(field.className).toContain("placeholder:text-muted-foreground");
