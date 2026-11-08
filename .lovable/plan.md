@@ -1,115 +1,92 @@
-# Tahák – krátké poznámky na kartě (bez AI) – návrh
+# Sladění formuláře „Nová úloha“ s druhem položky (jen návrh)
 
-Pouze návrh. Nic se neimplementuje, DB se nemění, žádné e-maily ani nasazení. Myšlenkové mapy i tahák čekají na „schvaluji“. Zjištění o existujícím kódu z předchozí diagnostiky platí (lišta Kartičky/Kvíz/Shrnutí v `LessonStudyBar.tsx`, výběr textu z bloků v `lesson-study.ts`, sešit `notebook_pages`, portfolio, tisk, `UpcomingExamsCard`, `assignment_attempts.answers`).
+Stav: diagnostika z kódu. Nic se neimplementuje, DB beze změny, bez e-mailů a deploye. Dlaždice přehledu učitele jsou už hotové (viz předchozí etapa).
 
-**AI je zcela vyřazena** – žádné generování, návrhy ani volání AI funkcí.
+## 1. Pole formuláře × druh
 
-## Názvy a texty (neutrální)
+Zdroj: `src/pages/TeacherAssignments.tsx` (formulář ~ř. 1124–1800, ukládání `submitAssignment` ~ř. 477–700), `src/lib/assignment-kind.ts`.
 
-Doporučené varianty:
-1. **„Tahák – krátké poznámky“** (doporučuji; slovo žáci znají, dovětek ho zneutrálňuje).
-2. **„Mini poznámky“**.
+| Pole / sekce | Úkol dnes | Materiál dnes | Oznámení dnes | Materiál cíl | Oznámení cíl |
+|---|---|---|---|---|---|
+| Volba druhu (Úkol/Materiál/Oznámení) + vysvětlení | ano | ano | ano | ano | ano |
+| Název, Popis | ano | ano | ano (limit 500 znaků) | ano | ano |
+| Tahák povolen | ano | skryto | skryto | skryto | skryto |
+| Poslat e-mail / Povolit komentáře | ano | ano | ano | ano | ano |
+| Upozornění „neodevzdáno“ (notifyOverdue) | ano | skryto | skryto | skryto | skryto |
+| Připnout, Zobrazovat do | skryto | skryto | ano | skryto | ano |
+| Termín odevzdání, Počet pokusů, Po termínu | ano | skryto | skryto | skryto | skryto |
+| Naplánovat zveřejnění | ano | ano | ano | ano | ano |
+| Předmět | ano | ano | ano | ano | ano |
+| Třída/skupina, vybraní žáci | ano | ano | ano | ano | ano |
+| **Typ** (úkol/test/písemka…) | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
+| **Typ zadání** (individuálně/dvojice/skupiny, rozdělení) | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
+| **Zamíchat pořadí otázek / volby** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
+| **Portfoliový úkol** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
+| **Zamčený režim** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
+| Pracovní list (příloha) | ano | ano | ano | ano (jen k otevření) | skrýt (návrh) |
+| Propojit s lekcí, materiály, odkazy, soubory | ano | ano | ano | ano | volitelně (návrh: jen odkaz/soubor) |
+| Termín u jednotlivého cíle (multi-cíl) | ano | ignorován při uložení | ignorován | skrýt | skrýt |
 
-Popis: „Malá karta na krátké poznámky z lekce – zkratky, hesla, šipky, symboly. Je to volitelná možnost; můžeš si ji vytisknout nebo mít v mobilu.“
-Texty nesmí tvrdit, že tahák zlepšuje učení nebo výsledky, ani ho spojovat s obcházením písemek. Funkce je nenápadná: položka v nabídce „Další ⋯“, ne hlavní tlačítko.
+Co se dnes ukládá u materiálu/oznámení do `assignments`:
+- Správně neutrální: `deadline = null`, `max_attempts = 1`, `settings.kind`, `lateUntil`/`notifyOverdue`/`cheatSheetAllowed` odstraněny (`mergeKindSettings`).
+- **Ukládá se, co učitel naklikal (i když nemá smysl):** `exam_type`, `group_mode` + `group_size`, `randomize_order`, `randomize_choices`, `is_portfolio_task`, `lockdown_mode`.
+- Riziko: materiál s `group_mode ≠ individual` drží formulář otevřený „pro rozdělení skupin“; `exam_type` se může propsat do kalendáře/„Co mě čeká“ (zobrazují `exam_type`); `is_portfolio_task` do portfolia.
+- Návrh: při uložení ne-úkolu vždy zapsat neutrální hodnoty: `exam_type=null, group_mode='individual', group_size=null, randomize_*=false, is_portfolio_task=false, lockdown_mode=false, max_attempts=1, deadline=null`. Čistě frontend.
 
-## 1. Formát karty
+## 2. Sjednocení – jedna konfigurace
 
-- Rozměr **90 × 55 mm**, líc + rub, na výšku i na šířku (výchozí na šířku).
-- Vnitřní okraj 3 mm, užitná plocha 84 × 49 mm.
-- Písmo v tisku min. **7 pt** (výchozí 8 pt, nadpis 9 pt tučně), řádkování 1,15.
-- Max **8 řádků / odrážek na stranu**, max **220 znaků na stranu**; ukazatel „vejde se / přetéká“, přetékající text se netiskne a je zvýrazněn.
-- Stálá nápověda: „Piš stručně: zkratky, body, šipky, symboly.“
+V `assignment-kind.ts` přidat deklarativní `KIND_FIELDS: Record<AssignmentKind, Set<Field>>` (např. `deadline, attempts, late, examType, groupMode, randomize, portfolio, lockdown, cheatsheet, notifyOverdue, pinned, visibleUntil, worksheet, …`) a helpery `kindHas(kind, field)` a `neutralizeForKind(kind, row)`.
 
-**Šablony stran** (lze kombinovat pro líc a rub):
-- Prázdná (odrážky)
-- Hesla – pojem → význam (2 sloupce)
-- Vzorce (zarovnané řádky, horní/dolní index)
-- Postup / Recept (číslované kroky; gastro: surovina–gramáž–teplota)
-- Slovíčka (slovo – překlad)
-- Časová osa (rok → událost)
+Použití:
+- Formulář: každá sekce `{kindHas(formKind, "…") && …}`; uložení přes `neutralizeForKind`.
+- Seznamy/karty učitele (TeacherAssignments ~ř. 1970: termín, „N pokusů“, zámek) – zobrazit jen pokud `kindHas`.
+- Detail žáka/učitele, Zeď, kalendář, „Co mě čeká“ – už filtrují `assignmentKind`; doplnit jen chybějící místa (bod 4).
+- Výsledky/Přehled: materiál a oznámení vyfiltrovat (`isSubmittable`).
+- Přepnutí druhu: hodnoty skrytých polí zůstanou v paměti formuláře (návrat na Úkol je obnoví), ale **neukládají se** – při uložení se přepíší neutrálními. Při přepnutí z úkolu s vyplněným termínem/pokusy ukázat nenápadnou poznámku „Termín a hodnocení se u materiálu neuloží“.
+- Editace existujícího úkolu → změna na materiál: zobrazit potvrzení, pokud už má odevzdání (pokusy) – návrh: změnu druhu u položky s odevzdáními zakázat.
 
-## 2. Tvorba – výhradně ručně
+## 3. Texty
+Ano, sladit:
+- Nadpis: „Nový úkol / Nový materiál / Nové oznámení“, úprava „Upravit úkol / materiál / oznámení“.
+- Tlačítka a toasty: „Úloha publikována“ → „Úkol/Materiál/Oznámení zveřejněn(o)“.
+- Prázdné stavy a počty („Vytvořeno úloh: N“) podle druhu.
+- Nadpis stránky „Úlohy pro žáky“ ponechat (zastřešuje vše), případně podtitul „Úkoly, materiály a oznámení“. Rozhodnutí na vás.
 
-- Žák píše sám. Tlačítko „Vložit z lekce“ ukáže pojmy/nadpisy z bloků lekce; vybraný se vloží **jen jako prostý text**, který si žák zkrátí (bez formátování, bez obrázků).
-- Panel **zkratek a symbolů** ke vložení: → ← ↑ ↓ ⇒ ≈ ≠ ≤ ≥ ± ° °C Δ ∑ ✓ ✗ ! ? … , zkratky „tzv., např., tj., cca, min., max.“ Žák si může přidat vlastní oblíbené (uloženo u něj v prohlížeči).
-- Zvýraznění: tučně, podtržení, jedna barva zvýrazňovače.
-- Přepínač Líc / Rub, otočení karty náhledem.
+## 4. Kde jinde se ukazuje odevzdání/termín/typ
 
-## 3. Tisk a zobrazení
+| Místo | Stav | Chyba? |
+|---|---|---|
+| Karty v TeacherAssignments (termín, pokusy, zámek, typ) | bez kontroly druhu – „1 pokus“, zámek, exam_type i u materiálu | ano |
+| Učitelská třída (TeacherSubjectClass), žákovská (StudentSubjectClass) | dělí podle druhu | ne |
+| Žákovský seznam / přehrávač | `isSubmittable`, text „nic neodevzdáváš“ | ne |
+| Zeď | štítek podle druhu | ne |
+| Kalendář termínů, TodayWidget, Nadcházející písemky | jen úkoly | ne (ověřit `exam_type` u materiálu v TodayWidget) |
+| TeacherResults (výsledky) | nefiltruje druh – materiál se může objevit ve výběru zadání a „neodevzdali“ | pravděpodobně ano, ověřit |
+| TeacherClassDetail, ParentDashboard | bez kontroly druhu | pravděpodobně ano (počty/chybí odevzdat), ověřit |
+| Dlaždice „Úlohy pro žáky“ (počet) | jen úkoly | ne |
+| E-mail při zveřejnění (notify-email) | respektuje druh/volbu | ne |
+| Připomínky (auto-reminders-job, notify_deadline_soon) | bez kontroly druhu, ale materiál nemá termín → nepošle se | nejspíš ne; u starých materiálů s termínem ano – ověřit čtecím dotazem |
+| notify-parent „nový úkol“ | bez kontroly druhu | ověřit text e-mailu rodiči |
 
-- **Arch A4: 10 karet** (2 sloupce × 5 řádků = 180 × 275 mm), okraje 15 mm vlevo/vpravo, 11 mm nahoře/dole, ořezové značky v rozích.
-- **Oboustranný tisk:** list 1 = líce, list 2 = ruby zrcadlově prohozené sloupce (otáčení po delší straně), takže rub sedí na líc; zkušební tisk s rámečkem „kontrola zarovnání“.
-- Tisk jedné karty, celého archu nebo opakování jedné karty 10×.
-- PDF přes stávající tiskovou cestu (`window.print` s `@page A4`), černobíle i barevně.
-- Mobil: karta přes šířku displeje ve skutečném poměru 90:55, ťuknutím otočit, cíle ≥ 44 px, 390 px bez vodorovného posunu.
+## 5. Rizika, DB, testy, etapy
 
-## 4. Kde v aplikaci, oprávnění
+- Starší záznamy bez `settings.kind` = úkol (beze změny chování).
+- Starší materiály mohou mít uložené `exam_type`, `group_mode`, `randomize_*`, `lockdown`: frontend je bude u ne-úkolů ignorovat; data se nemění.
+- DB: **není nutná.** Volitelně (jen návrh, nespouštět): jednorázové vyčištění starých materiálů/oznámení
+  `UPDATE assignments SET exam_type=null, group_mode='individual', group_size=null, randomize_order=false, randomize_choices=false, is_portfolio_task=false, lockdown_mode=false, deadline=null WHERE settings->>'kind' IN ('material','announcement');`
+  Rollback: předem uložit dotčené řádky (`CREATE TABLE … AS SELECT id, exam_type, … `) a vrátit UPDATE … FROM zálohy. Nejdřív čtecí počet dotčených řádků.
+- Testy: `KIND_FIELDS` (materiál nemá deadline/attempts/examType…), `neutralizeForKind` (konkrétní neutrální hodnoty), přepnutí druhu nezapíše skryté hodnoty, filtr výsledků bez materiálů, starý záznam bez kind = úkol.
 
-| Místo | Co |
-|---|---|
-| U lekce (`LessonStudyBar.tsx`) | „Tahák – krátké poznámky“ v nabídce „Další ⋯“ |
-| Příprava na test (`UpcomingExamsCard.tsx`) | nenápadný odkaz „Moje taháky k předmětu“ (jen pokud učitel u zkoušky tahák uvedl, viz níže) |
-| Sešit | „Vložit do sešitu“ – stránka s kartou |
-| Portfolio | „Přidat do portfolia“ (etapa 3) |
-| Úkol „Vytvoř si tahák“ | úkol s odevzdáním karty, učitel ji vidí a hodnotí ručně (etapa 3) |
+Etapy:
+1. `KIND_FIELDS` + formulář + neutrální uložení + texty (frontend).
+2. Karty v TeacherAssignments, TeacherResults, TeacherClassDetail, ParentDashboard – filtr/skrytí (frontend, po čtecím ověření).
+3. Edge funkce (notify-parent, reminders) – jen pokud ověření ukáže chybu; vyžaduje deploy na pokyn.
+4. Volitelné vyčištění DB – jen po schválení.
 
-**Soukromí:** žák vidí jen své taháky. Učitel vidí tahák jen tehdy, když ho žák odevzdá v úkolu. Rodič nevidí. Demo dědí stávající demo ochrany.
-
-**Nastavení učitele „Povolen tahák“ u písemky:** jen evidence – štítek „Tahák povolen (1 karta 90 × 55 mm)“ u zkoušky, který žák vidí. Žádná kontrola ani vynucení. Ukládat do stávajícího nastavení zkoušky/úkolu (`settings.cheatsheetAllowed`), chybějící klíč = neuvedeno. Doporučuji zařadit až do etapy 3; kdo nechce, nemusí ho používat.
-
-## 5. Datový model
-
-**Varianta A – bez DB (doporučeno pro etapy 1–2):**
-- Tahák ve vlastním sešitu žáka: `notebook_pages.content` + klíč `cheatsheet` `{ version:1, orientation, front:{template, lines[]}, back:{template, lines[]}, lessonId? }`; oprávnění dědí sešit (jen žák).
-- Odevzdání v úkolu: stejný JSON v `assignment_attempts.answers.cheatsheet`; oprávnění dědí pokusy.
-
-**Varianta B – nová tabulka (jen návrh, pro seznam taháků napříč lekcemi):**
-```sql
--- NÁVRH, NESPOUŠTĚT
-create table public.student_cheatsheets (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null,
-  lesson_id uuid,
-  title text not null default '' check (char_length(title) <= 80),
-  data jsonb not null default '{}',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-grant select, insert, update, delete on public.student_cheatsheets to authenticated;
-grant all on public.student_cheatsheets to service_role;
-alter table public.student_cheatsheets enable row level security;
-create policy cs_owner on public.student_cheatsheets for all to authenticated
-  using (owner_id = auth.uid()) with check (owner_id = auth.uid());
--- + RESTRICTIVE demo_guard_* / demo_iso podle existujícího vzoru
--- rollback: drop table public.student_cheatsheets;
-```
-Učitel do tabulky přístup nemá; odevzdání jde vždy kopií do pokusu úkolu.
-
-## Rizika
-
-- Přetečení textu na malé kartě → pevné limity a ukazatel.
-- Zarovnání líce a rubu se liší podle tiskárny → zkušební arch a návod.
-- Čitelnost 7 pt → nedovolit menší písmo.
-- Nevhodné vnímání („k podvádění“) → neutrální texty, nenápadné umístění, učitelský štítek jen informativní.
-- Mobil ≥ 44 px, 390 px bez vodorovného posunu.
-
-## Testy
-
-Limity řádků/znaků, rozmístění 10 karet na A4 a zrcadlení rubu, vložení pojmu z lekce jako prostý text, šablony, ukládání do sešitu, chybějící `cheatsheetAllowed` = neuvedeno, slovník textů bez zakázaných formulací; Playwright 390/1440 px a náhled tisku.
-
-## Etapy
-
-1. **Nejmenší krok (jen frontend, bez DB):** položka u lekce, editor karty líc/rub se šablonami, panel symbolů, vložení pojmu z lekce, uložení do sešitu, tisk jedné karty i archu 10 karet.
-2. Seznam mých taháků v „Učím se“, vlastní oblíbené zkratky, vložení do portfolia.
-3. Úkol „Vytvoř si tahák“ s odevzdáním a ručním hodnocením; štítek „Tahák povolen“ u písemky (jen evidence).
-4. (Volitelně, s DB) samostatná tabulka.
-
-Soubory (etapa 1): `src/lib/cheatsheet.ts` (model, šablony, limity, symboly), `src/lib/cheatsheet-print.ts` (A4 arch, zrcadlení), `src/components/cheatsheet/CheatsheetEditor.tsx`, `CheatsheetCard.tsx`, `CheatsheetSymbolPanel.tsx`, úprava `LessonStudyBar.tsx`, testy v `src/test/`.
+Soubory: `src/lib/assignment-kind.ts`, `src/pages/TeacherAssignments.tsx`, `src/pages/TeacherResults.tsx`, `src/pages/TeacherClassDetail.tsx`, `src/pages/ParentDashboard.tsx`, případně `supabase/functions/notify-parent`, testy v `src/test/assignment-kinds-and-late.test.ts`.
 
 ## Na čem se rozhodnout
-1. Název: „Tahák – krátké poznámky“, nebo „Mini poznámky“?
-2. Limity: 8 řádků / 220 znaků na stranu, písmo min. 7 pt?
-3. Štítek „Tahák povolen“ u písemky: zařadit (etapa 3), nebo vynechat?
-4. Ukládat do sešitu bez DB?
-5. Schvalujete etapu 1?
+1. Pracovní list a lekce u Oznámení – skrýt, nebo povolit?
+2. Měnit druh u položky, která už má odevzdání – zakázat, nebo jen varovat?
+3. Nadpis stránky „Úlohy pro žáky“ ponechat?
+4. Schvalujete etapu 1 (a 2)? DB vyčištění ano/ne?
