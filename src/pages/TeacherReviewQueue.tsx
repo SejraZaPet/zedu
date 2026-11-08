@@ -89,7 +89,7 @@ export default function TeacherReviewQueue() {
       const { data: asg, error: asgErr } = await supabase
         .from("assignments" as any)
         .select("id, title, class_id, group_id, worksheet_id, status, settings")
-        .eq("created_by", user.id)
+        .eq("teacher_id", user.id)
         .neq("status", "archived");
       if (asgErr) throw asgErr;
       // Jen úkoly – materiály a oznámení se nekontrolují.
