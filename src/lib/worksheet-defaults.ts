@@ -11,6 +11,7 @@ import type {
 } from "@/lib/worksheet-spec";
 import { WORKSHEET_SPEC_VERSION } from "@/lib/worksheet-spec";
 import { blankNodeIds, createDefaultMindMap } from "@/lib/mind-map";
+import { createMethodPhase, createPracticeExample } from "@/lib/method-steps";
 
 export function emptyWorksheetSpec(opts?: {
   title?: string;
@@ -333,6 +334,8 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   gallery: { label: "Galerie", description: "Vlastní obrázky (nahrání z počítače, knihovna) nebo galerie z lekce" },
   callout: { label: "Zvýrazněný rámeček", description: "Needitovatelný rámeček převzatý z lekce" },
   mind_map: { label: "Doplň myšlenkovou mapu", description: "Strom pojmů; žák doplní prázdné uzly" },
+  method_steps: { label: "Postup podle metody", description: "Fáze metody se zadáním pro žáka; výchozí bez bodů" },
+  practice_examples: { label: "Příklady z praxe", description: "Situace z praxe s volitelnou otázkou pro žáka" },
   lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 
