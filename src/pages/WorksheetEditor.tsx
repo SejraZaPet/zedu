@@ -413,6 +413,8 @@ export default function WorksheetEditor() {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  const [methodStepsPickerOpen, setMethodStepsPickerOpen] = useState(false);
+  const [methodStepsInsertAt, setMethodStepsInsertAt] = useState<number | null>(null);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [returnBannerDismissed, setReturnBannerDismissed] = useState(false);
   const [itemHeights, setItemHeights] = useState<Record<string, number>>({});
