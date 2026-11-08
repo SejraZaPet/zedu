@@ -37,6 +37,7 @@ import { bestAttempt } from "@/lib/best-results";
 import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
 import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
 import MaterialLessonsCard from "@/components/assignments/MaterialLessonsCard";
+import StudentWorksheetPrintButtons from "@/components/worksheet/StudentWorksheetPrintButtons";
 import MaterialWorksheetsCard from "@/components/assignments/MaterialWorksheetsCard";
 import { assignmentWorksheets } from "@/lib/assignment-content";
 import ExamTypeBadge from "@/components/assignments/ExamTypeBadge";
@@ -718,7 +719,7 @@ const StudentAssignmentPlayer = () => {
         )}
 
         {/* Propojená lekce z učebnice */}
-        {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} />}
+        {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} qrPath={`/student/ukol/${assignment.id}`} />}
         {assignmentKind(assignment.settings) === "material" && planLessons(assignment).length > 1 ? (
           <MaterialLessonsCard lessons={planLessons(assignment)} />
         ) : linkedLesson && (
@@ -977,9 +978,12 @@ const StudentAssignmentPlayer = () => {
           </Card>
         ) : worksheetSpec ? (
           <>
-          {assignment.worksheet_id && !isReadOnly && (
-            <div className="mb-3 flex justify-end">
-              <InsertWorksheetButton worksheetId={assignment.worksheet_id} assignmentId={assignment.id} />
+          {assignment.worksheet_id && (!isReadOnly || !(lockdownEnabled && attempt?.status === "in_progress")) && (
+            <div className="mb-3 flex flex-wrap justify-end gap-2">
+              {!(lockdownEnabled && attempt?.status !== "submitted") && (
+                <StudentWorksheetPrintButtons worksheetId={assignment.worksheet_id} spec={worksheetSpec} qrPath={`/student/ukol/${assignment.id}`} title={worksheetSpec.header?.title} />
+              )}
+              {!isReadOnly && <InsertWorksheetButton worksheetId={assignment.worksheet_id} assignmentId={assignment.id} />}
             </div>
           )}
           <WorksheetPanel
