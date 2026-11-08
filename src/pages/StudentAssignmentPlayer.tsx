@@ -36,6 +36,7 @@ import LessonActivityChecklist from "@/components/assignments/LessonActivityChec
 import { bestAttempt } from "@/lib/best-results";
 import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
 import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
+import MaterialLessonsCard from "@/components/assignments/MaterialLessonsCard";
 import ExamTypeBadge from "@/components/assignments/ExamTypeBadge";
 
 interface AssignmentData {
