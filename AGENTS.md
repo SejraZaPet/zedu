@@ -35,6 +35,7 @@
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
 - Merge dashboard order via teacher-dashboard-order to preserve positions.
+- Teacher dashboard tiles use TeacherDashboardTile and owner-scoped HEAD counts from teacher-dashboard-counts; published status excludes archived/scheduled assignments, and profile is rendered last without changing stored tile order.
 
 - Schedule exceptions: owner-written, Prague time, merged at display (`schedule-exception-store.ts`); students/parents read only via SECURITY DEFINER `student_schedule_changes` (no owner/notes), timetables never rewritten.
 
