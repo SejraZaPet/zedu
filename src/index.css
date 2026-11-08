@@ -103,6 +103,12 @@
 
     --surface: 0 0% 100%;
     --surface-hover: 225 33% 96%;
+    --teacher-tile-from: 270.53 58.44% 61.96%; /* #A065D7 */
+    --teacher-tile-to: 184.44 52.94% 60%; /* #63C7CF */
+    --teacher-tile-foreground: 0 0% 100%;
+    --teacher-tile-count-foreground: 270 48% 35%;
+    --teacher-tile-shadow: 0 8px 24px -8px hsl(var(--secondary-dark) / .3);
+    --teacher-tile-shadow-raised: 0 14px 30px -8px hsl(var(--secondary-dark) / .45);
 
 
     --font-heading: 'Baloo 2', Lato, system-ui, sans-serif;
