@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { assignmentStatus } from "@/lib/assignment-status";
 import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
 import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
+import { lessonCountLabel } from "@/lib/assignment-content";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { bestAttempt } from "@/lib/best-results";
@@ -114,6 +115,9 @@ const StudentAssignments = () => {
                 <AssignmentStatusCard status={visualStatus} title={a.title}
                   actions={<Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>}>
                   {a.description && <p className="line-clamp-2 text-sm">{assignmentDescriptionToText(a.description)}</p>}
+                  {assignmentKind(a.settings) === "material" && planLessons(a).length > 0 && (
+                    <p className="text-xs text-muted-foreground">{lessonCountLabel(planLessons(a).length)}</p>
+                  )}
                 </AssignmentStatusCard>
               );
               const status = getAssignmentStatus(a);

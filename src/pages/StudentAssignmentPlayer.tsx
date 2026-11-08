@@ -36,6 +36,7 @@ import LessonActivityChecklist from "@/components/assignments/LessonActivityChec
 import { bestAttempt } from "@/lib/best-results";
 import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
 import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
+import MaterialLessonsCard from "@/components/assignments/MaterialLessonsCard";
 import ExamTypeBadge from "@/components/assignments/ExamTypeBadge";
 
 interface AssignmentData {
@@ -709,7 +710,9 @@ const StudentAssignmentPlayer = () => {
         )}
 
         {/* Propojená lekce z učebnice */}
-        {linkedLesson && (
+        {assignmentKind(assignment.settings) === "material" && planLessons(assignment).length > 1 ? (
+          <MaterialLessonsCard lessons={planLessons(assignment)} />
+        ) : linkedLesson && (
           <Card className="mb-4">
             <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm">
