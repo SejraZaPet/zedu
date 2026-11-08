@@ -87,7 +87,7 @@ export default function TeacherReviewQueue() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: asg, error: asgErr } = await supabase
-        .from("assignments")
+        .from("assignments" as any)
         .select("id, title, class_id, group_id, worksheet_id, status, settings")
         .eq("created_by", user.id)
         .neq("status", "archived");
