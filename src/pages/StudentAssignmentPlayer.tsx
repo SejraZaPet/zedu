@@ -1,4 +1,4 @@
-import { assignmentKind, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
+import { assignmentKind, studentPlayerBranch, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
 import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -157,6 +157,35 @@ const StudentAssignmentPlayer = () => {
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
+  }, [assignmentId]);
+
+  // Po návratu do okna načti úkol znovu (učitel mohl změnit nastavení), jen bez neuložených odpovědí.
+  // Znovu načítá jen tehdy, když se změnilo, co se žákovi zobrazí, takže rozpracovaný list se nepřekreslí.
+  const assignmentRef = useRef<AssignmentData | null>(null);
+  assignmentRef.current = assignment;
+  useEffect(() => {
+    if (!assignmentId) return;
+    const onVisible = async () => {
+      if (document.visibilityState !== "visible") return;
+      const cur = assignmentRef.current;
+      if (!cur) return;
+      const { data } = await supabase
+        .from("assignments" as any)
+        .select("is_portfolio_task, worksheet_id, status")
+        .eq("id", assignmentId)
+        .maybeSingle();
+      const d = data as any;
+      if (!d) return;
+      if (
+        !!d.is_portfolio_task !== !!cur.is_portfolio_task ||
+        (d.worksheet_id ?? null) !== ((cur as any).worksheet_id ?? null) ||
+        d.status !== (cur as any).status
+      ) {
+        loadAssignment();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [assignmentId]);
 
   /** Přepne zobrazení na konkrétní pokus (prohlížení bez úprav). */
@@ -910,7 +939,7 @@ const StudentAssignmentPlayer = () => {
           )}
 
         {/* Portfolio task branch (upload-only, no quiz) */}
-        {assignmentKind(assignment.settings) === "material" ? null : assignment.is_portfolio_task ? (
+        {assignmentKind(assignment.settings) === "material" ? null : studentPlayerBranch(assignmentKind(assignment.settings), !!assignment.is_portfolio_task, !!worksheetSpec) === "portfolio" ? (
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="flex justify-end">
