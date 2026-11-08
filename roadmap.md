@@ -189,3 +189,9 @@
 - [x] Skryté úkolové sekce u materiálu/oznámení, neutrální uložení, karty bez termínu/pokusů/zámku/typu
 - [x] Výsledky a detail třídy bez materiálů/oznámení; rodičovský přehled ukazuje jen pokusy (bez chyby)
 - [ ] Nadpis „Materiály k úkolu“ v editoru příloh zatím obecný; edge funkce (notify-parent, připomínky) nezměněny dle pokynu
+
+## Materiál: více lekcí a listů
+- [x] Etapa 1: více lekcí u materiálu (settings.lessons), řazení/odebrání, počet na kartách, úkol beze změny, testy
+- [ ] Ověření v prohlížeči jako učitel/žák a 390 px
+- [ ] Nabídka listů lekce po přidání lekce (vazba worksheets.source_lesson_id) – čeká na schválení
+- [ ] Etapa 2: více listů u materiálu + oprava politiky čtení listů – SQL v plánu, čeká na „schvaluji“
