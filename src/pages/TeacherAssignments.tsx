@@ -1823,7 +1823,61 @@ const TeacherAssignments = () => {
               </div>}
 
             {/* Propojení s lekcí z učebnice – nezávislé na pracovním listu i portfoliu */}
-            {kindHas(formKind, "lesson") && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+            {formKind === "material" && <section aria-labelledby="material-lessons-title" className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                <h3 id="material-lessons-title" className="text-sm font-medium">Pracovní listy a lekce</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lekce z učebnice si žáci jen otevřou, nic se neodevzdává. Přidat jich můžete libovolný počet.
+              </p>
+              {materialLessons.length > 0 && (
+                <ol className="space-y-2" aria-label="Vybrané lekce">
+                  {materialLessons.map((l, i) => (
+                    <li key={l.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background p-2">
+                      <span className="w-6 shrink-0 text-xs font-mono text-muted-foreground">{i + 1}.</span>
+                      <span className="min-w-0 flex-1 break-words text-sm">{l.title}</span>
+                      <div className="flex shrink-0 gap-1">
+                        <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={i === 0}
+                          aria-label={`Posunout lekci ${l.title} nahoru`} onClick={() => setMaterialLessons((x) => moveLesson(x, i, -1))}><ArrowUp className="w-4 h-4" /></Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={i === materialLessons.length - 1}
+                          aria-label={`Posunout lekci ${l.title} dolů`} onClick={() => setMaterialLessons((x) => moveLesson(x, i, 1))}><ArrowDown className="w-4 h-4" /></Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-11 w-11"
+                          aria-label={`Odebrat lekci ${l.title}`} onClick={() => setMaterialLessons((x) => removeLesson(x, l.id))}><X className="w-4 h-4" /></Button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <SearchableSelect
+                  label="Hledat učebnici"
+                  placeholder="— Vyberte učebnici —"
+                  value={selectedLessonTextbookId}
+                  options={lessonTextbooks.map((t) => ({ value: t.id, label: t.title }))}
+                  onValueChange={(v) => setSelectedLessonTextbookId(v)}
+                />
+                <SearchableSelect
+                  label="Přidat lekci"
+                  placeholder={lessonOptionsLoading ? "Načítám lekce…" : "+ Přidat lekci"}
+                  disabled={!selectedLessonTextbookId || lessonOptionsLoading}
+                  value=""
+                  options={textbookLessonOptions
+                    .filter((l) => !materialLessons.some((m) => m.id === l.id))
+                    .map((l) => ({ value: `${l.source}:${l.id}`, label: l.title }))}
+                  onValueChange={(v) => {
+                    const [source, id] = v.split(":");
+                    const found = textbookLessonOptions.find((l) => l.id === id && l.source === source);
+                    if (found) setMaterialLessons((x) => addLesson(x, { id: found.id, source: found.source, title: found.title }));
+                  }}
+                />
+              </div>
+              {materialLessons.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">✓ Žáci uvidí {lessonCountLabel(materialLessons.length)} k otevření.</p>
+              )}
+            </section>}
+
+            {kindHas(formKind, "lesson") && formKind !== "material" && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-muted-foreground" />
                 <Label className="text-sm">Propojit s lekcí z učebnice (volitelné)</Label>
