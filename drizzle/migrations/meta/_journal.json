@@ -575,6 +575,13 @@
       "when": 1794036270544,
       "tag": "0081_fix_todo_deadline_interval",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794149684902,
+      "tag": "0082_material_worksheets_assignment_read",
+      "breakpoints": true
     }
   ]
 }

@@ -8936,6 +8936,10 @@ export type Database = {
         Args: { _aid: string; _uid: string }
         Returns: boolean
       }
+      can_student_view_assigned_worksheet: {
+        Args: { _uid: string; _ws: string }
+        Returns: boolean
+      }
       can_student_view_lesson_plan: {
         Args: { _class_id: string; _group_id: string }
         Returns: boolean
