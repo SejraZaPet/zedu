@@ -30,11 +30,12 @@ export function moveLesson(list: PlanLesson[], index: number, dir: -1 | 1): Plan
 /**
  * Pole k uložení. Materiál: lesson_id = první lekce, settings.lessons = celé pořadí
  * (při ≤1 lekci se klíč odstraní, aby záznam vypadal jako dřív).
- * Úkol/oznámení: settings.lessons se nemění (null = nesahat).
+ * Úkol/oznámení: jedna lekce z formuláře, settings.lessons se odstraní (plány chrání applyLessonsToSettings).
  */
 export function lessonFieldsForSave(kind: AssignmentKind, materialLessons: PlanLesson[], single: { id: string; source: string | null }) {
   if (kind !== "material") {
-    return { lesson_id: single.id || null, lesson_source: single.id ? single.source : null, lessons: null as PlanLesson[] | null | "remove" };
+    // Úkol/oznámení mají jednu lekci; případný seznam z dřívějšího materiálu se odstraní (u plánů se nesahá).
+    return { lesson_id: single.id || null, lesson_source: single.id ? single.source : null, lessons: "remove" as PlanLesson[] | null | "remove" };
   }
   const first = materialLessons[0];
   return {
