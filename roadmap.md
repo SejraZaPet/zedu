@@ -1,9 +1,10 @@
 # Roadmap: Nový žákovský prostor (fáze 1)
 
 ## Učitelské dlaždice — schválená úprava 8. 11.
-- [ ] Čtvercové odkazy, rozdílné ikony, skryté popisy, široký profil dole; zachovat pořadí a oprávnění
-- [ ] Lehké čtecí počty aktivních úkolů, osobních todos a nepřečtených upozornění; při nule/chybě skrýt
-- [ ] Testy pravidel a přihlášená kontrola 390/640/1024/1440 px, klávesnice; žádné DB změny, e-maily či nasazení
+- [x] Čtvercové odkazy, 15 rozdílných požadovaných ikon, skryté popisy, široký profil dole; pořadí/cíle a oprávnění zachovány
+- [x] Lehké čtecí počty aktivních úkolů, osobních todos a nepřečtených upozornění; nula/chyba skryta; 3 skutečné HEAD dotazy 200, číslice vykreslena
+- [x] 56 cílených testů (nepovinný canvas v prostředí dočasně vynechán), automatická kontrola OK; vlastní přihlášená relace 390/640/1024/1440 px bez přetékání, čtverce/ikony/profil a Enter/Space ověřeny; žádné DB změny, e-maily či nasazení
+- [ ] Fyzický telefon uživatelky a samostatné role/demo páry neověřeny; jejich oprávnění a stránky se neměnily
 
 ## Pracovní list v sešitu — schválená úzká oprava
 - [x] Viditelná chyba a opakování načtení podkladu včetně obnovy podepsaného odkazu
