@@ -1,0 +1,10 @@
+.cheatsheet-card { aspect-ratio: 90 / 55; width: 100%; padding: 3.33%; overflow: hidden; }
+.cheatsheet-card header { height: 14%; overflow: hidden; }
+.cheatsheet-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.15; max-height: 86%; overflow: hidden; }
+.cheatsheet-font-7 { font-size: 12px; }
+.cheatsheet-font-8 { font-size: 13px; }
+.cheatsheet-font-9 { font-size: 14px; }
+.cheatsheet-font-10 { font-size: 15px; }
+.cheatsheet-font-11 { font-size: 16px; }
+.cheatsheet-font-12 { font-size: 17px; }
+.cheatsheet-print-frame { position: fixed; width: 1px; height: 1px; inset: 0 auto auto 0; border: 0; opacity: 0; pointer-events: none; }

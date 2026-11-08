@@ -103,6 +103,7 @@ const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
   { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
   { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
   { label: "Můj sešit", href: "/student/sesit", icon: NotebookPen },
+  { label: "Tahák", href: "/student/tahaky", icon: ClipboardList },
   { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
 ];
 

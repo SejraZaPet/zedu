@@ -1,4 +1,5 @@
 import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
+import { cheatSheetAllowed } from "@/lib/cheatsheet";
 import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
 import { safeWallReturn } from "@/lib/wall-composer";
 import { AssignmentStatusGroups, AssignmentStateIcon, AssignmentStateBadge } from "@/components/assignments/AssignmentStatusGroups";
@@ -124,6 +125,7 @@ const TeacherAssignments = () => {
   const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
   const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(wallReturn ? false : null);
   const [commentsOpt, setCommentsOpt] = useState<boolean | null>(null);
+  const [cheatsheetOpt, setCheatsheetOpt] = useState(false);
   const [notifyOverdueOpt, setNotifyOverdueOpt] = useState<boolean | null>(null);
   const [lateChoice, setLateChoice] = useState<"no" | "3" | "7" | "14" | "custom" | "unlimited">("no");
   const [lateCustom, setLateCustom] = useState("");
@@ -563,6 +565,7 @@ const TeacherAssignments = () => {
       const kindPatch = (due: string | null) => ({
         kind: formKind, lateUntil: lateFor(due), pinned,
         notifyEmail: notifyEmailOpt, notifyOverdue: notifyOverdueOpt, commentsEnabled: commentsOpt,
+        cheatSheetAllowed: cheatsheetOpt,
         visibleUntil: visibleUntil ? new Date(`${visibleUntil}T23:59`).toISOString() : null,
       });
 
@@ -782,6 +785,7 @@ const TeacherAssignments = () => {
     setFormSubjectId(null);
     setAudienceMode("all"); setRecipientIds([]);
     setFormKind("task"); setLateChoice("no"); setLateCustom(""); setPinned(false); setVisibleUntil(""); setNotifyEmailOpt(null); setNotifyOverdueOpt(null); setCommentsOpt(null);
+    setCheatsheetOpt(false);
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -804,6 +808,7 @@ const TeacherAssignments = () => {
     setMaterials(parseMaterials(a.materials));
     {
       setFormKind(assignmentKind(a.settings));
+      setCheatsheetOpt(cheatSheetAllowed(a.settings));
       const lm = lateMode(a.settings);
       const lim = lateLimit(a.settings);
       setLateChoice(lm === "unlimited" ? "unlimited" : lm === "until" ? "custom" : "no");
@@ -1146,6 +1151,7 @@ const TeacherAssignments = () => {
               </div>
 
               <fieldset className="space-y-1">
+                {formKind === "task" && <label className="flex min-h-11 items-center gap-2 text-sm"><Checkbox checked={cheatsheetOpt} onCheckedChange={v => setCheatsheetOpt(v === true)} />Tahák povolen</label>}
                 <legend className="sr-only">Upozornění žákům</legend>
                 <label className="flex min-h-11 items-center gap-2 text-sm">
                   <Checkbox

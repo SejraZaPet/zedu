@@ -46,6 +46,7 @@ import PresenterRemote from "./pages/PresenterRemote";
 import StudentPortfolio from "./pages/StudentPortfolio";
 import StudentBooks from "./pages/StudentBooks";
 import MyNotebook from "./pages/MyNotebook";
+import StudentCheatsheets from "./pages/StudentCheatsheets";
 import PortfolioView from "./pages/PortfolioView";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
@@ -164,6 +165,7 @@ const App = () => (
             <Route path="/student/zebricek" element={<ProtectedRoute><StudentLeaderboard /></ProtectedRoute>} />
             <Route path="/student/portfolio" element={<ProtectedRoute><StudentPortfolio /></ProtectedRoute>} />
             <Route path="/student/sesit" element={<ProtectedRoute><MyNotebook /></ProtectedRoute>} />
+            <Route path="/student/tahaky" element={<ProtectedRoute allowedRoles={["user"]}><StudentCheatsheets /></ProtectedRoute>} />
             <Route path="/ucitel/sesit" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><MyNotebook /></ProtectedRoute>} />
             <Route path="/student/knihy" element={<ProtectedRoute><StudentBooks /></ProtectedRoute>} />
             <Route path="/portfolio/:studentId" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />

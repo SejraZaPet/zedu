@@ -1,4 +1,5 @@
 import { assignmentKind, canSubmitNow, isSubmittable } from "@/lib/assignment-kind";
+import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,6 +130,7 @@ const StudentAssignments = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           
                           <ExamTypeBadge examType={a.exam_type} />
+                          <CheatsheetAllowedBadge settings={a.settings} />
                         </div>
                         {a.description && (
                           <p className="line-clamp-2 text-sm text-muted-foreground">

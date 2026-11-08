@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,7 @@ const useSheetLayout = () => {
 /** Studijní lišta u lekce: jedno tlačítko „Učím se“ → rychlé akce + techniky. */
 const LessonStudyBar = ({ lessonId, lessonTitle, blocks, subject }: LessonStudyBarProps) => {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [cardsOpen, setCardsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -213,6 +217,7 @@ const LessonStudyBar = ({ lessonId, lessonTitle, blocks, subject }: LessonStudyB
           {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <GraduationCap className="w-4 h-4" aria-hidden />}
           Učím se
         </Button>
+        {role === "user" && <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label="Další možnosti lekce" title="Další"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem className="min-h-11" onClick={() => navigate("/student/tahaky", { state: { cheatsheetSource: { title: lessonTitle, text: blocksToPlainText(blocks, 50000), subject } } })}>Tahák</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
       </div>
 
       {sheetLayout ? (
