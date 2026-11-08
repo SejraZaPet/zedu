@@ -41,6 +41,20 @@ export function buildWallFeed<T extends WallItem>(items: T[], now: Date = new Da
     .sort((a, b) => ts(b.created_at) - ts(a.created_at));
 }
 
+export const WALL_PREVIEW = 5;
+
+/** Hlavní seznam Zdi: připnuté první, jinak od nejnovějších (stabilně). */
+export function wallOrdered<T extends WallItem>(feed: T[]): T[] {
+  return [...feed.filter((i) => isPinned(i.settings)), ...feed.filter((i) => !isPinned(i.settings))];
+}
+
+/** Viditelná část: sbaleno = max `WALL_PREVIEW`, rozbaleno = `limit`. */
+export function wallVisible<T extends WallItem>(feed: T[], expanded: boolean, limit: number): { shown: T[]; canExpand: boolean; hasMore: boolean } {
+  const ordered = wallOrdered(feed);
+  const max = expanded ? limit : WALL_PREVIEW;
+  return { shown: ordered.slice(0, max), canExpand: !expanded && ordered.length > WALL_PREVIEW, hasMore: expanded && ordered.length > limit };
+}
+
 /** Blok „Oznámení“: max `limit` viditelných, připnutá první, jinak od nejnovějších. */
 export function wallAnnouncements<T extends WallItem>(items: T[], limit = 3, now: Date = new Date()): T[] {
   const list = buildWallFeed(items, now).filter((i) => assignmentKind(i.settings) === "announcement");

@@ -53,3 +53,23 @@ describe("comment rules", () => {
     expect(threadFor(list, "a", true).shown).toHaveLength(5);
   });
 });
+
+import { wallVisible, wallOrdered } from "./class-wall";
+describe("wall preview max 5", () => {
+  const mk = (n: number, pinnedIdx = -1) => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, settings: i === pinnedIdx ? { pinned: true } : {} }));
+  it("collapsed shows max 5 with expand when more", () => {
+    const r = wallVisible(mk(8), false, 10);
+    expect(r.shown).toHaveLength(5); expect(r.canExpand).toBe(true);
+  });
+  it("no expand button with 5 or fewer", () => {
+    expect(wallVisible(mk(5), false, 10).canExpand).toBe(false);
+  });
+  it("pinned first", () => {
+    expect(wallOrdered(mk(8, 7))[0].id).toBe("p7");
+    expect(wallVisible(mk(8, 7), false, 10).shown[0].id).toBe("p7");
+  });
+  it("expanded pages by limit", () => {
+    const r = wallVisible(mk(12), true, 10);
+    expect(r.shown).toHaveLength(10); expect(r.hasMore).toBe(true); expect(r.canExpand).toBe(false);
+  });
+});
