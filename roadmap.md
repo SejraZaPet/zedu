@@ -1,5 +1,10 @@
 # Roadmap
 
+## Přiložení pracovních listů – dvě schválené opravy
+- [ ] Štítky a potvrzené zveřejnění nezveřejněných listů ve formuláři
+- [ ] Přidání do existující úlohy a varování před duplicitním novým zadáním
+- [ ] Čtecí diagnostika, cílené testy a kontrola 390 px; bez DB/RLS, edge funkcí, deploye a mazání
+
 ## Aktivity z vlastních lekcí – schválené etapy 1+2
 - [x] Sdílené okno: vlastní lekce → část → typ/počet → upravit návrh → vložit koncept
 - [x] Rychlá hra, Moje aktivity a editor pracovního listu; zdroj v existujícím JSON
