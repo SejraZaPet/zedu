@@ -1,4 +1,4 @@
-import { assignmentKind, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
+import { assignmentKind, studentPlayerBranch, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
 import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
