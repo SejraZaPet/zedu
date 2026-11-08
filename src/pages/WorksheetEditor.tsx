@@ -873,7 +873,47 @@ export default function WorksheetEditor() {
   }
 
   function addItem(type: ItemType) {
+    if (type === "method_steps") {
+      setMethodStepsInsertAt(items.length);
+      setMethodStepsPickerOpen(true);
+      return;
+    }
     insertItem(type);
+  }
+
+  /** Vloží blok „Postup podle metody“ s předvyplněnými fázemi z dialogu. */
+  function insertMethodSteps(pick: MethodStepsPick, insertAt = items.length) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const base = createDefaultItem("method_steps", insertAt + 1);
+    const newItem: WorksheetItem = {
+      ...base,
+      methodId: pick.methodId,
+      methodName: pick.methodName,
+      methodPhases: pick.phases,
+      points: pick.phases.reduce((s, p) => s + p.points, 0),
+    };
+    const newKey = createDefaultAnswerKey(newItem);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0
+          ? {
+              ...v,
+              items: [
+                ...v.items.slice(0, insertAt),
+                newItem,
+                ...v.items.slice(insertAt),
+              ].map((item, itemIndex) => ({ ...item, itemNumber: itemIndex + 1 })),
+            }
+          : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), newKey],
+      },
+    }));
+    setSelectedId(newItem.id);
   }
 
   function insertOfflineActivity(mode: OfflineMode, insertAt = items.length) {
