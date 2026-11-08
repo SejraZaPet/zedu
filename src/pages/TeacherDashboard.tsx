@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   User, GraduationCap, School, BarChart3, CalendarDays, FileText, Bell,
   Library, GripVertical, Timer, SquareCheckBig, Gamepad2, WandSparkles,
-  Book, List, Landmark, ClipboardCheck, type LucideIcon,
+  Book, List, Landmark, ClipboardCheck, ListChecks, type LucideIcon,
 } from "lucide-react";
 import TeacherDashboardTile from "@/components/dashboard/TeacherDashboardTile";
 import { EMPTY_DASHBOARD_COUNTS, loadTeacherDashboardCounts } from "@/lib/teacher-dashboard-counts";
@@ -54,6 +54,7 @@ const DEFAULT_ORDER = [
   "assignments",
   "classes",
   "results",
+  "review",
   "calendar",
   "worksheets",
   "lesson-plans",
@@ -233,6 +234,13 @@ const TeacherDashboard = () => {
       title: "Výsledky studentů",
       description: "Sledujte úspěšnost a dokončené aktivity.",
       to: "/ucitel/vysledky",
+    },
+    review: {
+      id: "review",
+      icon: ListChecks,
+      title: "Ke kontrole",
+      description: "Odevzdané úkoly čekající na kontrolu a hromadné akce.",
+      to: "/ucitel/ke-kontrole",
     },
     calendar: {
       id: "calendar",

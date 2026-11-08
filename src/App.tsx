@@ -55,6 +55,7 @@ import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherClassDetail from "./pages/TeacherClassDetail";
 import TeacherResults from "./pages/TeacherResults";
+import TeacherReviewQueue from "./pages/TeacherReviewQueue";
 import ParentDashboard from "./pages/ParentDashboard";
 import ParentMessages from "./pages/ParentMessages";
 import TeacherParentMessages from "./pages/TeacherParentMessages";
@@ -148,6 +149,7 @@ const App = () => (
             <Route path="/ucitel/tridy" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherClasses /></ProtectedRoute>} />
             <Route path="/ucitel/tridy/:id" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherClassDetail /></ProtectedRoute>} />
             <Route path="/ucitel/vysledky" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherResults /></ProtectedRoute>} />
+            <Route path="/ucitel/ke-kontrole" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherReviewQueue /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
             <Route path="/ucebnice" element={<ProtectedRoute><TextbooksPage /></ProtectedRoute>} />
