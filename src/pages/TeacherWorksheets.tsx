@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileText, Plus, Search, Copy, Trash2, Share2, AlertTriangle } from "lucide-react";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
+import PublishWorksheetDialog from "@/components/worksheet/PublishWorksheetDialog";
 import ReviewButton from "@/components/sharing/ReviewButton";
 
 import { toast } from "@/hooks/use-toast";
@@ -44,6 +45,7 @@ interface WorksheetRow {
   id: string;
   title: string;
   subject: string;
+  subject_id?: string | null;
   grade_band: string;
   worksheet_mode: string;
   status: "draft" | "published";
@@ -73,6 +75,7 @@ export default function TeacherWorksheets() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
+  const [assignTarget, setAssignTarget] = useState<WorksheetRow | null>(null);
   const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
   const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
   const [lessonTitle, setLessonTitle] = useState<string>("");
@@ -456,6 +459,7 @@ export default function TeacherWorksheets() {
                       </span>
                     </div>
                   )}
+                  <Button variant="outline" className="min-h-11 mb-2" onClick={() => setAssignTarget(row)}>Zadat žákům</Button>
                   <div className="flex gap-2 mt-auto">
                     <Button
                       variant="outline"
@@ -500,6 +504,7 @@ export default function TeacherWorksheets() {
         )}
       </main>
       <SiteFooter />
+      {assignTarget && <PublishWorksheetDialog open onOpenChange={v => { if (!v) setAssignTarget(null); }} worksheetId={assignTarget.id} worksheetTitle={assignTarget.title} subjectId={assignTarget.subject_id} onPublished={() => void load()} />}
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>

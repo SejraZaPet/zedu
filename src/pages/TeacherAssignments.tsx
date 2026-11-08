@@ -1,5 +1,7 @@
 import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
 import { cheatSheetAllowed } from "@/lib/cheatsheet";
+import { unpublishedWorksheet } from "@/lib/worksheet-assignment-link";
+import UnpublishedWorksheetWarning from "@/components/worksheet/UnpublishedWorksheetWarning";
 import AddAssignmentMenu from "@/components/assignments/AddAssignmentMenu";
 import { safeWallReturn } from "@/lib/wall-composer";
 import { AssignmentStatusGroups, AssignmentStateIcon, AssignmentStateBadge } from "@/components/assignments/AssignmentStatusGroups";
@@ -398,7 +400,7 @@ const TeacherAssignments = () => {
       supabase
         .from("worksheets" as any)
         .select("id, title, status, updated_at")
-        .in("status", ["draft", "published"])
+        .in("status", ["draft", "scheduled", "published"])
         .order("updated_at", { ascending: false }),
     ]);
     const list = (assignmentsRes.data as any[]) || [];
@@ -517,7 +519,12 @@ const TeacherAssignments = () => {
    */
   const kindLocked = !!editingId && !canChangeKind(attemptedIds.has(editingId));
   const hiddenTaskData = !!deadline || maxAttempts !== 1 || randomizeOrder || randomizeChoices || isPortfolioTask || lockdownMode || examType !== "ukol" || groupMode !== "individual" || cheatsheetOpt;
+  const unpublishedSelected = kindHas(formKind, "worksheet") ? worksheets.filter(w => unpublishedWorksheet(w.status) && (formKind === "material" ? materialWorksheets.some(m => m.id === w.id) : w.id === selectedWorksheetId)) : [];
+  const [pendingWorksheetMode, setPendingWorksheetMode] = useState<"draft" | "scheduled" | "published" | null>(null);
+  const [worksheetWarningAccepted, setWorksheetWarningAccepted] = useState(false);
   const submitAssignment = async (mode: "draft" | "scheduled" | "published") => {
+    if (unpublishedSelected.length && !worksheetWarningAccepted) { setPendingWorksheetMode(mode); return; }
+    setWorksheetWarningAccepted(false);
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
@@ -1790,14 +1797,14 @@ const TeacherAssignments = () => {
                     value={selectedWorksheetId || "__none__"}
                     onValueChange={(v) => setSelectedWorksheetId(v === "__none__" ? "" : v)}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 min-w-0 min-h-11 h-auto [&>span]:whitespace-normal [&>span]:break-words">
                       <SelectValue placeholder="— Žádný pracovní list —" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">— Žádný pracovní list —</SelectItem>
                       {worksheets.map((w) => (
                         <SelectItem key={w.id} value={w.id}>
-                          {w.title} {w.status === "draft" ? "(koncept)" : ""}
+                          <span className="block break-words">{w.title}{unpublishedWorksheet(w.status) && <Badge variant="destructive" className="block whitespace-normal mt-1">Nezveřejněno – žáci ho neuvidí</Badge>}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1835,7 +1842,7 @@ const TeacherAssignments = () => {
                     <RotateCcw className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-                {selectedWorksheetId && (
+                {selectedWorksheetId && !unpublishedSelected.length && (
                   <p className="text-[11px] text-muted-foreground">
                     ✓ Žáci uvidí tento pracovní list v interaktivním plejeru.
                   </p>
@@ -1882,7 +1889,7 @@ const TeacherAssignments = () => {
               <div className="grid min-w-0 grid-cols-2 gap-2">
                 <SearchableSelect
                   label="Přidat list" placeholder="+ Přidat list" value="" growing
-                  options={worksheets.filter((w) => !materialWorksheets.some((selected) => selected.id === w.id)).map((w) => ({ value: w.id, label: w.title, subtitle: w.status === "draft" ? "Koncept" : undefined }))}
+                  options={worksheets.filter((w) => !materialWorksheets.some((selected) => selected.id === w.id)).map((w) => ({ value: w.id, label: w.title, subtitle: unpublishedWorksheet(w.status) ? "Nezveřejněno – žáci ho neuvidí" : undefined }))}
                   onValueChange={(id) => { const found = worksheets.find((w) => w.id === id); if (found) setMaterialWorksheets((list) => addWorksheet(list, found)); }}
                 />
                 <SearchableSelect
@@ -1905,6 +1912,8 @@ const TeacherAssignments = () => {
                 <p className="text-[11px] text-muted-foreground">✓ Žáci uvidí {lessonCountLabel(materialLessons.length)} k otevření.</p>
               )}
             </section>}
+
+            {unpublishedSelected.map(w => <UnpublishedWorksheetWarning key={w.id} worksheet={w} onPublished={id => setWorksheets(list => list.map(item => item.id === id ? { ...item, status: "published" } : item))} />)}
 
             {kindHas(formKind, "lesson") && formKind !== "material" && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
               <div className="flex items-center gap-2">
@@ -2214,6 +2223,14 @@ const TeacherAssignments = () => {
         </Tabs>
       </main>
       <SiteFooter />
+      <Dialog open={!!pendingWorksheetMode} onOpenChange={v => { if (!v) { setPendingWorksheetMode(null); setWorksheetWarningAccepted(false); } }}>
+        <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Úloha obsahuje nezveřejněný list</DialogTitle></DialogHeader>
+          <p className="text-sm text-destructive">Nezveřejněno – žáci ho neuvidí. Zveřejněte list, nebo potvrďte uložení bez zveřejnění listu.</p>
+          <Button className="min-h-11" variant="outline" onClick={() => setPendingWorksheetMode(null)}>Zpět k listu</Button>
+          {!worksheetWarningAccepted ? <Button className="min-h-11" variant="outline" onClick={() => setWorksheetWarningAccepted(true)}>Rozumím, ponechat list nezveřejněný</Button> : <Button className="min-h-11" onClick={() => { const mode = pendingWorksheetMode; setPendingWorksheetMode(null); if (mode) void submitAssignment(mode); }}>Pokračovat v uložení</Button>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

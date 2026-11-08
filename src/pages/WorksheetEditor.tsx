@@ -2681,11 +2681,9 @@ export default function WorksheetEditor() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-popover">
-                {status !== "published" && (
-                  <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
-                    <Send className="w-4 h-4 mr-2" /> Publikovat a zadat…
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
+                  <Send className="w-4 h-4 mr-2" /> Zadat žákům…
+                </DropdownMenuItem>
                 {status === "published" && (
                   <DropdownMenuItem onClick={togglePublish}>
                     <RotateCcw className="w-4 h-4 mr-2" /> Vrátit do konceptu
@@ -2851,6 +2849,7 @@ export default function WorksheetEditor() {
           subjectId={subjectId}
           sourceLessonId={sourceLessonId}
           onPublished={(info) => {
+            if (info.worksheetPublished === false) return;
             if (typeof info?.showInLesson === "boolean") setShowInLesson(info.showInLesson);
             setStatus("published");
             setScheduledAt(null);
