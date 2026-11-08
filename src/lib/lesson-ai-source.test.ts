@@ -35,8 +35,8 @@ describe("AI z vlastních lekcí", () => {
   });
   it("kartičky omezují kontext na 6000 znaků", () => {
     const request = lessonAiRequest("flashcards", "x".repeat(7000), lesson.title, 5);
-    expect(request.body.context?.length).toBe(6000);
-    expect(request.body.cardCount).toBe(5);
+    expect("context" in request.body ? request.body.context?.length : 0).toBe(6000);
+    expect("cardCount" in request.body ? request.body.cardCount : 0).toBe(5);
   });
   it("odmítne příliš krátký text", () => expect(() => lessonAiRequest("mcq", "krátký", "", 5)).toThrow());
   it("uloží zdroj a hash přesného textu", async () => {
