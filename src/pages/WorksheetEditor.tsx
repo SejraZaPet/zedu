@@ -2071,6 +2071,22 @@ export default function WorksheetEditor() {
       </Collapsible>
 
       <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader count={METHOD_PRACTICE_TYPES.length}>Metody a praxe</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
+          {METHOD_PRACTICE_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
+              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm min-h-[44px]"
+              title={ITEM_TYPE_LABELS[type].description}
+            >
+              {ITEM_TYPE_LABELS[type].label}
+            </button>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible className="mt-2 pt-2 border-t border-border">
         <SectionHeader count={OFFLINE_MODES.length}>Offline aktivity</SectionHeader>
         <CollapsibleContent className="space-y-1.5 pt-1">
           {OFFLINE_MODES.map((mode) => {
@@ -3471,6 +3487,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
 function InsertItemControl({
   onInsert,
   onInsertOffline,
+  onInsertMethodSteps,
 }: {
   onInsert: (type: ItemType) => void;
   onInsertOffline: (mode: OfflineMode) => void;
