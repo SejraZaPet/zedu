@@ -24,11 +24,12 @@ export async function printCheatsheets(cards: CheatsheetData[], repeat = false) 
   frame.title = "Tisk taháků";
   frame.className = "cheatsheet-print-frame";
   document.body.append(frame);
-  frame.srcdoc = html;
-  await new Promise<void>(resolve => { frame.onload = () => resolve(); });
+  await new Promise<void>(resolve => { frame.onload = () => resolve(); frame.srcdoc = html; });
   const win = frame.contentWindow;
   if (!win) { frame.remove(); throw new Error("Tisk není dostupný. Zkus to znovu."); }
   await win.document.fonts.ready;
+  const overflow = Array.from(win.document.querySelectorAll<HTMLElement>(".text, header")).some(el => el.scrollHeight > el.clientHeight + 1);
+  if (overflow) { frame.remove(); throw new Error("Text se nevejde na kartu. Zkrať ho nebo zvol menší písmo (nejméně 7 pt)."); }
   win.onafterprint = () => frame.remove();
   win.focus();
   win.print();
