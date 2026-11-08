@@ -20,4 +20,14 @@ describe("Popis hodiny", () => {
     fireEvent.click(screen.getByRole("button", { name: /Přidat téma hodiny/ }));
     expect(screen.getByLabelText("Popis hodiny")).toHaveAttribute("maxLength", "1000");
   });
+  it("pole mají výslovnou barvu textu a kurzoru (karta s přechodem ji nepřebije)", () => {
+    render(<LessonTopicEditor topic="Zlomky" note={null} onSave={vi.fn()} onSaveNote={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Upravit téma hodiny/ }));
+    for (const label of ["Téma hodiny", "Popis hodiny"]) {
+      const field = screen.getByRole("textbox", { name: label });
+      expect(field.className).toContain("text-foreground");
+      expect(field.className).toContain("caret-foreground");
+      expect(field.className).toContain("placeholder:text-muted-foreground");
+    }
+  });
 });
