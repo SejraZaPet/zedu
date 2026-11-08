@@ -580,6 +580,9 @@ const TeacherAssignments = () => {
       let subjectIdForAssignment: string | null =
         formSubjectId || subjectIdParam || null;
       const worksheetSave = worksheetFieldsForSave(formKind, materialWorksheets, selectedWorksheetId);
+      if (portfolioHidesWorksheet(formKind, isPortfolioTask, worksheetSave.worksheet_id)) {
+        throw new Error("Úkol s pracovním listem nemůže být zároveň portfoliový – žáci by list neviděli. Vypněte „Portfoliový úkol“, nebo list odeberte.");
+      }
       if (!subjectIdForAssignment && worksheetSave.worksheet_id) {
         const { data: ws } = await supabase
           .from("worksheets")
@@ -1732,6 +1735,11 @@ const TeacherAssignments = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Místo kvízu žáci nahrají výstup (soubor/foto/PDF). Odevzdání se automaticky přidá do jejich portfolia.
                     </p>
+                    {isPortfolioTask && formKind === "task" && !!selectedWorksheetId && (
+                      <p role="alert" className="text-xs font-medium text-destructive mt-1">
+                        Pozor: portfoliový úkol skryje žákům přiložený pracovní list. Vypněte tuto volbu, nebo list odeberte.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Switch
