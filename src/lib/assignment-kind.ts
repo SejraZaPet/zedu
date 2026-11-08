@@ -160,3 +160,8 @@ export const KIND_TEXT: Record<AssignmentKind, { create: string; edit: string; p
 
 /** Lze změnit druh? Ne, pokud položka už má pokusy/odevzdání. */
 export const canChangeKind = (hasAttempts: boolean) => !hasAttempts;
+
+/** Jen odevzdávané položky (úkoly; starší bez `kind` = úkol) – pro výsledky, odevzdání a „chybí odevzdat“. */
+export function submittableOnly<T extends { settings?: unknown }>(items: T[]): T[] {
+  return items.filter((i) => isSubmittable(i.settings));
+}
