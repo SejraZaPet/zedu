@@ -160,6 +160,9 @@ import LessonSectionsPanel, {
 } from "@/components/worksheet/LessonSectionsPanel";
 import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import MindMapFieldsEditor from "@/components/worksheet/MindMapFieldsEditor";
+import MethodStepsFieldsEditor from "@/components/worksheet/MethodStepsFieldsEditor";
+import PracticeExamplesFieldsEditor from "@/components/worksheet/PracticeExamplesFieldsEditor";
+import MethodStepsPickerDialog, { type MethodStepsPick } from "@/components/worksheet/MethodStepsPickerDialog";
 import {
   buildItemsFromLessonActivity,
   mapLessonActivityToItemType,
@@ -242,6 +245,9 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
 ];
 
 const LESSON_VISUAL_TYPES: ItemType[] = ["image", "image_text", "gallery", "callout"];
+
+/** Metodické bloky: Postup podle metody (otevře dialog výběru) a Příklady z praxe. */
+const METHOD_PRACTICE_TYPES: ItemType[] = ["method_steps", "practice_examples"];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [
   "mcq",
