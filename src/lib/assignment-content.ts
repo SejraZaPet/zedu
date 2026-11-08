@@ -3,7 +3,57 @@
  * Úkol zůstává s jednou lekcí v lesson_id/lesson_source.
  */
 import { planLessons, type PlanLesson } from "@/lib/planned-assignment";
-import type { AssignmentKind } from "@/lib/assignment-kind";
+import { assignmentKind, type AssignmentKind } from "@/lib/assignment-kind";
+
+export interface MaterialWorksheet { id: string; title: string }
+
+/** Only materials read the list; legacy primary ID always remains first. */
+export function assignmentWorksheets(a: { worksheet_id?: string | null; settings?: unknown }): MaterialWorksheet[] {
+  const settings = a.settings as { worksheets?: unknown } | null;
+  const list: MaterialWorksheet[] = [];
+  if (assignmentKind(a.settings) === "material" && Array.isArray(settings?.worksheets)) {
+    for (const entry of settings.worksheets) {
+      if (entry && typeof entry.id === "string" && entry.id && !list.some((w) => w.id === entry.id)) {
+        list.push({ id: entry.id, title: typeof entry.title === "string" && entry.title ? entry.title : "Pracovní list" });
+      }
+    }
+  }
+  if (a.worksheet_id && list[0]?.id !== a.worksheet_id) {
+    const primary = list.find((w) => w.id === a.worksheet_id) ?? { id: a.worksheet_id, title: "Pracovní list" };
+    return [primary, ...list.filter((w) => w.id !== primary.id)];
+  }
+  return list;
+}
+
+export function addWorksheet(list: MaterialWorksheet[], worksheet: MaterialWorksheet): MaterialWorksheet[] {
+  return !worksheet.id || list.some((w) => w.id === worksheet.id) ? list : [...list, worksheet];
+}
+export const removeWorksheet = (list: MaterialWorksheet[], id: string) => list.filter((w) => w.id !== id);
+export function moveWorksheet(list: MaterialWorksheet[], index: number, dir: -1 | 1): MaterialWorksheet[] {
+  const to = index + dir;
+  if (index < 0 || index >= list.length || to < 0 || to >= list.length) return list;
+  const next = [...list];
+  [next[index], next[to]] = [next[to], next[index]];
+  return next;
+}
+
+export function worksheetFieldsForSave(kind: AssignmentKind, list: MaterialWorksheet[], singleId: string) {
+  return { worksheet_id: kind === "material" ? list[0]?.id ?? null : singleId || null };
+}
+export function applyWorksheetsToSettings(settings: Record<string, unknown>, kind: AssignmentKind, list: MaterialWorksheet[]) {
+  const next = { ...settings };
+  if (kind === "material" && list.length) next.worksheets = list.map(({ id, title }) => ({ id, title }));
+  else delete next.worksheets;
+  return next;
+}
+export function materialContentLabel(a: { worksheet_id?: string | null; settings?: unknown; lesson_id?: string | null; lesson_source?: string | null }): string {
+  const worksheets = assignmentWorksheets(a).length;
+  const lessons = assignmentLessons(a).length;
+  return [worksheets ? worksheetCountLabel(worksheets) : "", lessons ? lessonCountLabel(lessons) : ""].filter(Boolean).join(", ");
+}
+export function worksheetCountLabel(n: number): string {
+  return n === 1 ? "1 list" : n >= 2 && n <= 4 ? `${n} listy` : `${n} listů`;
+}
 
 /** Lekce materiálu: settings.lessons, jinak fallback na lesson_id (starší záznamy). */
 export function assignmentLessons(a: any): PlanLesson[] {
