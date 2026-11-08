@@ -21,12 +21,12 @@ export default function CheatsheetLessonPicker({ onSelect }: { onSelect: (source
     setBusy(true);
     try {
       const [teacher, global] = await Promise.all([
-        supabase.from("teacher_textbook_lessons").select("title, content_blocks").eq("id", l.id).eq("status", "published").maybeSingle(),
-        supabase.from("textbook_lessons").select("title, content_blocks").eq("id", l.id).eq("status", "published").maybeSingle(),
+        supabase.from("teacher_textbook_lessons").select("title, blocks").eq("id", l.id).eq("status", "published").maybeSingle(),
+        supabase.from("textbook_lessons").select("title, blocks").eq("id", l.id).eq("status", "published").maybeSingle(),
       ]);
       const lesson = teacher.data ?? global.data;
       if (!lesson) throw new Error("unavailable");
-      const text = blocksToPlainText(lesson.content_blocks, 50000);
+      const text = blocksToPlainText(lesson.blocks, 50000);
       if (!text.trim()) { toast.info("Lekce nemá text k vložení."); return; }
       onSelect({ title: lesson.title, text, subject: l.subject });
     } catch { toast.error("Text lekce není dostupný. Zkus jinou lekci."); } finally { setBusy(false); }
