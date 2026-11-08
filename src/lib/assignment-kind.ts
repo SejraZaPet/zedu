@@ -167,6 +167,18 @@ export function submittableOnly<T extends { settings?: unknown }>(items: T[]): T
 }
 
 /** Úkol s pracovním listem nesmí být zároveň portfoliový – portfolio větev u žáka list skryje. */
+/** Která část žákovského přehrávače se vykreslí. List má přednost i u portfoliového úkolu. */
+export function studentPlayerBranch(
+  kind: string,
+  isPortfolioTask: boolean,
+  hasWorksheet: boolean,
+): "material" | "worksheet" | "portfolio" | "questions" {
+  if (kind === "material") return "material";
+  if (hasWorksheet) return "worksheet";
+  if (isPortfolioTask) return "portfolio";
+  return "questions";
+}
+
 export function portfolioHidesWorksheet(kind: string, isPortfolioTask: boolean, worksheetId: string | null | undefined): boolean {
   return kind === "task" && isPortfolioTask && !!worksheetId;
 }
