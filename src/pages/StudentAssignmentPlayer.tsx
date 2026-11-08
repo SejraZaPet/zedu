@@ -159,6 +159,21 @@ const StudentAssignmentPlayer = () => {
     };
   }, [assignmentId]);
 
+  // Po návratu do okna načti úkol znovu (učitel mohl změnit nastavení), jen bez neuložených odpovědí.
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  useEffect(() => {
+    if (!assignmentId) return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (autosaveTimer.current) return;
+      if (JSON.stringify(answersRef.current || {}) !== lastSavedAnswers.current) return;
+      loadAssignment();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [assignmentId]);
+
   /** Přepne zobrazení na konkrétní pokus (prohlížení bez úprav). */
   const selectAttempt = (a: AttemptData) => {
     setAttempt(a);
@@ -910,7 +925,7 @@ const StudentAssignmentPlayer = () => {
           )}
 
         {/* Portfolio task branch (upload-only, no quiz) */}
-        {assignmentKind(assignment.settings) === "material" ? null : assignment.is_portfolio_task ? (
+        {assignmentKind(assignment.settings) === "material" ? null : studentPlayerBranch(assignmentKind(assignment.settings), !!assignment.is_portfolio_task, !!worksheetSpec) === "portfolio" ? (
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="flex justify-end">
