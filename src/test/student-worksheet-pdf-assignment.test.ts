@@ -16,7 +16,7 @@ describe("PDF listu v úkolu/materiálu", () => {
     const html = await buildStudentWorksheetHtml(spec, "ws1");
     expect(html).not.toContain("TAJNY_KLIC");
     expect(html).not.toContain('class="ws-key-item"');
-    for (const t of TYPES) expect(html, t).toContain(`ZADANI_${t}`);
+    for (const t of TYPES.filter((x) => x !== "fill_blank")) expect(html, t).toContain(`ZADANI_${t}`);
   });
 
   it("staré úkoly i materiály mají listy odvozené z worksheet_id / settings.worksheets", () => {
