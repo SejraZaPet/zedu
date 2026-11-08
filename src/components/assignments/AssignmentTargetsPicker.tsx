@@ -70,7 +70,7 @@ export default function AssignmentTargetsPicker({ targets, onChange, sections, o
       {targets.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Pro každý cíl se vytvoří samostatný úkol. {showDeadline ? "Prázdné termíny převezmou společné nastavení formuláře." : ""}
+            Pro každý cíl se vytvoří samostatná položka. {showDeadline ? "Prázdné termíny převezmou společné nastavení formuláře." : ""}
           </p>
           {targets.map((t) => (
             <div key={t.key} className="grid grid-cols-1 gap-2 rounded-md border border-border p-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
