@@ -495,10 +495,11 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   filter: none;
   box-shadow: var(--teacher-tile-shadow-raised);
 }
-.teacher-dashboard-tile svg {
+.teacher-dashboard-grid .teacher-dashboard-tile > svg {
+  position: absolute;
+  top: 18%;
   width: 44%;
   height: 44%;
-  margin-bottom: 18%;
 }
 .teacher-dashboard-tile-title {
   position: absolute;
@@ -516,7 +517,7 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   letter-spacing: 0;
   text-align: center;
 }
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .teacher-dashboard-tile-title { font-size: 17px; }
 }
 .teacher-dashboard-tile-count {
