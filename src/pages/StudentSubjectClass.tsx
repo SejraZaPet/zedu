@@ -40,6 +40,7 @@ import { computeRowBadges, isTodayLesson, isUpcomingLesson } from "@/lib/lesson-
 import { parseLessonMaterials, splitLessonMaterials, type LessonMaterial } from "@/lib/lesson-content-materials";
 import LessonContentList from "@/components/subject-class/LessonContentList";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import { materialContentLabel } from "@/lib/assignment-content";
 
 
 import SiteHeader from "@/components/SiteHeader";
@@ -893,6 +894,7 @@ export default function StudentSubjectClass() {
                       <div className="min-w-0 flex-1">
                         <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
                         {isWallPost(a.settings) && <Badge variant="secondary">Příspěvek</Badge>}
+                        {kind === "material" && materialContentLabel(a) && <p className="text-xs text-muted-foreground">{materialContentLabel(a)}</p>}
                         {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
                         {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
                       </div>

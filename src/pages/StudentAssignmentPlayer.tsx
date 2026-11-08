@@ -37,6 +37,8 @@ import { bestAttempt } from "@/lib/best-results";
 import { isPlanWithoutContent, planLessons } from "@/lib/planned-assignment";
 import PlanPrepareButton from "@/components/assignments/PlanPrepareButton";
 import MaterialLessonsCard from "@/components/assignments/MaterialLessonsCard";
+import MaterialWorksheetsCard from "@/components/assignments/MaterialWorksheetsCard";
+import { assignmentWorksheets } from "@/lib/assignment-content";
 import ExamTypeBadge from "@/components/assignments/ExamTypeBadge";
 
 interface AssignmentData {
@@ -194,6 +196,12 @@ const StudentAssignmentPlayer = () => {
 
       // Plán bez obsahu: jen termín a lekce, žádný pokus se nezakládá.
       if (isPlanWithoutContent(assignmentData)) return;
+
+      // Material is open-only: no worksheet attempt, activity gate or group submission.
+      if (assignmentKind(assignmentData.settings) === "material") {
+        setAttempt(null); setAllAttempts([]); setWorksheetSpec(null); setAnswers({});
+        return;
+      }
 
       // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
       if (assignmentData.worksheet_id) {
@@ -710,6 +718,7 @@ const StudentAssignmentPlayer = () => {
         )}
 
         {/* Propojená lekce z učebnice */}
+        {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} />}
         {assignmentKind(assignment.settings) === "material" && planLessons(assignment).length > 1 ? (
           <MaterialLessonsCard lessons={planLessons(assignment)} />
         ) : linkedLesson && (
@@ -900,7 +909,7 @@ const StudentAssignmentPlayer = () => {
           )}
 
         {/* Portfolio task branch (upload-only, no quiz) */}
-        {assignment.is_portfolio_task ? (
+        {assignmentKind(assignment.settings) === "material" ? null : assignment.is_portfolio_task ? (
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="flex justify-end">
