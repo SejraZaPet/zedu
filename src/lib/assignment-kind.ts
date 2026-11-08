@@ -117,3 +117,51 @@ export function filterByKind<T extends { settings?: unknown }>(items: T[], kind:
   const vis = opts.teacher ? list : list.filter((i) => announcementVisible(i.settings, opts.now));
   return [...vis.filter((i) => isPinned(i.settings)), ...vis.filter((i) => !isPinned(i.settings))];
 }
+
+/** Sekce formuláře / údaje, které dávají smysl jen u některých druhů. */
+export type KindField =
+  | "deadline" | "attempts" | "late" | "examType" | "groupMode" | "randomize"
+  | "portfolio" | "lockdown" | "cheatsheet" | "notifyOverdue" | "targetDeadline"
+  | "pinned" | "visibleUntil" | "worksheet" | "lesson" | "submission";
+
+/** Jediný zdroj pravdy: které sekce platí pro který druh. */
+export const KIND_FIELDS: Record<AssignmentKind, ReadonlySet<KindField>> = {
+  task: new Set<KindField>(["deadline", "attempts", "late", "examType", "groupMode", "randomize", "portfolio", "lockdown", "cheatsheet", "notifyOverdue", "targetDeadline", "worksheet", "lesson", "submission"]),
+  material: new Set<KindField>(["worksheet", "lesson"]),
+  announcement: new Set<KindField>(["pinned", "visibleUntil"]),
+};
+export const kindHas = (kind: AssignmentKind, field: KindField) => KIND_FIELDS[kind].has(field);
+
+export interface KindRowFields {
+  deadline?: string | null; max_attempts?: number; exam_type?: string | null;
+  group_mode?: string | null; group_size?: number | null;
+  randomize_order?: boolean; randomize_choices?: boolean;
+  is_portfolio_task?: boolean; lockdown_mode?: boolean;
+  worksheet_id?: string | null; lesson_id?: string | null; lesson_source?: string | null;
+}
+/** Ne-úkol: přepíše úkolová pole neutrálními hodnotami (úkol beze změny). */
+export function neutralizeForKind<T extends KindRowFields>(kind: AssignmentKind, row: T): T {
+  if (kind === "task") return row;
+  const out: T = {
+    ...row, deadline: null, max_attempts: 1, exam_type: null, group_mode: "individual", group_size: null,
+    randomize_order: false, randomize_choices: false, is_portfolio_task: false, lockdown_mode: false,
+  };
+  if (!kindHas(kind, "worksheet")) out.worksheet_id = null;
+  if (!kindHas(kind, "lesson")) { out.lesson_id = null; out.lesson_source = null; }
+  return out;
+}
+
+/** Texty podle druhu. */
+export const KIND_TEXT: Record<AssignmentKind, { create: string; edit: string; published: string; scheduled: string; created: string; many: string }> = {
+  task: { create: "Nový úkol", edit: "Upravit úkol", published: "Úkol zveřejněn", scheduled: "Úkol naplánován", created: "Úkol uložen", many: "Vytvořeno úkolů" },
+  material: { create: "Nový materiál", edit: "Upravit materiál", published: "Materiál zveřejněn", scheduled: "Materiál naplánován", created: "Materiál uložen", many: "Vytvořeno materiálů" },
+  announcement: { create: "Nové oznámení", edit: "Upravit oznámení", published: "Oznámení zveřejněno", scheduled: "Oznámení naplánováno", created: "Oznámení uloženo", many: "Vytvořeno oznámení" },
+};
+
+/** Lze změnit druh? Ne, pokud položka už má pokusy/odevzdání. */
+export const canChangeKind = (hasAttempts: boolean) => !hasAttempts;
+
+/** Jen odevzdávané položky (úkoly; starší bez `kind` = úkol) – pro výsledky, odevzdání a „chybí odevzdat“. */
+export function submittableOnly<T extends { settings?: unknown }>(items: T[]): T[] {
+  return items.filter((i) => isSubmittable(i.settings));
+}

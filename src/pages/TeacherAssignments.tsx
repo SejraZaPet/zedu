@@ -44,7 +44,7 @@ import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, type AssignmentKind } from "@/lib/assignment-kind";
+import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, kindHas, neutralizeForKind, canChangeKind, KIND_TEXT, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 import AssignmentRecipientsPicker from "@/components/assignments/AssignmentRecipientsPicker";
 import { audienceAllowed, audienceError, effectiveRecipients, fetchRecipientsMap, syncRecipients, type AudienceMode } from "@/lib/assignment-recipients";
@@ -123,6 +123,8 @@ const TeacherAssignments = () => {
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   // Druh položky (úkol / materiál / oznámení) a odevzdání po termínu – ukládá se do settings.
   const [formKind, setFormKind] = useState<AssignmentKind>(() => kindFromParam(searchParams.get("kind")) ?? "task");
+  /** ID položek, které už mají aspoň jeden pokus žáka (druh pak nelze měnit). */
+  const [attemptedIds, setAttemptedIds] = useState<Set<string>>(() => new Set());
   const [notifyEmailOpt, setNotifyEmailOpt] = useState<boolean | null>(wallReturn ? false : null);
   const [commentsOpt, setCommentsOpt] = useState<boolean | null>(null);
   const [cheatsheetOpt, setCheatsheetOpt] = useState(false);
@@ -468,12 +470,15 @@ const TeacherAssignments = () => {
       next[a.id] = assignmentClassProgress(rows, targetIds, sharedMembers ?? []);
     });
     setProgress(next);
+    setAttemptedIds(new Set(((attemptsRes.data ?? []) as any[]).map((t) => t.assignment_id as string)));
   };
 
   /**
    * Společné jádro pro všechny tři akce uložení úlohy.
    * `mode` určuje výsledný stav: "draft" | "scheduled" | "published".
    */
+  const kindLocked = !!editingId && !canChangeKind(attemptedIds.has(editingId));
+  const hiddenTaskData = !!deadline || maxAttempts !== 1 || randomizeOrder || randomizeChoices || isPortfolioTask || lockdownMode || examType !== "ukol" || groupMode !== "individual" || cheatsheetOpt;
   const submitAssignment = async (mode: "draft" | "scheduled" | "published") => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
@@ -594,6 +599,7 @@ const TeacherAssignments = () => {
           group_mode: groupMode,
           group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
         };
+        Object.assign(patch, neutralizeForKind(formKind, patch as any));
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
         const outcome = editSaveOutcome(original?.status, mode);
@@ -629,7 +635,7 @@ const TeacherAssignments = () => {
           if (error) throw error;
         }
         // Už publikovaná úloha se jen upravuje – status se nemění, toast není "publikováno".
-        toast({ title: outcome.toastTitle });
+        toast({ title: outcome.toastTitle === "Úloha publikována" ? KIND_TEXT[formKind].published : outcome.toastTitle === "Úloha naplánována" ? KIND_TEXT[formKind].scheduled : outcome.toastTitle });
       } else {
         // Každý vybraný cíl = samostatný nezávislý řádek s vlastními termíny.
         const baseStatus = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
@@ -673,7 +679,7 @@ const TeacherAssignments = () => {
             group_mode: groupMode,
             group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
           };
-        });
+        }).map((r) => neutralizeForKind(formKind, r));
         // S výběrem žáků: vložit jako koncept → uložit příjemce → teprve pak zveřejnit.
         const insertRows = nextRecipients.length || wallReturn
           ? rows.map((r) => ({ ...r, status: "draft", scheduled_publish_at: null }))
@@ -695,12 +701,12 @@ const TeacherAssignments = () => {
         }
         toast({
           title: rows.length > 1
-            ? `Vytvořeno úloh: ${rows.length}`
-            : mode === "published" ? "Úloha publikována" : mode === "scheduled" ? "Úloha naplánována" : "Úloha vytvořena",
+            ? `${KIND_TEXT[formKind].many}: ${rows.length}`
+            : mode === "published" ? KIND_TEXT[formKind].published : mode === "scheduled" ? KIND_TEXT[formKind].scheduled : KIND_TEXT[formKind].created,
         });
         // U skupinového úkolu s jedním cílem necháme formulář otevřený, aby šlo hned rozdělit skupiny.
         const createdRows = (created as any[]) ?? [];
-        if (groupMode !== "individual" && createdRows.length === 1) {
+        if (kindHas(formKind, "groupMode") && groupMode !== "individual" && createdRows.length === 1) {
           const [kind, id] = newTargets[0].key.split(":");
           setSelectedClassId(kind === "class" ? id : "");
           setSelectedGroupId(kind === "group" ? id : "");
@@ -1081,7 +1087,7 @@ const TeacherAssignments = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Úlohy pro žáky</h1>
-            <p className="text-sm text-muted-foreground">Vytvářej a spravuj zadání úloh</p>
+            <p className="text-sm text-muted-foreground">Úkoly, materiály a oznámení</p>
           </div>
         </div>
 
@@ -1121,7 +1127,7 @@ const TeacherAssignments = () => {
         {showForm && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg">{editingId ? "Upravit úlohu" : "Nová úloha"}</CardTitle>
+              <CardTitle className="text-lg">{editingId ? KIND_TEXT[formKind].edit : KIND_TEXT[formKind].create}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <fieldset>
@@ -1130,7 +1136,8 @@ const TeacherAssignments = () => {
                   {(["task", "material", "announcement"] as AssignmentKind[]).map((k) => {
                     const Icon = k === "task" ? ClipboardList : k === "material" ? BookOpen : Megaphone;
                     return <Button key={k} type="button" role="radio" aria-checked={formKind === k}
-                      variant={formKind === k ? "default" : "outline"} className="min-h-11 gap-2" onClick={() => setFormKind(k)}>
+                      variant={formKind === k ? "default" : "outline"} className="min-h-11 gap-2"
+                      disabled={kindLocked && formKind !== k} onClick={() => setFormKind(k)}>
                       <Icon className="h-4 w-4" aria-hidden="true" />{KIND_LABELS[k]}
                     </Button>;
                   })}
@@ -1140,6 +1147,8 @@ const TeacherAssignments = () => {
                     : formKind === "material" ? "Materiál se neodevzdává – žáci ho jen otevřou. Nemá termín ani hodnocení."
                     : `Krátká zpráva pro žáky (do ${ANNOUNCEMENT_MAX} znaků), bez odevzdání a termínu.`}
                 </p>
+                {kindLocked && <p className="mt-1 text-xs text-muted-foreground" data-testid="kind-locked">Druh nelze změnit – žáci už mají pokusy nebo odevzdání.</p>}
+                {formKind !== "task" && hiddenTaskData && <p className="mt-1 text-xs text-muted-foreground" data-testid="kind-hidden-note">Termín, pokusy a nastavení úkolu zůstávají jen ve formuláři – u {formKind === "material" ? "materiálu" : "oznámení"} se neuloží.</p>}
               </fieldset>
               <div>
                 <Label>Název</Label>
@@ -1151,7 +1160,7 @@ const TeacherAssignments = () => {
               </div>
 
               <fieldset className="space-y-1">
-                {formKind === "task" && <label className="flex min-h-11 items-center gap-2 text-sm"><Checkbox checked={cheatsheetOpt} onCheckedChange={v => setCheatsheetOpt(v === true)} />Tahák povolen</label>}
+                {kindHas(formKind, "cheatsheet") && <label className="flex min-h-11 items-center gap-2 text-sm"><Checkbox checked={cheatsheetOpt} onCheckedChange={v => setCheatsheetOpt(v === true)} />Tahák povolen</label>}
                 <legend className="sr-only">Upozornění žákům</legend>
                 <label className="flex min-h-11 items-center gap-2 text-sm">
                   <Checkbox
@@ -1276,7 +1285,7 @@ const TeacherAssignments = () => {
                       Naplánovat zveřejnění
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Úloha zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
+                      Položka zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
                     </p>
                   </div>
                   <Switch
@@ -1350,6 +1359,7 @@ const TeacherAssignments = () => {
                   <AssignmentTargetsPicker
                     targets={newTargets}
                     onChange={setNewTargets}
+                    showDeadline={kindHas(formKind, "targetDeadline")}
                     onSelectKey={async (key) => {
                       const id = key.slice(6);
                       if (key.startsWith("class:") && classes.find((c) => c.id === id)?.source === "school") {
@@ -1442,7 +1452,7 @@ const TeacherAssignments = () => {
                 )}
 
                 {/* Exam type */}
-                <div>
+                {kindHas(formKind, "examType") && <div>
                   <Label>Typ</Label>
                   <Select value={examType} onValueChange={(v) => setExamType(v as ExamType | "ukol")}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -1452,11 +1462,11 @@ const TeacherAssignments = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div>}
               </div>
 
               {/* Typ zadání – individuálně / dvojice / skupiny */}
-              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
+              {kindHas(formKind, "groupMode") && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm">Typ zadání</Label>
@@ -1612,8 +1622,9 @@ const TeacherAssignments = () => {
                     )}
                   </>
                 )}
-              </div>
+              </div>}
 
+              {kindHas(formKind, "randomize") && <>
               {/* Randomization */}
               <div className="flex flex-col gap-3 p-3 border border-border rounded-lg bg-muted/30">
                 <div
@@ -1713,11 +1724,12 @@ const TeacherAssignments = () => {
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
+              </>}
 
 
 
             {/* Pracovní list selector */}
-            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+            {kindHas(formKind, "worksheet") && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-sm">Pracovní list (volitelné)</Label>
@@ -1780,10 +1792,10 @@ const TeacherAssignments = () => {
                     ✓ Žáci uvidí tento pracovní list v interaktivním plejeru.
                   </p>
                 )}
-              </div>
+              </div>}
 
             {/* Propojení s lekcí z učebnice – nezávislé na pracovním listu i portfoliu */}
-            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+            {kindHas(formKind, "lesson") && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-muted-foreground" />
                 <Label className="text-sm">Propojit s lekcí z učebnice (volitelné)</Label>
@@ -1846,7 +1858,7 @@ const TeacherAssignments = () => {
                   ✓ Žáci u úlohy uvidí tlačítko „Otevřít lekci“.
                 </p>
               )}
-            </div>
+            </div>}
 
               <AssignmentFormActions
                 isEditingPublished={isEditingPublished}
@@ -1884,7 +1896,7 @@ const TeacherAssignments = () => {
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : assignments.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>Zatím žádné úlohy. Klikni na „Nová úloha".</p>
+            <p>Zatím žádné úkoly, materiály ani oznámení. Klikněte na „Přidat“.</p>
           </div>
         ) : (() => {
           const visible = filteredListAssignments
@@ -1915,7 +1927,7 @@ const TeacherAssignments = () => {
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="font-semibold break-words">{a.title}</h3>
                                     <AssignmentStateBadge status={visualStatus} />
-                                    <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {assignmentKind(a.settings) === "task" && <ExamTypeBadge examType={a.exam_type} showDefault />}
                                     {(recipientsMap[a.id]?.length ?? 0) > 0 && (
                                       <Badge variant="outline" className="text-xs">Jen vybraní žáci ({recipientsMap[a.id].length})</Badge>
                                     )}
@@ -1968,7 +1980,7 @@ const TeacherAssignments = () => {
                                   )}
 
                                   <div className="assignment-card-meta flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                                    {a.deadline && (
+                                    {a.deadline && assignmentKind(a.settings) === "task" && (
                                       <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
                                         {format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}
@@ -1978,8 +1990,8 @@ const TeacherAssignments = () => {
                                       <RotateCcw className="w-3 h-3" />
                                       {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
                                     </span>}
-                                    {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
-                                    {a.lockdown_mode && (
+                                    {a.randomize_order && assignmentKind(a.settings) === "task" && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
+                                    {a.lockdown_mode && assignmentKind(a.settings) === "task" && (
                                       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                                         <Lock className="w-3 h-3" /> Lockdown
                                       </span>

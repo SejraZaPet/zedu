@@ -1,3 +1,4 @@
+import { submittableOnly } from "@/lib/assignment-kind";
 import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
@@ -104,9 +105,10 @@ const TeacherResults = () => {
       // Teacher's assignments + lesson plan subject
       const { data: asg } = await supabase
         .from("assignments")
-        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, lesson_id, lesson_source, worksheet_id, status, scheduled_publish_at")
+        .select("id, title, class_id, group_id, subject_id, activity_data, lesson_plan_id, lesson_id, lesson_source, worksheet_id, status, scheduled_publish_at, settings")
         .eq("teacher_id", uid);
-      const asgRows = (asg ?? []) as any[];
+      // Materiály a oznámení se neodevzdávají – do výsledků nepatří.
+      const asgRows = submittableOnly((asg ?? []) as any[]);
 
       // Názvy předmětů z katalogu (assignments.subject_id), záloha lesson_plans.subject.
       const subjIds = [...new Set(asgRows.map((a) => a.subject_id).filter(Boolean))];

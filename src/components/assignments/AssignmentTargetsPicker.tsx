@@ -22,9 +22,11 @@ interface Props {
   onChange: (targets: AssignmentTarget[]) => void;
   sections: { title: string; options: Option[] }[];
   onSelectKey?: (key: string) => void;
+  /** Termín odevzdání u cíle (jen úkol). */
+  showDeadline?: boolean;
 }
 
-export default function AssignmentTargetsPicker({ targets, onChange, sections, onSelectKey }: Props) {
+export default function AssignmentTargetsPicker({ targets, onChange, sections, onSelectKey, showDeadline = true }: Props) {
   const labels = new Map(sections.flatMap((s) => s.options.map((o) => [o.key, o.label] as const)));
   const selected = new Set(targets.map((t) => t.key));
 
@@ -68,7 +70,7 @@ export default function AssignmentTargetsPicker({ targets, onChange, sections, o
       {targets.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Pro každý cíl se vytvoří samostatný úkol. Prázdné termíny převezmou společné nastavení formuláře.
+            Pro každý cíl se vytvoří samostatná položka. {showDeadline ? "Prázdné termíny převezmou společné nastavení formuláře." : ""}
           </p>
           {targets.map((t) => (
             <div key={t.key} className="grid grid-cols-1 gap-2 rounded-md border border-border p-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
@@ -78,11 +80,11 @@ export default function AssignmentTargetsPicker({ targets, onChange, sections, o
                 <Input type="datetime-local" className="h-8 text-xs" value={t.publishAt}
                   onChange={(e) => update(t.key, { publishAt: e.target.value })} />
               </div>
-              <div>
+              {showDeadline ? <div>
                 <Label className="text-xs text-muted-foreground">Termín odevzdání</Label>
                 <Input type="datetime-local" className="h-8 text-xs" value={t.deadlineAt}
                   onChange={(e) => update(t.key, { deadlineAt: e.target.value })} />
-              </div>
+              </div> : <div aria-hidden="true" />}
               <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label="Odebrat cíl"
                 onClick={() => toggle(t.key)}>
                 <X className="h-4 w-4" />
