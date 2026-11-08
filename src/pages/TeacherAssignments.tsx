@@ -38,7 +38,7 @@ import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { isPlanWithoutContent, type PlanLesson } from "@/lib/planned-assignment";
-import { addLesson, applyLessonsToSettings, assignmentLessons, lessonCountLabel, lessonFieldsForSave, moveLesson, removeLesson } from "@/lib/assignment-content";
+import { addLesson, applyLessonsToSettings, assignmentLessons, lessonCountLabel, lessonFieldsForSave, moveLesson, removeLesson, assignmentWorksheets, addWorksheet, moveWorksheet, removeWorksheet, worksheetFieldsForSave, applyWorksheetsToSettings, materialContentLabel, type MaterialWorksheet } from "@/lib/assignment-content";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import AssignmentDescriptionEditor from "@/components/assignments/AssignmentDescriptionEditor";
@@ -152,6 +152,7 @@ const TeacherAssignments = () => {
 
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
+  const [materialWorksheets, setMaterialWorksheets] = useState<MaterialWorksheet[]>(() => prefillWorksheetId ? [{ id: prefillWorksheetId, title: "Pracovní list" }] : []);
   const [lockdownMode, setLockdownMode] = useState(false);
   const [isPortfolioTask, setIsPortfolioTask] = useState(false);
 
@@ -331,6 +332,15 @@ const TeacherAssignments = () => {
     setMaterialLessons((x) => (x.length ? x : [{ id: linkedLessonId, source: linkedLessonSource === "textbook_lessons" ? "textbook_lessons" : "teacher_textbook_lessons", title: "Lekce" }]));
   }, [formKind, linkedLessonId, linkedLessonSource]);
 
+  useEffect(() => {
+    if (formKind !== "material" || !selectedWorksheetId) return;
+    setMaterialWorksheets((list) => list.length ? list : [{ id: selectedWorksheetId, title: worksheets.find((w) => w.id === selectedWorksheetId)?.title ?? "Pracovní list" }]);
+  }, [formKind, selectedWorksheetId]);
+
+  useEffect(() => {
+    setMaterialWorksheets((list) => list.map((w) => ({ ...w, title: worksheets.find((option) => option.id === w.id)?.title ?? w.title })));
+  }, [worksheets]);
+
   // Starší záznamy mají u lekce jen ID – dohledáme názvy pro seznam materiálu.
   useEffect(() => {
     const missing = materialLessons.filter((l) => l.title === "Lekce");
@@ -344,7 +354,7 @@ const TeacherAssignments = () => {
         const { data } = await supabase.from(table as any).select("id, title").in("id", ids);
         for (const r of ((data as any[]) ?? [])) if (r?.title) names.set(r.id, r.title);
       }
-      if (!cancelled && names.size) setMaterialLessons((list) => list.map((l) => (names.has(l.id) ? { ...l, title: names.get(l.id)! } : l)));
+      if (!cancelled && names.size) setMaterialLessons((list) => list.map((l) => ({ ...l, title: names.get(l.id) ?? l.title })));
     })();
     return () => { cancelled = true; };
   }, [materialLessons]);
@@ -562,11 +572,12 @@ const TeacherAssignments = () => {
       // Ruční volba ve formuláři má přednost – umožní doplnit předmět u starých úloh.
       let subjectIdForAssignment: string | null =
         formSubjectId || subjectIdParam || null;
-      if (!subjectIdForAssignment && selectedWorksheetId) {
+      const worksheetSave = worksheetFieldsForSave(formKind, materialWorksheets, selectedWorksheetId);
+      if (!subjectIdForAssignment && worksheetSave.worksheet_id) {
         const { data: ws } = await supabase
           .from("worksheets")
           .select("subject_id")
-          .eq("id", selectedWorksheetId)
+          .eq("id", worksheetSave.worksheet_id)
           .maybeSingle();
         subjectIdForAssignment = (ws as any)?.subject_id ?? null;
       }
@@ -612,18 +623,18 @@ const TeacherAssignments = () => {
           title: title.trim(),
           description: description.trim(),
           deadline: deadlineIso,
-          settings: applyLessonsToSettings(
+          settings: applyWorksheetsToSettings(applyLessonsToSettings(
             mergeKindSettings(assignments.find((a) => a.id === editingId)?.settings as any, kindPatch(deadlineIso)),
             lessonSave.lessons,
             (assignments.find((a) => a.id === editingId)?.settings as any)?.plan === true,
-          ) as any,
+          ), formKind, materialWorksheets) as any,
           materials: materials as any,
           max_attempts: isTask ? maxAttempts : 1,
           randomize_choices: randomizeChoices,
           randomize_order: randomizeOrder,
           class_id: selectedGroupId ? null : (selectedClassId || null),
           group_id: selectedGroupId || null,
-          worksheet_id: selectedWorksheetId || null,
+          worksheet_id: worksheetSave.worksheet_id,
           lesson_id: lessonSave.lesson_id,
           lesson_source: lessonSave.lesson_source,
           lockdown_mode: lockdownMode,
@@ -688,7 +699,7 @@ const TeacherAssignments = () => {
           const ownDeadline = isTask && t.deadlineAt ? new Date(t.deadlineAt) : null;
           const rowDeadline = ownDeadline && !isNaN(ownDeadline.getTime()) ? ownDeadline.toISOString() : deadlineIso;
           return {
-            settings: applyLessonsToSettings(mergeKindSettings(null, kindPatch(rowDeadline)), lessonSave.lessons, false) as any,
+            settings: applyWorksheetsToSettings(applyLessonsToSettings(mergeKindSettings(null, kindPatch(rowDeadline)), lessonSave.lessons, false), formKind, materialWorksheets) as any,
             teacher_id: user.id,
             title: title.trim(),
             description: description.trim(),
@@ -703,7 +714,7 @@ const TeacherAssignments = () => {
             status,
             scheduled_publish_at: publishAt,
             activity_data: [] as any,
-            worksheet_id: selectedWorksheetId || null,
+            worksheet_id: worksheetSave.worksheet_id,
             lesson_id: lessonSave.lesson_id,
             lesson_source: lessonSave.lesson_source,
             lockdown_mode: lockdownMode,
@@ -805,6 +816,7 @@ const TeacherAssignments = () => {
     setNewTargets(prefillTargets());
 
     setSelectedWorksheetId("");
+    setMaterialWorksheets([]);
     setSelectedLessonTextbookId("");
     setLinkedLessonId("");
     setLinkedLessonSource(null);
@@ -868,6 +880,7 @@ const TeacherAssignments = () => {
     setSelectedGroupId(a.group_id || "");
     setSelectedClassId(a.group_id ? "" : (a.class_id || ""));
     setSelectedWorksheetId(a.worksheet_id || "");
+    setMaterialWorksheets(assignmentWorksheets(a).map((w) => ({ ...w, title: worksheets.find((option) => option.id === w.id)?.title ?? w.title })));
     setLinkedLessonId(a.lesson_id || "");
     setLinkedLessonSource(
       (a.lesson_source as "textbook_lessons" | "teacher_textbook_lessons" | null) || null,
@@ -1764,7 +1777,7 @@ const TeacherAssignments = () => {
 
 
             {/* Pracovní list selector */}
-            {kindHas(formKind, "worksheet") && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+            {kindHas(formKind, "worksheet") && formKind !== "material" && <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-sm">Pracovní list (volitelné)</Label>
@@ -1835,9 +1848,17 @@ const TeacherAssignments = () => {
                 <BookOpen className="w-4 h-4 text-muted-foreground" />
                 <h3 id="material-lessons-title" className="text-sm font-medium">Pracovní listy a lekce</h3>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Lekce z učebnice si žáci jen otevřou, nic se neodevzdává. Přidat jich můžete libovolný počet.
-              </p>
+              {materialWorksheets.length > 0 && <ol className="space-y-2" aria-label="Vybrané pracovní listy">
+                {materialWorksheets.map((w, i) => <li key={w.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background p-2">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 break-words text-sm">{i + 1}. {w.title}</span>
+                  <div className="flex shrink-0 gap-1">
+                    <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={i === 0} aria-label={`Posunout list ${w.title} nahoru`} title="Posunout nahoru" onClick={() => setMaterialWorksheets((list) => moveWorksheet(list, i, -1))}><ArrowUp className="h-4 w-4" /></Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={i === materialWorksheets.length - 1} aria-label={`Posunout list ${w.title} dolů`} title="Posunout dolů" onClick={() => setMaterialWorksheets((list) => moveWorksheet(list, i, 1))}><ArrowDown className="h-4 w-4" /></Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-11 w-11" aria-label={`Odebrat list ${w.title}`} title="Odebrat list" onClick={() => setMaterialWorksheets((list) => removeWorksheet(list, w.id))}><X className="h-4 w-4" /></Button>
+                  </div>
+                </li>)}
+              </ol>}
               {materialLessons.length > 0 && (
                 <ol className="space-y-2" aria-label="Vybrané lekce">
                   {materialLessons.map((l, i) => (
@@ -1856,16 +1877,17 @@ const TeacherAssignments = () => {
                   ))}
                 </ol>
               )}
-              <div className="grid gap-2 sm:grid-cols-2">
+              <SearchableSelect label="Hledat učebnici" placeholder="— Vyberte učebnici —" value={selectedLessonTextbookId}
+                options={lessonTextbooks.map((t) => ({ value: t.id, label: t.title }))} onValueChange={setSelectedLessonTextbookId} />
+              <div className="grid min-w-0 grid-cols-2 gap-2">
                 <SearchableSelect
-                  label="Hledat učebnici"
-                  placeholder="— Vyberte učebnici —"
-                  value={selectedLessonTextbookId}
-                  options={lessonTextbooks.map((t) => ({ value: t.id, label: t.title }))}
-                  onValueChange={(v) => setSelectedLessonTextbookId(v)}
+                  label="Přidat list" placeholder="+ Přidat list" value="" growing
+                  options={worksheets.filter((w) => !materialWorksheets.some((selected) => selected.id === w.id)).map((w) => ({ value: w.id, label: w.title, subtitle: w.status === "draft" ? "Koncept" : undefined }))}
+                  onValueChange={(id) => { const found = worksheets.find((w) => w.id === id); if (found) setMaterialWorksheets((list) => addWorksheet(list, found)); }}
                 />
                 <SearchableSelect
                   label="Přidat lekci"
+                  growing
                   placeholder={lessonOptionsLoading ? "Načítám lekce…" : "+ Přidat lekci"}
                   disabled={!selectedLessonTextbookId || lessonOptionsLoading}
                   value=""
@@ -2017,8 +2039,8 @@ const TeacherAssignments = () => {
                                     <h3 className="font-semibold break-words">{a.title}</h3>
                                     <AssignmentStateBadge status={visualStatus} />
                                     {assignmentKind(a.settings) === "task" && <ExamTypeBadge examType={a.exam_type} showDefault />}
-                                    {assignmentKind(a.settings) === "material" && assignmentLessons(a).length > 0 && (
-                                      <Badge variant="outline" className="text-xs"><BookOpen className="w-3 h-3 mr-1" aria-hidden />{lessonCountLabel(assignmentLessons(a).length)}</Badge>
+                                    {assignmentKind(a.settings) === "material" && materialContentLabel(a) && (
+                                      <Badge variant="outline" className="text-xs"><BookOpen className="w-3 h-3 mr-1" aria-hidden />{materialContentLabel(a)}</Badge>
                                     )}
                                     {(recipientsMap[a.id]?.length ?? 0) > 0 && (
                                       <Badge variant="outline" className="text-xs">Jen vybraní žáci ({recipientsMap[a.id].length})</Badge>

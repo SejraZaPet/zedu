@@ -192,6 +192,8 @@
 
 ## Materiál: více lekcí a listů
 - [x] Etapa 1: více lekcí u materiálu (settings.lessons), řazení/odebrání, počet na kartách, úkol beze změny, testy
-- [ ] Ověření v prohlížeči jako učitel/žák a 390 px
+- [x] Přihlášený učitelský formulář 1280/390 px: přidání, řazení, odebrání, 44 px; místní žákovský náhled otevřel 2 skutečné autorizované listy bez zápisů
 - [ ] Nabídka listů lekce po přidání lekce (vazba worksheets.source_lesson_id) – čeká na schválení
-- [ ] Etapa 2 schválena: přesný snapshot/rollback, jediná politika + funkce, ověření oprávnění, více listů pouze materiálu, testy a mobil; bez nasazení
+- [x] Etapa 2: migrace 0082 (jedna funkce + jediná politika), přesný rollback; 12/11 úloh a všech 445 členství zachováno, 5384 nečlenů nepovoleno; RPC člen/nečlen ověřeno, ostatní politiky identické
+- [x] Více listů pouze materiál, společný blok, kompatibilní první ID, náhled bez pokusu/odpovědí/odevzdání; 68 testů a automatický build OK; bez nasazení
+- [ ] Skutečné uložení/načtení materiálu žákem, cílení na skutečné příjemce a dva demo páry: chybí schválená vlastní testovací data a žákovská relace; samostatný typecheck ponechán prostředí

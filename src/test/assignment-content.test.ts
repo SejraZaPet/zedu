@@ -1,10 +1,45 @@
 import { describe, it, expect } from "vitest";
-import { addLesson, applyLessonsToSettings, assignmentLessons, lessonCountLabel, lessonFieldsForSave, moveLesson, removeLesson } from "@/lib/assignment-content";
+import { addLesson, applyLessonsToSettings, assignmentLessons, lessonCountLabel, lessonFieldsForSave, moveLesson, removeLesson, assignmentWorksheets, addWorksheet, removeWorksheet, moveWorksheet, worksheetFieldsForSave, applyWorksheetsToSettings } from "@/lib/assignment-content";
 import type { PlanLesson } from "@/lib/planned-assignment";
 
 const A: PlanLesson = { id: "a", source: "teacher_textbook_lessons", title: "A" };
 const B: PlanLesson = { id: "b", source: "textbook_lessons", title: "B" };
 const C: PlanLesson = { id: "c", source: "teacher_textbook_lessons", title: "C" };
+
+describe("material worksheets", () => {
+  const a = { id: "a", title: "A" }, b = { id: "b", title: "B" };
+  it("legacy worksheet is the first entry without modifying the record", () => {
+    const row = { worksheet_id: "a", settings: { kind: "material", worksheets: [b] } };
+    expect(assignmentWorksheets(row).map((w) => w.id)).toEqual(["a", "b"]);
+    expect(row.settings.worksheets).toEqual([b]);
+  });
+  it("supports an uncapped ordered list and deduplicates additions", () => {
+    const list = Array.from({ length: 100 }, (_, i) => ({ id: `${i}`, title: `${i}` }));
+    expect(addWorksheet(list, a)).toHaveLength(101);
+    expect(addWorksheet([a], a)).toEqual([a]);
+  });
+  it("reorders and removes without reintroducing the original primary", () => {
+    const list = removeWorksheet(moveWorksheet([a, b], 1, -1), "a");
+    expect(list).toEqual([b]);
+    expect(worksheetFieldsForSave("material", list, "a").worksheet_id).toBe("b");
+    expect(worksheetFieldsForSave("material", [], "a").worksheet_id).toBeNull();
+  });
+  it("saves exactly id/title in material settings and the first primary", () => {
+    expect(applyWorksheetsToSettings({ kind: "material", notifyEmail: false }, "material", [b, a])).toEqual({ kind: "material", notifyEmail: false, worksheets: [b, a] });
+    expect(worksheetFieldsForSave("material", [b, a], "a")).toEqual({ worksheet_id: "b" });
+  });
+  it("tasks retain only their original single worksheet", () => {
+    expect(worksheetFieldsForSave("task", [b, a], "a")).toEqual({ worksheet_id: "a" });
+    expect(assignmentWorksheets({ worksheet_id: "a", settings: { worksheets: [b] } }).map((w) => w.id)).toEqual(["a"]);
+    expect(applyWorksheetsToSettings({ worksheets: [b], custom: true }, "task", [a])).toEqual({ custom: true });
+  });
+  it("announcements never save a material list", () => {
+    expect(applyWorksheetsToSettings({ kind: "announcement", worksheets: [b] }, "announcement", [a])).toEqual({ kind: "announcement" });
+  });
+  it("empty material removes the list key", () => {
+    expect(applyWorksheetsToSettings({ kind: "material", worksheets: [a] }, "material", [])).toEqual({ kind: "material" });
+  });
+});
 
 describe("více lekcí u materiálu", () => {
   it("starý záznam s jednou lekcí čte z lesson_id", () => {
