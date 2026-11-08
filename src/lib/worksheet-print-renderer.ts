@@ -14,6 +14,7 @@ import { worksheetKindPrintLabel, worksheetDocumentTitle } from "@/lib/worksheet
 import { isTableCellEditable, tableCellAnswer } from "@/lib/worksheet-table";
 import { qrSvgDataUrl } from "@/lib/qr-inline";
 import { normalizeMindMap, type MindMapNode } from "@/lib/mind-map";
+import { normalizeMethodPhases, normalizePracticeExamples } from "@/lib/method-steps";
 import { seededShuffleNonIdentity } from "@/lib/shuffle";
 import type {
   WorksheetSpec,
@@ -1178,6 +1179,67 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
         <div style="text-align:center;margin-bottom:6px;"><span style="display:inline-block;border:2px solid #2f7fa3;border-radius:12px;padding:5px 14px;font-weight:700;font-size:11pt;">${rootLabel}</span></div>
         <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, map.root.children.length))},1fr);gap:6px;">${branches}</div>
         ${printInlineKeys?.get(item.id) ? renderInlineKey(item, printInlineKeys.get(item.id)!, false) : ""}
+      </div>`;
+    }
+
+    case "method_steps": {
+      const phases = normalizeMethodPhases(item.methodPhases);
+      if (phases.length === 0) return "";
+      const given = printAnswers?.[item.id];
+      const filled = Array.isArray(given) ? given.map((v) => String(v ?? "")) : [];
+      let ai = 0;
+      const cards = phases
+        .map((p, i) => {
+          const answerable = p.answerMode !== "none";
+          const answer = answerable ? (filled[ai++] ?? "").trim() : "";
+          const space = !answerable
+            ? ""
+            : answer
+              ? `<p style="font-size:10pt;margin:6px 0 0;white-space:pre-wrap;">${esc(answer)}</p>`
+              : p.answerMode === "lines"
+                ? `<div style="margin-top:8px;">${[0, 1, 2].map(() => `<div style="border-bottom:1px solid #999;height:7mm;"></div>`).join("")}</div>`
+                : `<div style="margin-top:8px;border:1px solid #bbb;border-radius:6px;min-height:14mm;"></div>`;
+          return `<div style="border:1.5px solid #2f7fa3;border-radius:8px;padding:7px 10px;margin:6px 0;break-inside:avoid;">
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-weight:600;font-size:10pt;">${i + 1}. ${esc(p.title || "Fáze")}</span>${p.points > 0 ? `<span style="font-size:9pt;color:#555;">${p.points} b.</span>` : ""}</div>
+            ${p.task ? `<p style="font-size:10pt;margin:4px 0 0;white-space:pre-wrap;">${esc(p.task)}</p>` : ""}
+            ${space}
+          </div>`;
+        })
+        .join("");
+      return `<div style="margin:10px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 4px;">${esc(item.prompt)}</p>` : ""}
+        ${item.methodName ? `<p style="font-size:9pt;margin:0 0 4px;color:#555;">Metoda: ${esc(item.methodName)}</p>` : ""}
+        ${item.methodIntro ? `<p style="font-size:10pt;margin:0 0 6px;white-space:pre-wrap;">${esc(item.methodIntro)}</p>` : ""}
+        ${cards}
+      </div>`;
+    }
+
+    case "practice_examples": {
+      const examples = normalizePracticeExamples(item.practiceExamples);
+      if (examples.length === 0) return "";
+      const given = printAnswers?.[item.id];
+      const filled = Array.isArray(given) ? given.map((v) => String(v ?? "")) : [];
+      let ai = 0;
+      const cards = examples
+        .map((e, i) => {
+          const hasQuestion = !!(e.question ?? "").trim();
+          const answer = hasQuestion ? (filled[ai++] ?? "").trim() : "";
+          const space = !hasQuestion
+            ? ""
+            : answer
+              ? `<p style="font-size:10pt;margin:6px 0 0;white-space:pre-wrap;">${esc(answer)}</p>`
+              : `<div style="margin-top:8px;">${[0, 1].map(() => `<div style="border-bottom:1px solid #999;height:7mm;"></div>`).join("")}</div>`;
+          return `<div style="border:1px solid #bbb;border-radius:8px;padding:7px 10px;margin:6px 0;break-inside:avoid;">
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span style="font-weight:600;font-size:10pt;">${i + 1}. ${esc(e.title || "Příklad")}</span>${e.points > 0 ? `<span style="font-size:9pt;color:#555;">${e.points} b.</span>` : ""}</div>
+            ${e.situation ? `<p style="font-size:10pt;margin:4px 0 0;white-space:pre-wrap;">${esc(e.situation)}</p>` : ""}
+            ${hasQuestion ? `<p style="font-size:10pt;margin:6px 0 0;font-weight:500;">${esc(e.question!)}</p>` : ""}
+            ${space}
+          </div>`;
+        })
+        .join("");
+      return `<div style="margin:10px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}
+        ${cards}
       </div>`;
     }
 

@@ -160,6 +160,9 @@ import LessonSectionsPanel, {
 } from "@/components/worksheet/LessonSectionsPanel";
 import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import MindMapFieldsEditor from "@/components/worksheet/MindMapFieldsEditor";
+import MethodStepsFieldsEditor from "@/components/worksheet/MethodStepsFieldsEditor";
+import PracticeExamplesFieldsEditor from "@/components/worksheet/PracticeExamplesFieldsEditor";
+import MethodStepsPickerDialog, { type MethodStepsPick } from "@/components/worksheet/MethodStepsPickerDialog";
 import {
   buildItemsFromLessonActivity,
   mapLessonActivityToItemType,
@@ -242,6 +245,9 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
 ];
 
 const LESSON_VISUAL_TYPES: ItemType[] = ["image", "image_text", "gallery", "callout"];
+
+/** Metodické bloky: Postup podle metody (otevře dialog výběru) a Příklady z praxe. */
+const METHOD_PRACTICE_TYPES: ItemType[] = ["method_steps", "practice_examples"];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [
   "mcq",
@@ -407,6 +413,8 @@ export default function WorksheetEditor() {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  const [methodStepsPickerOpen, setMethodStepsPickerOpen] = useState(false);
+  const [methodStepsInsertAt, setMethodStepsInsertAt] = useState<number | null>(null);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [returnBannerDismissed, setReturnBannerDismissed] = useState(false);
   const [itemHeights, setItemHeights] = useState<Record<string, number>>({});
@@ -867,7 +875,47 @@ export default function WorksheetEditor() {
   }
 
   function addItem(type: ItemType) {
+    if (type === "method_steps") {
+      setMethodStepsInsertAt(items.length);
+      setMethodStepsPickerOpen(true);
+      return;
+    }
     insertItem(type);
+  }
+
+  /** Vloží blok „Postup podle metody“ s předvyplněnými fázemi z dialogu. */
+  function insertMethodSteps(pick: MethodStepsPick, insertAt = items.length) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const base = createDefaultItem("method_steps", insertAt + 1);
+    const newItem: WorksheetItem = {
+      ...base,
+      methodId: pick.methodId,
+      methodName: pick.methodName,
+      methodPhases: pick.phases,
+      points: pick.phases.reduce((s, p) => s + p.points, 0),
+    };
+    const newKey = createDefaultAnswerKey(newItem);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0
+          ? {
+              ...v,
+              items: [
+                ...v.items.slice(0, insertAt),
+                newItem,
+                ...v.items.slice(insertAt),
+              ].map((item, itemIndex) => ({ ...item, itemNumber: itemIndex + 1 })),
+            }
+          : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), newKey],
+      },
+    }));
+    setSelectedId(newItem.id);
   }
 
   function insertOfflineActivity(mode: OfflineMode, insertAt = items.length) {
@@ -2023,6 +2071,22 @@ export default function WorksheetEditor() {
       </Collapsible>
 
       <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader count={METHOD_PRACTICE_TYPES.length}>Metody a praxe</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
+          {METHOD_PRACTICE_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
+              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm min-h-[44px]"
+              title={ITEM_TYPE_LABELS[type].description}
+            >
+              {ITEM_TYPE_LABELS[type].label}
+            </button>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible className="mt-2 pt-2 border-t border-border">
         <SectionHeader count={OFFLINE_MODES.length}>Offline aktivity</SectionHeader>
         <CollapsibleContent className="space-y-1.5 pt-1">
           {OFFLINE_MODES.map((mode) => {
@@ -2728,6 +2792,10 @@ export default function WorksheetEditor() {
                               <InsertItemControl
                                 onInsert={(type) => insertItem(type, itemIndex + 1)}
                                 onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
+                                onInsertMethodSteps={() => {
+                                  setMethodStepsInsertAt(itemIndex + 1);
+                                  setMethodStepsPickerOpen(true);
+                                }}
                               />
                             </div>
                           );
@@ -3361,6 +3429,12 @@ export default function WorksheetEditor() {
         onInsert={insertFromBank}
       />
 
+      <MethodStepsPickerDialog
+        open={methodStepsPickerOpen}
+        onOpenChange={setMethodStepsPickerOpen}
+        onInsert={(pick) => insertMethodSteps(pick, methodStepsInsertAt ?? items.length)}
+      />
+
 
 
       {returnTo && id && !returnBannerDismissed && (
@@ -3413,9 +3487,11 @@ function SaveIndicator({ state }: { state: SaveState }) {
 function InsertItemControl({
   onInsert,
   onInsertOffline,
+  onInsertMethodSteps,
 }: {
   onInsert: (type: ItemType) => void;
   onInsertOffline: (mode: OfflineMode) => void;
+  onInsertMethodSteps: () => void;
 }) {
   return (
     <div className="relative flex h-5 items-center justify-center" role="group" aria-label="Vložit blok za tuto položku">
@@ -3446,6 +3522,14 @@ function InsertItemControl({
               {ITEM_TYPE_LABELS[type].label}
             </DropdownMenuItem>
           ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Metody a praxe</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => onInsertMethodSteps()}>
+            {ITEM_TYPE_LABELS.method_steps.label}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onInsert("practice_examples")}>
+            {ITEM_TYPE_LABELS.practice_examples.label}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Offline aktivity</DropdownMenuLabel>
           {OFFLINE_MODES.map((mode) => {
@@ -4434,6 +4518,10 @@ function PropertiesPanel({
       <TableFieldsEditor item={item} onUpdate={onUpdateItem} />
 
       <MindMapFieldsEditor item={item} answerKey={answerKey} onUpdateItem={onUpdateItem} onUpdateKey={onUpdateKey} />
+
+      <MethodStepsFieldsEditor item={item} onUpdateItem={onUpdateItem} />
+
+      <PracticeExamplesFieldsEditor item={item} onUpdateItem={onUpdateItem} />
 
       <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
