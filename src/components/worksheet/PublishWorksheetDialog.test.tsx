@@ -23,11 +23,11 @@ describe("Zadat list žákům", () => {
   async function setup() {
     render(<MemoryRouter><PublishWorksheetDialog open onOpenChange={vi.fn()} worksheetId="ws" worksheetTitle="[TEST] List" subjectId="subject" /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: "[TEST] Vybrat skupinu" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Publikovat", exact: true })).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Publikovat$/ })).not.toBeDisabled());
   }
   it("před duplicitním vytvořením nic nezveřejní ani nezaloží", async () => {
     await setup();
-    fireEvent.click(screen.getByRole("button", { name: "Publikovat", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Publikovat$/ }));
     await screen.findByRole("button", { name: "Přesto vytvořit nový" });
     expect(mocks.updates).not.toHaveBeenCalled();
     expect(mocks.inserts).not.toHaveBeenCalled();
@@ -37,7 +37,7 @@ describe("Zadat list žákům", () => {
     await setup();
     fireEvent.click(screen.getByRole("button", { name: "Přidat do existujícího úkolu" }));
     fireEvent.change(screen.getByLabelText("Vybrat existující úkol nebo materiál"), { target: { value: "a" } });
-    fireEvent.click(screen.getByRole("button", { name: "Přidat list", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Přidat list$/ }));
     await waitFor(() => expect(mocks.updates).toHaveBeenCalledWith("assignments", { worksheet_id: "ws" }));
     expect(mocks.updates).toHaveBeenCalledTimes(1);
     expect(mocks.inserts).not.toHaveBeenCalled();
@@ -47,7 +47,7 @@ describe("Zadat list žákům", () => {
     await setup();
     fireEvent.click(screen.getByRole("button", { name: "Přidat do existujícího úkolu" }));
     fireEvent.change(screen.getByLabelText("Vybrat existující úkol nebo materiál"), { target: { value: "a" } });
-    fireEvent.click(screen.getByRole("button", { name: "Přidat list", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Přidat list$/ }));
     await screen.findByRole("button", { name: "Potvrdit nahrazení listu" });
     expect(mocks.updates).not.toHaveBeenCalled();
   });
