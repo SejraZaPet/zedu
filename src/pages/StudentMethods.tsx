@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
@@ -66,7 +67,7 @@ const StudentMethods = () => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const { data } = await supabase.from("notebooks").select("id, title").eq("owner_id", session.user.id).order("title");
+      const { data } = await supabase.from("notebooks").select("id, title").eq("owner_id", session.user.id).or(`cover_color.is.null,cover_color.neq.${CHEATSHEET_STORAGE_MARKER}`).order("title");
       setNotebooks((data ?? []) as any);
     })();
   }, [practiceFor, sourceKind]);

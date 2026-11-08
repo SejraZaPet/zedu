@@ -12,7 +12,7 @@ import CheatsheetCard from "@/components/cheatsheet/CheatsheetCard";
 import { emptyCheatsheet, type Cheatsheet, type CheatsheetData } from "@/lib/cheatsheet";
 import { loadCheatsheets, saveCheatsheet, deleteCheatsheet } from "@/lib/cheatsheet-store";
 import { printCheatsheets } from "@/lib/cheatsheet-print";
-import { matchesPickerSearch } from "@/lib/picker-search";
+import { matchesSearch } from "@/lib/picker-search";
 import "@/components/cheatsheet/cheatsheet.css";
 
 export default function StudentCheatsheets() {
@@ -40,7 +40,7 @@ export default function StudentCheatsheets() {
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, role, navigate, location.pathname]);
-  const shown = sheets.filter(s => matchesPickerSearch(query, [s.title, s.subject]));
+  const shown = sheets.filter(s => matchesSearch(query, s.title, s.subject));
   if (role !== "user") return <><SiteHeader /><main className="container px-4 pt-28"><p>Taháky jsou dostupné v žákovském zobrazení.</p></main></>;
   return <div className="min-h-screen bg-background"><SiteHeader /><main className="mx-auto max-w-5xl px-4 pt-28 pb-24">
     {editor ? <CheatsheetEditor key={editor.existing?.id ?? "new"} initial={editor.initial} source={editor.source} onClose={() => setEditor(null)} onSave={async data => {
