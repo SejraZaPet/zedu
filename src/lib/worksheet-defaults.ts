@@ -233,6 +233,15 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
       return { ...base, prompt: "Doplň chybějící pojmy do myšlenkové mapy:", points: 2, timeEstimateSec: 240, difficulty: "medium",
         mindMap: createDefaultMindMap(),
         answerSpace: { type: "none", heightMm: 0 } };
+    case "method_steps":
+      return { ...base, prompt: "Pracujte postupně podle jednotlivých fází:", points: 0, timeEstimateSec: 300,
+        methodName: "", methodIntro: "",
+        methodPhases: [createMethodPhase({ title: "Fáze 1", task: "" })],
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "practice_examples":
+      return { ...base, prompt: "Příklady z praxe:", points: 0, timeEstimateSec: 180,
+        practiceExamples: [createPracticeExample({ title: "Příklad 1", situation: "" })],
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
