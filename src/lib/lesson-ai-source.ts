@@ -12,7 +12,7 @@ export function ownSourceBook(book: AiSourceBook, userId: string) {
 }
 export function lessonAiParts(lesson: OwnedAiLesson) {
   const sections = splitLessonIntoSections(lesson.blocks);
-  return sections.length ? sections.map(s => ({ id: String(s.index), title: s.title, text: blocksToText(s.content.length ? [] : []).trim() || [s.title, s.text].filter(Boolean).join("\n") }))
+  return sections.length ? sections.map(s => ({ id: String(s.index), title: s.title, text: [s.title, s.text].filter(Boolean).join("\n") }))
     : [{ id: "all", title: "Celá lekce", text: blocksToText(lesson.blocks) }];
 }
 export function sourceText(parts: { id: string; text: string }[], ids: string[], limit: number) {
