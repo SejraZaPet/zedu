@@ -1,92 +1,118 @@
-# Sladění formuláře „Nová úloha“ s druhem položky (jen návrh)
+# Více pracovních listů a lekcí u Úkolu i Materiálu – diagnostika a návrh
 
-Stav: diagnostika z kódu. Nic se neimplementuje, DB beze změny, bez e-mailů a deploye. Dlaždice přehledu učitele jsou už hotové (viz předchozí etapa).
+Pouze návrh. Nic se neimplementuje bez výslovného „schvaluji“.
 
-## 1. Pole formuláře × druh
+## 1. Co je dnes (ověřeno čtením kódu a DB)
 
-Zdroj: `src/pages/TeacherAssignments.tsx` (formulář ~ř. 1124–1800, ukládání `submitAssignment` ~ř. 477–700), `src/lib/assignment-kind.ts`.
+- Úloha má jeden list `assignments.worksheet_id` a jednu lekci `lesson_id` + `lesson_source`.
+- Pro plány už existuje `settings.lessons` (pole `{id, source, title}`) s čtením přes `planLessons()` v `planned-assignment.ts`. Ta funkce se při prázdném poli vrací k `lesson_id`. Používají ji `StudentAssignmentPlayer`, `StudentAssignments`, `StudentSubjectClass` a `UpcomingExamsCard`.
+- Kdo čte `worksheet_id`:
+  - `StudentAssignmentPlayer`: načtení listu, vložení do sešitu, odevzdání přes `worksheet-attempt.ts`, kde je jeden pokus a jedno `answers`.
+  - `TeacherResults`: spec listu pro hodnocení a přebodování.
+  - `StudentSubjectClass`, `AssignmentDetailDialog`, `lesson-plan-student.ts`.
+  - `_shared/reminder-targets.ts` a `auto-reminders-job`: rozhodují, zda je plán „bez obsahu“.
+- Rodičovský přehled pracuje jen s pokusy, list ani lekci nečte. E-maily o novém úkolu list ani lekci neuvádějí.
+- **Oprávnění:**
+  - Žák smí číst list jen přes politiku „Students can read worksheets via assignment“, která kontroluje `a.worksheet_id = worksheets.id`. **List uložený jen v `settings` by žák neotevřel.** Více listů proto nejde čistě frontendem. Potřeba je jedna nová, pouze rozšiřující politika ke čtení.
+  - Lekce v `settings.lessons` už u plánů fungují. Ještě je nutné ověřit, že funkce `can_view_*_textbook_lesson` povolí i lekci, která není v `lesson_id`.
+- **Vedlejší bezpečnostní nález (neopravovat bez schválení):**
+  - Stávající politika obsahuje `OR a.class_id IS NULL`. Zveřejněný list u úlohy pro skupinu (bez třídy) tak může číst kdokoli přihlášený.
+  - Do politiky chybí i kontrola `assignment_recipients`.
 
-| Pole / sekce | Úkol dnes | Materiál dnes | Oznámení dnes | Materiál cíl | Oznámení cíl |
-|---|---|---|---|---|---|
-| Volba druhu (Úkol/Materiál/Oznámení) + vysvětlení | ano | ano | ano | ano | ano |
-| Název, Popis | ano | ano | ano (limit 500 znaků) | ano | ano |
-| Tahák povolen | ano | skryto | skryto | skryto | skryto |
-| Poslat e-mail / Povolit komentáře | ano | ano | ano | ano | ano |
-| Upozornění „neodevzdáno“ (notifyOverdue) | ano | skryto | skryto | skryto | skryto |
-| Připnout, Zobrazovat do | skryto | skryto | ano | skryto | ano |
-| Termín odevzdání, Počet pokusů, Po termínu | ano | skryto | skryto | skryto | skryto |
-| Naplánovat zveřejnění | ano | ano | ano | ano | ano |
-| Předmět | ano | ano | ano | ano | ano |
-| Třída/skupina, vybraní žáci | ano | ano | ano | ano | ano |
-| **Typ** (úkol/test/písemka…) | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
-| **Typ zadání** (individuálně/dvojice/skupiny, rozdělení) | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
-| **Zamíchat pořadí otázek / volby** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
-| **Portfoliový úkol** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
-| **Zamčený režim** | ano | **zobrazeno – chyba** | **zobrazeno – chyba** | skrýt | skrýt |
-| Pracovní list (příloha) | ano | ano | ano | ano (jen k otevření) | skrýt (návrh) |
-| Propojit s lekcí, materiály, odkazy, soubory | ano | ano | ano | ano | volitelně (návrh: jen odkaz/soubor) |
-| Termín u jednotlivého cíle (multi-cíl) | ano | ignorován při uložení | ignorován | skrýt | skrýt |
+## 2. Ukládání
 
-Co se dnes ukládá u materiálu/oznámení do `assignments`:
-- Správně neutrální: `deadline = null`, `max_attempts = 1`, `settings.kind`, `lateUntil`/`notifyOverdue`/`cheatSheetAllowed` odstraněny (`mergeKindSettings`).
-- **Ukládá se, co učitel naklikal (i když nemá smysl):** `exam_type`, `group_mode` + `group_size`, `randomize_order`, `randomize_choices`, `is_portfolio_task`, `lockdown_mode`.
-- Riziko: materiál s `group_mode ≠ individual` drží formulář otevřený „pro rozdělení skupin“; `exam_type` se může propsat do kalendáře/„Co mě čeká“ (zobrazují `exam_type`); `is_portfolio_task` do portfolia.
-- Návrh: při uložení ne-úkolu vždy zapsat neutrální hodnoty: `exam_type=null, group_mode='individual', group_size=null, randomize_*=false, is_portfolio_task=false, lockdown_mode=false, max_attempts=1, deadline=null`. Čistě frontend.
+- Lekce se ukládají do `settings.lessons`, tedy do stejného tvaru a stejné čtecí funkce jako u plánů. `lesson_id` zůstává jako první lekce, takže staré čtečky dál fungují.
+- Listy se ukládají do `settings.worksheets: [{id, title}]` v pořadí, jak je učitelka seřadí. Do `worksheet_id` se zapisuje vždy první list.
+- Nová funkce `assignmentWorksheets(a)` vrací pole listů. Bez `settings.worksheets` vrátí `[worksheet_id]`, takže staré záznamy fungují beze změny.
+- Minimální změna DB, jen jako NÁVRH a NESPOUŠTĚT:
 
-## 2. Sjednocení – jedna konfigurace
+```sql
+CREATE OR REPLACE FUNCTION public.can_student_view_assignment_worksheet(_ws uuid, _uid uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM assignments a
+    WHERE a.status = 'published'
+      AND a.settings->'worksheets' @> jsonb_build_array(jsonb_build_object('id', _ws::text))
+      AND (
+        EXISTS (SELECT 1 FROM class_members cm WHERE cm.class_id = a.class_id AND cm.user_id = _uid)
+        OR EXISTS (SELECT 1 FROM subject_group_members g WHERE g.group_id = a.group_id AND g.user_id = _uid)
+      )
+      AND (NOT EXISTS (SELECT 1 FROM assignment_recipients r WHERE r.assignment_id = a.id)
+           OR EXISTS (SELECT 1 FROM assignment_recipients r WHERE r.assignment_id = a.id AND r.student_id = _uid))
+  ) $$;
+GRANT EXECUTE ON FUNCTION public.can_student_view_assignment_worksheet(uuid, uuid) TO authenticated;
+CREATE POLICY "Students can read extra assignment worksheets" ON public.worksheets
+  FOR SELECT TO authenticated USING (public.can_student_view_assignment_worksheet(id, auth.uid()));
+-- Rollback:
+-- DROP POLICY "Students can read extra assignment worksheets" ON public.worksheets;
+-- DROP FUNCTION public.can_student_view_assignment_worksheet(uuid, uuid);
+```
 
-V `assignment-kind.ts` přidat deklarativní `KIND_FIELDS: Record<AssignmentKind, Set<Field>>` (např. `deadline, attempts, late, examType, groupMode, randomize, portfolio, lockdown, cheatsheet, notifyOverdue, pinned, visibleUntil, worksheet, …`) a helpery `kindHas(kind, field)` a `neutralizeForKind(kind, row)`.
+Názvy sloupců u `subject_group_members` a `assignment_recipients` se před spuštěním ověří čtecím dotazem. Politika jen přidává čtení a stávající práva nemění. Demo RESTRICTIVE politiky platí dál.
 
-Použití:
-- Formulář: každá sekce `{kindHas(formKind, "…") && …}`; uložení přes `neutralizeForKind`.
-- Seznamy/karty učitele (TeacherAssignments ~ř. 1970: termín, „N pokusů“, zámek) – zobrazit jen pokud `kindHas`.
-- Detail žáka/učitele, Zeď, kalendář, „Co mě čeká“ – už filtrují `assignmentKind`; doplnit jen chybějící místa (bod 4).
-- Výsledky/Přehled: materiál a oznámení vyfiltrovat (`isSubmittable`).
-- Přepnutí druhu: hodnoty skrytých polí zůstanou v paměti formuláře (návrat na Úkol je obnoví), ale **neukládají se** – při uložení se přepíší neutrálními. Při přepnutí z úkolu s vyplněným termínem/pokusy ukázat nenápadnou poznámku „Termín a hodnocení se u materiálu neuloží“.
-- Editace existujícího úkolu → změna na materiál: zobrazit potvrzení, pokud už má odevzdání (pokusy) – návrh: změnu druhu u položky s odevzdáními zakázat.
+## 3. Úkol a více listů – varianty
 
-## 3. Texty
-Ano, sladit:
-- Nadpis: „Nový úkol / Nový materiál / Nové oznámení“, úprava „Upravit úkol / materiál / oznámení“.
-- Tlačítka a toasty: „Úloha publikována“ → „Úkol/Materiál/Oznámení zveřejněn(o)“.
-- Prázdné stavy a počty („Vytvořeno úloh: N“) podle druhu.
-- Nadpis stránky „Úlohy pro žáky“ ponechat (zastřešuje vše), případně podtitul „Úkoly, materiály a oznámení“. Rozhodnutí na vás.
+**A) Hlavní list + další listy k vyplnění bez bodů**
+- První list se odevzdává a hodnotí jako dnes.
+- Další listy žák otevře a vyplní ve svém sešitu nebo uložené práci, ale do výsledků se nepočítají.
+- Výhoda: nulové riziko pro odevzdání, výsledky a hodnocení.
+- Nevýhoda: učitelka by u dalších listů neviděla body, což se blíží variantě, kterou odmítla.
 
-## 4. Kde jinde se ukazuje odevzdání/termín/typ
+**B) Každý list jako samostatná část jednoho pokusu (doporučeno)**
+- Odpovědi se ukládají v `answers` po listech: `answers.sheets[worksheetId]`. Starý tvar s jedním listem zůstává čitelný.
+- Skóre pokusu je součet všech listů, `max_score` je součet maxim.
+- `TeacherResults` ukazuje přebodování po listech.
+- Žák list po listu prochází přepínačem „List 1 / 2 / 3“ a odevzdává jednou za celek.
+- Dopady:
+  - Mění se hodnoticí cesty (`worksheet-attempt.ts`, přehrávač, `TeacherResults`, statistiky, export výsledků).
+  - Vkládání do sešitu a snapshoty se musí vázat na konkrétní list.
+  - Rozpracované pokusy ze staré verze se čtou jako list 1.
+- Riziko: střední. Každá hodnoticí cesta proto dostane test na starý i nový tvar.
 
-| Místo | Stav | Chyba? |
-|---|---|---|
-| Karty v TeacherAssignments (termín, pokusy, zámek, typ) | bez kontroly druhu – „1 pokus“, zámek, exam_type i u materiálu | ano |
-| Učitelská třída (TeacherSubjectClass), žákovská (StudentSubjectClass) | dělí podle druhu | ne |
-| Žákovský seznam / přehrávač | `isSubmittable`, text „nic neodevzdáváš“ | ne |
-| Zeď | štítek podle druhu | ne |
-| Kalendář termínů, TodayWidget, Nadcházející písemky | jen úkoly | ne (ověřit `exam_type` u materiálu v TodayWidget) |
-| TeacherResults (výsledky) | nefiltruje druh – materiál se může objevit ve výběru zadání a „neodevzdali“ | pravděpodobně ano, ověřit |
-| TeacherClassDetail, ParentDashboard | bez kontroly druhu | pravděpodobně ano (počty/chybí odevzdat), ověřit |
-| Dlaždice „Úlohy pro žáky“ (počet) | jen úkoly | ne |
-| E-mail při zveřejnění (notify-email) | respektuje druh/volbu | ne |
-| Připomínky (auto-reminders-job, notify_deadline_soon) | bez kontroly druhu, ale materiál nemá termín → nepošle se | nejspíš ne; u starých materiálů s termínem ano – ověřit čtecím dotazem |
-| notify-parent „nový úkol“ | bez kontroly druhu | ověřit text e-mailu rodiči |
+**C) Zamítnuto:** samostatná úloha pro každý list (duplicita, víc notifikací).
 
-## 5. Rizika, DB, testy, etapy
+## 4. Materiál
 
-- Starší záznamy bez `settings.kind` = úkol (beze změny chování).
-- Starší materiály mohou mít uložené `exam_type`, `group_mode`, `randomize_*`, `lockdown`: frontend je bude u ne-úkolů ignorovat; data se nemění.
-- DB: **není nutná.** Volitelně (jen návrh, nespouštět): jednorázové vyčištění starých materiálů/oznámení
-  `UPDATE assignments SET exam_type=null, group_mode='individual', group_size=null, randomize_order=false, randomize_choices=false, is_portfolio_task=false, lockdown_mode=false, deadline=null WHERE settings->>'kind' IN ('material','announcement');`
-  Rollback: předem uložit dotčené řádky (`CREATE TABLE … AS SELECT id, exam_type, … `) a vrátit UPDATE … FROM zálohy. Nejdřív čtecí počet dotčených řádků.
-- Testy: `KIND_FIELDS` (materiál nemá deadline/attempts/examType…), `neutralizeForKind` (konkrétní neutrální hodnoty), přepnutí druhu nezapíše skryté hodnoty, filtr výsledků bez materiálů, starý záznam bez kind = úkol.
+- Všechny listy a lekce jsou jen k otevření a nic se neodevzdává.
+- Pro listy platí stejná politika z bodu 2.
+- Lekce se otevírají jako dnes.
 
-Etapy:
-1. `KIND_FIELDS` + formulář + neutrální uložení + texty (frontend).
-2. Karty v TeacherAssignments, TeacherResults, TeacherClassDetail, ParentDashboard – filtr/skrytí (frontend, po čtecím ověření).
-3. Edge funkce (notify-parent, reminders) – jen pokud ověření ukáže chybu; vyžaduje deploy na pokyn.
-4. Volitelné vyčištění DB – jen po schválení.
+## 5. UI – sdílený blok „Pracovní listy a lekce“
 
-Soubory: `src/lib/assignment-kind.ts`, `src/pages/TeacherAssignments.tsx`, `src/pages/TeacherResults.tsx`, `src/pages/TeacherClassDetail.tsx`, `src/pages/ParentDashboard.tsx`, případně `supabase/functions/notify-parent`, testy v `src/test/assignment-kinds-and-late.test.ts`.
+- Stejný blok pro Úkol i Materiál, u Oznámení se dál nezobrazuje.
+- Seznam položek s ikonou typu, názvem, šipkami nahoru/dolů (ovládání klávesnicí, bez tahání) a tlačítkem Odebrat.
+- „Přidat list“ a „Přidat lekci“ otevírají stávající `SearchableSelect`, hledání funguje od 8 položek. Už vybrané položky se znovu nenabízejí.
+- Na mobilu (390 px) je seznam pod sebou, ovládací prvky mají aspoň 44 px a stránka se do strany neposouvá.
+- Při úpravě starého záznamu se blok naplní z `worksheet_id`/`lesson_id`. Bez zásahu učitelky se nic nepřepisuje.
+- Na kartách u učitele a v žákovském seznamu se zobrazí „3 listy, 2 lekce“.
 
-## Na čem se rozhodnout
-1. Pracovní list a lekce u Oznámení – skrýt, nebo povolit?
-2. Měnit druh u položky, která už má odevzdání – zakázat, nebo jen varovat?
-3. Nadpis stránky „Úlohy pro žáky“ ponechat?
-4. Schvalujete etapu 1 (a 2)? DB vyčištění ano/ne?
+## 6. Etapy
+
+1. **Frontend, bez DB:**
+   - Více lekcí u úkolu i materiálu přes `settings.lessons`.
+   - Sdílený blok, u listů zatím jen jeden.
+   - Testy: čtení starých i nových záznamů, řazení, odebrání.
+2. **Schválení SQL z bodu 2 a teprve potom** více listů u Materiálu (jen k otevření).
+3. Více listů u Úkolu podle zvolené varianty (doporučena B) včetně výsledků, přebodování a exportu.
+4. Volitelně: oprava nálezu `class_id IS NULL` (samostatné schválení).
+
+Testy:
+- `assignmentWorksheets` a `planLessons` pro staré i nové záznamy
+- neutralizace podle druhu
+- skóre B: součet, starý tvar `answers`, přebodování po listech
+- `isPlanWithoutContent` s `settings.worksheets`
+- mobil 390 px
+
+## Technické soubory
+
+- `assignment-kind.ts`, `planned-assignment.ts`, nový `assignment-content.ts`
+- `TeacherAssignments.tsx` a nová komponenta `AssignmentContentPicker`
+- `StudentAssignmentPlayer.tsx`, `worksheet-attempt.ts`, `TeacherResults.tsx`
+- `StudentSubjectClass.tsx`, `AssignmentDetailDialog.tsx`
+- `_shared/reminder-targets.ts`: jen čtení listů, nasazení edge funkce až na pokyn
+
+## Otevřené otázky
+
+1. Varianta B (všechny listy hodnocené, jedno odevzdání), nebo A?
+2. Schvalujete SQL z bodu 2, nebo začneme etapou 1 jen s lekcemi?
+3. Má se v rámci etapy 4 opravit nalezená mezera ve čtení listů u skupinových úloh?
