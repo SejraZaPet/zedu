@@ -170,5 +170,8 @@
 - [ ] Ověření v prohlížeči a na 390 px
 - [ ] Etapy 2–5 (vlastní mapa žáka, AI, aktivita, společná mapa) čekají na schválení
 
-## Tahák – krátké poznámky
-- [x] Pouze návrh (bez AI, karta 90 × 55 mm) uložen; čeká na „schvaluji“
+## Tahák — schválená etapa 1
+- [ ] Ověřit bezpečné existující ukládání samostatných owner-only položek; pokud není vhodné, zastavit a předložit SQL + RLS + rollback bez spuštění
+- [ ] Po vyřešení ukládání: ruční tvorba, přístupný text lekcí, vlastní seznam, líc/rub, limity, mobil, tisk/PDF
+- [ ] Informativní nastavení „Tahák povolen“, výchozí ne; u testů bez tlačítka, dokud není ověřeno zobrazení jen jediné karty
+- [ ] Testy a ověření; bez AI, e-mailů a nasazení
