@@ -1,46 +1,48 @@
-# Otevřená odpověď jako aktivita: diagnostika a plán
+# Katalog aktivit: „Otevřená odpověď“ → Zeď a aktivity typu Mentimetr (diagnostika a plán)
 
 ## Příčina (jistá)
-Karta je na stránce Aktivity (`ActivitiesPage.tsx`, ř. 78 katalog, ř. 365 tlačítko). Tlačítko „Brzy“ se zobrazí vždy, když `isSupported(id)` vrátí false. V `activity-wizard.ts` (`WIZARD_TYPES`) mají `open` i `table` (Tabulka) nastaveno `blockType: null`. Editor lekce tedy tento typ bloku zatím vytvořit neumí. Je to záměrně vypnutý zástupce, ne chyba. Ukázka na kartě je jen obrázek: nic se neukládá a nehodnotí.
+Karta je na stránce **Aktivity** (`ActivitiesPage.tsx`, katalog ř. 78, tlačítko ř. 365). „Brzy“ se zobrazí, když `isSupported(id)` vrátí false. V `activity-wizard.ts` (`WIZARD_TYPES`) má `open` nastaveno `blockType: null`. Katalog tak nemá kam vést, přestože funkční Zeď existuje. Karta s ní nikdy nebyla propojená. Jde o zástupný záznam, ne o rozbitou Zeď. Totéž platí pro „Interaktivní tabulku“ (`table`).
 
-Stejně „Brzy“ je jen **Tabulka**. Ostatních 8 typů funguje.
+Katalog na stránce Aktivity obsahuje jen 10 procvičovacích typů. Zeď, Anketa ani Oblak slov v něm vůbec nejsou.
 
-## Co už existuje a dá se znovu použít
-- Pracovní list: položka `open_answer` (žák píše, učitel hodnotí ručně ve `WorksheetAttemptGrading`, „Ke kontrole“ přes `grading-review.ts` – `OPEN_ITEM_TYPES`).
-- Úkol s listem: pokusy, autosave a odevzdání (`assignment_attempts`), uložení hodnocení.
-- Prezentace: typ slidu „Otevřená odpověď“ (`PresentationEditorDialog`).
-- Výsledky aktivit v lekci: `student_activity_results.answers` (snapshot, `ActivityAnswerReview`) – dnes jen automaticky vyhodnocené typy, bez učitelského hodnocení.
+## Co dnes funguje (ověřeno čtením kódu)
+| Typ | Lekce (editor bloku) | Prezentace / živá hra | Žák | Projektor |
+|---|---|---|---|---|
+| Zeď (`wall`) | ano (`ActivityBlock`, `LessonBlockRenderer`) | ano (AddSlideSheet, PresentationEditor) | ano (`StudentGamePlay`) | ano |
+| Anketa (`poll`) | editor ano, zobrazení žákovi v lekci neověřeno | ano | ano | ano (`LiveTeacherScreen`) |
+| Oblak slov (`wordcloud`) | ne | ano (AddSlideSheet „Oblak slov“) | ano | ano, se zveřejněním |
+| Kvíz ABCD | ano | ano | ano | ano |
+| Škála / hodnocení, žebříček, otázky s hlasováním | ne | ne | ne | ne (server je zná jen jako názvy v `session-participants.ts`) |
 
-Otevřená odpověď tedy funguje už teď **v pracovním listu přiřazeném jako úkol**. Chybí jen jako samostatný blok v lekci.
+Odeslání odpovědí řeší serverová funkce `submit-activity-response` (u wall, wordcloud a open bez bodování).
 
-## Návrh po etapách (od nejmenší)
+## Návrh po etapách
 
-**Etapa 0 – hned, bez rizika (doporučuji):** kartu neoznačovat jen „Brzy“. Tlačítko „Vytvořit v pracovním listu“ otevře nový list s položkou Otevřená odpověď. Krátký text vysvětlí, že hodnocení probíhá v „Ke kontrole“. Mění se jen stránka Aktivity.
+**Etapa 1 – oprava katalogu (jen frontend, doporučuji hned):**
+- Karta „Otevřená odpověď“ dostane název „Zeď odpovědí (otevřená odpověď)“ a tlačítko „Použít aktivitu“. Průvodce vloží blok `wall` do lekce, nebo slide `wall` do prezentace či živé hry. Využijí se k tomu stávající presety, nic nového.
+- Do katalogu se přidá nová skupina **„Živě se třídou“** s kartami Zeď, Anketa a Oblak slov. Dostanou jednotné české názvy a ikony z `activity-slide-presets.ts`. Oblak slov a Anketa povedou do prezentace nebo živé hry. V lekci jen tam, kde to dnes funguje.
+- „Interaktivní tabulka“ zůstane „Brzy“ s vysvětlujícím textem.
+- Úprava se týká jen `activity-wizard.ts` (mapování) a `ActivitiesPage.tsx`. Databáze ani server se nemění.
 
-**Etapa 1 – blok v lekci (jen frontend):** nový `activityType: "open_answer"` v editoru lekce (otázka, limit znaků, nepovinná vzorová odpověď/kritéria jen pro učitele). Žák v lekci napíše odpověď s počítadlem znaků a koncept se mu ukládá lokálně. Odevzdání zapíše `student_activity_results` s `answers`, ale bez skóre. Vzorová odpověď se žákovi nikdy neposílá (odstraní se stejně jako u studentské verze listu). Jestli to lze bez změny DB, musím nejdřív ověřit podle sloupců a RLS politik `student_activity_results`. Když ne, ukážu SQL a počkám na „schvaluji“.
+**Etapa 2 – sjednocení:** Oblak slov se doplní do editoru lekce a Anketa do žákovského zobrazení lekce (jen když to bude dávat smysl bez promítání). Napříč aplikací se sjednotí názvy: „Oblak slov“ a „Slovní mrak“ na jeden název, stejně tak „Zeď“ a „Zeď odpovědí“.
 
-**Etapa 2 – hodnocení v „Ke kontrole“:** učitelka vidí odpovědi z lekce (jen oprávněný detail, bez výpisu jinde). Může zadat body, nebo hodnotit bez bodů, a připsat slovní komentář. Uložení hodnocení k výsledku aktivity téměř jistě vyžaduje nové sloupce nebo tabulku a politiku. Proto nejdřív ukážu SQL ke schválení.
+**Etapa 3 – nové typy jako v Mentimetru:** Škála (1–5 / 1–10, průměr a rozložení), Žebříček (žáci řadí položky, výsledkem je pořadí) a Otázky s hlasováním (žáci posílají otázky a hlasují pro ně). Všechny tři vyžadují úpravu serverové funkce `submit-activity-response` a zobrazení na projektoru. Projdou zvlášť diagnostikou a schválením. Zda bude potřeba změna DB, je zatím nezjištěné. Pokud ano, ukážu SQL a počkám na „schvaluji“.
 
-**Etapa 3 (později):** AI návrh hodnocení podle kritérií. Hodnocení vždy schvaluje učitelka a návrh nese štítek AI. V této etapě se nedělá.
-
-**Živá hra:** nedoporučuji. Bodování je serverové a postavené na otázkách s výběrem. Psané odpovědi na projektoru by navíc ohrožovaly soukromí dětí. Typ zůstane `liveGame: false`.
+**Mimo tento plán:** otevřená odpověď s hodnocením učitelkou („Ke kontrole“). Ta funguje už dnes v pracovním listu (`open_answer`).
 
 ## Testy
-- `isSupported("open")` v jednotlivých etapách.
-- Vzorová odpověď se nedostane do žákovské verze.
-- Limit znaků.
-- Odevzdání neuloží žádné skóre.
-- Při chybě se nic neuloží a text zůstane.
-- Ostatní typy aktivit fungují beze změny.
-- Mobil 390 px, ovládací prvky aspoň 44 px.
+- `isSupported("open")` vrací true a mapuje se na `wall`.
+- Nové karty skupiny „Živě se třídou“ vedou na správný preset.
+- Tabulka zůstává „Brzy“.
+- Ostatních 8 typů je beze změny.
+- Mobil 390 px, ovládací prvky aspoň 44 px, bez vodorovného posunu.
 
 ## Rizika
-- Uložení učitelského hodnocení bez změny DB nejspíš nepůjde (etapa 2).
-- Odpovědi žáků se nesmí objevit v logu, náhledu ani v exportu PDF bez oprávnění.
-- U starých aktivit se nic nemění.
+- Zeď v lekci, která se nepromítá, ukazuje odpovědi spolužáků. Výchozí nastavení proto bude anonymní, jako v presetu.
+- Odpovědi žáků se nikde nevypisují mimo oprávněné zobrazení.
+- Staré aktivity, živé hry ani bodování se nemění.
 
 ## Otevřené otázky
-1. Stačí nejdřív etapa 0, nebo rovnou etapa 1?
-2. Hodnotit body, slovně, nebo obojí volitelně?
-3. Výchozí limit znaků (navrhuji 1000)?
-4. Zapnout zároveň „Tabulku“ (zatím také „Brzy“), nebo ji nechat na později?
+1. Má karta „Otevřená odpověď“ vést na Zeď, nebo na otevřenou odpověď v pracovním listu s hodnocením?
+2. Který název chcete: „Oblak slov“, nebo „Slovní mrak“?
+3. Které typy z etapy 3 chcete jako první?
