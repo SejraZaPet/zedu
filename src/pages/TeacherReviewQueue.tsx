@@ -429,9 +429,9 @@ export default function TeacherReviewQueue() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Seznam */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="min-w-0 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
             <Checkbox
               checked={filtered.length > 0 && selectedRows.length === filtered.length}
@@ -496,7 +496,7 @@ export default function TeacherReviewQueue() {
         </div>
 
         {/* Detail */}
-        <div ref={detailRef} className="rounded-lg border border-border bg-card p-4 space-y-4">
+        <div ref={detailRef} className="min-w-0 rounded-lg border border-border bg-card p-4 space-y-4">
           {!activeRow ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               Vyberte odevzdání vlevo. Klávesy J/K nebo šipky posouvají na další/předchozí.
