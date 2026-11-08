@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CreateFromLessonDialog from "./CreateFromLessonDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
@@ -71,6 +72,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   const [busy, setBusy] = useState(false);
   const [targetLessonId, setTargetLessonId] = useState("");
   const [editorLesson, setEditorLesson] = useState<any>(null);
+  const [fromLessonOpen, setFromLessonOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -205,7 +207,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function saveAsGame() {
     if (!block || !user) return;
-    const slides = buildGameSlidesFromQuiz(activityToGameQuestions(block.props));
+      const slides = buildGameSlidesFromQuiz(activityToGameQuestions(block.props)).map(slide => ({ ...slide, ...(block.props.source ? { source: block.props.source } : {}), ai_generated: block.props.ai_generated === true }));
     if (!slides.length) { toast({ title: "Aktivita nemá žádné platné otázky", description: "Doplňte text a správné odpovědi.", variant: "destructive" }); return; }
     setBusy(true);
     const { error } = await supabase.from("teacher_game_templates" as any).insert({
@@ -223,7 +225,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   return (
     <>
-      <Dialog open={open && !editorLesson} onOpenChange={onOpenChange}>
+      <Dialog open={open && !editorLesson && !fromLessonOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -247,6 +249,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
+                  <Button className="min-h-11" onClick={() => setFromLessonOpen(true)}>Vytvořit z lekce</Button>
                   {textbooks.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Nemáte vlastní učebnici.</p>
                   ) : (
