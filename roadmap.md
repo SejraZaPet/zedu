@@ -194,4 +194,4 @@
 - [x] Etapa 1: více lekcí u materiálu (settings.lessons), řazení/odebrání, počet na kartách, úkol beze změny, testy
 - [ ] Ověření v prohlížeči jako učitel/žák a 390 px
 - [ ] Nabídka listů lekce po přidání lekce (vazba worksheets.source_lesson_id) – čeká na schválení
-- [ ] Etapa 2: více listů u materiálu + oprava politiky čtení listů – SQL v plánu, čeká na „schvaluji“
+- [ ] Etapa 2 schválena: přesný snapshot/rollback, jediná politika + funkce, ověření oprávnění, více listů pouze materiálu, testy a mobil; bez nasazení

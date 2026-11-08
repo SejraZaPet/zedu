@@ -1,6 +1,6 @@
 # Materiál: více lekcí (etapa 1 hotová) a návrh etapy 2 – více listů
 
-Úkol a oznámení zůstávají beze změny. Etapa 2 čeká na „schvaluji“. SQL níže se NESPOUŠTÍ.
+Úkol a oznámení zůstávají beze změny. Etapa 2 schválena 8. 11. 2026; provádí se pouze funkce a výměna jedné politiky.
 
 ## Etapa 1 – hotovo (jen frontend)
 - Materiál ukládá lekce do `settings.lessons` (stejný tvar jako u plánů, čte se přes `planLessons`).
@@ -23,7 +23,7 @@
 - Druhá vazba: `lesson_plans.worksheet_ids` u plánů hodin.
 - Implementace nabídky až po schválení.
 
-## Etapa 2 – FINÁLNÍ návrh SQL (NESPOUŠTĚT)
+## Etapa 2 – FINÁLNÍ návrh SQL (schváleno)
 Pravidlo: list vidí jen ti, komu je úloha přidělena.
 - Úloha pro třídu: jen členové třídy (`class_members.user_id`).
 - Úloha pro skupinu: jen členové skupiny (`subject_group_members.student_id`).
@@ -60,13 +60,30 @@ CREATE POLICY "Students can read worksheets via assignment" ON public.worksheets
   FOR SELECT TO authenticated USING (public.can_student_view_assigned_worksheet(id, auth.uid()));
 ```
 
-Rollback (vrátí přesně dnešní politiku):
+### Přesný stav před migrací (pg_policies, 8. 11. 2026)
+- policyname: `Students can read worksheets via assignment`
+- roles: `{authenticated}`; cmd: `SELECT`; permissive: `PERMISSIVE`; with_check: `NULL`.
+- qual (doslovně):
+```sql
+(EXISTS ( SELECT 1
+   FROM (assignments a
+     LEFT JOIN class_members cm ON ((cm.class_id = a.class_id)))
+  WHERE ((a.worksheet_id = worksheets.id) AND (a.status = 'published'::text) AND ((cm.user_id = auth.uid()) OR (a.class_id IS NULL)))))
+```
+- Sloupce `subject_group_members.student_id`, `assignment_recipients.student_id`, `class_members.user_id` potvrzeny jako UUID.
+- EXPLAIN těla funkce: membership a recipients používají existující index-only scans; assignments seq scan, cost 537.34. Žádná změna indexů.
+- Funkce tohoto jména před migrací neexistuje. Ostatní cesty čtení (vlastník/admin, sdílení, lekce/plán) a všechny demo politiky zůstanou byte-identické. Proto nečlen může nadále číst list jinou již oprávněnou cestou; zákaz se týká pouze čtení přes přidělení.
+- Oproti původnímu návrhu upraven jen rollback: doplněno přesné `TO authenticated`, `AS PERMISSIVE` a doslovné qual. SQL migrace beze změny.
+
+Rollback (obnoví přesný stav; NESPOUŠTĚT automaticky):
 ```sql
 DROP POLICY "Students can read worksheets via assignment" ON public.worksheets;
-CREATE POLICY "Students can read worksheets via assignment" ON public.worksheets FOR SELECT USING (
-  EXISTS (SELECT 1 FROM assignments a LEFT JOIN class_members cm ON cm.class_id = a.class_id
-          WHERE a.worksheet_id = worksheets.id AND a.status = 'published'
-            AND (cm.user_id = auth.uid() OR a.class_id IS NULL)));
+CREATE POLICY "Students can read worksheets via assignment" ON public.worksheets AS PERMISSIVE FOR SELECT TO authenticated USING (
+(EXISTS ( SELECT 1
+   FROM (assignments a
+     LEFT JOIN class_members cm ON ((cm.class_id = a.class_id)))
+  WHERE ((a.worksheet_id = worksheets.id) AND (a.status = 'published'::text) AND ((cm.user_id = auth.uid()) OR (a.class_id IS NULL)))))
+);
 DROP FUNCTION public.can_student_view_assigned_worksheet(uuid, uuid);
 ```
 
