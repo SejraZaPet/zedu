@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Aktivity z vlastních lekcí – schválené etapy 1+2
-- [ ] Sdílené okno: vlastní lekce → část → typ/počet → upravit návrh → vložit koncept
-- [ ] Rychlá hra, Moje aktivity a editor pracovního listu; zdroj v existujícím JSON
-- [ ] Testy vlastnictví, textových limitů, metadat, chyb a konceptů; kontrola 390 px
+- [x] Sdílené okno: vlastní lekce → část → typ/počet → upravit návrh → vložit koncept
+- [x] Rychlá hra, Moje aktivity a editor pracovního listu; zdroj v existujícím JSON
+- [x] Testy vlastnictví, textových limitů, metadat, chyb a konceptů; kontrola 390 px s místním testovacím návrhem
+- Neověřeno: skutečné AI a uložení/žákovské čtení (účet nemá vlastní lekce; žádná testovací data v DB nevytvářena).
 - Bez DB/RLS, edge funkcí a nasazení; obtížnost, otevřené otázky a upozornění na změnu lekce nyní nedělat
 
 ## Hodnocení úkolů – etapy 1+2 (schváleno) – HOTOVO

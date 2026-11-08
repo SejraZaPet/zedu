@@ -1,4 +1,4 @@
-import { splitLessonIntoSections } from "@/lib/lesson-content-splitter";
+import { flattenLessonBlocks, splitLessonIntoSections } from "@/lib/lesson-content-splitter";
 import { blocksToText } from "../../supabase/functions/_shared/lesson-text";
 import { normalizeAiProps, assertAiFillContent } from "@/lib/activity-ai-normalize";
 import type { Block } from "@/lib/textbook-config";
@@ -11,9 +11,19 @@ export function ownSourceBook(book: AiSourceBook, userId: string) {
   return book.teacher_id === userId && !book.copied_from_textbook_id && !book.is_system && !book.is_demo_seed;
 }
 export function lessonAiParts(lesson: OwnedAiLesson) {
-  const sections = splitLessonIntoSections(lesson.blocks);
-  return sections.length ? sections.map(s => ({ id: String(s.index), title: s.title, text: [s.title, s.text].filter(Boolean).join("\n") }))
-    : [{ id: "all", title: "Celá lekce", text: blocksToText(lesson.blocks) }];
+  const groups: unknown[][] = [];
+  let cardTop: number | null = null;
+  for (const entry of flattenLessonBlocks(lesson.blocks)) {
+    const starts = !groups.length || (entry.nested ? entry.topIndex !== cardTop : entry.block.type === "heading");
+    if (starts) groups.push([]);
+    groups[groups.length - 1]?.push(entry.block);
+    cardTop = entry.nested ? entry.topIndex : null;
+  }
+  const parts = groups.filter(group => splitLessonIntoSections(group).length).map((group, i) => ({
+    id: String(i + 1), title: splitLessonIntoSections(group)[0]?.title ?? `Část ${i + 1}`,
+    text: blocksToText(group, Number.MAX_SAFE_INTEGER),
+  }));
+  return parts.length ? parts : [{ id: "all", title: "Celá lekce", text: blocksToText(lesson.blocks, Number.MAX_SAFE_INTEGER) }];
 }
 export function sourceText(parts: { id: string; text: string }[], ids: string[], limit: number) {
   return parts.filter(p => ids.includes(p.id)).map(p => p.text).join("\n\n").trim().slice(0, limit);

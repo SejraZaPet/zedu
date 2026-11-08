@@ -27,6 +27,17 @@ describe("AI z vlastních lekcí", () => {
     expect(request.body).toEqual({ text: "x".repeat(14000), title: lesson.title, format: "mcq", count: 12 });
     expect(lessonAiRequest("mcq", "x".repeat(100), lesson.title, 1).body.count).toBe(3);
   });
+  it("zachová celý text vybrané části nad 8000 znaků včetně vnořených bloků", () => {
+    const parts = lessonAiParts({ ...lesson, blocks: [{ type: "slide_group", props: { children: [
+      { type: "heading", props: { text: "[TEST] Karta" } },
+      { type: "text", props: { text: "x".repeat(13000) } },
+      { type: "image", props: { caption: "[TEST] Popis obrázku" } },
+    ] } }] });
+    expect(parts).toHaveLength(1);
+    expect(parts[0].text).toContain("x".repeat(13000));
+    expect(parts[0].text).toContain("[TEST] Popis obrázku");
+    expect(sourceText(parts, ["1"], 14000).length).toBeGreaterThan(13000);
+  });
   it("respektuje současné maximum 8 dvojic", () => {
     expect(lessonAiRequest("matching", "x".repeat(100), lesson.title, 12).body.count).toBe(8);
   });
