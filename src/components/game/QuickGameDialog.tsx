@@ -1,4 +1,7 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import CreateFromLessonDialog from "@/components/activities/CreateFromLessonDialog";
+import { getQuizQuestions } from "@/lib/quiz-questions";
+import type { LessonAiSource } from "@/lib/lesson-ai-source";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -45,11 +48,14 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("manual");
+  const [fromLessonOpen, setFromLessonOpen] = useState(false);
+  const [source, setSource] = useState<LessonAiSource | null>(null);
 
   const reset = () => {
     setType(null); setTitle(""); setSubject(NONE); setMcq([emptyMcq()]);
     setTf([{ text: "", isTrue: true }]); setPairs([{ left: "", right: "" }, { left: "", right: "" }]);
     setTopic(""); setGrade(""); setAiUsed(false); setTab("manual");
+    setSource(null); setFromLessonOpen(false);
   };
   useEffect(() => {
     if (!open || !initialTopic) return;
@@ -75,6 +81,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
       if (type === "matching") setPairs(data.pairs);
       if (!title.trim()) setTitle(topic.trim().slice(0, 80));
       setAiUsed(true);
+      setSource(null);
       setTab("manual");
       toast.success("Obsah vytvořen AI – zkontrolujte ho a případně upravte.");
     } catch (e: any) {
@@ -108,7 +115,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
 
   const save = async () => {
     if (!title.trim()) { toast.error("Doplňte název hry."); return; }
-    const slides = buildSlides();
+    const slides = buildSlides().map(slide => source ? { ...slide, source } : slide);
     if (!slides.length) {
       toast.error(type === "matching" ? "Vyplňte aspoň 2 dvojice." : "Vyplňte aspoň jednu otázku s odpověďmi.");
       return;
@@ -139,8 +146,9 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
   const typeDef = QUICK_TYPES.find((q) => q.id === type);
 
   return (
-    <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <>
+    <Dialog open={open && !fromLessonOpen} onOpenChange={close}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11">
         <DialogHeader>
           <DialogTitle>Rychlá hra{typeDef ? ` – ${typeDef.label}` : ""}</DialogTitle>
           <DialogDescription>
@@ -180,6 +188,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
             </div>
 
             <Tabs value={tab} onValueChange={setTab}>
+              <Button variant="outline" className="mb-3 min-h-11" onClick={() => setFromLessonOpen(true)}><Sparkles className="w-4 h-4 mr-2" />Vytvořit z lekce</Button>
               <TabsList>
                 <TabsTrigger value="manual">Napsat ručně</TabsTrigger>
                 <TabsTrigger value="ai" className="gap-1"><Sparkles className="w-3.5 h-3.5" /> Vytvořit s AI</TabsTrigger>
@@ -212,7 +221,7 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
               <TabsContent value="manual" className="space-y-3 pt-3">
                 {aiUsed && (
                   <p className="text-xs rounded-md bg-primary/10 text-primary px-3 py-2">
-                    Vytvořeno AI – před spuštěním obsah zkontrolujte.
+                    Vytvořeno s pomocí AI – před uložením obsah zkontrolujte.
                   </p>
                 )}
 
@@ -299,5 +308,13 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <CreateFromLessonDialog open={fromLessonOpen} onOpenChange={setFromLessonOpen} initialType={type ?? "mcq"} allowedTypes={["mcq", "true_false", "matching"]} onInsert={block => {
+      const p = block.props;
+      if (p.activityType === "quiz") { setType("mcq"); setMcq(getQuizQuestions(p.quiz).map(q => ({ question: q.question, answers: q.answers.map(a => a.text), correctIndex: Math.max(0, q.answers.findIndex(a => a.correct)), explanation: q.explanation }))); }
+      if (p.activityType === "true_false") { setType("true_false"); setTf(p.trueFalse.statements); }
+      if (p.activityType === "matching") { setType("matching"); setPairs(p.matching.left.map((left: string, i: number) => ({ left, right: p.matching.right[i] }))); }
+      setTitle(p.title); setSource(p.source); setAiUsed(true); setTab("manual");
+    }} />
+    </>
   );
 };

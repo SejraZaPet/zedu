@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import CreateFromLessonDialog from "./CreateFromLessonDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,6 +71,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   const [busy, setBusy] = useState(false);
   const [targetLessonId, setTargetLessonId] = useState("");
   const [editorLesson, setEditorLesson] = useState<any>(null);
+  const [fromLessonOpen, setFromLessonOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -81,8 +82,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   useEffect(() => {
     if (!open || !user) return;
     (async () => {
-      const f = await ownTextbooksOr(user.id);
-      const { data } = await supabase.from("teacher_textbooks").select("id, title, subject").or(f).is("deleted_at", null).order("title");
+      const { data } = await supabase.from("teacher_textbooks").select("id, title, subject").eq("teacher_id", user.id).is("copied_from_textbook_id", null).eq("is_system", false).eq("is_demo_seed", false).is("deleted_at", null).order("title");
       setTextbooks((data as TbRow[]) ?? []);
     })();
   }, [open, user]);
@@ -90,7 +90,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   // Lekce učebnice se načítají stejně jako na stránce učebnice (TeacherTextbooks):
   // katalogové lekce témat předmětu + lekce umístěné přes lesson_placements + přímé lekce.
   useEffect(() => {
-    if (!textbookId) { setLessons([]); return; }
+    if (!textbookId || !textbooks.some(t => t.id === textbookId)) { setLessons([]); return; }
     let cancelled = false;
     setLessonsLoading(true);
     (async () => {
@@ -103,22 +103,6 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
         out.push({ ...l, title: l.title || "Bez názvu", source });
       };
       const cols = "id, title, blocks, sort_order, status, hero_image_url, scheduled_publish_at";
-      if (tb?.subject) {
-        const { data: topics } = await supabase.from("textbook_topics").select("id, sort_order")
-          .eq("subject", tb.subject).order("sort_order");
-        const topicIds = (topics ?? []).map((t: any) => t.id);
-        if (topicIds.length) {
-          const { data } = await supabase.from("textbook_lessons")
-            .select(`${cols}, require_activities, topic_id`).in("topic_id", topicIds).order("sort_order");
-          const order = new Map(topicIds.map((id: string, i: number) => [id, i]));
-          [...(data ?? [])].sort((a: any, b: any) =>
-            (order.get(a.topic_id) ?? 0) - (order.get(b.topic_id) ?? 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
-            .forEach((l) => push(l, "textbook_lessons"));
-        }
-        const { data: placed } = await supabase.from("lesson_placements")
-          .select(`teacher_textbook_lessons(${cols})`).eq("subject_slug", tb.subject);
-        (placed ?? []).forEach((p: any) => push(p.teacher_textbook_lessons, "teacher_textbook_lessons"));
-      }
       const { data: direct } = await supabase.from("teacher_textbook_lessons")
         .select(cols).eq("textbook_id", textbookId).order("sort_order");
       (direct ?? []).forEach((l) => push(l, "teacher_textbook_lessons"));
@@ -172,7 +156,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     }
   }
 
-  const onBlockChange = (props: Record<string, any>) => setBlock((b) => (b ? { ...b, props } : b));
+  const onBlockChange = (props: Record<string, any>) => setBlock((b) => (b ? { ...b, props: { ...props, ...(b.props.source ? { source: b.props.source, ai_generated: true } : {}) } } : b));
 
   async function openInLesson() {
     if (!block || !targetLessonId) return;
@@ -195,7 +179,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     const { error } = await supabase.from("activity_templates").insert({
       name: (block.props.title || title).slice(0, 120),
       activity_type: block.props.activityType,
-      template_props: activityPropsToTemplate(block.props),
+      template_props: block.props.source ? { ...block.props } : activityPropsToTemplate(block.props),
     } as any);
     setBusy(false);
     toast(error
@@ -205,7 +189,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function saveAsGame() {
     if (!block || !user) return;
-    const slides = buildGameSlidesFromQuiz(activityToGameQuestions(block.props));
+      const slides = buildGameSlidesFromQuiz(activityToGameQuestions(block.props)).map(slide => ({ ...slide, ...(block.props.source ? { source: block.props.source } : {}), ai_generated: block.props.ai_generated === true }));
     if (!slides.length) { toast({ title: "Aktivita nemá žádné platné otázky", description: "Doplňte text a správné odpovědi.", variant: "destructive" }); return; }
     setBusy(true);
     const { error } = await supabase.from("teacher_game_templates" as any).insert({
@@ -223,7 +207,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   return (
     <>
-      <Dialog open={open && !editorLesson} onOpenChange={onOpenChange}>
+      <Dialog open={open && !editorLesson && !fromLessonOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -247,21 +231,8 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
-                  {textbooks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nemáte vlastní učebnici.</p>
-                  ) : (
-                    <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
-                      onChange={(ids) => { setTextbookId(ids[0] ?? ""); setPicked([]); }}
-                      label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
-                  )}
-                  {textbookId && (lessonsLoading ? (
-                    <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Načítám lekce…</p>
-                  ) : lessons.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Tato učebnice zatím nemá žádné lekce.</p>
-                  ) : (
-                    <SearchablePickList items={lessons} mode="multi" selected={picked} onChange={setPicked}
-                      label="Lekce (lze vybrat více)" searchPlaceholder="Hledat lekci" showCount />
-                  ))}
+                  <Button className="min-h-11" onClick={() => setFromLessonOpen(true)}>Vytvořit z lekce</Button>
+
                 </TabsContent>
                 <TabsContent value="text" className="space-y-3">
                   <Label htmlFor="wiz-text">Text podkladu</Label>
@@ -279,7 +250,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                 </TabsContent>
               </Tabs>
               <div className="flex justify-end">
-                <Button onClick={goSettings}>Pokračovat</Button>
+                <Button onClick={goSettings} disabled={mode === "lesson"}>Pokračovat</Button>
               </div>
             </div>
           )}
@@ -391,6 +362,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
           )}
         </DialogContent>
       </Dialog>
+      <CreateFromLessonDialog open={fromLessonOpen} onOpenChange={setFromLessonOpen} onInsert={draft => { setBlock(draft); setStep("preview"); }} />
       <TeacherTextbookLessonEditorSheet
         lesson={editorLesson}
         open={!!editorLesson}

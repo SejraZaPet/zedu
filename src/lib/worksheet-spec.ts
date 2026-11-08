@@ -149,6 +149,8 @@ export interface AnswerSpace {
 }
 
 export interface WorksheetItem {
+  source?: import("@/lib/lesson-ai-source").LessonAiSource;
+  ai_generated?: boolean;
   /** Unique item id within worksheet */
   id: string;
   /** 1-based display number */
