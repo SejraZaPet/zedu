@@ -2776,6 +2776,10 @@ export default function WorksheetEditor() {
                               <InsertItemControl
                                 onInsert={(type) => insertItem(type, itemIndex + 1)}
                                 onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
+                                onInsertMethodSteps={() => {
+                                  setMethodStepsInsertAt(itemIndex + 1);
+                                  setMethodStepsPickerOpen(true);
+                                }}
                               />
                             </div>
                           );
@@ -3470,6 +3474,7 @@ function InsertItemControl({
 }: {
   onInsert: (type: ItemType) => void;
   onInsertOffline: (mode: OfflineMode) => void;
+  onInsertMethodSteps: () => void;
 }) {
   return (
     <div className="relative flex h-5 items-center justify-center" role="group" aria-label="Vložit blok za tuto položku">
@@ -3500,6 +3505,14 @@ function InsertItemControl({
               {ITEM_TYPE_LABELS[type].label}
             </DropdownMenuItem>
           ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Metody a praxe</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => onInsertMethodSteps()}>
+            {ITEM_TYPE_LABELS.method_steps.label}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onInsert("practice_examples")}>
+            {ITEM_TYPE_LABELS.practice_examples.label}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Offline aktivity</DropdownMenuLabel>
           {OFFLINE_MODES.map((mode) => {
