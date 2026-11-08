@@ -96,3 +96,16 @@ Frontend etapy 2:
 - `settings.worksheets: [{id,title}]` jen u materiálu, `worksheet_id` = první list,
 - seznam listů s otevřením jen ke čtení,
 - testy.
+
+## Etapa 2 – výsledek 8. 11. 2026
+- Aplikována jediná migrace `drizzle/migrations/0082_material_worksheets_assignment_read.sql`: nová funkce, EXECUTE authenticated (PUBLIC/anon odebráno), výměna pouze politiky `Students can read worksheets via assignment`.
+- Otisky všech dalších 11 politik zůstaly identické, včetně vlastníka/admina a demo_iso/demo_guard/demo_seed_read. Žádné řádky nezměněny.
+- Čtením těla funkce nad skutečnými členstvími: 12 třídních úloh/268 členství a 11 skupinových úloh/177 členství povoleno; 5384 nečlenských kombinací, 0 neoprávněných povolení.
+- Funkce přímo ověřena přes autorizované RPC: člen/nečlen třídy i skupiny true/false. Admin čte oba listy dál přes Data API.
+- Čtecí nástroj nemá EXECUTE na tuto funkci: nezvyšována jeho práva; hromadné ověření provedeno nad identickým SQL tělem a RPC přes vlastní přihlášení.
+- Příjemci a další list: pět lokálních SQL CTE případů (vybraný první/druhý ano, nevybraný člen oba ne, nečlen ne) prošlo bez insertů. Skutečné zveřejněné cílené materiály s listem dosud chybí, tuto reálnou kombinaci nelze ověřit bez testovacích zápisů.
+- Frontend: více listů jen materiál, společný blok a hledání, řazení/odebrání, první ID pro kompatibilitu, počty na učitelských i žákovských kartách. Starý list se objeví první. Úkol/oznámení zůstávají jednopoložkové.
+- Materiálové náhledy používají sandboxovaný tiskový dokument bez klíče odpovědí, bez pokusů/own-work/odevzdání.
+- 68 cílených testů prošlo (nefunkční nepovinný canvas dočasně vynechán a vrácen); automatická kontrola build OK. Samostatný typecheck nespouštěn, spravuje jej prostředí.
+- Vlastní přihlášený formulář 1280/390 px: přidání 2 listů, řazení, odebrání, 44px cíle a bez vodorovného posunu ověřeno. Místní materiálový náhled s reálně autorizovanými listy: oba otevřeny, žádný zápis pokusu/vlastní práce; materiál byl simulovaný, do DB neuložen.
+- Neověřeno: skutečné uložení a načtení materiálu žákem, druhá žákovská relace a dva demo páry; chybí vlastní schválená testovací data/účty. Nasazení ani edge funkce neprovedeny.
