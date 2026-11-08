@@ -165,3 +165,8 @@ export const canChangeKind = (hasAttempts: boolean) => !hasAttempts;
 export function submittableOnly<T extends { settings?: unknown }>(items: T[]): T[] {
   return items.filter((i) => isSubmittable(i.settings));
 }
+
+/** Úkol s pracovním listem nesmí být zároveň portfoliový – portfolio větev u žáka list skryje. */
+export function portfolioHidesWorksheet(kind: string, isPortfolioTask: boolean, worksheetId: string | null | undefined): boolean {
+  return kind === "task" && isPortfolioTask && !!worksheetId;
+}
