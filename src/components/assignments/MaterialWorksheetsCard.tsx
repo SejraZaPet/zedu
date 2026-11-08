@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import WorksheetPlayer from "@/components/WorksheetPlayer";
+import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import type { MaterialWorksheet } from "@/lib/assignment-content";
 
@@ -36,7 +36,7 @@ export default function MaterialWorksheetsCard({ worksheets }: { worksheets: Mat
     <Dialog open={!!selected} onOpenChange={(value) => { if (!value) setSelected(null); }}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-4xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle className="break-words pr-6">{selected?.title}</DialogTitle></DialogHeader>
-        {busy ? <Loader2 className="mx-auto h-6 w-6 animate-spin" aria-label="Načítání listu" /> : error ? <div role="alert" className="space-y-3"><p>Pracovní list není dostupný. Zkus to znovu nebo se zeptej učitele.</p><Button variant="outline" className="min-h-11" onClick={() => { if (selected) void open(selected); }}>Zkusit znovu</Button></div> : spec && <WorksheetPlayer key={selected?.id} spec={spec} variantId={spec.variants[0]?.variantId ?? "A"} locked showResults={false} />}
+        {busy ? <Loader2 className="mx-auto h-6 w-6 animate-spin" aria-label="Načítání listu" /> : error ? <div role="alert" className="space-y-3"><p>Pracovní list není dostupný. Zkus to znovu nebo se zeptej učitele.</p><Button variant="outline" className="min-h-11" onClick={() => { if (selected) void open(selected); }}>Zkusit znovu</Button></div> : spec && <iframe title={`Pracovní list ${selected?.title ?? ""}`} sandbox="" className="h-[65dvh] min-h-80 w-full border-0" srcDoc={renderWorksheetVariantHtml({ ...spec, answerKeys: {}, renderConfig: { ...spec.renderConfig, includeAnswerKey: false } }, spec.variants[0]?.variantId ?? "A", { teacherVersion: false })} />}
       </DialogContent>
     </Dialog>
   </>;
