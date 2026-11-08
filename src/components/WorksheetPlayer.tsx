@@ -77,13 +77,13 @@ export interface WorksheetPlayerProps {
 // ────────────────── Scoring ──────────────────
 
 /** Ručně hodnocené úlohy — do automatického skóre se nepočítají. */
-export const MANUAL_ITEM_TYPES = ["open_answer", "offline_activity", "write_lines", "two_boxes", "blank_box"];
+export const MANUAL_ITEM_TYPES = ["open_answer", "offline_activity", "write_lines", "two_boxes", "blank_box", "method_steps", "practice_examples"];
 const WRITING_TYPES = new Set(["write_lines", "two_boxes", "blank_box"]);
 
 /** Je položka zodpovězená? Psací bloky jen tehdy, když obsahují text. */
 export function isItemAnswered(item: WorksheetItem, value: unknown): boolean {
   if (WRITING_TYPES.has(item.type)) return hasWrittenText(value);
-  if (item.type === "table" || item.type === "mind_map") return Array.isArray(value) && value.some((v) => String(v ?? "").trim() !== "");
+  if (item.type === "table" || item.type === "mind_map" || item.type === "method_steps" || item.type === "practice_examples") return Array.isArray(value) && value.some((v) => String(v ?? "").trim() !== "");
   return value !== undefined && value !== "" && value !== null;
 }
 
@@ -154,6 +154,11 @@ export function scoreWorksheet(
         // offline activities are not auto-scored — points awarded manually by teacher
         correct = false;
         break;
+      case "method_steps":
+      case "practice_examples":
+        // metodické bloky se hodnotí ručně (jako otevřená odpověď)
+        correct = false;
+        break;
     }
 
     perItem[item.id] = { correct, points: correct ? item.points : 0 };
@@ -174,6 +179,8 @@ const TYPE_LABELS: Record<string, string> = {
   short_answer: "Krátká odpověď",
   open_answer: "Otevřená odpověď",
   offline_activity: "Offline aktivita",
+  method_steps: "Postup podle metody",
+  practice_examples: "Příklady z praxe",
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
