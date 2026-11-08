@@ -4519,6 +4519,10 @@ function PropertiesPanel({
 
       <MindMapFieldsEditor item={item} answerKey={answerKey} onUpdateItem={onUpdateItem} onUpdateKey={onUpdateKey} />
 
+      <MethodStepsFieldsEditor item={item} onUpdateItem={onUpdateItem} />
+
+      <PracticeExamplesFieldsEditor item={item} onUpdateItem={onUpdateItem} />
+
       <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
       {!LESSON_VISUAL_TYPES.includes(item.type) && <div className="pt-3 border-t border-border">
