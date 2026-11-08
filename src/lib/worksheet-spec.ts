@@ -45,7 +45,10 @@ export type ItemType =
   | "callout"
   // v1.5 — samostatné prázdné místo
   | "blank_box"
-  | "mind_map";
+  | "mind_map"
+  // v1.6 — metodické bloky
+  | "method_steps"
+  | "practice_examples";
 
 /** Hustota tisku (výchozí compact i pro starší listy bez pole). */
 export type PrintDensity = "compact" | "normal" | "loose";
@@ -284,6 +287,18 @@ export interface WorksheetItem {
   // ─── v1.5 — Myšlenková mapa (strom, bez správných odpovědí) ───
   /** Mapa; doplňované uzly mají blank=true a prázdný text. Odpovědi jen v answerKeys. */
   mindMap?: import("@/lib/mind-map").MindMapData;
+
+  // ─── v1.6 — Metodické bloky ───
+  /** Id metody z katalogu learning_methods (jen pro zobrazení). */
+  methodId?: string;
+  /** Název metody (jen pro zobrazení). */
+  methodName?: string;
+  /** Úvodní instrukce pro žáka (pro method_steps). */
+  methodIntro?: string;
+  /** Fáze postupu (pro method_steps; max 8). Body 0 = nehodnocená fáze. */
+  methodPhases?: import("@/lib/method-steps").MethodStepPhase[];
+  /** Příklady z praxe (pro practice_examples; ručně zadávané). */
+  practiceExamples?: import("@/lib/method-steps").PracticeExample[];
 }
 
 export interface AnswerKeyEntry {
