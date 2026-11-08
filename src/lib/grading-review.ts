@@ -1,4 +1,4 @@
-import { matchesQuery } from "@/lib/picker-search";
+import { matchesSearch } from "@/lib/picker-search";
 
 /**
  * Pomocné funkce pro obrazovku „Ke kontrole“ (etapy 1+2).
@@ -178,7 +178,7 @@ export function filterReviewRows(rows: ReviewRow[], f: ReviewFilters): ReviewRow
     if (f.state === "pending" && r.reviewed) return false;
     if (f.state === "reviewed" && !r.reviewed) return false;
     if (f.openOnly && !r.hasOpenAnswers) return false;
-    if (f.query && !matchesQuery(`${r.studentName} ${r.assignmentTitle}`, f.query)) return false;
+    if (f.query && !matchesSearch(f.query, r.studentName, r.assignmentTitle)) return false;
     return true;
   });
 }
