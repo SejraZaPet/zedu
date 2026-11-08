@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Worksheet attachment helpers preserve assignment state and unrelated settings; existing links use owner-scoped optimistic updates, so attaching never republishes or overwrites concurrent edits.
+
 - AI lesson-derived drafts use CreateFromLessonDialog and lesson-ai-source, scoped to non-copied owner textbooks; insertion stays local until explicit review and existing save, with provenance in existing JSON to avoid schema and permission changes.
 
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.

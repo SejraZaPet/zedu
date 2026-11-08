@@ -2851,6 +2851,7 @@ export default function WorksheetEditor() {
           subjectId={subjectId}
           sourceLessonId={sourceLessonId}
           onPublished={(info) => {
+            if (info.worksheetPublished === false) return;
             if (typeof info?.showInLesson === "boolean") setShowInLesson(info.showInLesson);
             setStatus("published");
             setScheduledAt(null);
