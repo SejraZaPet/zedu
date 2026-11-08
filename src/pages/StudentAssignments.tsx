@@ -149,6 +149,9 @@ const StudentAssignments = () => {
                               {a.attempts.filter((att) => att.status === "submitted").length}/{a.max_attempts} pokusů
                             </span>
                           )}
+                          {assignmentKind(a.settings) === "material" && planLessons(a).length > 0 && (
+                            <span>{lessonCountLabel(planLessons(a).length)}</span>
+                          )}
                           {bestMaxScore > 0 && a.exam_type !== "ustni" && (
                             <span className="font-medium">Nejlepší: {bestScore}/{bestMaxScore}</span>
                           )}

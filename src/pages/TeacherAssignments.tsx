@@ -2017,6 +2017,9 @@ const TeacherAssignments = () => {
                                     <h3 className="font-semibold break-words">{a.title}</h3>
                                     <AssignmentStateBadge status={visualStatus} />
                                     {assignmentKind(a.settings) === "task" && <ExamTypeBadge examType={a.exam_type} showDefault />}
+                                    {assignmentKind(a.settings) === "material" && assignmentLessons(a).length > 0 && (
+                                      <Badge variant="outline" className="text-xs"><BookOpen className="w-3 h-3 mr-1" aria-hidden />{lessonCountLabel(assignmentLessons(a).length)}</Badge>
+                                    )}
                                     {(recipientsMap[a.id]?.length ?? 0) > 0 && (
                                       <Badge variant="outline" className="text-xs">Jen vybraní žáci ({recipientsMap[a.id].length})</Badge>
                                     )}
