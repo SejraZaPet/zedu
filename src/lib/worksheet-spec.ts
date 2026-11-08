@@ -419,7 +419,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout", "blank_box", "mind_map"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table", "image", "image_text", "gallery", "callout", "blank_box", "mind_map", "method_steps", "practice_examples"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
