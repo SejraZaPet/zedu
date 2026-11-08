@@ -1858,7 +1858,7 @@ const TeacherAssignments = () => {
                   ✓ Žáci u úlohy uvidí tlačítko „Otevřít lekci“.
                 </p>
               )}
-            </div>
+            </div>}
 
               <AssignmentFormActions
                 isEditingPublished={isEditingPublished}
