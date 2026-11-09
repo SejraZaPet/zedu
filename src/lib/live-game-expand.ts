@@ -28,6 +28,8 @@ function mcqSlide(base: any, idx: number, question: string, answers: string[], c
       question,
       options: answers.map((text, i) => ({ text, correct: i === correctIndex, isCorrect: i === correctIndex })),
       correctIndex,
+      // Čas na odpověď nastavený na původním slidu platí pro každou otázku.
+      ...(base?.activitySpec?.timeLimitSec !== undefined ? { timeLimitSec: base.activitySpec.timeLimitSec } : {}),
     },
   };
 }

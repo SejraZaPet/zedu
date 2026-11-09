@@ -1558,7 +1558,7 @@ export const PresentationEditorDialog = ({
                           )}
                         </div>
 
-                        {["quiz", "mcq"].includes((currentSlide as any).activitySpec?.activityType) && (
+                        {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && (
                           <div className="border-t border-border pt-3">
                             <TimeLimitPicker
                               value={(currentSlide as any).activitySpec?.timeLimitSec}
