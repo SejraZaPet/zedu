@@ -13,6 +13,8 @@ import {
   Layers,
   Table2,
   FileText,
+  BarChart3,
+  Cloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Seo from "@/components/Seo";
@@ -30,6 +32,7 @@ const categories = [
   { id: "practice", label: "Procvičování" },
   { id: "text", label: "Textové aktivity" },
   { id: "visual", label: "Vizuální aktivity" },
+  { id: "live", label: "Živě se třídou" },
 ];
 
 const activities = [
@@ -75,8 +78,8 @@ const activities = [
   },
   {
     id: "open",
-    title: "Otevřená odpověď",
-    description: "Student napíše vlastní odpověď.",
+    title: "Zeď odpovědí (otevřená odpověď)",
+    description: "Žáci napíší vlastní odpověď na společnou zeď, bez bodování.",
     icon: MessageSquare,
     category: "text",
     preview: "open",
@@ -113,7 +116,25 @@ const activities = [
     category: "text",
     preview: "summary",
   },
-];
+  {
+    id: "live-poll",
+    title: "Anketa",
+    description: "Žáci hlasují pro jednu možnost, výsledky uvidíte na projektoru.",
+    icon: BarChart3,
+    category: "live",
+    preview: "poll",
+    liveHref: "/ucitel/prezentace",
+  },
+  {
+    id: "live-wordcloud",
+    title: "Oblak slov",
+    description: "Žáci pošlou slovo nebo frázi, z odpovědí vznikne oblak slov.",
+    icon: Cloud,
+    category: "live",
+    preview: "wordcloud",
+    liveHref: "/ucitel/prezentace",
+  },
+] as Array<{ id: string; title: string; description: string; icon: typeof FileText; category: string; preview: string; liveHref?: string }>;
 
 /* ── Mini preview components ─────────────────────────────── */
 
@@ -193,6 +214,23 @@ const PreviewOpen = () => (
   </div>
 );
 
+const PreviewPoll = () => (
+  <div className="space-y-1.5">
+    {[70, 40, 20].map((w, i) => (
+      <div key={i} className="h-2.5 rounded bg-primary/30" style={{ width: `${w}%` }} />
+    ))}
+  </div>
+);
+
+const PreviewWordCloud = () => (
+  <div className="flex flex-wrap items-center justify-center gap-1.5 text-muted-foreground">
+    <span className="text-sm font-semibold text-primary">voda</span>
+    <span className="text-[10px]">řeka</span>
+    <span className="text-xs font-medium">moře</span>
+    <span className="text-[10px]">déšť</span>
+  </div>
+);
+
 const PreviewImageLabel = () => (
   <div className="relative rounded-md bg-muted/40 border border-border h-12 flex items-center justify-center">
     <Image className="w-4 h-4 text-muted-foreground/50" />
@@ -257,6 +295,8 @@ const previewMap: Record<string, React.FC> = {
   flashcards: PreviewFlashcards,
   table: PreviewTable,
   summary: PreviewSummary,
+  poll: PreviewPoll,
+  wordcloud: PreviewWordCloud,
 };
 
 const ActivitiesPage = () => {
@@ -363,7 +403,16 @@ const ActivitiesPage = () => {
                   </div>
 
                   {/* CTA */}
-                  {!supported ? (
+                  {activity.liveHref ? (
+                    isTeacher ? (
+                      <Link to={activity.liveHref} onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center min-h-11 w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
+                        Přidat do prezentace
+                      </Link>
+                    ) : (
+                      <p className="text-center text-xs text-muted-foreground py-2">Spouští učitel v živé hodině.</p>
+                    )
+                  ) : !supported ? (
                     <button type="button" disabled aria-disabled="true"
                       className="w-full py-2 rounded-xl text-xs font-semibold border border-border text-muted-foreground opacity-70 cursor-not-allowed">
                       Brzy

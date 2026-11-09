@@ -75,7 +75,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   useEffect(() => {
     if (!open) return;
-    setStep("source"); setMode(catalogId && wizardTypeFor(catalogId)?.manualOnly ? "empty" : "lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
+    setStep("source"); setMode(info?.manualOnly ? "empty" : "lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
   }, [open, catalogId]);
 
   // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
