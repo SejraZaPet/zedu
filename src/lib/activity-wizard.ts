@@ -23,6 +23,8 @@ export interface WizardTypeInfo {
   liveGame: boolean;
   /** Lze uložit do „Moje aktivity“ (activity_templates). */
   template: boolean;
+  /** Jen ruční vyplnění (AI se nepoužije, např. Zeď odpovědí). */
+  manualOnly?: boolean;
 }
 
 /** Které z 10 typů na stránce umí editor lekce opravdu vytvořit. */
@@ -35,7 +37,8 @@ export const WIZARD_TYPES: Record<CatalogId, WizardTypeInfo> = {
   imagelabel: { blockType: "activity", activityType: "image_label", liveGame: false, template: true },
   flashcards: { blockType: "activity", activityType: "flashcards",  liveGame: false, template: true },
   summary:    { blockType: "summary",  activityType: "summary",     liveGame: false, template: false },
-  open:       { blockType: null, activityType: null, liveGame: false, template: false },
+  // „Otevřená odpověď“ = funkční Zeď odpovědí (žáci píší vlastní odpověď, bez bodování).
+  open:       { blockType: "activity", activityType: "wall",        liveGame: false, template: false, manualOnly: true },
   table:      { blockType: null, activityType: null, liveGame: false, template: false },
 };
 
@@ -142,6 +145,11 @@ export function buildBlock(
   }
   const props: Record<string, any> = { ...(aiProps ?? {}), activityType: info.activityType, ...ai };
   if (!props.title) props.title = title || "";
+  if (info.activityType === "wall") {
+    props.question = props.question ?? "";
+    props.anonymous = props.anonymous ?? true;
+    props.allowMultiple = props.allowMultiple ?? false;
+  }
   if (info.activityType === "fill_blanks") {
     props.fillBlanks = { ...(props.fillBlanks ?? { text: "" }), showWordBank: s.wordBank };
   }

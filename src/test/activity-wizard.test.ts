@@ -10,8 +10,8 @@ const longText = "Poživatiny jsou látky určené k výživě člověka. ".repe
 describe("activity wizard – přiřazení typu", () => {
   it("podporuje jen typy, které editor lekce umí", () => {
     const supported = Object.keys(WIZARD_TYPES).filter(isSupported).sort();
-    expect(supported).toEqual(["fillblanks", "flashcards", "imagelabel", "matching", "ordering", "quiz", "summary", "truefalse"]);
-    expect(isSupported("open")).toBe(false);
+    expect(supported).toEqual(["fillblanks", "flashcards", "imagelabel", "matching", "open", "ordering", "quiz", "summary", "truefalse"]);
+    expect(isSupported("open")).toBe(true);
     expect(isSupported("table")).toBe(false);
     expect(isSupported("neznamy")).toBe(false);
     expect(WIZARD_TYPES.fillblanks.activityType).toBe("fill_blanks");
@@ -60,5 +60,21 @@ describe("activity wizard – omezení a sestavení", () => {
     expect(empty.props.activityType).toBe("quiz");
     expect(buildBlock("summary", { summary: { text: "<ul><li>x</li></ul>" } }, s, "S").type).toBe("summary");
     expect(() => buildBlock("table", null, s, "T")).toThrow();
+  });
+});
+
+describe("Otevřená odpověď → Zeď odpovědí", () => {
+  it("vytvoří anonymní blok wall bez AI", () => {
+    expect(WIZARD_TYPES.open.manualOnly).toBe(true);
+    expect(WIZARD_TYPES.open.liveGame).toBe(false);
+    const b = buildBlock("open", null, { itemCount: 8, difficulty: "medium", optionCount: 4, wordBank: true } as any, "Zeď");
+    expect(b.type).toBe("activity");
+    expect(b.props.activityType).toBe("wall");
+    expect(b.props.anonymous).toBe(true);
+    expect(b.props.allowMultiple).toBe(false);
+    expect(b.props.ai_generated).toBeUndefined();
+  });
+  it("tabulka zůstává nepodporovaná", () => {
+    expect(isSupported("table")).toBe(false);
   });
 });

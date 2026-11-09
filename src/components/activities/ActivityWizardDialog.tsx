@@ -75,7 +75,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   useEffect(() => {
     if (!open) return;
-    setStep("source"); setMode("lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
+    setStep("source"); setMode(info?.manualOnly ? "empty" : "lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
   }, [open, catalogId]);
 
   // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
@@ -225,9 +225,9 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
           {step === "source" && (
             <div className="space-y-4">
               <Tabs value={mode} onValueChange={(v) => setMode(v as SourceMode)}>
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="lesson">Z lekce</TabsTrigger>
-                  <TabsTrigger value="text">Vložit text nebo dokument</TabsTrigger>
+                <TabsList className={info?.manualOnly ? "grid grid-cols-1 w-full" : "grid grid-cols-3 w-full"}>
+                  {!info?.manualOnly && <TabsTrigger value="lesson">Z lekce</TabsTrigger>}
+                  {!info?.manualOnly && <TabsTrigger value="text">Vložit text nebo dokument</TabsTrigger>}
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
