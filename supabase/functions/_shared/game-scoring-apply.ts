@@ -3,6 +3,7 @@ import {
   computeScore, correctStreak, effectiveMode, pickVictim, stealCandidates, teamsActiveFor,
   type ScoreResult, type GameModeId,
 } from "./game-scoring.ts";
+import { scoringTimeLimitMs } from "./live-timing.ts";
 
 export interface ApplyInput {
   sessionId: string;
@@ -16,7 +17,7 @@ export interface ApplyInput {
 
 export async function scoreLiveAnswer(admin: any, i: ApplyInput): Promise<ScoreResult & { mode: GameModeId; victimNickname: string | null }> {
   const mode = effectiveMode(i.settings?.gameMode, i.slide?.gameSettings?.mode);
-  const timeLimitMs = (Number(i.slide?.timeLimit) || Number(i.settings?.timePerQuestion) || 20) * 1000;
+  const timeLimitMs = scoringTimeLimitMs(i.slide, i.settings);
 
   let myScore = 0;
   let streak = i.correct ? 1 : 0;

@@ -1,3 +1,5 @@
+import { resolveTimeLimitSec } from "@/lib/live-timing";
+
 /**
  * Živá hra (/live/...): u MCQ otázek se správná odpověď ukáže až po
  * zveřejnění výsledků dané otázky. Příznak žije v game_sessions.settings.
@@ -12,8 +14,8 @@ export const mcqRevealPatch = (settings: any, questionIndex: number) => ({
   settings: { ...(settings || {}), mcqRevealedQuestion: questionIndex },
 });
 
-/** Čas na otázku v ms (z nastavení hry), nebo null pokud není nastavený. */
-export const liveQuestionTimeLimitMs = (settings: any): number | null => {
-  const sec = Number(settings?.timePerQuestion);
-  return Number.isFinite(sec) && sec > 0 ? sec * 1000 : null;
+/** Čas na otázku v ms (slide → nastavení hry), nebo null = bez limitu. */
+export const liveQuestionTimeLimitMs = (settings: any, slide?: any): number | null => {
+  const sec = resolveTimeLimitSec(slide, settings, "live");
+  return sec ? sec * 1000 : null;
 };

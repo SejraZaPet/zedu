@@ -6,6 +6,8 @@ import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { McqAnswerDistribution, McqCountdown, McqResultsBoard } from "@/components/live/LiveMcqWidgets";
 import { isLiveMcqSlide, isMcqRevealed } from "@/lib/live-mcq";
+import { isAwaitingStart } from "@/lib/live-timing";
+import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
@@ -196,6 +198,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   );
 
   const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
+  const awaitingStart = isAwaitingStart(session?.settings, currentSlide, currentIndex);
 
   return (
     <div
@@ -247,7 +250,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 )}
 
-                {activityType === "wall" ? (
+                {awaitingStart ? (
+                  <AwaitingStartNotice slide={currentSlide} variant="projector" />
+                ) : activityType === "wall" ? (
                   <WallProjectorView
                     sessionId={sessionId}
                     questionIndex={currentIndex}

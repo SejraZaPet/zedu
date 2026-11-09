@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DEFAULT_NEW_QUIZ_TIME_SEC } from "@/lib/live-timing";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -111,6 +112,7 @@ function buildMcqSlide(question: string, options: string[], correctIdx: number) 
         isCorrect: i === correctIdx,
       })),
       correctIndex: correctIdx,
+      timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC,
     },
   };
 }

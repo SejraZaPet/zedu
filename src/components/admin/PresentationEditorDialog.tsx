@@ -63,6 +63,8 @@ import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-s
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
+import TimeLimitPicker from "@/components/live/TimeLimitPicker";
+import { DEFAULT_NEW_QUIZ_TIME_SEC } from "@/lib/live-timing";
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
@@ -752,6 +754,7 @@ export const PresentationEditorDialog = ({
             isCorrect: i === correctIndex,
           })),
           correctIndex,
+          timeLimitSec: (currentSlide as any).activitySpec?.timeLimitSec ?? DEFAULT_NEW_QUIZ_TIME_SEC,
         },
         ai_generated: true,
       });
@@ -1471,7 +1474,11 @@ export const PresentationEditorDialog = ({
                           <Label className="text-xs">Typ aktivity</Label>
                           <Select
                             value={(currentSlide as any).activitySpec?.activityType || "true_false"}
-                            onValueChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, activityType: v } })}
+                            onValueChange={(v) => {
+                              const prev = (currentSlide as any).activitySpec || {};
+                              const becomesQuiz = (v === "quiz" || v === "mcq") && prev.timeLimitSec === undefined;
+                              updateSlide({ activitySpec: { ...prev, activityType: v, ...(becomesQuiz ? { timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC } : {}) } });
+                            }}
                           >
                             <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -1550,6 +1557,20 @@ export const PresentationEditorDialog = ({
                             </Select>
                           )}
                         </div>
+
+                        {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && (
+                          <div className="border-t border-border pt-3">
+                            <TimeLimitPicker
+                              value={(currentSlide as any).activitySpec?.timeLimitSec}
+                              onChange={(next) => {
+                                const spec = { ...(currentSlide as any).activitySpec };
+                                if (next === undefined) delete spec.timeLimitSec;
+                                else spec.timeLimitSec = next;
+                                updateSlide({ activitySpec: spec });
+                              }}
+                            />
+                          </div>
+                        )}
 
                         {(currentSlide as any).activitySpec?.activityType === "wall" && (
                           <div className="space-y-2 border-t border-border pt-3">

@@ -156,7 +156,7 @@ export function usePresentationLauncher() {
         title: lesson.title,
         game_code: gameCode,
         activity_data: expandSlidesForLiveGame(slides) as any,
-        settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+        settings: { timePerQuestion: 30, activityStartMode: "manual", shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
       }).select().single();
@@ -215,7 +215,7 @@ export function usePresentationLauncher() {
       title: data.lesson.title,
       game_code: gameCode,
       activity_data: expandSlidesForLiveGame(data.slides) as any,
-      settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+      settings: { timePerQuestion: 30, activityStartMode: "manual", shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
       status: "lobby",
       current_question_index: -1,
     }).select().single();

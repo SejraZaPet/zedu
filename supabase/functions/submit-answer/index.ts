@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
+import { isAwaitingStart, resolveTimeLimitSec } from "../_shared/live-timing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,6 +83,13 @@ serve(async (req) => {
       });
     }
 
+    // Ruční „Spustit“: na připravený, ale nespuštěný slide se odpovídat nedá.
+    if (isAwaitingStart(settings, question, qi)) {
+      return new Response(JSON.stringify({ error: "Not started", notStarted: true }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const isCorrect = !!question.answers?.[answerIndex]?.correct;
 
     // Race mode: on WRONG answer we do NOT insert a response — student
@@ -107,7 +115,7 @@ serve(async (req) => {
       });
     }
 
-    const timeLimitMs = (settings?.timePerQuestion || 20) * 1000;
+    const timeLimitMs = (resolveTimeLimitSec(question, settings, "classic") ?? 20) * 1000;
     const elapsed = session.question_started_at
       ? Date.now() - new Date(session.question_started_at).getTime()
       : timeLimitMs;

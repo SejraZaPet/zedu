@@ -6,10 +6,15 @@ import { useEffect, useState } from "react";
 import { Timer, Trophy } from "lucide-react";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { liveQuestionTimeLimitMs } from "@/lib/live-mcq";
+import { isAwaitingStart } from "@/lib/live-timing";
 import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
-export const useMcqCountdown = (session: any, active: boolean) => {
-  const limit = liveQuestionTimeLimitMs(session?.settings);
+export const useMcqCountdown = (session: any, active: boolean, settingsOverride?: any) => {
+  const liveSettings = settingsOverride ?? session?.settings;
+  const idx = session?.current_question_index;
+  const slide = Array.isArray(session?.activity_data) && typeof idx === "number" ? session.activity_data[idx] : undefined;
+  const awaiting = isAwaitingStart(liveSettings, slide, idx);
+  const limit = awaiting ? null : liveQuestionTimeLimitMs(liveSettings, slide);
   const startedIso = session?.question_started_at as string | undefined;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -26,12 +31,15 @@ export const McqCountdown = ({
   session,
   active,
   size = "md",
+  settings,
 }: {
   session: any;
   active: boolean;
   size?: "md" | "lg";
+  /** Čerstvější nastavení hry (žák bez účtu je čte dotazem). */
+  settings?: any;
 }) => {
-  const cd = useMcqCountdown(session, active);
+  const cd = useMcqCountdown(session, active, settings);
   if (!cd) return null;
   const sec = Math.ceil(cd.remainingMs / 1000);
   const pct = (cd.remainingMs / cd.limitMs) * 100;
