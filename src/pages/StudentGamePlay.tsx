@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
 import { McqCountdown } from "@/components/live/LiveMcqWidgets";
+import { isAwaitingStart } from "@/lib/live-timing";
+import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import WallResponsesList from "@/components/activities/WallResponsesList";
@@ -342,7 +344,10 @@ const StudentGamePlay = () => {
 
 
   if (isSlideFormat) {
-    const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
+    // Ruční „Spustit“: stav z nejčerstvějšího zdroje (dotaz každou sekundu, jinak session).
+    const startSettings = liveSettings && Object.keys(liveSettings).length ? liveSettings : settingsAny;
+    const awaitingStart = isAwaitingStart(startSettings, currentSlideData, qi);
+    const isActivity = !awaitingStart && currentSlideData.type === "activity" && currentSlideData.activitySpec;
     const isPhoneMcq = isActivity && currentSlideData.activitySpec?.activityType === "mcq";
     const mcqImage = currentSlideData.activitySpec?.imageUrl || currentSlideData.projector?.assetRefs?.[0];
     return (
@@ -467,6 +472,11 @@ const StudentGamePlay = () => {
 
 
           {/* Aktivita */}
+          {awaitingStart && (
+            <div className="px-3 sm:px-4 mt-4">
+              <AwaitingStartNotice slide={currentSlideData} variant="student" />
+            </div>
+          )}
           {isActivity && (currentSlideData as any).activitySpec?.activityType === "teams" && (
             <TeamsSlideStudent session={session} playerId={playerId} />
           )}
