@@ -10,7 +10,7 @@ const longText = "Poživatiny jsou látky určené k výživě člověka. ".repe
 describe("activity wizard – přiřazení typu", () => {
   it("podporuje jen typy, které editor lekce umí", () => {
     const supported = Object.keys(WIZARD_TYPES).filter(isSupported).sort();
-    expect(supported).toEqual(["fillblanks", "flashcards", "imagelabel", "matching", "ordering", "quiz", "summary", "truefalse"]);
+    expect(supported).toEqual(["fillblanks", "flashcards", "imagelabel", "matching", "open", "ordering", "quiz", "summary", "truefalse"]);
     expect(isSupported("open")).toBe(true);
     expect(isSupported("table")).toBe(false);
     expect(isSupported("neznamy")).toBe(false);
