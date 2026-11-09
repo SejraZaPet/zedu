@@ -76,6 +76,7 @@ serve(async (req) => {
           sessionType: "lesson_plan",
           lessonPlanId: lessonPlanId || null,
           timePerQuestion: 0, // teacher-paced, no auto timer
+          activityStartMode: "manual", // aktivity z lekce čekají na „Spustit“
           revealAnswer: false,
         },
       })

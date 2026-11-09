@@ -6,10 +6,14 @@ import { useEffect, useState } from "react";
 import { Timer, Trophy } from "lucide-react";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { liveQuestionTimeLimitMs } from "@/lib/live-mcq";
+import { isAwaitingStart } from "@/lib/live-timing";
 import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
 
 export const useMcqCountdown = (session: any, active: boolean) => {
-  const limit = liveQuestionTimeLimitMs(session?.settings);
+  const idx = session?.current_question_index;
+  const slide = Array.isArray(session?.activity_data) && typeof idx === "number" ? session.activity_data[idx] : undefined;
+  const awaiting = isAwaitingStart(session?.settings, slide, idx);
+  const limit = awaiting ? null : liveQuestionTimeLimitMs(session?.settings, slide);
   const startedIso = session?.question_started_at as string | undefined;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
