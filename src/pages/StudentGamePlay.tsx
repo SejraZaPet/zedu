@@ -644,7 +644,7 @@ const StudentGamePlay = () => {
                   const revealed = isMcqRevealed(liveSettings, qIdx) || isMcqRevealed(session?.settings, qIdx);
                   return (
                     <div className="space-y-4">
-                    {!revealed && <McqCountdown session={session} active={session?.status === "playing"} size="lg" />}
+                    {!revealed && <McqCountdown session={session} active={session?.status === "playing"} size="lg" settings={startSettings} />}
                     <QuizActivity
                       key={`live-mcq-${qIdx}`}
                       quiz={quiz}
