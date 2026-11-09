@@ -1,5 +1,13 @@
 # Roadmap
 
+## Demo – únik obsahu skutečných učitelů (schváleno, etapy 1–3)
+- [ ] Etapa 1: demo_iso_strict na worksheets + ověření
+- [ ] Etapa 2: demo_iso_strict na teacher_presentations a teacher_textbooks + ověření
+- [ ] Etapa 3: demo_guard_update/delete na lessons + ověření
+
+## Časovač a „Spustit“ u živých aktivit – čeká na schválení plánu
+- [ ] Plán připraven, neimplementovat bez „schvaluji“
+
 ## Přiložení pracovních listů – dvě schválené opravy
 - [x] Štítky a potvrzené zveřejnění nezveřejněných listů ve formuláři
 - [x] Přidání do existující úlohy a varování před duplicitním novým zadáním
