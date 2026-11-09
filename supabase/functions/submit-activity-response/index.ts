@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
 import { mcqCorrectFromSelection } from "../_shared/game-scoring.ts";
 import { isGradedSlide } from "../_shared/session-participants.ts";
+import { isAwaitingStart } from "../_shared/live-timing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,11 @@ serve(async (req) => {
       .maybeSingle();
     const activityData = (sess?.activity_data as any[]) || [];
     const question = activityData[questionIndex];
+
+    // Ruční „Spustit“: na připravený, ale nespuštěný slide se odpovídat nedá.
+    if (isAwaitingStart(sess?.settings ?? {}, question, questionIndex)) {
+      return json({ error: "Not started", notStarted: true }, 409);
+    }
 
     // Open-ended activities (wordcloud / wall / open question) are explicitly
     // multi-entry: one player may send several words or several notes. Applying
