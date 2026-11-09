@@ -7,7 +7,7 @@ import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/A
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
 import { serverTsToClientMs } from "@/lib/clock-sync";
-import { isAwaitingStart, isManualStart, isRespondableSlide, isStudentPaced, settingsForSlideEnter, settingsForStart } from "@/lib/live-timing";
+import { isAwaitingStart, isManualStart, isRespondableSlide, settingsForSlideEnter, settingsForStart } from "@/lib/live-timing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair, Play } from "lucide-react";
