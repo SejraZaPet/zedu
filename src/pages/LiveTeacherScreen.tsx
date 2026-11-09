@@ -7,9 +7,10 @@ import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/A
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
 import { serverTsToClientMs } from "@/lib/clock-sync";
+import { isAwaitingStart, isManualStart, isRespondableSlide, isStudentPaced, settingsForSlideEnter, settingsForStart } from "@/lib/live-timing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair, Play } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
@@ -101,7 +102,8 @@ const LiveTeacherScreen = () => {
   }, [sessionId]);
 
   // ---- MCQ: zveřejnění výsledků otázky (ručně / všichni odpověděli / vypršel čas) ----
-  const mcqActive = isLiveMcqSlide(currentSlide) && session?.status === "playing";
+  const awaitingStart = session?.status === "playing" && isAwaitingStart(settings, currentSlide, currentIndex);
+  const mcqActive = isLiveMcqSlide(currentSlide) && session?.status === "playing" && !awaitingStart;
   const mcqRevealed = isMcqRevealed(settings, currentIndex);
   const revealMcq = useCallback(async () => {
     if (!sessionId || currentIndex < 0) return;
@@ -114,12 +116,21 @@ const LiveTeacherScreen = () => {
   }, [mcqActive, mcqRevealed, mcqAnswered, players.length, revealMcq]);
   useEffect(() => {
     if (!mcqActive || mcqRevealed || !session?.question_started_at) return;
-    const limit = liveQuestionTimeLimitMs(settings);
+    const limit = liveQuestionTimeLimitMs(settings, currentSlide);
     if (!limit) return;
     const wait = serverTsToClientMs(session.question_started_at) + limit - Date.now();
     const id = setTimeout(() => void revealMcq(), Math.max(0, wait));
     return () => clearTimeout(id);
-  }, [mcqActive, mcqRevealed, session?.question_started_at, settings?.timePerQuestion, revealMcq]);
+  }, [mcqActive, mcqRevealed, session?.question_started_at, settings?.timePerQuestion, currentSlide, revealMcq]);
+
+  // ---- Ruční „Spustit“: odpovídání a odpočet začnou až teď ----
+  const startActivity = useCallback(async () => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({
+      settings: settingsForStart(settings) as any,
+      question_started_at: new Date().toISOString(),
+    }).eq("id", sessionId);
+  }, [sessionId, settings]);
 
   // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
   const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
@@ -177,17 +188,17 @@ const LiveTeacherScreen = () => {
   }, [currentIndex]);
 
   /** Reset posunu/odhalení/přiblížení, posílaný ve stejném zápisu jako změna snímku. */
-  const slideResetPatch = useCallback(() => ({
-    settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
+  const slideResetPatch = useCallback((target: number) => ({
+    settings: { ...settingsForSlideEnter(settings, slides, target), projectorScrollTop: 0, revealStep: 1 },
     zoom_state: null,
-  }), [settings]);
+  }), [settings, slides]);
 
   const handleNext = useCallback(() => {
     if (!session) return;
     if (currentIndex >= slides.length - 1) {
       endGame();
     } else {
-      nextQuestion(currentIndex, slideResetPatch());
+      nextQuestion(currentIndex, slideResetPatch(currentIndex + 1));
     }
   }, [session, currentIndex, slides.length, nextQuestion, endGame, slideResetPatch]);
 
@@ -195,7 +206,7 @@ const LiveTeacherScreen = () => {
     if (!sessionId) return;
     if (target < 0 || target >= slides.length) return;
     await supabase.from("game_sessions").update({
-      ...slideResetPatch(),
+      ...slideResetPatch(target),
       current_question_index: target,
       question_started_at: new Date().toISOString(),
       status: "playing",
@@ -204,7 +215,7 @@ const LiveTeacherScreen = () => {
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: () => { if (currentIndex < slides.length - 1) handleNext(); },
-    onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch()); },
+    onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1)); },
   });
 
   // Race mode auto-end: finish the session when either every player has crossed
@@ -245,7 +256,7 @@ const LiveTeacherScreen = () => {
       const cmd = payload?.cmd as string;
       if (cmd === "next") handleNext();
       else if (cmd === "prev") {
-        if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch());
+        if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1));
       } else if (cmd === "end") {
         endGame();
       } else if (cmd === "goto" && typeof payload?.index === "number") {
@@ -361,6 +372,13 @@ const LiveTeacherScreen = () => {
             },
           })
           .eq("id", sessionId);
+      }
+      if (sessionId && gameMode !== "race" && isManualStart(settings) && isRespondableSlide(slides[0])) {
+        // První slide je aktivita a hra se spouští ručně: připravit ho na „Spustit“.
+        const { data: fresh } = await supabase.from("game_sessions").select("settings").eq("id", sessionId).maybeSingle();
+        await supabase.from("game_sessions").update({
+          settings: settingsForSlideEnter((fresh as any)?.settings ?? settings, slides, 0) as any,
+        }).eq("id", sessionId);
       }
       startGame();
     };
@@ -679,6 +697,20 @@ const LiveTeacherScreen = () => {
                       .eq("id", sessionId);
                   }}
                   aria-label="Anonymní odpovědi na projektoru"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Spouštět aktivity: {isManualStart(settings) ? "ručně" : "automaticky"}</span>
+                <Switch
+                  checked={isManualStart(settings)}
+                  onCheckedChange={async (checked) => {
+                    if (!sessionId) return;
+                    const next: Record<string, any> = { ...(settings || {}), activityStartMode: checked ? "manual" : "auto" };
+                    // Vypnutí ručního režimu nesmí nechat žáky čekat na právě připraveném slidu.
+                    if (!checked) delete next.armedQuestion;
+                    await supabase.from("game_sessions").update({ settings: next }).eq("id", sessionId);
+                  }}
+                  aria-label="Spouštět aktivity ručně tlačítkem Spustit"
                 />
               </label>
               <label className="flex items-center justify-between gap-3 text-sm">
@@ -1415,6 +1447,18 @@ const LiveTeacherScreen = () => {
             </div>
           )}
 
+          {awaitingStart && (
+            <div className="mt-3 p-3 border-2 border-primary/40 bg-primary/5 rounded-lg flex flex-wrap items-center justify-between gap-3" role="status">
+              <div>
+                <p className="text-sm font-medium">Aktivita čeká na spuštění</p>
+                <p className="text-xs text-muted-foreground">Žáci zatím nemohou odpovídat a odpočet neběží.</p>
+              </div>
+              <Button onClick={startActivity} className="min-h-[44px] gap-1.5" data-testid="start-activity">
+                <Play className="w-4 h-4" /> Spustit
+              </Button>
+            </div>
+          )}
+
           {/* Navigation */}
           <div className="flex justify-between pt-4 border-t border-border">
             <Button
@@ -1423,7 +1467,7 @@ const LiveTeacherScreen = () => {
               onClick={() => {
                 if (currentIndex > 0) {
                   // Go back by setting index manually
-                  nextQuestion(currentIndex - 2, slideResetPatch());
+                  nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1));
                 }
               }}
             >
