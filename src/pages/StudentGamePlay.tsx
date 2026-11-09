@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
 import { McqCountdown } from "@/components/live/LiveMcqWidgets";
-import { isAwaitingStart } from "@/lib/live-timing";
+import { isAwaitingStart, resolveTimeLimitSec } from "@/lib/live-timing";
 import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
@@ -760,7 +760,7 @@ const StudentGamePlay = () => {
 
   const currentQ = !isSlideFormat ? (session.activity_data as any[])?.[qi] : null;
   const hasAnswered = answered.has(qi);
-  const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
+  const timeLimit = (resolveTimeLimitSec(currentQ, session.settings, "classic") ?? 20) * 1000;
   const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
 
   if (!currentQ) {
