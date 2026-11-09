@@ -36,7 +36,7 @@ const TimeLimitPicker = ({ value, onChange }: Props) => {
         onValueChange={(v) => {
           if (v === INHERIT) onChange(undefined);
           else if (v === NONE) onChange(0);
-          else if (v === CUSTOM) onChange(Number(value) > 0 ? Number(value) : 40);
+          else if (v === CUSTOM) onChange(40);
           else onChange(Number(v));
         }}
       >
@@ -59,8 +59,9 @@ const TimeLimitPicker = ({ value, onChange }: Props) => {
             min={MIN_TIME_LIMIT_SEC}
             max={MAX_TIME_LIMIT_SEC}
             className="h-8 w-24 text-xs"
-            value={Number(value) || ""}
-            onChange={(e) => {
+            key={String(value)}
+            defaultValue={Number(value) || ""}
+            onBlur={(e) => {
               const n = Math.round(Number(e.target.value));
               if (Number.isFinite(n) && n > 0) onChange(Math.min(MAX_TIME_LIMIT_SEC, Math.max(MIN_TIME_LIMIT_SEC, n)));
             }}
