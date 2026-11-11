@@ -487,7 +487,7 @@ export default function TeacherSubjectClass() {
       if (_assignments.length) {
         const { data: aData } = await supabase
           .from("assignment_attempts")
-          .select("assignment_id, student_id, group_id, status, score, max_score")
+          .select("assignment_id, student_id, group_id, status, score, max_score, progress")
           .in(
             "assignment_id",
             _assignments.map((a) => a.id),

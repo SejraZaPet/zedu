@@ -1,5 +1,6 @@
 import { bestAttempt, type AttemptResultRow } from "@/lib/best-results";
 import { assignmentKind, lateLimit } from "@/lib/assignment-kind";
+import { isAttemptReviewed } from "@/lib/grading-review";
 
 export type AssignmentState =
   | "pending" | "soon" | "submitted" | "overdue" | "graded" | "preparing"
@@ -16,6 +17,7 @@ export interface StatusAttempt extends AttemptResultRow {
   student_id?: string;
   group_id?: string | null;
   submitted_at?: string | null;
+  progress?: unknown;
 }
 export interface ClassProgress { submitted: number; total: number; graded: number }
 /** Barva štítku „Odevzdalo X/Y“: všichni / část / nikdo / nikdo po termínu. */
@@ -53,7 +55,7 @@ export const LATE_DRAFT_LABEL = "Po termínu – rozpracováno";
 
 /** A null score is ungraded; zero is a valid grade. Only submitted work counts. */
 export function isGradedAttempt(attempt: StatusAttempt): boolean {
-  return attempt.status === "submitted" && attempt.score != null;
+  return attempt.status === "submitted" && (attempt.score != null || isAttemptReviewed(attempt.progress));
 }
 
 const fmtDate = (d: Date) => d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
@@ -125,7 +127,7 @@ export function assignmentClassProgress(
     const groups = new Set(groupMembers.filter((m) => m.student_id === id).map((m) => m.group_id));
     const rows = attempts.filter((a) => a.student_id === id || (a.group_id && groups.has(a.group_id)));
     const best = bestAttempt(rows);
-    if (best) { submitted++; if (isGradedAttempt(best)) graded++; }
+    if (best) { submitted++; if (isGradedAttempt(best) || rows.some((r) => r.status === "submitted" && isAttemptReviewed(r.progress))) graded++; }
   }
   return { submitted, graded, total: ids.length };
 }
