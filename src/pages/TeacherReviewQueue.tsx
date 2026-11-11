@@ -649,6 +649,9 @@ export default function TeacherReviewQueue() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
 
