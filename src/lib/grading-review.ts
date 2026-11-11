@@ -83,7 +83,13 @@ export function readGrading(progress: unknown): GradingState | null {
 }
 
 export function isReviewed(progress: unknown): boolean {
-  return readGrading(progress)?.reviewed === true;
+  return isAttemptReviewed(progress);
+}
+
+/** JEDINÁ definice „pokus zkontroloval učitel“: označeno Zkontrolováno nebo uložené ruční hodnocení. */
+export function isAttemptReviewed(progress: unknown): boolean {
+  const g = readGrading(progress);
+  return g?.reviewed === true || (typeof g?.graded_at === "string" && g.graded_at.length > 0);
 }
 
 /** Typy položek, které se nehodnotí automaticky (otevřené odpovědi). */

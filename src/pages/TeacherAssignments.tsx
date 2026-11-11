@@ -486,7 +486,7 @@ const TeacherAssignments = () => {
     const groupIds = [...new Set(list.filter((a) => a.group_id).map((a) => a.group_id as string))];
 
     const [attemptsRes, membersRes, groupMembersRes] = await Promise.all([
-      supabase.from("assignment_attempts" as any).select("assignment_id, student_id, group_id, status, score, max_score, submitted_at").in("assignment_id", ids),
+      supabase.from("assignment_attempts" as any).select("assignment_id, student_id, group_id, status, score, max_score, submitted_at, progress").in("assignment_id", ids),
       classIds.length
         ? supabase.from("class_members").select("class_id, user_id").in("class_id", classIds)
         : Promise.resolve({ data: [] as any[] }),

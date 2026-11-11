@@ -40,3 +40,26 @@ describe("assignment display state", () => {
     expect(items[0].id).toBe("none");
   });
 });
+describe("sdílená definice zkontrolovaného pokusu", async () => {
+  const { assignmentClassProgress, assignmentStatus } = await import("@/lib/assignment-status");
+  const task = { status: "published", deadline: null };
+  const sub = (progress?: unknown, score: number | null = null) =>
+    ({ student_id: "s1", status: "submitted", score, max_score: score == null ? null : 10, progress });
+  it("odevzdání bez bodů označené reviewed už není Ke kontrole", () => {
+    const p = assignmentClassProgress([sub({ _teacher_grading: { reviewed: true } })], ["s1"]);
+    expect(assignmentStatus(task, [], new Date(), p).group).not.toBe("review");
+  });
+  it("neoznačené odevzdání bez bodů je Ke kontrole", () => {
+    const p = assignmentClassProgress([sub()], ["s1"]);
+    expect(assignmentStatus(task, [], new Date(), p).label).toBe("Ke kontrole 1");
+  });
+  it("Vrátit zpět (reviewed false) vrací do Ke kontrole", () => {
+    const p = assignmentClassProgress([sub({ _teacher_grading: { reviewed: false } })], ["s1"]);
+    expect(assignmentStatus(task, [], new Date(), p).group).toBe("review");
+  });
+  it("odevzdání s body se chová jako dnes", () => {
+    const p = assignmentClassProgress([sub(undefined, 7)], ["s1"]);
+    expect(p.graded).toBe(1);
+    expect(assignmentStatus(task, [], new Date(), p).group).not.toBe("review");
+  });
+});

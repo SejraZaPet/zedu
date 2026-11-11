@@ -1,3 +1,6 @@
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
+import { Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -334,7 +337,11 @@ export default function TeacherReviewQueue() {
   const pendingCount = rows.filter((r) => !r.reviewed).length;
 
   return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <SiteHeader />
+      <main className="flex-1" style={{ paddingTop: "calc(70px + 1rem)" }}>
     <div className="container mx-auto max-w-6xl px-4 py-6 space-y-4">
+      <Link to="/ucitel" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground">← Zpět na přehled</Link>
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center shrink-0">
           <ClipboardCheck className="w-5 h-5 text-white" />
@@ -641,6 +648,9 @@ export default function TeacherReviewQueue() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }
