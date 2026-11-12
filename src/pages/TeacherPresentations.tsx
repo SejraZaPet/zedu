@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft,
+  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft, Copy,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { loadProjectorFontScale } from "@/lib/projector-font-scale";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { independentPresentationPayload } from "@/lib/presentation-copy";
 
 
 interface StandalonePresentation {
@@ -65,6 +67,7 @@ const TeacherPresentations = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
 
   // Editor
   const [editing, setEditing] = useState<StandalonePresentation | null>(null);
@@ -157,6 +160,57 @@ const TeacherPresentations = () => {
     setEditing(p);
     setPendingSlides(p.slides.length ? p.slides : [emptySlide(p.title)]);
     setEditingSlideIndex(0);
+  };
+
+  /** Nová vlastní řádka se sloučeným obsahem; původní propojení zůstane nedotčené. */
+  const copyAsOwn = async (p: StandalonePresentation) => {
+    const lessonId = p.source_lesson_id ?? p.lesson_id;
+    if (!lessonId) return;
+    setCopyingId(p.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Nejste přihlášen(a).");
+
+      const teacherSource = !!p.lesson_id || p.source_lesson_type === "teacher";
+      const primaryTable = teacherSource ? "teacher_textbook_lessons" : "textbook_lessons";
+      const fallbackTable = teacherSource ? "textbook_lessons" : "teacher_textbook_lessons";
+      const selectLesson = "id, title, blocks, hero_image_url";
+      const primary = await supabase.from(primaryTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
+      if (primary.error) throw primary.error;
+      let lesson = primary.data as any;
+      if (!lesson) {
+        const fallback = await supabase.from(fallbackTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
+        if (fallback.error) throw fallback.error;
+        lesson = fallback.data;
+      }
+      if (!lesson) throw new Error("Zdrojovou lekci se nepodařilo načíst.");
+
+      const fresh = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+      const payload = independentPresentationPayload(user.id, p.title, fresh, p.slides);
+      const { data, error } = await supabase
+        .from("teacher_presentations" as any)
+        .insert(payload as any)
+        .select("id, title, slides, lesson_id, source_lesson_id, source_lesson_type, created_at, updated_at")
+        .single();
+      if (error) throw error;
+      const created: StandalonePresentation = {
+        id: (data as any).id,
+        title: (data as any).title,
+        slides: Array.isArray((data as any).slides) ? (data as any).slides : payload.slides,
+        lesson_id: null,
+        source_lesson_id: null,
+        source_lesson_type: null,
+        created_at: (data as any).created_at,
+        updated_at: (data as any).updated_at,
+      };
+      setItems((prev) => [created, ...prev]);
+      toast({ title: "Vlastní prezentace vytvořena", description: "Kopie už se nebude automaticky měnit podle učebnice." });
+      openEditor(created);
+    } catch (e: any) {
+      toast({ title: "Kopii se nepodařilo vytvořit", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setCopyingId(null);
+    }
   };
 
   const handleCreate = async () => {
@@ -396,14 +450,27 @@ const TeacherPresentations = () => {
 
                   <div className="mt-auto flex flex-wrap gap-2">
                     {(p.lesson_id || p.source_lesson_id) ? (
-                      <Button
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => navigate("/ucitel/ucebnice")}
-                        title="Obsah a vzhled promítání upravíte přímo v lekci"
-                      >
-                        <BookOpen className="h-3.5 w-3.5" /> Upravit lekci v učebnici
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => navigate("/ucitel/ucebnice")}
+                          title="Obsah a vzhled promítání upravíte přímo v lekci"
+                        >
+                          <BookOpen className="h-3.5 w-3.5" /> Upravit lekci v učebnici
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={copyingId === p.id}
+                          onClick={() => copyAsOwn(p)}
+                          title="Vytvoří plně upravitelnou kopii, která se už nepřegeneruje z učebnice"
+                        >
+                          {copyingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
+                          Uložit jako moji prezentaci
+                        </Button>
+                      </>
                     ) : (
                       <>
                         <Button size="sm" className="gap-1" onClick={() => openEditor(p)}>

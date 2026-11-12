@@ -37,8 +37,8 @@
 
 ## Generovaná prezentace – schválené kroky 1+2
 - [x] Krok 1: čitelnost generovaných snímků a A+/A− na učitelské i projektorové obrazovce; testy a samostatný commit.
-- [ ] Krok 2: kopie „Uložit jako moji prezentaci“, automatické `lockedFromLesson`, obnovení snímku z učebnice; testy a samostatný commit.
-- [ ] Závěrečná kontrola obou commitů; bez migrací, kroku 3 a nasazení.
+- [x] Krok 2: kopie „Uložit jako moji prezentaci“, automatické `lockedFromLesson`, obnovení snímku z učebnice; testy a samostatný commit.
+- [x] Závěrečná kontrola obou commitů; bez migrací, kroku 3 a nasazení. V prohlížeči ověřena samostatná kopie i obousměrná synchronizace písma; samostatná vizuální kontrola obnovy snímku se nepodařila.
 
 ## Pozdější etapy (NESCHVÁLENO – nedělat)
 - Etapa 3: stupnice/známky, převodní tabulka, zobrazení žákovi po „zkontrolováno“

@@ -93,11 +93,11 @@ const LiveTeacherScreen = () => {
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
 
-  const changeProjectorFontScale = useCallback((value: number) => {
+  const changeProjectorFontScale = useCallback(async (value: number) => {
     const next = saveProjectorFontScale(value);
     setProjectorFontScale(next);
     if (!sessionId) return;
-    void supabase.from("game_sessions").update({
+    await supabase.from("game_sessions").update({
       settings: settingsWithProjectorFontScale(settings, next) as any,
     }).eq("id", sessionId);
   }, [sessionId, settings]);
@@ -115,9 +115,11 @@ const LiveTeacherScreen = () => {
     if (fontScaleInitializedFor.current === sessionId) return;
     fontScaleInitializedFor.current = sessionId;
     const next = saveProjectorFontScale(projectorFontScale);
-    void supabase.from("game_sessions").update({
-      settings: settingsWithProjectorFontScale(settings, next) as any,
-    }).eq("id", sessionId);
+    void (async () => {
+      await supabase.from("game_sessions").update({
+        settings: settingsWithProjectorFontScale(settings, next) as any,
+      }).eq("id", sessionId);
+    })();
   }, [sessionId, session, settings, projectorFontScale]);
 
   // ---- Přiblížení (zoom do výřezu) ----

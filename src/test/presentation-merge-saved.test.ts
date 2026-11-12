@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSlideKeys, mergePresentationSlides, mergeSlideWithSaved } from "@/lib/presentation-merge";
+import { buildSlideKeys, markSlideEditedByTeacher, mergePresentationSlides, mergeSlideWithSaved, restoreSlideFromLesson } from "@/lib/presentation-merge";
 
 /** Ochrana ručních úprav prezentace při tichém přegenerování z lekce (bod A). */
 describe("spojení uložené a nově vygenerované prezentace", () => {
@@ -76,5 +76,27 @@ describe("spojení uložené a nově vygenerované prezentace", () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].projector.headline).toBe("Nový");
     expect(merged[0].projector.fontScale).toBe(1.4);
+  });
+
+  it("ruční úprava propojeného snímku ho automaticky uzamkne", () => {
+    const original = { sourceBlockId: "a", projector: { body: "Starý" } };
+    const edited = markSlideEditedByTeacher({ ...original, projector: { body: "Můj" } }, true);
+    expect(edited).toMatchObject({ editedByTeacher: true, lockedFromLesson: true });
+    expect(original).not.toHaveProperty("lockedFromLesson");
+    expect(markSlideEditedByTeacher(original, false)).toBe(original);
+  });
+
+  it("Obnovit z učebnice vrátí čerstvý snímek podle zdrojového bloku", () => {
+    const fresh = [{ slideId: "slide-1", sourceBlockId: "a", projector: { body: "Z lekce" }, blocks: [] }];
+    const current = [{ slideId: "saved", sourceBlockId: "a#part1", lockedFromLesson: true, projector: { body: "Můj" }, blocks: [] }];
+    const restored = restoreSlideFromLesson(fresh, current, 0);
+    expect(restored).toMatchObject({ slideId: "slide-1", projector: { body: "Z lekce" } });
+    expect(restored.lockedFromLesson).toBeUndefined();
+    restored.projector.body = "Další úprava";
+    expect(fresh[0].projector.body).toBe("Z lekce");
+  });
+
+  it("ručně přidaný snímek bez odpovídající lekce nejde omylem obnovit", () => {
+    expect(restoreSlideFromLesson([], [{ slideId: "custom", projector: {} }], 0)).toBeNull();
   });
 });

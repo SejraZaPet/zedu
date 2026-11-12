@@ -29,6 +29,7 @@ export function usePresentationLauncher() {
 
   const [presentationLesson, setPresentationLesson] = useState<LessonItem | null>(null);
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
+  const [generatedSlides, setGeneratedSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
   const [existingSession, setExistingSession] = useState<{ id: string; title: string } | null>(null);
   const [pendingLaunchData, setPendingLaunchData] = useState<{ lesson: LessonItem; slides: any[] } | null>(null);
@@ -84,6 +85,7 @@ export function usePresentationLauncher() {
    * ale každý učitel má vlastní propojenou verzi v teacher_presentations. */
   const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
     const fresh = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+    setGeneratedSlides(fresh);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return fresh;
 
@@ -230,6 +232,7 @@ export function usePresentationLauncher() {
   return {
     presentationLesson, setPresentationLesson,
     pendingSlides, setPendingSlides,
+    generatedSlides,
     editingSlideIndex, setEditingSlideIndex,
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,

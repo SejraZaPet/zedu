@@ -56,11 +56,11 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
     setUserZoom(v);
     saveProjectorZoom(v);
   };
-  const changeProjectorFontScale = (nextValue: number) => {
+  const changeProjectorFontScale = async (nextValue: number) => {
     const next = saveProjectorFontScale(nextValue);
     setProjectorFontScale(next);
     if (!sessionId || !session) return;
-    void supabase.from("game_sessions").update({
+    await supabase.from("game_sessions").update({
       settings: settingsWithProjectorFontScale(settings, next) as any,
     }).eq("id", sessionId);
   };

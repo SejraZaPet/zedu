@@ -65,10 +65,11 @@ import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-pres
 import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
 import TimeLimitPicker from "@/components/live/TimeLimitPicker";
 import { DEFAULT_NEW_QUIZ_TIME_SEC } from "@/lib/live-timing";
+import { markSlideEditedByTeacher, restoreSlideFromLesson } from "@/lib/presentation-merge";
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
-  Lock, LockOpen,
+  Lock, LockOpen, RotateCcw,
 } from "lucide-react";
 
 
@@ -97,6 +98,8 @@ interface Props {
    */
   source?: { type: "lesson"; lessonId?: string } | { type: "standalone"; presentationId: string };
   pendingSlides: any[];
+  /** Čerstvá verze z lekce pro okamžité obnovení ručně upraveného snímku. */
+  generatedSlides?: any[];
   setPendingSlides: React.Dispatch<React.SetStateAction<any[]>>;
   editingSlideIndex: number;
   setEditingSlideIndex: (i: number) => void;
@@ -211,7 +214,7 @@ const SlideThumbnail = memo(function SlideThumbnail({
 });
 
 export const PresentationEditorDialog = ({
-  presentationLesson, source, pendingSlides, setPendingSlides,
+  presentationLesson, source, pendingSlides, generatedSlides = [], setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
   onClose, onLaunch, onSave, hasSavedPresentation,
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
@@ -280,6 +283,8 @@ export const PresentationEditorDialog = ({
 
 
   const currentSlide = pendingSlides[editingSlideIndex];
+  const isStandalone = source?.type === "standalone";
+  const linkedToLesson = !isStandalone && !!presentationLesson?.id;
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
 
@@ -391,9 +396,12 @@ export const PresentationEditorDialog = ({
   }, []);
 
 
-  const updateSlide = (patch: any) => {
+  const updateSlide = (patch: any, options: { markEdited?: boolean } = {}) => {
     const updated = [...pendingSlides];
-    updated[editingSlideIndex] = { ...updated[editingSlideIndex], ...patch };
+    const next = { ...updated[editingSlideIndex], ...patch };
+    updated[editingSlideIndex] = options.markEdited === false
+      ? next
+      : markSlideEditedByTeacher(next, linkedToLesson);
     setPendingSlides(updated);
   };
   const updateProjector = (patch: any) => {
@@ -439,7 +447,7 @@ export const PresentationEditorDialog = ({
         return { ...next, editedByTeacher: true } as Block;
       });
       const updated = [...prev];
-      updated[editingSlideIndex] = { ...slide, blocks: nextBlocks };
+      updated[editingSlideIndex] = markSlideEditedByTeacher({ ...slide, blocks: nextBlocks }, linkedToLesson);
       return updated;
     });
   };
@@ -770,8 +778,6 @@ export const PresentationEditorDialog = ({
     }
   };
 
-  const isStandalone = source?.type === "standalone";
-
   /** ČÁST 2 – URL zpět (na lekci nebo na seznam samostatných prezentací). */
   const lessonBackUrl = (() => {
     if (isStandalone) return "/ucitel/prezentace";
@@ -898,28 +904,51 @@ export const PresentationEditorDialog = ({
                   {darkPreview ? "Světlý" : "Tmavý"}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => updateSlide({ lockedFromLesson: !currentSlide?.lockedFromLesson })}
-                  className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  title={
-                    currentSlide?.lockedFromLesson
-                      ? "Snímek je uzamčený – obsah se z lekce neaktualizuje. Klikni pro odemčení."
-                      : "Uzamknout snímek, aby ho změny v lekci nepřepsaly"
-                  }
-                >
-                  {currentSlide?.lockedFromLesson ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
-                   {currentSlide?.lockedFromLesson ? "Znovu aktualizovat z lekce" : "Neaktualizovat z lekce"}
-                </button>
+                {linkedToLesson && currentSlide?.editedByTeacher && (
+                  <Badge variant="secondary" className="gap-1 text-xs">
+                    <Pencil className="h-3 w-3" /> ručně upraveno
+                  </Badge>
+                )}
 
-                {pendingSlides.some((s: any) => s?.lockedFromLesson) && (
+                {linkedToLesson && currentSlide?.lockedFromLesson ? (
+                  <button
+                    type="button"
+                    disabled={generatedSlides.length === 0}
+                    onClick={() => {
+                      const restored = restoreSlideFromLesson(generatedSlides, pendingSlides, editingSlideIndex);
+                      if (!restored) {
+                        toast({ title: "Snímek v lekci neexistuje", description: "Obnovení proto není dostupné.", variant: "destructive" });
+                        return;
+                      }
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = restored;
+                      setPendingSlides(updated);
+                      toast({ title: "Snímek obnoven z učebnice" });
+                    }}
+                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                    title="Vrátí obsah i vzhled tohoto snímku do čerstvě vygenerované podoby"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Obnovit z učebnice
+                  </button>
+                ) : linkedToLesson ? (
+                  <button
+                    type="button"
+                    onClick={() => updateSlide({ lockedFromLesson: true }, { markEdited: false })}
+                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    title="Uzamknout snímek, aby ho změny v lekci nepřepsaly"
+                  >
+                    <LockOpen className="h-3.5 w-3.5" /> Neaktualizovat z lekce
+                  </button>
+                ) : null}
+
+                {linkedToLesson && pendingSlides.some((s: any) => s?.lockedFromLesson) && (
                   <button
                     type="button"
                     onClick={() => setPendingSlides((prev) => prev.map((s: any) => (
-                      s?.lockedFromLesson ? { ...s, lockedFromLesson: false } : s
+                      s?.lockedFromLesson ? { ...s, lockedFromLesson: false, editedByTeacher: false } : s
                     )))}
                     className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    title="Odemknout všechny snímky, aby se znovu aktualizovaly z lekce"
+                    title="Odemknout všechny snímky, aby se při dalším otevření znovu aktualizovaly z lekce"
                   >
                     <LockOpen className="h-3.5 w-3.5" /> Odemknout vše
                   </button>

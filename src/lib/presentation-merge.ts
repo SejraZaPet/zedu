@@ -99,6 +99,23 @@ export function mergeSlideBlocks(
   return [...merged, ...addedByTeacher];
 }
 
+/** Ruční editace propojeného snímku ho ochrání před dalším přegenerováním. */
+export function markSlideEditedByTeacher(slide: any, linkedToLesson: boolean): any {
+  if (!linkedToLesson) return slide;
+  return { ...slide, editedByTeacher: true, lockedFromLesson: true };
+}
+
+/** Vrátí nezměněnou kopii čerstvě vygenerovaného snímku podle stabilního klíče. */
+export function restoreSlideFromLesson(freshSlides: any[], currentSlides: any[], index: number): any | null {
+  const current = currentSlides[index];
+  if (!current) return null;
+  const currentKeys = buildSlideKeys(currentSlides);
+  const freshKeys = buildSlideKeys(freshSlides);
+  const freshIndex = freshKeys.indexOf(currentKeys[index]);
+  if (freshIndex < 0 || !freshSlides[freshIndex]) return null;
+  return structuredClone(freshSlides[freshIndex]);
+}
+
 /** Sloučí nově vygenerovaný snímek s dřív uloženými ručními úpravami. */
 export function mergeSlideWithSaved(freshSlide: any, savedSlide: any): any {
   // Zamčený snímek se z lekce neaktualizuje vůbec.

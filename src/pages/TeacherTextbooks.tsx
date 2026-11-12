@@ -158,6 +158,7 @@ const TeacherTextbooks = () => {
   const {
     presentationLesson, setPresentationLesson,
     pendingSlides, setPendingSlides,
+    generatedSlides,
     editingSlideIndex, setEditingSlideIndex,
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
@@ -1217,6 +1218,7 @@ const TeacherTextbooks = () => {
         <PresentationEditorDialog
           presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook.id } : null}
           pendingSlides={pendingSlides}
+          generatedSlides={generatedSlides}
           setPendingSlides={setPendingSlides}
           editingSlideIndex={editingSlideIndex}
           setEditingSlideIndex={setEditingSlideIndex}
@@ -1348,6 +1350,7 @@ const TeacherTextbooks = () => {
 
         presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook?.id } : null}
         pendingSlides={pendingSlides}
+        generatedSlides={generatedSlides}
         setPendingSlides={setPendingSlides}
         editingSlideIndex={editingSlideIndex}
         setEditingSlideIndex={setEditingSlideIndex}
