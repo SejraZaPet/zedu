@@ -1,153 +1,141 @@
-# Čas na odpověď a tlačítko „Spustit“ u živých aktivit – diagnostika a plán
+# Bezpečnostní sken – cílené zúžení pravidel (POUZE NÁVRH)
 
-## Co dnes platí
-**Odkud je „20 s“ (jisté):** nejde o nastavení slidu. Je to záložní hodnota `timePerQuestion || 20`, která je ve kódu zapsaná na čtyřech místech:
-- `StudentGamePlay.tsx` ř. 753 (odpočet žáka u klasických her),
-- `TeacherGameScreen.tsx` ř. 22,
-- serverová funkce `submit-answer` ř. 110,
-- výchozí `GAME_RULES.classic.defaultTimeSec = 20` v `_shared/game-scoring.ts` (a `game-types.ts` ř. 80).
+Nic se nespouští. Každá etapa čeká na výslovné „schvaluji“. Po neúspěchu migraci neopakovat. Všechny změny jsou aditivní nebo nahrazují jedno pravidlo; RESTRICTIVE `demo_iso` / `demo_guard_*` zůstávají beze změny.
 
-Čas se ukládá **jen pro celou hru** (`game_sessions.settings.timePerQuestion`):
-- „Živá hra“ (`LiveGameButton`) má posuvník 5–60 s.
-- Prezentace spuštěná přes `usePresentationLauncher` / `TeacherPresentations` má pevně 30 s.
-- Prezentace přes serverovou funkci `create-live-session` má 0, tedy bez časovače. Kvůli záloze `|| 20` se ale klasická herní obrazovka i serverové bodování chovají, jako by bylo 20 s.
+## Zjištěno čtením (dnešní stav)
 
-Pole na úrovni slidu (`slide.timeLimit`) existuje jen částečně. Bere ho v úvahu bodování (`game-scoring-apply.ts` ř. 19) a rozbalení kvízu (`live-game-expand.ts`). Odpočet (`McqCountdown`, `liveQuestionTimeLimitMs`) ani automatické odhalení výsledků v `LiveTeacherScreen` ho nečtou a v editoru se nedá nastavit. Proto se u slidů z lekce nepoužije.
+| Místo | Dnes platí |
+|---|---|
+| storage `assignment-materials` | SELECT „assignment materials readable by signed in users“ = `bucket_id='assignment-materials'` pro každého přihlášeného. INSERT/UPDATE/DELETE už jen vlastník (1. složka = auth.uid()). 29 souborů. |
+| `game_players` | INSERT „Anyone can join a game“ `WITH CHECK true` pro `public`. SELECT jen vlastní řádek nebo učitel relace. RESTRICTIVE `demo_iso`. |
+| `content_reviews` | SELECT „Authenticated can read reviews“ `true`. Zápis jen recenzent s vlastní kopií. 0 řádků. |
+| `avatar_profiles` | SELECT `avatar_profiles_select` `true` pro authenticated. Zápis jen vlastník. 119 řádků. |
 
-**Spuštění (jisté):** samostatný stav „čeká na spuštění“ neexistuje. Odpovídání a odpočet začnou ve chvíli příchodu na slide, protože každý přechod (`nextQuestion`, `goToIndex`, AddSlideSheet) zapíše `question_started_at = now`. U kvízu (MCQ) se po vypršení limitu nebo po odpovědi všech výsledky odhalí samy. Zeď, anketa a oblak slov odpočet nemají, ale odpovídat jde také hned. Výjimka je tempo řízené žákem (`pacingMode: "student"`) a závod (race): každý žák jede svým tempem, takže tam ruční spuštění nedává smysl.
+Kód:
+- Soubory materiálů: cesta `path` je uložená v `assignments.materials` a `lesson_plans.materials` (JSON pole). Čte se jen přes `signedMaterialUrl` (`src/lib/assignment-materials.ts`, createSignedUrl 1 h). Používá: `AssignmentMaterialsList` (StudentAssignmentPlayer – úkoly, materiály i oznámení), `lesson-plan-student.ts`, `plan-links.ts` / `PlanLinksPanel`, `TeacherAssignments`, `TeacherLessonPlanEditor`, `AssignmentDetailDialog`, `lesson-content-materials.ts`. Listy (worksheets) v tomto bucketu nejsou, materiály s více listy se tedy netýkají.
+- Připojení do hry: klient do `game_players` nikdy nezapisuje. Žák s účtem i bez účtu jde přes edge funkci `join-game`, která zapisuje servisním klíčem (RLS obchází). Čtení přes `game_players_public` a realtime.
+- `content_reviews`: jen `src/lib/content-shares.ts` (hodnocení sdíleného obsahu na tržišti, napříč školami).
+- `avatar_profiles`: vlastní (ProfilePage, AvatarEditor); cizí přes `ProfileAvatarBubble` v žebříčku třídy, Lize, zprávách, herním projektoru/overlay, učitelském přehledu; admin `AvatarItemsManager` (UPDATE napříč profily).
 
-**Server (jisté):** odpověď po vypršení času neodmítne. Čas jen sníží body.
+## Etapa 1 – game_players INSERT (nejnižší riziko)
 
-**Dříve řešeno:** etapa „Živý kvíz 1“ výslovně ponechala časy beze změny. Ukládání času na slidu ani tlačítko „Spustit“ zatím nikdo nezačal, nic tedy není rozbité ani rozdělané. Starší naplánovanou práci jsem v plánech podle hesel „časovač“ / „Spustit“ nenašla.
+(a) viz tabulka. (c) jediný zapisovatel je `join-game` se servisním klíčem → zúžení připojení nerozbije.
 
-## Návrh po etapách
-
-**Etapa 1 – čas na odpověď u slidu (bez DB):**
-- V editoru slidu (PresentationEditorDialog, AddSlideSheet) přibude výběr času: 10/20/30/45/60/90/120 s, vlastní hodnota a „bez limitu“. Ukládá se do `activitySpec.timeLimitSec`, tedy uvnitř slidu v existujícím JSON.
-- Pořadí platnosti: slide → nastavení hry → dnešní chování. Rozhoduje jedna sdílená funkce `resolveTimeLimitSec` (stejná pro klient i server, v `_shared`).
-- Výchozí hodnota pro nové kvízové slidy: 30 s.
-- Použije ji odpočet, automatické odhalení, `submit-answer`, `submit-activity-response` a bodování.
-- Staré slidy bez pole se chovají přesně jako dnes, včetně záložních 20 s.
-- Vyžaduje úpravu serverových funkcí, nasadí Claude.
-
-**Etapa 2 – úvodní stav „Spustit“ (bez DB):**
-- Do `game_sessions.settings` se uloží `armedQuestion: index` (slide je připravený, ale ještě nespuštěný).
-- Přechod na aktivní slide v ručním režimu nastaví `armed` a `question_started_at` zatím neposune. Tlačítko „Spustit“ v `LiveTeacherScreen` zapíše `question_started_at = now` a `armed` zruší.
-- Žák v tu chvíli vidí čekárnu „Učitel aktivitu za chvíli spustí“ (jedna obalová komponenta pro všechny typy) a projektor zobrazí otázku bez možností a odpočtu.
-- Server (`submit-answer`, `submit-activity-response`) odpověď na připravený, ale nespuštěný slide odmítne.
-- Přepínač „Spouštět aktivity: ručně / automaticky“ je na úrovni hry. Výchozí je ručně u prezentací z lekce a automaticky u klasických her, takže chování starých her se nezmění.
-- Tempo řízené žákem a závod se nemění.
-
-**Etapa 3 – za chodu:** tlačítka „+10 s“ a „+30 s“ (`settings.timeExtensions[index]`, zohlední je odpočet i server) a tlačítko „Ukončit a ukázat výsledky“.
-
-## Testy
-- Stará data bez nového pole se chovají jako dnes (včetně 20 s).
-- Čas nastavený na slidu má přednost před nastavením hry a „bez limitu“ vypne automatické odhalení.
-- Žák nemůže odpovídat před spuštěním a server takovou odpověď odmítne.
-- Odpočet začíná až po spuštění.
-- Prodloužení času posune konec odpočtu i na serveru.
-- Závod a tempo žáka se nemění.
-- Bodování podle režimů (standard/tower/steal) zůstává stejné.
-- Mobil 390 px.
-
-## Rizika
-- Změna serverových funkcí může ovlivnit bodování. Proto jedna sdílená funkce a testy pro stará data.
-- Připojení žáka uprostřed připraveného slidu: čekárna se musí obnovit z `settings`.
-- Demo režim se nemění.
-
-## Otevřené otázky pro Tynu
-1. Má mít časovač i zeď, anketa a oblak slov (po vypršení se zavře odpovídání), nebo jen kvízové otázky?
-2. Výchozí čas pro nový kvíz: 30 s?
-3. Má být ruční „Spustit“ výchozí všude, nebo jen u prezentací z lekce?
-
----
-
-# Příloha (samostatný plán, beze změny): Demo – únik obsahu skutečných učitelů
-
-## Příčina (jistá pro 9 listů, zbytek pravděpodobný)
-Nabídka „+ Přidat list“ (`TeacherAssignments.tsx` ř. 398–404) čte `worksheets` bez filtru na autora a spoléhá jen na RLS. Únik vzniká souhrou dvou pravidel:
-
-1. **Povolující politika** „Students can read worksheets shown in lesson“ volá `can_student_view_worksheet_in_lesson`. Pro listy s typem zdroje `global` dál volá `can_view_textbook_lesson`, která pustí **každého učitele** přes `is_admin_or_teacher()` (stačí role teacher, nekontroluje se škola ani autor). Tyna má 9 listů, které jsou zveřejněné, mají zapnuté „ukázat v lekci“ a jako zdroj globální lekci. Tyto listy projdou každému učiteli, tedy i demo učiteli.
-2. **Omezující `demo_iso`** na `worksheets` používá `demo_can_see_owned(teacher_id)`. Ta vrací true i tehdy, když autor **není demo uživatel** (`OR NOT is_demo_user(_owner)`). Izolace tak zastaví jen cizí demo páry, nikdy skutečné učitele.
-
-Ostatní cesty jsem vyloučila čtením dat:
-- **Plán hodiny** („Students can read worksheets via lesson plan“): demo učitelé nejsou členy žádné třídy ani skupiny, takže 0 listů.
-- **Sdílení a spolupráce:** potvrzuji Vaše zjištění, že tudy listy neprojdou.
-
-Chybějící 2 do počtu 11 jsou pravděpodobně jiná kombinace stejné souhry. Přesně je ověřím v testu po opravě. Funkce databáze se z mého přístupu nedají spustit, proto byl rozbor proveden nad daty a definicemi.
-
-**Klíče správných odpovědí:** RLS pouští celý řádek, takže demo učitel může číst i `spec` včetně klíčů (pravděpodobné, sloupcová práva jsem neověřovala). Obsah jsem nevypisovala.
-
-Pozor: bod 1 platí i mimo demo. **Každý ne-demo učitel** dnes vidí tyto listy učitelů z jiných škol. Oprava níže se ne-demo uživatelů záměrně netýká (viz otevřené otázky).
-
-## Rozsah u dalších tabulek
-| Tabulka | Izolace dema | Vidí demo obsah skutečných učitelů? |
-|---|---|---|
-| worksheets | `demo_can_see_owned` (děravé) | **ano, jisté** (9+) |
-| teacher_presentations | `demo_can_see_owned` | ano, pokud je demo učitel pozván ke spolupráci; jinak ne. Únik je možný, nyní pravděpodobně 0 |
-| question_bank_items | `demo_can_see_owned` | ne (povolující politika jen vlastník) |
-| teacher_textbooks | `demo_can_see_owned` | ano u záměrně veřejných: systémové učebnice (`is_system`, knihovna) a veřejně sdílené náhledy. Ostatní jen po zápisu nebo sdílení |
-| game_sessions, notebooks | `demo_can_see_user` (správně) | ne |
-| teacher_game_templates | jen vlastník | ne |
-| activity_templates | bez demo_iso | ne (jen vlastník) |
-| lesson_plans | bez demo_iso | jen plány „public“ (dnes 0) a plány v rámci demo školy |
-| teacher_textbook_lessons, textbook_lessons | bez demo_iso | čtení podle učebnic; zápis do textbook_lessons blokuje demo_guard |
-| **lessons** | bez demo_iso i bez demo_guard | tabulka je prázdná (0 řádků), čte ji jen funkce `generate-practice`. Každý učitel včetně dema by mohl upravovat i mazat |
-| lesson_placements, student_activity_results, student_lesson_completions | bez demo_iso | vyžaduje samostatné ověření, v tomto plánu se nemění |
-
-Záměrně veřejná knihovna jsou systémové učebnice (`is_system`) a veřejně sdílené učebnice, ty zůstanou dostupné.
-
-## Návrh oprav (jen přidání omezujících pravidel, chování pro ne-demo uživatele beze změny)
-
-**Etapa 1 – pracovní listy (doporučuji hned, čeká na „schvaluji“):**
+(b) SQL:
 ```sql
-CREATE POLICY demo_iso_strict ON public.worksheets AS RESTRICTIVE FOR SELECT TO authenticated
-USING (
-  NOT public.is_demo_user(auth.uid())
-  OR is_demo_seed
-  OR teacher_id IN (SELECT public.demo_visible_user_ids(auth.uid()))
-);
--- rollback:
--- DROP POLICY IF EXISTS demo_iso_strict ON public.worksheets;
+DROP POLICY IF EXISTS "Anyone can join a game" ON public.game_players;
+CREATE POLICY "Join open session as self" ON public.game_players
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = auth.uid()
+    AND join_token IS NOT NULL
+    AND EXISTS (SELECT 1 FROM public.game_sessions s
+                WHERE s.id = game_players.session_id
+                  AND s.status IN ('lobby','playing'))
+  );
 ```
-- Demo učitel uvidí jen svoje listy, listy svého páru, sdílené demo autory a ukázkové listy.
-- Demo žák dál otevře list od svého učitele, protože učitel patří do jeho páru (cesta 0082 zůstává).
+Hosté bez účtu (anon) přímo zapisovat nebudou – připojují se jen přes `join-game`, jako dnes. Před spuštěním ověřit SELECTem skutečné hodnoty `game_sessions.status` a sloupce `join_token`.
 
-**Etapa 2 – prezentace a učebnice (stejný vzor):**
+Rollback:
 ```sql
-CREATE POLICY demo_iso_strict ON public.teacher_presentations AS RESTRICTIVE FOR SELECT TO authenticated
-USING (NOT public.is_demo_user(auth.uid()) OR is_demo_seed
-       OR teacher_id IN (SELECT public.demo_visible_user_ids(auth.uid())));
-CREATE POLICY demo_iso_strict ON public.teacher_textbooks AS RESTRICTIVE FOR SELECT TO authenticated
-USING (NOT public.is_demo_user(auth.uid()) OR is_demo_seed OR is_system
-       OR public.is_public_shared_textbook(id)
-       OR teacher_id IN (SELECT public.demo_visible_user_ids(auth.uid())));
--- rollback: DROP POLICY IF EXISTS demo_iso_strict ON public.teacher_presentations;
---           DROP POLICY IF EXISTS demo_iso_strict ON public.teacher_textbooks;
+DROP POLICY IF EXISTS "Join open session as self" ON public.game_players;
+CREATE POLICY "Anyone can join a game" ON public.game_players
+  FOR INSERT TO public WITH CHECK (true);
 ```
+(d) Riziko: nízké. Test: připojení žáka s účtem a hosta kódem hry, živá prezentace, demo hra; přímý INSERT klientem do ukončené relace musí selhat.
 
-**Etapa 3 – `lessons`:** zákaz zápisu pro demo (prázdná tabulka, bez dopadu).
+## Etapa 2 – soubory assignment-materials
+
+Princip: „kdo vidí úkol / plán hodiny, vidí i jeho soubor“. Funkce běží s právy volajícího (SECURITY INVOKER), takže automaticky platí stávající RLS úkolů: třída, skupina, `assignment_recipients` (vybraní žáci), rodiče, spoluučitelé, admin, `demo_iso`. Žádná nová práva se nevytváří.
+
+(b) SQL:
 ```sql
-CREATE POLICY demo_guard_update ON public.lessons AS RESTRICTIVE FOR UPDATE TO authenticated USING (NOT public.is_demo_user(auth.uid()));
-CREATE POLICY demo_guard_delete ON public.lessons AS RESTRICTIVE FOR DELETE TO authenticated USING (NOT public.is_demo_user(auth.uid()));
--- rollback: DROP POLICY IF EXISTS demo_guard_update ON public.lessons; DROP POLICY IF EXISTS demo_guard_delete ON public.lessons;
+CREATE OR REPLACE FUNCTION public.can_read_assignment_material(_name text)
+RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.assignments a
+                 WHERE a.materials @> jsonb_build_array(jsonb_build_object('path', _name)))
+      OR EXISTS (SELECT 1 FROM public.lesson_plans lp
+                 WHERE lp.materials @> jsonb_build_array(jsonb_build_object('path', _name)));
+$$;
+GRANT EXECUTE ON FUNCTION public.can_read_assignment_material(text) TO authenticated;
+
+DROP POLICY IF EXISTS "assignment materials readable by signed in users" ON storage.objects;
+CREATE POLICY "assignment materials readable by owner or audience" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'assignment-materials'
+    AND ( (storage.foldername(name))[1] = auth.uid()::text
+          OR public.can_read_assignment_material(name) )
+  );
 ```
+Rollback:
+```sql
+DROP POLICY IF EXISTS "assignment materials readable by owner or audience" ON storage.objects;
+CREATE POLICY "assignment materials readable by signed in users" ON storage.objects
+  FOR SELECT TO authenticated USING (bucket_id = 'assignment-materials');
+DROP FUNCTION IF EXISTS public.can_read_assignment_material(text);
+```
+Před spuštěním (čtení): ověřit typ sloupců `materials` (jsonb) a že všech 29 souborů je odkazováno v úkolu nebo plánu; neodkázané soubory zůstanou čitelné jen vlastníkovi (sirotci, nic se nemaže).
+(d) Riziko: střední – soubor vložený do úkolu jiného učitele (kopie úkolu se stejnou cestou) funguje, protože se hledá podle cesty. Riziko: materiály z lekce převzaté do plánu bez zápisu do `materials`. Test: žák ve třídě, ve skupině, vybraný a nevybraný příjemce, oznámení, materiál, plán hodiny, rodič, demo pár; učitel jiné školy musí dostat chybu.
 
-Funkci `demo_can_see_owned` neměním: používají ji i jiné tabulky a změna by mohla rozbít ukázková data. Nové pravidlo je samostatné a jde snadno vrátit.
+## Etapa 3 – content_reviews SELECT
 
-## Testy (po každé etapě, kontrola jen počtů a názvů, ne obsahu)
-- Demo učitel nevidí žádný Tynin list. Vidí svoje a 2 ukázkové.
-- Demo žák otevře list přiřazený svým demo učitelem.
-- Ne-demo učitel a Tyna vidí stejné počty listů jako před opravou. Tynini žáci otevřou své úkoly.
-- Etapa 2: demo dál vidí systémové učebnice a ukázkovou učebnici, ale ne Tyniny prezentace.
-- Malý pomocný test (`demo-isolation`) zrcadlí pravidlo v kódu pro budoucí změny.
+Hodnocení na tržišti jsou záměrně mezi školami, zúžení na školu by je skrylo. Návrh: číst smí recenzent, učitelé/admini (autoři a kupující obsahu), žáci ne.
+```sql
+DROP POLICY IF EXISTS "Authenticated can read reviews" ON public.content_reviews;
+CREATE POLICY "Staff and reviewer read reviews" ON public.content_reviews
+  FOR SELECT TO authenticated
+  USING (reviewer_id = auth.uid() OR public.is_admin_or_teacher());
+```
+Rollback:
+```sql
+DROP POLICY IF EXISTS "Staff and reviewer read reviews" ON public.content_reviews;
+CREATE POLICY "Authenticated can read reviews" ON public.content_reviews
+  FOR SELECT TO authenticated USING (true);
+```
+(d) Riziko nízké (0 řádků). Pokud chcete opravdu jen vlastní školu, hodnocení cizích škol na tržišti zmizí – rozhodnutí na Vás.
 
-## Rizika
-- Pokud sdílený demo autor není v `demo_shared_users`, jeho ukázkové listy zmizí. Ověřím počty před i po opravě a v případě potřeby pravidlo vrátím.
-- Cizí obsah, který demo účty mohly dosud přiřadit do úkolů, se po opravě demo žákům nezobrazí. Ověřím počet takových úkolů, nic nemažu.
-- Neúspěšnou migraci nebudu opakovat.
+## Etapa 4 – avatar_profiles SELECT
 
-## Otevřené otázky
-1. Schvalujete etapu 1 samostatně, nebo etapy 1–3 najednou?
-2. Mají i **běžní učitelé** z jiných škol přestat vidět cizí listy „ukázané v lekci“? To by byla samostatná oprava s dopadem na ne-demo uživatele.
-3. Mají demo účty vidět veřejně sdílené učebnice, nebo jen systémové a ukázkové?
+Avatar jiného uživatele se zobrazuje v žebříčku, Lize (přes třídy), zprávách a hrách. Návrh: vlastník, admin, stejná škola, nebo společná třída/skupina, nebo spoluhráč/učitel téže herní relace.
+```sql
+CREATE OR REPLACE FUNCTION public.can_see_avatar(_owner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT _owner = auth.uid() OR public.is_admin()
+    OR (public.get_user_school_id(auth.uid()) IS NOT NULL
+        AND public.get_user_school_id(_owner) = public.get_user_school_id(auth.uid()))
+    OR EXISTS (SELECT 1 FROM class_members a JOIN class_members b ON a.class_id=b.class_id
+               WHERE a.user_id=auth.uid() AND b.user_id=_owner)
+    OR EXISTS (SELECT 1 FROM classes c JOIN class_members m ON m.class_id=c.id
+               WHERE (c.teacher_id=auth.uid() AND m.user_id=_owner) OR (c.teacher_id=_owner AND m.user_id=auth.uid()))
+    OR EXISTS (SELECT 1 FROM subject_group_members a JOIN subject_group_members b ON a.group_id=b.group_id
+               WHERE a.student_id=auth.uid() AND b.student_id=_owner)
+    OR EXISTS (SELECT 1 FROM game_players p JOIN game_players q ON p.session_id=q.session_id
+               WHERE p.user_id=auth.uid() AND q.user_id=_owner)
+    OR EXISTS (SELECT 1 FROM game_players q JOIN game_sessions s ON s.id=q.session_id
+               WHERE q.user_id=_owner AND s.teacher_id=auth.uid());
+$$;
+REVOKE EXECUTE ON FUNCTION public.can_see_avatar(uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.can_see_avatar(uuid) TO authenticated;
+
+DROP POLICY IF EXISTS avatar_profiles_select ON public.avatar_profiles;
+CREATE POLICY avatar_profiles_select_related ON public.avatar_profiles
+  FOR SELECT TO authenticated USING (public.can_see_avatar(user_id));
+```
+Před spuštěním ověřit přesné názvy sloupců (`class_members.user_id`, `subject_group_members.student_id`, `classes.teacher_id`, `game_sessions.teacher_id`) a jak Liga vybírá soupeře; pokud Liga ukazuje žáky z jiných škol, přidat podmínku na `league_memberships` stejného týdne.
+Rollback:
+```sql
+DROP POLICY IF EXISTS avatar_profiles_select_related ON public.avatar_profiles;
+CREATE POLICY avatar_profiles_select ON public.avatar_profiles
+  FOR SELECT TO authenticated USING (true);
+DROP FUNCTION IF EXISTS public.can_see_avatar(uuid);
+```
+(d) Riziko: nejvyšší (mnoho míst). Admin `AvatarItemsManager` funguje dál (admin). Test: žebříček třídy, Liga, zprávy, projektor hry, učitelský přehled, demo pár; žák jiné školy bez vazby avatar neuvidí (zobrazí se výchozí postavička, ne chyba).
+
+## Etapa 5 – záměrně veřejná data (beze změny)
+
+Ve skenu označit jako „přijaté“ s odůvodněním „veřejný obsah webu / katalog, jen čtení“: `articles`, `podcast_episodes`, `landing_sections`, `section_links`, `subjects`, `learning_methods`, `study_methods`, `marketplace_settings`, `avatar_item_base_variants`. Před označením ověřit, že u nich je veřejné jen SELECT, nikoli zápis.
+
+## Doporučené pořadí
+
+1 (hry) → 3 (recenze) → 2 (soubory) → 4 (avatary) → 5 (označení ve skenu). Po každé etapě SELECT kontrola počtů a ruční průchod; další etapa až po potvrzení.
