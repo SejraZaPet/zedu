@@ -8927,6 +8927,10 @@ export type Database = {
         Args: { _assignment_id: string; _uid: string }
         Returns: boolean
       }
+      can_read_assignment_material: {
+        Args: { _name: string }
+        Returns: boolean
+      }
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
       can_resolve_message_report: {
         Args: { _report: string; _user: string }

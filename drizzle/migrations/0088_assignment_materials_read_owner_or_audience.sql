@@ -1,0 +1,4 @@
+CREATE OR REPLACE FUNCTION public.can_read_assignment_material(_name text) RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path = public AS $$ SELECT EXISTS (SELECT 1 FROM public.assignments a WHERE a.materials @> jsonb_build_array(jsonb_build_object('path', _name))) OR EXISTS (SELECT 1 FROM public.lesson_plans lp WHERE lp.materials @> jsonb_build_array(jsonb_build_object('path', _name))); $$;
+GRANT EXECUTE ON FUNCTION public.can_read_assignment_material(text) TO authenticated;
+DROP POLICY IF EXISTS "assignment materials readable by signed in users" ON storage.objects;
+CREATE POLICY "assignment materials readable by owner or audience" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'assignment-materials' AND ((storage.foldername(name))[1] = auth.uid()::text OR public.can_read_assignment_material(name)));
