@@ -624,6 +624,13 @@
       "when": 1794517313058,
       "tag": "0088_assignment_materials_read_owner_or_audience",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1794518310770,
+      "tag": "0089_replace_tautology_select_policies",
+      "breakpoints": true
     }
   ]
 }
