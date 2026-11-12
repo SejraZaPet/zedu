@@ -46,6 +46,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { softDeleteTextbook } from "@/lib/textbook-trash";
 import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import ActivityStartModeToggle from "@/components/live/ActivityStartModeToggle";
 
 
 interface Textbook {
@@ -888,6 +889,8 @@ const TeacherTextbooks = () => {
             ) : gradeGroups.length === 0 ? (
               <p className="text-sm text-muted-foreground">Žádná struktura. Přidejte témata a lekce.</p>
             ) : (
+              <>
+              <div className="mb-3"><ActivityStartModeToggle /></div>
               <TextbookGradeGroups
                 gradeGroups={gradeGroups}
                 subjects={subjects?.map(s => s) || []}
@@ -951,6 +954,7 @@ const TeacherTextbooks = () => {
                   toast({ title: "Pořadí témat uloženo" });
                 }}
               />
+              </>
             )}
           </div>
 

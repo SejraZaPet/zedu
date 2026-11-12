@@ -7,6 +7,7 @@ import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/A
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
 import { serverTsToClientMs } from "@/lib/clock-sync";
+import StartActivityPanel from "@/components/live/StartActivityPanel";
 import { isAwaitingStart, isManualStart, isRespondableSlide, settingsForSlideEnter, settingsForStart } from "@/lib/live-timing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1448,15 +1449,7 @@ const LiveTeacherScreen = () => {
           )}
 
           {awaitingStart && (
-            <div className="mt-3 p-3 border-2 border-primary/40 bg-primary/5 rounded-lg flex flex-wrap items-center justify-between gap-3" role="status">
-              <div>
-                <p className="text-sm font-medium">Aktivita čeká na spuštění</p>
-                <p className="text-xs text-muted-foreground">Žáci zatím nemohou odpovídat a odpočet neběží.</p>
-              </div>
-              <Button onClick={startActivity} className="min-h-[44px] gap-1.5" data-testid="start-activity">
-                <Play className="w-4 h-4" /> Spustit
-              </Button>
-            </div>
+            <StartActivityPanel slide={currentSlide} playerCount={players.length} onStart={startActivity} />
           )}
 
           {/* Navigation */}
