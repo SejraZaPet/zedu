@@ -603,6 +603,13 @@
       "when": 1794216501584,
       "tag": "0085_demo_guard_lessons",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1794516706853,
+      "tag": "0086_game_players_insert_open_session_self",
+      "breakpoints": true
     }
   ]
 }
