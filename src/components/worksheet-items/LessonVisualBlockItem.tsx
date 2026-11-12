@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 import type { CSSProperties } from "react";
+import { InlineText } from "@/components/worksheet/InlineText";
 import type { WorksheetItemProps } from "./types";
 
 const WIDTH_CLASS = {
@@ -32,7 +33,19 @@ function SafeContent({ html, className }: { html: string; className?: string }) 
   );
 }
 
-export default function LessonVisualBlockItem({ item }: WorksheetItemProps) {
+/** Starší obsah z lekce může být HTML; inline editor nabízí pouze jeho prostý text. */
+function editablePlainText(value: string): string {
+  if (!/<[a-z][\s\S]*>/i.test(value)) return value;
+  const withBreaks = value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|li)>/gi, "\n");
+  const sanitized = DOMPurify.sanitize(withBreaks, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+  const holder = document.createElement("div");
+  holder.innerHTML = sanitized;
+  return (holder.textContent ?? "").replace(/\n\s+/g, "\n").trim();
+}
+
+export default function LessonVisualBlockItem({ item, onEditText }: WorksheetItemProps) {
   if (item.type === "image") {
     if (!item.imageUrl) return null;
     const width = WIDTH_CLASS[item.imageWidth ?? "full"];
@@ -49,7 +62,19 @@ export default function LessonVisualBlockItem({ item }: WorksheetItemProps) {
     return (
       <div className={`flex flex-col gap-6 md:flex-row ${item.imagePosition === "right" ? "md:flex-row-reverse" : ""}`}>
         {item.imageUrl && <div className="md:w-1/2"><img src={item.imageUrl} alt={item.imageAlt || ""} className="h-auto w-full rounded-lg object-cover" /></div>}
-        <SafeContent html={item.imageText || ""} className="whitespace-pre-wrap text-foreground leading-relaxed md:w-1/2" />
+        {onEditText ? (
+          <div className="min-w-0 whitespace-pre-wrap leading-relaxed text-foreground md:w-1/2">
+            <InlineText
+              value={editablePlainText(item.imageText || "")}
+              onCommit={(text) => onEditText("imageText", text)}
+              multiline
+              ariaLabel="Text vedle obrázku"
+              placeholder="Text vedle obrázku…"
+            />
+          </div>
+        ) : (
+          <SafeContent html={item.imageText || ""} className="whitespace-pre-wrap text-foreground leading-relaxed md:w-1/2" />
+        )}
       </div>
     );
   }
@@ -77,9 +102,33 @@ export default function LessonVisualBlockItem({ item }: WorksheetItemProps) {
     return (
       <div className={`flex gap-3 rounded-lg border-l-4 p-4 ${visual.className}`} style={style}>
         <span className="shrink-0 text-xl" aria-hidden="true">{visual.icon}</span>
-        <div className="min-w-0">
-          {item.calloutTitle && <h4 className="mb-1 font-semibold text-foreground">{item.calloutTitle}</h4>}
-          <SafeContent html={item.calloutText || item.prompt || ""} className="text-sm leading-relaxed text-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" />
+        <div className="min-w-0 flex-1">
+          {onEditText ? (
+            <>
+              <h4 className="mb-1 font-semibold text-foreground">
+                <InlineText
+                  value={item.calloutTitle ?? ""}
+                  onCommit={(text) => onEditText("calloutTitle", text)}
+                  ariaLabel="Nadpis rámečku"
+                  placeholder="Nadpis rámečku"
+                />
+              </h4>
+              <div className="text-sm leading-relaxed text-foreground">
+                <InlineText
+                  value={editablePlainText(item.calloutText || item.prompt || "")}
+                  onCommit={(text) => onEditText("calloutText", text)}
+                  multiline
+                  ariaLabel="Text rámečku"
+                  placeholder="Text rámečku…"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {item.calloutTitle && <h4 className="mb-1 font-semibold text-foreground">{item.calloutTitle}</h4>}
+              <SafeContent html={item.calloutText || item.prompt || ""} className="text-sm leading-relaxed text-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" />
+            </>
+          )}
         </div>
       </div>
     );

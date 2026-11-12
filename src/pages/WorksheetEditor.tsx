@@ -1,5 +1,6 @@
 import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
 import { InlineText } from "@/components/worksheet/InlineText";
+import { applyWorksheetInlineTextEdit, type WorksheetInlineTextPath } from "@/lib/worksheet-inline-edit";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -2784,6 +2785,7 @@ export default function WorksheetEditor() {
                                 onDelete={() => deleteItem(item.id)}
                                 onUpdateItem={(patch) => updateItem(item.id, patch)}
                                 onUpdateKey={(patch) => updateAnswerKey(item.id, patch)}
+                                onInlineTextEdit={(path, value) => updateSpec((current) => applyWorksheetInlineTextEdit(current, item.id, path, value))}
                                 onApplyRefined={(refined) => replaceItem(item.id, refined)}
                                 onMoveUp={() => moveItem(item.id, -1)}
                                 onMoveDown={() => moveItem(item.id, 1)}
@@ -3564,8 +3566,8 @@ function InsertItemControl({
   );
 }
 
-/** Typy, jejichž text v těle lze upravit přímo v listu (krok 1). */
-const INLINE_EDIT_TYPES = new Set<ItemType>(["section_header", "instruction_box"]);
+/** Typy, jejichž text v těle lze upravit přímo v listu (kroky 1 a 2). */
+const INLINE_EDIT_TYPES = new Set<ItemType>(["section_header", "instruction_box", "mcq", "image_text", "callout", "flow_steps"]);
 
 function SortableItemBlock({
   item,
@@ -3577,6 +3579,7 @@ function SortableItemBlock({
   onDelete,
   onUpdateItem,
   onUpdateKey,
+  onInlineTextEdit,
   onApplyRefined,
   onMoveUp,
   onMoveDown,
@@ -3594,6 +3597,7 @@ function SortableItemBlock({
   onDelete: () => void;
   onUpdateItem: (p: Partial<WorksheetItem>) => void;
   onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
+  onInlineTextEdit: (path: WorksheetInlineTextPath, value: string) => void;
   onApplyRefined: (refined: WorksheetItem) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -3656,7 +3660,7 @@ function SortableItemBlock({
         {showQuestionHeader && (
           <div className="worksheet-paper-prompt">
             <div className="min-w-0 flex-1" onClick={(event) => event.stopPropagation()}>
-              <InlineText value={item.prompt ?? ""} onCommit={(v) => onUpdateItem({ prompt: v })} ariaLabel="Zadání úlohy" placeholder="Bez zadání" />
+              <InlineText value={item.prompt ?? ""} onCommit={(v) => onInlineTextEdit("prompt", v)} ariaLabel="Zadání úlohy" placeholder="Bez zadání" />
             </div>
             {pointsEnabled && item.points > 0 && <span className="worksheet-paper-points">{item.points} b</span>}
           </div>
@@ -3664,7 +3668,7 @@ function SortableItemBlock({
         <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
           {Renderer ? (
             <EditorErrorBoundary resetKey={JSON.stringify(item)}>
-              <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} onEditText={INLINE_EDIT_TYPES.has(item.type) ? (field, v) => onUpdateItem({ [field]: v }) : undefined} />
+              <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} onEditText={INLINE_EDIT_TYPES.has(item.type) ? onInlineTextEdit : undefined} />
             </EditorErrorBoundary>
           ) : null}
         </div>

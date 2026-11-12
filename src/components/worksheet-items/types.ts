@@ -6,6 +6,7 @@
  */
 
 import type { WorksheetItem, AnswerKeyEntry } from "@/lib/worksheet-spec";
+import type { WorksheetInlineTextPath } from "@/lib/worksheet-inline-edit";
 
 /** The answer value stored per item — string, string[], or undefined */
 export type ItemAnswer = string | string[] | undefined;
@@ -24,5 +25,5 @@ export interface WorksheetItemProps {
   /** The correct answer entry (only used when showResults=true) */
   answerKeyEntry?: AnswerKeyEntry;
   /** Jen editor: úprava textu přímo v listu. Bez ní se komponenta chová jako dřív (žák, tisk). */
-  onEditText?: (field: "prompt", value: string) => void;
+  onEditText?: (path: WorksheetInlineTextPath, value: string) => void;
 }

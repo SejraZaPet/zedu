@@ -40,6 +40,11 @@
 - [x] Krok 2: kopie „Uložit jako moji prezentaci“, automatické `lockedFromLesson`, obnovení snímku z učebnice; testy a samostatný commit.
 - [x] Závěrečná kontrola obou commitů; bez migrací, kroku 3 a nasazení. V prohlížeči ověřena samostatná kopie i obousměrná synchronizace písma; samostatná vizuální kontrola obnovy snímku se nepodařila.
 
+## Pracovní list – přímá úprava textu (schválené kroky 2+3)
+- [x] Krok 2: možnosti ABCD, tvrzení pravda/nepravda přes prompt, callout, image_text a flow_steps; samostatný commit.
+- [ ] Krok 3: pevné buňky tabulky přes sdílenou logiku, žákovská vyplnění beze změny; samostatný commit.
+- Bez DB, migrací, formátování textu a nasazení; regrese celé sady pracovních listů.
+
 ## Pozdější etapy (NESCHVÁLENO – nedělat)
 - Etapa 3: stupnice/známky, převodní tabulka, zobrazení žákovi po „zkontrolováno“
 - Etapa 4: vrácení k přepracování, známka rodiči (DB, samostatné schválení)

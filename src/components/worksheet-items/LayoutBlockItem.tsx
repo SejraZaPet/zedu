@@ -254,7 +254,14 @@ export default function LayoutBlockItem({ item, value, onChange, disabled, onEdi
             {steps.map((step, i) => (
               <div key={i} className="contents">
                 <div className="border-2 border-primary rounded-lg px-4 py-2 text-sm font-medium text-center">
-                  {step}
+                  {onEditText ? (
+                    <InlineText
+                      value={step}
+                      onCommit={(text) => onEditText(`flowSteps.${i}`, text)}
+                      ariaLabel={`Krok ${i + 1}`}
+                      placeholder={`Krok ${i + 1}`}
+                    />
+                  ) : step}
                 </div>
                 {i < steps.length - 1 && (
                   <span className="text-muted-foreground text-lg">
