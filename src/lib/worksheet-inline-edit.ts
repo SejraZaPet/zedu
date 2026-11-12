@@ -1,4 +1,5 @@
 import type { AnswerKeyEntry, WorksheetItem, WorksheetSpec } from "@/lib/worksheet-spec";
+import { updateTableCellText } from "@/lib/worksheet-table";
 
 /** Cesty prostých textů, které editor umí změnit přímo v listu. */
 export type WorksheetInlineTextPath =
@@ -7,10 +8,12 @@ export type WorksheetInlineTextPath =
   | "calloutTitle"
   | "calloutText"
   | `choices.${number}`
-  | `flowSteps.${number}`;
+  | `flowSteps.${number}`
+  | `tableRows.${number}.${number}`;
 
 const DIRECT_FIELDS = new Set(["prompt", "imageText", "calloutTitle", "calloutText"]);
 const INDEXED_PATH = /^(choices|flowSteps)\.(\d+)$/;
+const TABLE_CELL_PATH = /^tableRows\.(\d+)\.(\d+)$/;
 
 /** Textová pole se mění stejně jako ve formuláři; struktura ani bodování se nemění. */
 export function worksheetInlineTextPatch(
@@ -19,6 +22,11 @@ export function worksheetInlineTextPatch(
   value: string,
 ): Partial<WorksheetItem> {
   if (DIRECT_FIELDS.has(path)) return { [path]: value };
+
+  const tableMatch = TABLE_CELL_PATH.exec(path);
+  if (item.type === "table" && tableMatch) {
+    return updateTableCellText(item, Number(tableMatch[1]), Number(tableMatch[2]), value);
+  }
 
   const match = INDEXED_PATH.exec(path);
   if (!match) return {};

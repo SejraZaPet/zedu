@@ -3566,8 +3566,8 @@ function InsertItemControl({
   );
 }
 
-/** Typy, jejichž text v těle lze upravit přímo v listu (kroky 1 a 2). */
-const INLINE_EDIT_TYPES = new Set<ItemType>(["section_header", "instruction_box", "mcq", "image_text", "callout", "flow_steps"]);
+/** Typy, jejichž text v těle lze upravit přímo v listu (kroky 1 až 3). */
+const INLINE_EDIT_TYPES = new Set<ItemType>(["section_header", "instruction_box", "mcq", "image_text", "callout", "flow_steps", "table"]);
 
 function SortableItemBlock({
   item,

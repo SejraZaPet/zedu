@@ -6,9 +6,10 @@
  */
 
 import type { WorksheetItemProps } from "./types";
+import { InlineText } from "@/components/worksheet/InlineText";
 import { isTableCellEditable, setTableCellAnswer, tableCellAnswer } from "@/lib/worksheet-table";
 
-export default function TableItem({ item, value, onChange, disabled }: WorksheetItemProps) {
+export default function TableItem({ item, value, onChange, disabled, onEditText }: WorksheetItemProps) {
   const rows = item.tableRows ?? [];
   if (rows.length === 0) return null;
   const [head, ...rest] = rows;
@@ -21,7 +22,14 @@ export default function TableItem({ item, value, onChange, disabled }: Worksheet
             <tr className="bg-muted/50">
               {head.map((cell, i) => (
                 <th key={i} className="min-w-0 break-words border border-border px-3 py-2 text-left font-semibold text-foreground">
-                  {cell}
+                  {onEditText ? (
+                    <InlineText
+                      value={cell}
+                      onCommit={(text) => onEditText(`tableRows.0.${i}`, text)}
+                      ariaLabel={`Hlavička ${i + 1}`}
+                      placeholder={`Sloupec ${i + 1}`}
+                    />
+                  ) : cell}
                 </th>
               ))}
             </tr>
@@ -42,6 +50,14 @@ export default function TableItem({ item, value, onChange, disabled }: Worksheet
                           aria-label={`Řádek ${r}, sloupec ${ci + 1}${head[ci] ? ` (${head[ci]})` : ""}`}
                           onChange={(e) => onChange(setTableCellAnswer(item, value, r, ci, e.target.value))}
                           className="block min-h-11 w-full min-w-[6rem] resize-y rounded border border-input bg-background px-2 py-1 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-80"
+                        />
+                      ) : onEditText ? (
+                        <InlineText
+                          value={cell}
+                          onCommit={(text) => onEditText(`tableRows.${r}.${ci}`, text)}
+                          multiline
+                          ariaLabel={`Buňka řádek ${r + 1}, sloupec ${ci + 1}`}
+                          placeholder="Text buňky"
                         />
                       ) : cell}
                     </td>

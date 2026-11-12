@@ -4,6 +4,47 @@ import type { WorksheetItem } from "@/lib/worksheet-spec";
 export const tableColCount = (item: Pick<WorksheetItem, "tableRows">) =>
   Math.max(1, ...(item.tableRows ?? []).map((r) => r.length));
 
+const EMPTY_TABLE_ROWS: string[][] = [["Sloupec 1", "Sloupec 2"], ["", ""]];
+
+/** Stejná výchozí tabulka pro formulář i inline úpravy. */
+export const tableRowsForEditor = (item: Pick<WorksheetItem, "tableRows">): string[][] =>
+  item.tableRows && item.tableRows.length > 0 ? item.tableRows : EMPTY_TABLE_ROWS;
+
+/** Sjednotí počet buněk a zachová explicitní mapu „k vyplnění“ jako dosavadní formulář. */
+export function updateTableRows(
+  item: Pick<WorksheetItem, "tableRows" | "tableEditable">,
+  next: string[][],
+  cols = tableColCount(item),
+): Pick<WorksheetItem, "tableRows" | "tableEditable"> {
+  const tableRows = next.map((row) => {
+    const copy = [...row];
+    while (copy.length < cols) copy.push("");
+    return copy.slice(0, cols);
+  });
+  return item.tableEditable
+    ? {
+        tableRows,
+        tableEditable: tableRows.map((row, ri) => row.map((_, ci) =>
+          ri > 0 && (item.tableEditable?.[ri]?.[ci] ?? row[ci].trim() === ""))),
+      }
+    : { tableRows };
+}
+
+/** Jedna textová buňka; sdíleno formulářem i inline editorem. */
+export function updateTableCellText(
+  item: Pick<WorksheetItem, "tableRows" | "tableEditable">,
+  row: number,
+  col: number,
+  value: string,
+): Pick<WorksheetItem, "tableRows" | "tableEditable"> {
+  const rows = tableRowsForEditor(item);
+  const cols = tableColCount({ tableRows: rows });
+  if (!rows[row] || col < 0 || col >= cols) return { tableRows: rows };
+  const next = rows.map((entry) => [...entry]);
+  next[row][col] = value;
+  return updateTableRows(item, next, cols);
+}
+
 /** Vyplňuje žák buňku? Hlavička nikdy; bez nastavení učitele = prázdná buňka. */
 export function isTableCellEditable(item: Pick<WorksheetItem, "tableRows" | "tableEditable">, r: number, c: number): boolean {
   if (r <= 0) return false;

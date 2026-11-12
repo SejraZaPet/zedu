@@ -42,7 +42,7 @@
 
 ## Pracovní list – přímá úprava textu (schválené kroky 2+3)
 - [x] Krok 2: možnosti ABCD, tvrzení pravda/nepravda přes prompt, callout, image_text a flow_steps; samostatný commit.
-- [ ] Krok 3: pevné buňky tabulky přes sdílenou logiku, žákovská vyplnění beze změny; samostatný commit.
+- [x] Krok 3: pevné buňky tabulky přes sdílenou logiku, žákovská vyplnění beze změny; samostatný commit.
 - Bez DB, migrací, formátování textu a nasazení; regrese celé sady pracovních listů.
 
 ## Pozdější etapy (NESCHVÁLENO – nedělat)

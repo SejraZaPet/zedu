@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { WorksheetItem } from "@/lib/worksheet-spec";
-import { isTableCellEditable } from "@/lib/worksheet-table";
-
-const EMPTY: string[][] = [["Sloupec 1", "Sloupec 2"], ["", ""]];
+import { isTableCellEditable, tableRowsForEditor, updateTableCellText, updateTableRows } from "@/lib/worksheet-table";
 
 export default function TableFieldsEditor({
   item,
@@ -23,24 +21,11 @@ export default function TableFieldsEditor({
 }) {
   if (item.type !== "table") return null;
 
-  const rows: string[][] = item.tableRows && item.tableRows.length > 0 ? item.tableRows : EMPTY;
+  const rows = tableRowsForEditor(item);
   const colCount = Math.max(1, ...rows.map((r) => r.length));
 
-  /** Zajistí, že všechny řádky mají stejný počet buněk. */
-  const normalize = (next: string[][], cols = colCount) =>
-    next.map((r) => {
-      const copy = [...r];
-      while (copy.length < cols) copy.push("");
-      return copy.slice(0, cols);
-    });
-
-  // Explicitní mapa „k vyplnění“ se přepočítá jen když ji učitel už nastavil.
-  const setRows = (next: string[][], cols = colCount) => {
-    const tableRows = normalize(next, cols);
-    onUpdate(item.tableEditable
-      ? { tableRows, tableEditable: tableRows.map((r, ri) => r.map((_, ci) => ri > 0 && (item.tableEditable?.[ri]?.[ci] ?? r[ci].trim() === ""))) }
-      : { tableRows });
-  };
+  // Inline editor i formulář používají stejnou normalizaci a mapu „k vyplnění“.
+  const setRows = (next: string[][], cols = colCount) => onUpdate(updateTableRows(item, next, cols));
 
   const toggleEditable = (ri: number, ci: number, on: boolean) => {
     const map = rows.map((r, r2) => r.map((_, c2) => isTableCellEditable(item, r2, c2)));
@@ -49,9 +34,7 @@ export default function TableFieldsEditor({
   };
 
   const setCell = (ri: number, ci: number, value: string) => {
-    const next = rows.map((r) => [...r]);
-    next[ri][ci] = value;
-    setRows(next);
+    onUpdate(updateTableCellText(item, ri, ci, value));
   };
 
   const addRow = () => setRows([...rows, Array(colCount).fill("")]);
