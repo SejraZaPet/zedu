@@ -7,6 +7,7 @@ import DOMPurify from "dompurify";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import SlideDrawingLayer, { type DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import { READABLE_SCALE_FLOOR } from "@/lib/blocks-to-slides";
+import { combinedProjectorFontScale } from "@/lib/projector-font-scale";
 
 import { STAGE_W, STAGE_H } from "@/lib/slide-stage";
 import { fitCardGrid } from "@/lib/slide-card-grid-fit";
@@ -71,6 +72,12 @@ interface BodyProps {
   editable?: boolean;
   darkMode?: boolean;
   revealStep?: number;
+  /** Relační A+/A− v procentech; násobí vlastní fontScale snímku. */
+  projectorFontScale?: number;
+  /** Přeplněný obsah se na projekci posouvá místo dalšího zmenšování. */
+  allowContentScroll?: boolean;
+  contentScrollTop?: number;
+  onContentScroll?: React.UIEventHandler<HTMLDivElement>;
   onChangeHeadline?: (v: string) => void;
   onChangeBlock?: (blockId: string, patch: Partial<Block> | ((b: Block) => Block)) => void;
   onMoveBlock?: (blockId: string, dir: "up" | "down") => void;
@@ -1663,6 +1670,10 @@ export function SlideBody({
   editable,
   darkMode = true,
   revealStep,
+  projectorFontScale = 100,
+  allowContentScroll = false,
+  contentScrollTop,
+  onContentScroll,
   onChangeHeadline,
   onChangeBlock,
   onMoveBlock,
@@ -1711,7 +1722,7 @@ export function SlideBody({
   const headlineColors = headlineColorsForBackground(theme.primaryColor, theme.secondaryColor, isDark);
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
-  const fontScale = slide?.projector?.fontScale || 1;
+  const fontScale = combinedProjectorFontScale(slide?.projector?.fontScale, projectorFontScale);
   const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
   const hideEmptyEditorPlaceholders = slide?.hideEmptyEditorPlaceholders === true && rawBlocks.length === 0;
@@ -1840,8 +1851,8 @@ export function SlideBody({
 
 
 
-  // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se,
-  // ale jen do hranice čitelnosti (pod ní obsah dělí generátor na další snímky).
+  // Obsah se zmenší jen do hranice čitelnosti. Na projekci se případný
+  // zbytek posouvá; počet ani pořadí snímků se za běhu relace nemění.
   useEffect(() => {
     const area = flowAreaRef.current;
     const content = flowContentRef.current;
@@ -1859,7 +1870,15 @@ export function SlideBody({
     ro.observe(area);
     ro.observe(content);
     return () => ro.disconnect();
-  }, [slide, blocks.length, layout]);
+  }, [slide, blocks.length, layout, fontScale]);
+
+  useEffect(() => {
+    if (!allowContentScroll || typeof contentScrollTop !== "number") return;
+    const area = flowAreaRef.current;
+    if (area && Math.abs(area.scrollTop - contentScrollTop) > 1) {
+      area.scrollTop = Math.max(0, contentScrollTop);
+    }
+  }, [allowContentScroll, contentScrollTop, slide?.slideId]);
 
   // Flow blok po povýšení do frame zmizí z lineárního DOMu. Aktivní pointer
   // proto držíme na stabilním kořeni slidu a vždy ukončíme i při unmountu.
@@ -2190,11 +2209,17 @@ export function SlideBody({
 
     >
 
-      <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
+      <div
+        ref={flowAreaRef}
+        onScroll={onContentScroll}
+        className={`flex-1 min-h-0 px-6 py-6 ${allowContentScroll && !editable ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"}`}
+        data-testid={allowContentScroll ? "slide-flow-scroll" : undefined}
+      >
 
         <div
           ref={flowContentRef}
           className="flex min-h-full w-full flex-col items-center justify-start gap-6"
+          data-flow-scale={flowScale}
           style={{
             transform: flowScale < 1 ? `scale(${flowScale})` : undefined,
             transformOrigin: "top center",

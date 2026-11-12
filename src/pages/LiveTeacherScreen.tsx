@@ -48,6 +48,8 @@ import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 import LiveDraftsPanel from "@/components/live/LiveDraftsPanel";
 import LessonPlanPacing from "@/components/live/LessonPlanPacing";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
+import ProjectorFontScaleControls from "@/components/live/ProjectorFontScaleControls";
+import { clampProjectorFontScale, loadProjectorFontScale, saveProjectorFontScale, settingsWithProjectorFontScale } from "@/lib/projector-font-scale";
 
 interface SlideData {
   slideId: string;
@@ -84,10 +86,39 @@ const LiveTeacherScreen = () => {
   const isLobby = session?.status === "lobby";
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
+  const [projectorFontScale, setProjectorFontScale] = useState(loadProjectorFontScale);
+  const fontScaleInitializedFor = useRef<string | null>(null);
   const gameCode = session?.game_code || "";
   const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
+
+  const changeProjectorFontScale = useCallback((value: number) => {
+    const next = saveProjectorFontScale(value);
+    setProjectorFontScale(next);
+    if (!sessionId) return;
+    void supabase.from("game_sessions").update({
+      settings: settingsWithProjectorFontScale(settings, next) as any,
+    }).eq("id", sessionId);
+  }, [sessionId, settings]);
+
+  // Starší relace bez hodnoty dostanou uloženou učitelovu volbu; novější
+  // projektor i učitel sdílí jedinou hodnotu v existujícím settings JSON.
+  useEffect(() => {
+    if (!sessionId || !session) return;
+    if (settings?.projectorFontScale != null) {
+      const next = saveProjectorFontScale(settings.projectorFontScale);
+      setProjectorFontScale(next);
+      fontScaleInitializedFor.current = sessionId;
+      return;
+    }
+    if (fontScaleInitializedFor.current === sessionId) return;
+    fontScaleInitializedFor.current = sessionId;
+    const next = saveProjectorFontScale(projectorFontScale);
+    void supabase.from("game_sessions").update({
+      settings: settingsWithProjectorFontScale(settings, next) as any,
+    }).eq("id", sessionId);
+  }, [sessionId, session, settings, projectorFontScale]);
 
   // ---- Přiblížení (zoom do výřezu) ----
   const [drawZoomMode, setDrawZoomMode] = useState(false);
@@ -561,6 +592,7 @@ const LiveTeacherScreen = () => {
           {/* Zobrazení */}
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-1">
+              <ProjectorFontScaleControls value={projectorFontScale} onChange={changeProjectorFontScale} />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1087,7 +1119,7 @@ const LiveTeacherScreen = () => {
               <div className="relative">
                 <div className="overflow-hidden rounded-xl">
                   <div style={drawZoomMode ? undefined : zoomStageStyle(activeZoom)}>
-                    <SlideCanvas slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode />
+                    <SlideCanvas slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode projectorFontScale={projectorFontScale} />
                   </div>
                 </div>
                 <ZoomZoneSurface
@@ -1120,6 +1152,10 @@ const LiveTeacherScreen = () => {
                 slide={slideWithFallbackBlocks(currentSlide)}
                 themeId={(currentSlide as any)?.themeId}
                 darkMode
+                projectorFontScale={projectorFontScale}
+                allowContentScroll
+                contentScrollTop={Number(settings?.projectorScrollTop) || 0}
+                onContentScroll={handleProjectorScroll}
               />
             </div>
           </div>

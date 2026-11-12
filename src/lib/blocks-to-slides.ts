@@ -114,7 +114,7 @@ const MAX_CHARS_PER_SLIDE = 900;
  * Co se nevejde ani při tomto zmenšení, se NEOŘEZÁVÁ, ale reálně rozdělí
  * na navazující snímky.
  */
-export const READABLE_SCALE_FLOOR = 0.72;
+export const READABLE_SCALE_FLOOR = 0.85;
 /** Absolutní strop znaků na snímek, než se obsah rozdělí. */
 const HARD_MAX_CHARS_PER_SLIDE = Math.round(MAX_CHARS_PER_SLIDE / READABLE_SCALE_FLOOR);
 /** Sekce pod touto délkou je „poloprázdná“ a slučuje se se sousedy. */
@@ -302,6 +302,16 @@ function blockVisualWeight(block: any): number {
   return chars;
 }
 
+/** Odhad výšky celého snímku; titulek zabírá místo, i když není mezi bloky. */
+function slideVisualWeight(slide: any): number {
+  const stored = Number(slide?.visualWeight);
+  const blocksWeight = Number.isFinite(stored) && stored > 0
+    ? stored
+    : (slide?.blocks || []).reduce((sum: number, block: any) => sum + blockVisualWeight(block), 0);
+  const headlineWeight = String(slide?.projector?.headline || "").trim() ? 140 : 0;
+  return blocksWeight + headlineWeight;
+}
+
 /**
  * FÁZE 2 – přeplněný obsah se reálně rozdělí na navazující snímky
  * (dřív se jen zmenšoval až do nečitelnosti / oříznutí).
@@ -309,7 +319,7 @@ function blockVisualWeight(block: any): number {
 function splitSlide(slide: any): any[] {
   const layout = slide?.layout || "full";
   const chars = bodyLen(slide);
-  const visualWeight = Number(slide?.visualWeight || 0);
+  const visualWeight = slideVisualWeight(slide);
 
   if ((chars <= HARD_MAX_CHARS_PER_SLIDE && visualWeight <= HARD_MAX_CHARS_PER_SLIDE) || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
     return [slide];
@@ -513,7 +523,9 @@ export function blocksToSlides(blocks: any[], lessonTitle: string, options: Bloc
     if (!slide) return false;
     const blockCount = (slide.blocks || []).length;
     const chars = String(slide.projector?.body || "").length;
-    return blockCount >= MAX_BLOCKS_PER_SLIDE || chars >= MAX_CHARS_PER_SLIDE;
+    return blockCount >= MAX_BLOCKS_PER_SLIDE
+      || chars >= MAX_CHARS_PER_SLIDE
+      || slideVisualWeight(slide) >= HARD_MAX_CHARS_PER_SLIDE;
   };
 
   /** Pokračovací snímek téže sekce (nadpis se nepřepisuje, jen doplní). */

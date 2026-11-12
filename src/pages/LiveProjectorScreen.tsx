@@ -20,6 +20,9 @@ import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
 import { isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
+import ProjectorFontScaleControls from "@/components/live/ProjectorFontScaleControls";
+import { clampProjectorFontScale, loadProjectorFontScale, saveProjectorFontScale, settingsWithProjectorFontScale } from "@/lib/projector-font-scale";
+import { supabase } from "@/integrations/supabase/client";
 
 // Banner spojení je na jednom stabilním místě mimo větve obsahu,
 // takže se při změně obrazovky (lobby → snímek → konec) znovu nemontuje.
@@ -42,7 +45,10 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
   };
   const controlsRef = useRef<HTMLDivElement>(null);
   const chromeVisible = useIdleChrome(true, 3000, controlsRef);
+  const session = game.session;
+  const settings = (session?.settings as any) || {};
   const [userZoom, setUserZoom] = useState(loadProjectorZoom);
+  const [projectorFontScale, setProjectorFontScale] = useState(loadProjectorFontScale);
   const [codeAlwaysVisible, setCodeAlwaysVisible] = useState(loadCodeAlwaysVisible);
   const [isFullscreen, setIsFullscreen] = useState(() => !!document.fullscreenElement);
   const changeZoom = (next: number) => {
@@ -50,6 +56,19 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
     setUserZoom(v);
     saveProjectorZoom(v);
   };
+  const changeProjectorFontScale = (nextValue: number) => {
+    const next = saveProjectorFontScale(nextValue);
+    setProjectorFontScale(next);
+    if (!sessionId || !session) return;
+    void supabase.from("game_sessions").update({
+      settings: settingsWithProjectorFontScale(settings, next) as any,
+    }).eq("id", sessionId);
+  };
+  useEffect(() => {
+    if (settings.projectorFontScale == null) return;
+    const next = saveProjectorFontScale(settings.projectorFontScale);
+    setProjectorFontScale(next);
+  }, [settings.projectorFontScale]);
   useEffect(() => {
     const onFs = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onFs);
@@ -91,6 +110,7 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
           <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Zvětšit" title="Zvětšit (+)" disabled={userZoom >= PROJECTOR_ZOOM_MAX} onClick={() => changeZoom(userZoom + PROJECTOR_ZOOM_STEP)}>
             <Plus className="h-4 w-4" />
           </Button>
+          <ProjectorFontScaleControls value={projectorFontScale} onChange={changeProjectorFontScale} className="border-l border-border pl-1" />
           <Button
             variant={codeAlwaysVisible ? "secondary" : "ghost"} size="icon" className="h-9 w-9"
             aria-pressed={codeAlwaysVisible} aria-label="Kód vždy viditelný" title="Kód vždy viditelný"
@@ -108,7 +128,7 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
       </Button>
     </div>
   );
-  const { session, players, responses, loading } = game;
+  const { players, responses, loading } = game;
 
   // Tik jen při závodu — jinak se celý projektor (snímek, obrázky) překresloval 2× za sekundu.
   const [now, setNow] = useState(() => Date.now());
@@ -143,7 +163,6 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
   const gameCode = session.game_code || "";
   const joinUrl = `${window.location.origin}/live/pripojit${gameCode ? `?code=${gameCode}` : ""}`;
 
-  const settings = (session.settings as any) || {};
   const backgroundUrl = sessionBackgroundUrl(settings);
   const isRaceMode = settings.gameMode === "race";
   const raceStartedAtMs = settings.raceStartedAt
@@ -295,6 +314,7 @@ const ProjectorBody = ({ sessionId, game }: { sessionId: string | undefined; gam
       {renderCloseButton(true)}
       <ProjectorSlideView
         userZoom={userZoom}
+        projectorFontScale={projectorFontScale}
         chromeVisible={chromeVisible}
         codeAlwaysVisible={codeAlwaysVisible}
         sessionId={sessionId!}

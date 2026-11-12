@@ -18,6 +18,7 @@ import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import { gameBackgroundStyle } from "@/lib/game-backgrounds";
 import { projectorStageScale } from "@/lib/presentation-routes";
+import { clampProjectorFontScale } from "@/lib/projector-font-scale";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
@@ -28,12 +29,16 @@ const ProjectorCanvasStage = ({
   revealStep,
   isLessonPresentation,
   gameBackground = false,
+  projectorFontScale,
+  scrollTop = 0,
 }: {
   slide: any;
   currentIndex: number;
   revealStep?: number;
   isLessonPresentation: boolean;
   gameBackground?: boolean;
+  projectorFontScale: number;
+  scrollTop?: number;
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -73,6 +78,9 @@ const ProjectorCanvasStage = ({
           themeId={slide?.themeId}
           darkMode={!isLessonPresentation}
           revealStep={revealStep}
+          projectorFontScale={projectorFontScale}
+          allowContentScroll
+          contentScrollTop={scrollTop}
         />
       </div>
     </div>
@@ -97,6 +105,8 @@ interface Props {
   responses?: any[];
   /** Uživatelské přiblížení projekce v % (100–150), odděleně od zoomStageStyle. */
   userZoom?: number;
+  /** Okamžitá lokální hodnota A+/A−; po synchronizaci ji potvrdí settings relace. */
+  projectorFontScale?: number;
   /** Viditelnost překryvného ovládání (čistá projekce). */
   chromeVisible?: boolean;
   /** Kód pro připojení zůstane vidět i při skrytém ovládání. */
@@ -108,7 +118,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl, responses, userZoom = 100, chromeVisible = true, codeAlwaysVisible = false }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop = 0, zoom, backgroundUrl, responses, userZoom = 100, projectorFontScale: projectorFontScaleProp, chromeVisible = true, codeAlwaysVisible = false }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -199,6 +209,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
   const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
   const awaitingStart = isAwaitingStart(session?.settings, currentSlide, currentIndex);
+  const projectorFontScale = clampProjectorFontScale(projectorFontScaleProp ?? (session?.settings as any)?.projectorFontScale);
 
   return (
     <div
@@ -246,6 +257,8 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       revealStep={(session?.settings as any)?.revealStep}
                       isLessonPresentation={isLessonPresentation}
                       gameBackground={useGameBg}
+                      projectorFontScale={projectorFontScale}
+                      scrollTop={scrollTop}
                     />
                   </div>
                 )}

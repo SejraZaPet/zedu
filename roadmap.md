@@ -31,9 +31,14 @@
 ## Pracovní list: Postup podle metody + Příklady z praxe (etapy 1–3 schváleny) – HOTOVO
 - [x] Etapa 1: nový typ `method_steps` (fáze max 8, výchozí 0 b., bodovaná fáze = ruční hodnocení jako open_answer), editor, přehrávač, tisk/PDF, offline export
 - [x] Etapa 2: dialog „Přidat část → Postup podle metody“ – katalog metod (steps_json) + jedním klikem z posledního Návrhu podle metody
-- [x] Etapa 3: nový typ `practice_examples` (ručně; nadpis, situace, volitelná otázka, volitelné body); AI tlačítko NEZOBRAZOVAT
+- [x] Etapa 3: nový typ `practice_examples` (ruční; nadpis, situace, volitelná otázka, volitelné body); AI tlačítko NEZOBRAZOVAT
 - [x] Testy (14 nových, 34 cílených), typy, build; dialog ověřen v prohlížeči; vložený blok v prohlížeči neověřen (vyžadovalo by zápis do cizího listu)
 - Etapa 4 (AI návrhy příkladů, edge funkce) NESCHVÁLENA – nedělat
+
+## Generovaná prezentace – schválené kroky 1+2
+- [x] Krok 1: čitelnost generovaných snímků a A+/A− na učitelské i projektorové obrazovce; testy a samostatný commit.
+- [ ] Krok 2: kopie „Uložit jako moji prezentaci“, automatické `lockedFromLesson`, obnovení snímku z učebnice; testy a samostatný commit.
+- [ ] Závěrečná kontrola obou commitů; bez migrací, kroku 3 a nasazení.
 
 ## Pozdější etapy (NESCHVÁLENO – nedělat)
 - Etapa 3: stupnice/známky, převodní tabulka, zobrazení žákovi po „zkontrolováno“

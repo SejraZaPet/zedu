@@ -18,6 +18,7 @@ import {
   Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
+import { loadProjectorFontScale } from "@/lib/projector-font-scale";
 
 
 interface StandalonePresentation {
@@ -320,7 +321,7 @@ const TeacherPresentations = () => {
         title,
         game_code: gameCode,
         activity_data: expandSlidesForLiveGame(slides) as any,
-        settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+        settings: { timePerQuestion: 30, projectorFontScale: loadProjectorFontScale(), shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
       }).select("id").single();
