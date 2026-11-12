@@ -166,7 +166,6 @@ export function submittableOnly<T extends { settings?: unknown }>(items: T[]): T
   return items.filter((i) => isSubmittable(i.settings));
 }
 
-/** Úkol s pracovním listem nesmí být zároveň portfoliový – portfolio větev u žáka list skryje. */
 /** Která část žákovského přehrávače se vykreslí. List má přednost i u portfoliového úkolu. */
 export function studentPlayerBranch(
   kind: string,
@@ -179,6 +178,7 @@ export function studentPlayerBranch(
   return "questions";
 }
 
-export function portfolioHidesWorksheet(kind: string, isPortfolioTask: boolean, worksheetId: string | null | undefined): boolean {
+/** Portfoliový úkol s pracovním listem: žák vyplní list v úkolu a po odevzdání se list vloží do portfolia. */
+export function worksheetGoesToPortfolio(kind: string, isPortfolioTask: boolean, worksheetId: string | null | undefined): boolean {
   return kind === "task" && isPortfolioTask && !!worksheetId;
 }

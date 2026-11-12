@@ -48,7 +48,7 @@ import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, kindHas, neutralizeForKind, canChangeKind, portfolioHidesWorksheet, KIND_TEXT, type AssignmentKind } from "@/lib/assignment-kind";
+import { ANNOUNCEMENT_MAX, KIND_LABELS, assignmentKind, isPinned, lateLimit, lateMode, lateUntilFromDays, mergeKindSettings, kindFromParam, kindHas, neutralizeForKind, canChangeKind, worksheetGoesToPortfolio, KIND_TEXT, type AssignmentKind } from "@/lib/assignment-kind";
 import AssignmentTargetsPicker, { type AssignmentTarget } from "@/components/assignments/AssignmentTargetsPicker";
 import AssignmentRecipientsPicker from "@/components/assignments/AssignmentRecipientsPicker";
 import { audienceAllowed, audienceError, effectiveRecipients, fetchRecipientsMap, syncRecipients, type AudienceMode } from "@/lib/assignment-recipients";
@@ -1732,9 +1732,9 @@ const TeacherAssignments = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Místo kvízu žáci nahrají výstup (soubor/foto/PDF). Odevzdání se automaticky přidá do jejich portfolia.
                     </p>
-                    {portfolioHidesWorksheet(formKind, isPortfolioTask, selectedWorksheetId) && (
+                    {worksheetGoesToPortfolio(formKind, isPortfolioTask, selectedWorksheetId) && (
                       <p className="text-xs font-medium text-muted-foreground mt-1">
-                        Žáci vyplní přiložený pracovní list a odevzdají ho jako běžný úkol. Do portfolia ho zatím přidejte ručně.
+                        Žáci vyplní přiložený pracovní list přímo v úkolu. Po odevzdání se list automaticky vloží do jejich portfolia.
                       </p>
                     )}
                   </div>

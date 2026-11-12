@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { portfolioHidesWorksheet, studentPlayerBranch } from "@/lib/assignment-kind";
+import { worksheetGoesToPortfolio, studentPlayerBranch } from "@/lib/assignment-kind";
 describe("portfolio + pracovní list", () => {
-  it("úkol s listem a portfoliem je konflikt", () => expect(portfolioHidesWorksheet("task", true, "ws")).toBe(true));
-  it("úkol s listem bez portfolia je v pořádku", () => expect(portfolioHidesWorksheet("task", false, "ws")).toBe(false));
-  it("portfolio bez listu je v pořádku", () => expect(portfolioHidesWorksheet("task", true, null)).toBe(false));
-  it("materiál se netýká", () => expect(portfolioHidesWorksheet("material", true, "ws")).toBe(false));
+  it("úkol s listem a portfoliem vloží list do portfolia", () => expect(worksheetGoesToPortfolio("task", true, "ws")).toBe(true));
+  it("úkol s listem bez portfolia do portfolia nejde", () => expect(worksheetGoesToPortfolio("task", false, "ws")).toBe(false));
+  it("portfolio bez listu nevkládá list", () => expect(worksheetGoesToPortfolio("task", true, null)).toBe(false));
+  it("materiál se netýká", () => expect(worksheetGoesToPortfolio("material", true, "ws")).toBe(false));
 });
 
 describe("větev žákovského přehrávače", () => {

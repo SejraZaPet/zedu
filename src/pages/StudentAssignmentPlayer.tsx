@@ -1,4 +1,4 @@
-import { assignmentKind, studentPlayerBranch, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
+import { assignmentKind, studentPlayerBranch, worksheetGoesToPortfolio, canSubmitNow, isSubmittable, lateLimit } from "@/lib/assignment-kind";
 import CheatsheetAllowedBadge from "@/components/assignments/CheatsheetAllowedBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize, Users, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { saveWorksheetToPortfolio } from "@/lib/portfolio";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPanel from "@/components/worksheet/WorksheetPanel";
@@ -1031,6 +1032,17 @@ const StudentAssignmentPlayer = () => {
             gate={ensureLessonGate}
             onSubmitted={(score, maxScore) => {
               if (attempt) setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
+              if (userId && worksheetGoesToPortfolio(assignmentKind(assignment.settings), !!assignment.is_portfolio_task, assignment.worksheet_id)) {
+                saveWorksheetToPortfolio({
+                  studentId: userId,
+                  worksheetId: assignment.worksheet_id!,
+                  title: worksheetSpec.header?.title || assignment.title,
+                })
+                  .then(({ already }) => {
+                    if (!already) toast({ title: "Pracovní list je v tvém portfoliu" });
+                  })
+                  .catch(() => toast({ title: "List se nepodařilo vložit do portfolia", description: "Úkol je odevzdaný. List si do portfolia můžeš přidat ručně.", variant: "destructive" }));
+              }
             }}
           />
           </>
