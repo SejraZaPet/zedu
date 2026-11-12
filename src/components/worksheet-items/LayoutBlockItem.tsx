@@ -4,6 +4,7 @@ import type { WorksheetItemProps } from "./types";
 import type { InstructionIcon } from "@/lib/worksheet-spec";
 import { getWriteLineCount, getWriteLineHeightMm, WRITE_LINE_HEIGHT_MM, getBlankBoxHeightMm, blankBoxBackgroundCss } from "@/lib/worksheet-write-lines";
 import { QRCodeSVG } from "qrcode.react";
+import { InlineText } from "@/components/worksheet/InlineText";
 
 const ICONS: Record<InstructionIcon, typeof Info> = {
   info: Info,
@@ -70,14 +71,20 @@ function LinedTextarea({
   );
 }
 
-export default function LayoutBlockItem({ item, value, onChange, disabled }: WorksheetItemProps) {
+export default function LayoutBlockItem({ item, value, onChange, disabled, onEditText }: WorksheetItemProps) {
   // Editor / náhled bez odpovědi předává disabled bez hodnoty → statické linky jako dřív.
   const writable = !disabled || hasWrittenText(value);
   switch (item.type) {
     case "section_header":
       return (
         <div className="border-b-2 border-foreground/80 pb-1 mb-2">
-          <h3 className="text-lg font-bold">{item.prompt}</h3>
+          {onEditText ? (
+            <h3 className="text-lg font-bold">
+              <InlineText value={item.prompt ?? ""} onCommit={(v) => onEditText("prompt", v)} ariaLabel="Nadpis sekce" placeholder="Nadpis sekce" />
+            </h3>
+          ) : (
+            <h3 className="text-lg font-bold">{item.prompt}</h3>
+          )}
         </div>
       );
 
@@ -122,7 +129,13 @@ export default function LayoutBlockItem({ item, value, onChange, disabled }: Wor
       return (
         <div className={`rounded-lg border p-3 flex gap-3 items-start ${variant}`}>
           <Icon className="w-5 h-5 mt-0.5 shrink-0" />
-          <p className="text-sm">{item.prompt}</p>
+          {onEditText ? (
+            <div className="text-sm min-w-0 flex-1">
+              <InlineText value={item.prompt ?? ""} onCommit={(v) => onEditText("prompt", v)} multiline ariaLabel="Text pokynů" placeholder="Napište pokyny…" />
+            </div>
+          ) : (
+            <p className="text-sm">{item.prompt}</p>
+          )}
         </div>
       );
     }

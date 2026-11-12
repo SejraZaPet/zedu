@@ -23,4 +23,6 @@ export interface WorksheetItemProps {
   showResults: boolean;
   /** The correct answer entry (only used when showResults=true) */
   answerKeyEntry?: AnswerKeyEntry;
+  /** Jen editor: úprava textu přímo v listu. Bez ní se komponenta chová jako dřív (žák, tisk). */
+  onEditText?: (field: "prompt", value: string) => void;
 }

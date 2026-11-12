@@ -1,4 +1,5 @@
 import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
+import { InlineText } from "@/components/worksheet/InlineText";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -3563,6 +3564,9 @@ function InsertItemControl({
   );
 }
 
+/** Typy, jejichž text v těle lze upravit přímo v listu (krok 1). */
+const INLINE_EDIT_TYPES = new Set<ItemType>(["section_header", "instruction_box"]);
+
 function SortableItemBlock({
   item,
   answerKey,
@@ -3651,14 +3655,16 @@ function SortableItemBlock({
       <div className="worksheet-paper-body">
         {showQuestionHeader && (
           <div className="worksheet-paper-prompt">
-            <span>{item.prompt || <em className="font-normal text-muted-foreground">Bez zadání</em>}</span>
+            <div className="min-w-0 flex-1" onClick={(event) => event.stopPropagation()}>
+              <InlineText value={item.prompt ?? ""} onCommit={(v) => onUpdateItem({ prompt: v })} ariaLabel="Zadání úlohy" placeholder="Bez zadání" />
+            </div>
             {pointsEnabled && item.points > 0 && <span className="worksheet-paper-points">{item.points} b</span>}
           </div>
         )}
         <div className={showQuestionHeader ? "worksheet-paper-renderer" : ""}>
           {Renderer ? (
             <EditorErrorBoundary resetKey={JSON.stringify(item)}>
-              <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} />
+              <Renderer item={item} value={undefined} onChange={() => undefined} disabled showResults={false} answerKeyEntry={answerKey ?? undefined} onEditText={INLINE_EDIT_TYPES.has(item.type) ? (field, v) => onUpdateItem({ [field]: v }) : undefined} />
             </EditorErrorBoundary>
           ) : null}
         </div>
