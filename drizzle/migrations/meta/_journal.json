@@ -631,6 +631,13 @@
       "when": 1794518310770,
       "tag": "0089_replace_tautology_select_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1794549456707,
+      "tag": "0090_restrict_avatar_profiles_and_subjects_read",
+      "breakpoints": true
     }
   ]
 }

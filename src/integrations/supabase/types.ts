@@ -8936,6 +8936,7 @@ export type Database = {
         Args: { _report: string; _user: string }
         Returns: boolean
       }
+      can_see_avatar: { Args: { _owner: string }; Returns: boolean }
       can_see_targeted_assignment: {
         Args: { _aid: string; _uid: string }
         Returns: boolean

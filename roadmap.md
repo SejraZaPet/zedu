@@ -45,6 +45,13 @@
 - [x] Krok 3: pevné buňky tabulky přes sdílenou logiku, žákovská vyplnění beze změny; samostatný commit.
 - Bez DB, migrací, formátování textu a nasazení; regrese celé sady pracovních listů.
 
+## Bezpečnostní sken – avatar_profiles a subjects (schváleno)
+- [x] Před migrací ověřit všechna zobrazení cizích avatarů, vazby her/zpráv/tříd/skupin a zástupnou ikonu.
+- [x] Ověřit čtení předmětů přes cizí a sdílený obsah; zdokumentovat dopad na budoucí školní předměty.
+- [x] Aplikovat pouze schválená SELECT pravidla a pomocnou funkci `can_see_avatar`; bez simulace rolí a bez nasazení.
+- [x] Spustit bezpečnostní sken, ověřit zbývající nálezy a typy; dva kritické nálezy odstraněny.
+- [ ] Uživatelka: vlastní simulace rolí v transakci; agent ji podle pokynu neprováděl.
+
 ## Pozdější etapy (NESCHVÁLENO – nedělat)
 - Etapa 3: stupnice/známky, převodní tabulka, zobrazení žákovi po „zkontrolováno“
 - Etapa 4: vrácení k přepracování, známka rodiči (DB, samostatné schválení)
