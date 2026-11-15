@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
-import { aiContentSpec, attachExplanations, buildPhases, openExplanationSpec, openPhaseKeys, SOURCE_ONLY_RULE, flattenPhaseQuestions, KNOWN_METHODS, prepareSourceText, SOURCE_KINDS } from "../_shared/practice-phases.ts";
+import { aiContentSpec, attachExplanations, buildPhases, openExplanationSpec, openPhaseKeys, SOURCE_ONLY_RULE, flattenPhaseQuestions, KNOWN_METHODS, prepareSourceText, SOURCE_KINDS, recentPracticePercents, practiceTargetDifficulty } from "../_shared/practice-phases.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
           .maybeSingle(),
         supabase
           .from("student_practice_sessions")
-          .select("score, answers_json")
+          .select("student_id, score, answers_json")
           .eq("student_id", effectiveStudentId)
           .order("created_at", { ascending: false })
           .limit(5),
@@ -99,24 +99,9 @@ Deno.serve(async (req) => {
 
 
       const level = xp?.level ?? 1;
-      let avgPercent = 50;
-      if (recent && recent.length > 0) {
-        const percents = recent
-          .map((r: any) => {
-            const p = r.answers_json?.percent;
-            return typeof p === "number" ? p : null;
-          })
-          .filter((x): x is number => x !== null);
-        if (percents.length > 0) {
-          avgPercent = percents.reduce((a, b) => a + b, 0) / percents.length;
-        }
-      }
-
+      const percents = recentPracticePercents(recent ?? [], effectiveStudentId);
       // Combine: high level + high success → hard; low both → easy
-      const score = level * 10 + avgPercent;
-      if (score < 60) targetDifficulty = "easy";
-      else if (score > 110) targetDifficulty = "hard";
-      else targetDifficulty = "medium";
+      targetDifficulty = practiceTargetDifficulty(level, percents);
     }
 
     const title = lesson?.title ?? "Vlastní materiál žáka";

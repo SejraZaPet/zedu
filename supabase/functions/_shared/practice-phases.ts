@@ -52,6 +52,31 @@ export const MIN_SOURCE_TEXT_LENGTH = 150;
 export const SOURCE_KINDS = ["text", "file", "notebook", "portfolio"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
+/** Jen poslední výsledky konkrétního žáka; cizí řádky nesmí ovlivnit obtížnost. */
+export function recentPracticePercents(
+  rows: Array<{ student_id?: string | null; answers_json?: { percent?: unknown } | null }>,
+  studentId: string,
+): number[] {
+  return rows
+    .filter((row) => row.student_id === studentId)
+    .map((row) => row.answers_json?.percent)
+    .filter((percent): percent is number => typeof percent === "number")
+    .slice(0, 5);
+}
+
+export function practiceTargetDifficulty(
+  level: number,
+  percents: number[],
+): "easy" | "medium" | "hard" {
+  const avgPercent = percents.length > 0
+    ? percents.reduce((sum, percent) => sum + percent, 0) / percents.length
+    : 50;
+  const score = level * 10 + avgPercent;
+  if (score < 60) return "easy";
+  if (score > 110) return "hard";
+  return "medium";
+}
+
 export function prepareSourceText(raw: unknown):
   { ok: true; text: string } | { ok: false; error: string } {
   if (typeof raw !== "string") return { ok: false, error: "Chybí text ke procvičení." };
