@@ -1,5 +1,12 @@
 # Roadmap
 
+## Učím se – fotografie jako zdroj (schválené kroky 0–3)
+- [x] Krok 0: izolace posledních výsledků žáka v `ai-practice-rag` a test obtížnosti.
+- [x] Krok 1: lokální příprava fotografie, mobilní výběr, soukromí a náhled bez AI.
+- [x] Krok 2: specializovaný AI přepis a povinná kontrola textu žákem; bez nasazení.
+- [x] Krok 3: potvrzený text jako `photo` ve stávajícím procvičování a regrese.
+- Čeká na samostatný pokyn: nasazení `extract-practice-photo-text` a živý test s fotkou; model `google/gemini-2.5-flash` je dostupný, ale zastaralý, uživatelka byla dotázána na případnou změnu.
+
 ## Demo – únik obsahu skutečných učitelů (schváleno, etapy 1–3)
 - [x] Etapa 1: demo_iso_strict na worksheets (0083)
 - [x] Etapa 2: demo_iso_strict na teacher_presentations a teacher_textbooks (0084)

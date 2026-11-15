@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  METHOD_PHASES, buildPhases, allocateQuiz, prepareSourceText, SOURCE_TEXT_LIMIT, MIN_SOURCE_TEXT_LENGTH,
+  METHOD_PHASES, buildPhases, allocateQuiz, prepareSourceText, SOURCE_TEXT_LIMIT, MIN_SOURCE_TEXT_LENGTH, SOURCE_KINDS,
 } from "../../supabase/functions/_shared/practice-phases";
 import {
   checkAcrostic, sequenceUnlockedCount, advance, startWork, remainingMs, pause, resume,
-  POMODORO_IDLE, POMODORO_PRESETS, notebookPageText, withStops,
+  POMODORO_IDLE, POMODORO_PRESETS, notebookPageText, withStops, savePracticeSource, readPracticeSource,
 } from "@/lib/practice-method";
 import { scorePractice } from "@/lib/student-practice";
 
@@ -144,6 +144,13 @@ describe("zdroj textu", () => {
     const r = prepareSourceText("krátké");
     expect(r.ok).toBe(false);
     if (r.ok === false) expect(r.error).toContain(String(MIN_SOURCE_TEXT_LENGTH));
+  });
+  it("fotka je povolený zdroj a v relaci se přenese jen potvrzený text", () => {
+    expect(SOURCE_KINDS).toContain("photo");
+    const source = { kind: "photo" as const, text: TEXT, label: "Fotografie" };
+    expect(savePracticeSource(source)).toBe(true);
+    expect(readPracticeSource()).toEqual(source);
+    expect(sessionStorage.getItem("bezli.practice.source")).not.toContain("imageBase64");
   });
   it("ze sešitu čte jen textová pole (bez tahů, obrázků a seznamu třídy)", () => {
     const content = {

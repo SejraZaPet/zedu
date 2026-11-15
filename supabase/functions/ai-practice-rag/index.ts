@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     let lesson: { id: string; title: string } | null = null;
     let lessonText = "";
     if (useSource) {
-      // Žákův vlastní text: jen do AI, nikam se neukládá.
+      // Vlastní text nebo žákem potvrzený přepis fotky: jen do AI, nikam se neukládá.
       const prepared = prepareSourceText(source_text);
       if (!prepared.ok) return json({ error: prepared.error }, 422);
       lessonText = prepared.text;

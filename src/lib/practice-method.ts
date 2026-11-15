@@ -94,7 +94,7 @@ export function notebookPageText(content: unknown): string {
 
 /* ---------- Předání vlastního zdroje do procvičování (jen relace prohlížeče) ---------- */
 export const PRACTICE_SOURCE_KEY = "bezli.practice.source";
-export type PracticeSource = { kind: "text" | "file" | "notebook" | "portfolio"; text: string; label: string };
+export type PracticeSource = { kind: "text" | "file" | "photo" | "notebook" | "portfolio"; text: string; label: string };
 
 export function savePracticeSource(src: PracticeSource) {
   try { sessionStorage.setItem(PRACTICE_SOURCE_KEY, JSON.stringify(src)); return true; } catch { return false; }

@@ -222,8 +222,7 @@ const StudentMethods = () => {
     if (sourceKind === "text") return { kind: "text", text: customText.slice(0, SOURCE_TEXT_LIMIT), label: "Vlastní text" };
     if (sourceKind === "file") return fileSource ? { kind: "file", ...fileSource } : null;
     if (sourceKind === "photo") {
-      // Do napojení nového typu v kroku 3 použijeme potvrzený text stávající cestou.
-      return photoConfirmed ? { kind: "text", text: photoText, label: "Fotografie" } : null;
+      return photoConfirmed ? { kind: "photo", text: photoText, label: "Fotografie" } : null;
     }
     if (sourceKind === "notebook") {
       const pg = pages.find((x) => x.id === pageId);

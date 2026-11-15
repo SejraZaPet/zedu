@@ -151,7 +151,7 @@ const StudentPractice = () => {
         return;
       }
       setSourceKind(customSource ? customSource.kind : lessonId ? "lesson" : null);
-      setSourceLabel(customSource?.label ?? null);
+      setSourceLabel(customSource ? (customSource.kind === "photo" ? "Fotografie" : customSource.label) : null);
       if (lessonId || customSource) {
         const ragRes = await supabase.functions.invoke("ai-practice-rag", {
           body: {

@@ -49,7 +49,7 @@ export interface PracticePhase {
 
 export const SOURCE_TEXT_LIMIT = 8000;
 export const MIN_SOURCE_TEXT_LENGTH = 150;
-export const SOURCE_KINDS = ["text", "file", "notebook", "portfolio"] as const;
+export const SOURCE_KINDS = ["text", "file", "photo", "notebook", "portfolio"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
 /** Jen poslední výsledky konkrétního žáka; cizí řádky nesmí ovlivnit obtížnost. */

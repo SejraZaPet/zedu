@@ -106,7 +106,7 @@ describe("Učím se – kontrola textu z fotky", () => {
     fireEvent.click(screen.getByRole("button", { name: "Potvrdit text" }));
     await waitFor(() => expect(start).toBeEnabled());
     fireEvent.click(start);
-    expect(mocks.saveSource).toHaveBeenCalledWith({ kind: "text", text: LONG_TEXT, label: "Fotografie" });
+    expect(mocks.saveSource).toHaveBeenCalledWith({ kind: "photo", text: LONG_TEXT, label: "Fotografie" });
     expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining("source=custom"));
     expect(mocks.invoke).not.toHaveBeenCalledWith("ai-practice-rag", expect.anything());
   });
