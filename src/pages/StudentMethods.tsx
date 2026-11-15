@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { notebookPageText, savePracticeSource, type PracticeSource } from "@/lib/practice-method";
+import {
+  disposePracticePhoto,
+  PRACTICE_PHOTO_PRIVACY_NOTICE,
+  preparePracticePhoto,
+  type PreparedPracticePhoto,
+} from "@/lib/practice-photo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
 import { SelectGroup, SelectLabel } from "@/components/ui/select";
 import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
@@ -23,6 +29,7 @@ import { methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/l
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
   NotebookPen, ArrowRightCircle, GraduationCap, Play, ChevronLeft, ChevronRight, CheckCircle2,
+  Camera, Loader2,
 } from "lucide-react";
 
 type Method = {
@@ -53,10 +60,23 @@ const StudentMethods = () => {
   const [selectedLesson, setSelectedLesson] = useState<string>("none");
   const [duration, setDuration] = useState<string>("15");
   const [submitting, setSubmitting] = useState(false);
-  const [sourceKind, setSourceKind] = useState<"lesson" | "text" | "file" | "notebook">("lesson");
+  const [sourceKind, setSourceKind] = useState<"lesson" | "text" | "file" | "photo" | "notebook">("lesson");
   const [customText, setCustomText] = useState("");
   const [fileSource, setFileSource] = useState<{ text: string; label: string } | null>(null);
   const [fileBusy, setFileBusy] = useState(false);
+  const [photo, setPhoto] = useState<PreparedPracticePhoto | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => disposePracticePhoto(photo), [photo]);
+
+  useEffect(() => {
+    if (sourceKind !== "photo") {
+      setPhoto(null);
+      setPhotoError(null);
+    }
+  }, [sourceKind]);
   const [notebooks, setNotebooks] = useState<{ id: string; title: string }[]>([]);
   const [notebookId, setNotebookId] = useState("");
   const [pages, setPages] = useState<{ id: string; order: number; text: string }[]>([]);
@@ -108,9 +128,24 @@ const StudentMethods = () => {
     }
   };
 
+  const handlePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhoto(null);
+    setPhotoError(null);
+    setPhotoBusy(true);
+    try {
+      setPhoto(await preparePracticePhoto(file));
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : "Fotku se nepodařilo připravit. Zkus ji nahrát jako JPEG.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const chosenSource = ((): PracticeSource | null => {
     if (sourceKind === "text") return { kind: "text", text: customText.slice(0, SOURCE_TEXT_LIMIT), label: "Vlastní text" };
     if (sourceKind === "file") return fileSource ? { kind: "file", ...fileSource } : null;
+    if (sourceKind === "photo") return null;
     if (sourceKind === "notebook") {
       const pg = pages.find((x) => x.id === pageId);
       const nb = notebooks.find((x) => x.id === notebookId);
@@ -390,7 +425,13 @@ const StudentMethods = () => {
       </Dialog>
 
       {/* Practice setup */}
-      <Dialog open={!!practiceFor} onOpenChange={(o) => !o && setPracticeFor(null)}>
+      <Dialog open={!!practiceFor} onOpenChange={(o) => {
+        if (!o) {
+          setPracticeFor(null);
+          setPhoto(null);
+          setPhotoError(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Procvičit metodou {practiceFor?.name}</DialogTitle>
@@ -408,6 +449,7 @@ const StudentMethods = () => {
                   <SelectItem value="lesson">Lekce z učebnice</SelectItem>
                   <SelectItem value="text">Vlastní text</SelectItem>
                   <SelectItem value="file">Soubor (PDF nebo .txt)</SelectItem>
+                  <SelectItem value="photo">Fotografie</SelectItem>
                   <SelectItem value="notebook">Stránka mého sešitu</SelectItem>
                 </SelectContent>
               </Select>
@@ -433,6 +475,62 @@ const StudentMethods = () => {
                 <p className="text-xs text-muted-foreground mt-1">
                   {fileBusy ? "Čtu soubor…" : fileSource ? `Načteno: ${fileSource.label} (${fileSource.text.length} znaků)` : "PDF s textem nebo .txt. Fotky zatím neumíme přečíst."}
                 </p>
+              </div>
+            )}
+
+            {sourceKind === "photo" && (
+              <div className="space-y-3">
+                <p className="text-sm rounded-md border border-border bg-muted/40 p-3">
+                  {PRACTICE_PHOTO_PRIVACY_NOTICE}
+                </p>
+                <input
+                  ref={photoInputRef}
+                  id="practice-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  disabled={photoBusy}
+                  onChange={(event) => {
+                    void handlePhoto(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 w-full gap-2"
+                  disabled={photoBusy}
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  {photoBusy ? "Připravuji fotku…" : photo ? "Vyfotit / nahrát jinou fotku" : "Vyfotit / nahrát fotku"}
+                </Button>
+                {photoError && <p role="alert" className="text-sm text-destructive">{photoError}</p>}
+                {photo && (
+                  <div className="space-y-3 rounded-md border border-border p-3">
+                    <img
+                      src={photo.previewUrl}
+                      alt="Náhled fotografie stránky s učivem"
+                      className="max-h-64 w-full rounded-md border border-border object-contain"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Zmenšený JPEG {photo.width} × {photo.height} px. Původní fotka ani EXIF se nepoužijí.
+                    </p>
+                    <p className="text-sm text-muted-foreground">Fotka je zatím připravená jen v tomto zařízení, bez AI přepisu.</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11"
+                      onClick={() => {
+                        setPhoto(null);
+                        setPhotoError(null);
+                      }}
+                    >
+                      Odebrat fotku
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
