@@ -16,22 +16,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { notebookPageText, savePracticeSource, type PracticeSource } from "@/lib/practice-method";
-import {
-  disposePracticePhoto,
-  PRACTICE_PHOTO_PRIVACY_NOTICE,
-  PRACTICE_PHOTO_UNREADABLE_MESSAGE,
-  preparePracticePhoto,
-  type PreparedPracticePhoto,
-} from "@/lib/practice-photo";
+import { PRACTICE_PHOTO_PRIVACY_NOTICE } from "@/lib/practice-photo";
+import { usePracticePhotos } from "@/lib/use-practice-photos";
+import { useDemoPair } from "@/lib/demo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
 import { SelectGroup, SelectLabel } from "@/components/ui/select";
 import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
-import { practiceErrorMessage } from "@/lib/practice-error";
 import { methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
   NotebookPen, ArrowRightCircle, GraduationCap, Play, ChevronLeft, ChevronRight, CheckCircle2,
-  Camera, Loader2,
+  Camera, Loader2, Images, ArrowUp, ArrowDown, Trash2, RotateCcw,
 } from "lucide-react";
 
 type Method = {
@@ -66,26 +61,21 @@ const StudentMethods = () => {
   const [customText, setCustomText] = useState("");
   const [fileSource, setFileSource] = useState<{ text: string; label: string } | null>(null);
   const [fileBusy, setFileBusy] = useState(false);
-  const [photo, setPhoto] = useState<PreparedPracticePhoto | null>(null);
-  const [photoBusy, setPhotoBusy] = useState(false);
+  const demoPair = useDemoPair();
+  const photos = usePracticePhotos((description) => toast({ title: "Příliš mnoho fotek", description, variant: "destructive" }));
+  const { busy: photoBusy, text: photoText, setText: setPhotoText, review: photoReview, setReview: setPhotoReview,
+    confirmed: photoConfirmed, setConfirmed: setPhotoConfirmed } = photos;
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [photoText, setPhotoText] = useState("");
-  const [photoReview, setPhotoReview] = useState(false);
-  const [photoConfirmed, setPhotoConfirmed] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const photoTextRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => () => disposePracticePhoto(photo), [photo]);
-
   useEffect(() => {
-    if (sourceKind !== "photo") {
-      setPhoto(null);
+    if (sourceKind !== "photo" || !practiceFor) {
+      photos.clear();
       setPhotoError(null);
-      setPhotoText("");
-      setPhotoReview(false);
-      setPhotoConfirmed(false);
     }
-  }, [sourceKind]);
+  }, [sourceKind, practiceFor]);
   const [notebooks, setNotebooks] = useState<{ id: string; title: string }[]>([]);
   const [notebookId, setNotebookId] = useState("");
   const [pages, setPages] = useState<{ id: string; order: number; text: string }[]>([]);
@@ -134,58 +124,6 @@ const StudentMethods = () => {
       toast({ title: "Soubor se nepodařilo přečíst", description: "Zkus PDF s textem nebo soubor .txt.", variant: "destructive" });
     } finally {
       setFileBusy(false);
-    }
-  };
-
-  const handlePhoto = async (file: File | undefined) => {
-    if (!file) return;
-    setPhoto(null);
-    setPhotoError(null);
-    setPhotoText("");
-    setPhotoReview(false);
-    setPhotoConfirmed(false);
-    setPhotoBusy(true);
-    try {
-      setPhoto(await preparePracticePhoto(file));
-    } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : "Fotku se nepodařilo připravit. Zkus ji nahrát jako JPEG.");
-    } finally {
-      setPhotoBusy(false);
-    }
-  };
-
-  const handlePhotoTranscription = async () => {
-    if (!photo) return;
-    setPhotoBusy(true);
-    setPhotoError(null);
-    setPhotoConfirmed(false);
-    try {
-      const { data, error } = await supabase.functions.invoke("extract-practice-photo-text", {
-        body: { imageBase64: photo.imageBase64, mimeType: photo.mimeType },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        const code = data.error;
-        throw new Error(code === "UNREADABLE_PHOTO" || code === "INSUFFICIENT_TEXT" ? code : (data.message ?? code));
-      }
-      const text = typeof data?.text === "string" ? data.text.trim() : "";
-      if (!text) {
-        setPhotoText("");
-        setPhotoReview(true);
-        setPhotoError(PRACTICE_PHOTO_UNREADABLE_MESSAGE);
-        return;
-      }
-      setPhotoText(text);
-      setPhotoReview(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      const readable = await practiceErrorMessage(error);
-      const code = message || readable;
-      if (code.includes("INSUFFICIENT_TEXT")) setPhotoError(`Text je moc krátký. Potřebuju aspoň ${MIN_SOURCE_TEXT_LENGTH} znaků.`);
-      else setPhotoError(code.includes("UNREADABLE_PHOTO") ? PRACTICE_PHOTO_UNREADABLE_MESSAGE : readable);
-      setPhotoReview(true);
-    } finally {
-      setPhotoBusy(false);
     }
   };
 
@@ -507,7 +445,7 @@ const StudentMethods = () => {
       <Dialog open={!!practiceFor} onOpenChange={(o) => {
         if (!o) {
           setPracticeFor(null);
-          setPhoto(null);
+          photos.clear();
           setPhotoError(null);
           setPhotoText("");
           setPhotoReview(false);
@@ -561,96 +499,46 @@ const StudentMethods = () => {
             )}
 
             {sourceKind === "photo" && (
-              <div className="space-y-3">
-                <p className="text-sm rounded-md border border-border bg-muted/40 p-3">
-                  {PRACTICE_PHOTO_PRIVACY_NOTICE}
-                </p>
-                <input
-                  ref={photoInputRef}
-                  id="practice-photo"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  disabled={photoBusy}
-                  onChange={(event) => {
-                    void handlePhoto(event.target.files?.[0]);
-                    event.target.value = "";
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 w-full gap-2"
-                  disabled={photoBusy}
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                  {photoBusy ? "Připravuji fotku…" : photo ? "Vyfotit / nahrát jinou fotku" : "Vyfotit / nahrát fotku"}
-                </Button>
-                {photoError && <p role="alert" className="text-sm text-destructive">{photoError}</p>}
-                {photo && (
-                  <div className="space-y-3 rounded-md border border-border p-3">
-                    <img
-                      src={photo.previewUrl}
-                      alt="Náhled fotografie stránky s učivem"
-                      className="max-h-64 w-full rounded-md border border-border object-contain"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Zmenšený JPEG {photo.width} × {photo.height} px. Původní fotka ani EXIF se nepoužijí.
-                    </p>
-                    {!photoReview && (
-                      <Button type="button" className="min-h-11 w-full gap-2" disabled={photoBusy} onClick={() => void handlePhotoTranscription()}>
-                        {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                        {photoBusy ? "Přepisuji text…" : "Přečíst text z fotky"}
-                      </Button>
-                    )}
-                    {photoReview && (
-                      <div className="space-y-3">
-                        <Label htmlFor="practice-photo-text" className="font-medium">Přepsáno AI – zkontroluj text</Label>
-                        <Textarea
-                          ref={photoTextRef}
-                          id="practice-photo-text"
-                          rows={8}
-                          value={photoText}
-                          onChange={(event) => handlePhotoTextChange(event.target.value)}
-                          className="mt-1 text-base"
-                          placeholder="Doplň nebo opiš text z fotky."
-                          disabled={photoBusy}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {photoText.trim().length} / {SOURCE_TEXT_LIMIT} znaků (aspoň {MIN_SOURCE_TEXT_LENGTH}). Fotka se neukládá; po potvrzení se použije jen tento text.
-                        </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={() => {
-                            setPhoto(null);
-                            setPhotoText("");
-                            setPhotoReview(false);
-                            setPhotoConfirmed(false);
-                            setPhotoError(null);
-                            photoInputRef.current?.click();
-                          }}>
-                            Vyfotit znovu
-                          </Button>
-                          <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={handlePhotoEdit}>
-                            Upravit / doplnit ručně
-                          </Button>
+              <div className="space-y-3 min-w-0">
+                <p className="text-sm rounded-md border border-border bg-muted/40 p-3">{PRACTICE_PHOTO_PRIVACY_NOTICE}</p>
+                {demoPair && <p role="note" className="text-sm border border-border rounded-md p-3">Demo účet má limit 5 AI volání. Každá fotka spotřebuje jedno volání; další volání potřebuje i procvičování. Více fotek může limit vyčerpat.</p>}
+                <input ref={photoInputRef} id="practice-photo" type="file" accept="image/*" multiple className="hidden" disabled={photoBusy}
+                  onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void photos.add(files); }} />
+                <input ref={cameraInputRef} id="practice-photo-camera" type="file" accept="image/*" capture="environment" className="hidden" disabled={photoBusy}
+                  onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void photos.add(files); }} />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="outline" className="min-h-11 gap-2" disabled={photoBusy} onClick={() => photoInputRef.current?.click()}><Images className="h-4 w-4" />Vybrat fotografie</Button>
+                  <Button type="button" variant="outline" className="min-h-11 gap-2" disabled={photoBusy} onClick={() => cameraInputRef.current?.click()}><Camera className="h-4 w-4" />Vyfotit stránku</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">{photos.entries.length} / 6 fotek</p>
+                {photoBusy && <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{photos.progress}</p>}
+                <ol className="space-y-3">
+                  {photos.entries.map((entry, index) => (
+                    <li key={entry.id} className="rounded-md border border-border p-3 space-y-2 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">Fotka {index + 1}</span>
+                        <div className="flex shrink-0">
+                          <Button type="button" variant="ghost" size="icon" title="Posunout nahoru" aria-label={`Fotka ${index + 1}: nahoru`} disabled={photoBusy || index === 0} onClick={() => photos.move(entry.id, -1)}><ArrowUp className="h-4 w-4" /></Button>
+                          <Button type="button" variant="ghost" size="icon" title="Posunout dolů" aria-label={`Fotka ${index + 1}: dolů`} disabled={photoBusy || index === photos.entries.length - 1} onClick={() => photos.move(entry.id, 1)}><ArrowDown className="h-4 w-4" /></Button>
+                          <Button type="button" variant="ghost" size="icon" title="Odebrat fotku" aria-label={`Fotka ${index + 1}: odebrat`} disabled={photoBusy} onClick={() => photos.remove(entry.id)}><Trash2 className="h-4 w-4" /></Button>
                         </div>
-                        <Button
-                          type="button"
-                          className="min-h-11 w-full"
-                          disabled={photoBusy || photoText.trim().length < MIN_SOURCE_TEXT_LENGTH || sourceTooLong}
-                          onClick={handlePhotoConfirm}
-                        >
-                          Potvrdit text
-                        </Button>
-                        {photoConfirmed && (
-                          <p role="status" className="flex items-center gap-2 text-sm text-primary">
-                            <CheckCircle2 className="h-4 w-4" /> Text je potvrzený. Teď můžeš spustit procvičování.
-                          </p>
-                        )}
                       </div>
-                    )}
+                      {entry.photo && <img src={entry.photo.previewUrl} alt="Náhled fotografie stránky s učivem" className="max-h-48 w-full rounded-md object-contain" />}
+                      {entry.text && <p className="text-xs text-primary">Přepsáno AI</p>}
+                      {entry.error && <><p role="alert" className="text-sm text-destructive break-words">{entry.error}</p><Button type="button" variant="outline" className="gap-2" disabled={photoBusy} onClick={() => void photos.retry(entry.id)}><RotateCcw className="h-4 w-4" />Zkusit znovu</Button></>}
+                    </li>
+                  ))}
+                </ol>
+                {photos.entries.some((entry) => !entry.text && !entry.error) && <Button type="button" className="min-h-11 w-full gap-2" disabled={photoBusy} onClick={() => void photos.transcribe()}><Sparkles className="h-4 w-4" />{photos.entries.length === 1 ? "Přečíst text z fotky" : "Přečíst text z fotek"}</Button>}
+                {photos.entries.length > 0 && <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={handlePhotoEdit}>Upravit / doplnit ručně</Button>}
+                {photoReview && (
+                  <div className="space-y-3">
+                    <Label htmlFor="practice-photo-text" className="font-medium">Přepsáno AI – zkontroluj text</Label>
+                    <Textarea ref={photoTextRef} id="practice-photo-text" rows={8} value={photoText} onChange={(event) => handlePhotoTextChange(event.target.value)} className="mt-1 text-base" placeholder="Doplň nebo opiš text z fotek." disabled={photoBusy} />
+                    <p className="text-xs text-muted-foreground">{photoText.trim().length} / {SOURCE_TEXT_LIMIT} znaků (aspoň {MIN_SOURCE_TEXT_LENGTH}). Fotky se neukládají; po potvrzení se použije jen tento text.</p>
+                    {(photoError || sourceTooLong) && <p role="alert" className="text-sm text-destructive">{sourceTooLong ? `Text je moc dlouhý. Zkrať ho na ${SOURCE_TEXT_LIMIT} znaků; žádný text nebyl oříznut.` : photoError}</p>}
+                    <Button type="button" className="min-h-11 w-full" disabled={photoBusy || photoText.trim().length < MIN_SOURCE_TEXT_LENGTH || sourceTooLong} onClick={handlePhotoConfirm}>Potvrdit text</Button>
+                    {photoConfirmed && <p role="status" className="flex items-center gap-2 text-sm text-primary"><CheckCircle2 className="h-4 w-4" />Text je potvrzený. Teď můžeš spustit procvičování.</p>}
                   </div>
                 )}
               </div>

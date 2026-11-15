@@ -28,6 +28,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
   },
 }));
+vi.mock("@/lib/demo", () => ({ useDemoPair: () => null }));
 vi.mock("@/components/SiteHeader", () => ({ default: () => <div /> }));
 vi.mock("@/components/SiteFooter", () => ({ default: () => <div /> }));
 vi.mock("react-router-dom", async (importOriginal) => ({
@@ -111,12 +112,41 @@ describe("Učím se – kontrola textu z fotky", () => {
     expect(mocks.invoke).not.toHaveBeenCalledWith("ai-practice-rag", expect.anything());
   });
 
+  it("připojí druhou fotku, sloučí texty a po přeřazení vyžaduje nové potvrzení", async () => {
+    await openPhotoDialog();
+    const input = document.getElementById("practice-photo") as HTMLInputElement;
+    expect(input.multiple).toBe(true);
+    expect(input.hasAttribute("capture")).toBe(false);
+    const second = "[TEST] Druhá stránka učiva. ".repeat(8).trim();
+    fireEvent.change(input, { target: { files: [new File(["photo"], "druha.jpg", { type: "image/jpeg" })] } });
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+    mocks.invoke.mockResolvedValueOnce({ data: { text: LONG_TEXT }, error: null }).mockResolvedValueOnce({ data: { text: second }, error: null });
+    fireEvent.click(screen.getByRole("button", { name: "Přečíst text z fotek" }));
+    const textarea = await screen.findByLabelText("Přepsáno AI – zkontroluj text");
+    expect(textarea).toHaveValue(`${LONG_TEXT}\n\n${second}`);
+    fireEvent.click(screen.getByRole("button", { name: "Potvrdit text" }));
+    expect(screen.getByRole("button", { name: "Spustit procvičování" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Fotka 2: nahoru" }));
+    expect(textarea).toHaveValue(`${second}\n\n${LONG_TEXT}`);
+    expect(screen.getByRole("button", { name: "Spustit procvičování" })).toBeDisabled();
+  });
+
+  it("nad 8000 znaků zachová text a zablokuje potvrzení i spuštění", async () => {
+    mocks.invoke.mockResolvedValue({ data: { text: "X".repeat(8001) }, error: null });
+    await openPhotoDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Přečíst text z fotky" }));
+    expect(await screen.findByLabelText("Přepsáno AI – zkontroluj text")).toHaveValue("X".repeat(8001));
+    expect(screen.getByRole("button", { name: "Potvrdit text" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Spustit procvičování" })).toBeDisabled();
+    expect(mocks.saveSource).not.toHaveBeenCalled();
+  });
+
   it("nečitelná fotka ukáže přesnou hlášku a zůstane bez spuštění", async () => {
     mocks.invoke.mockResolvedValue({ data: { error: "UNREADABLE_PHOTO" }, error: null });
     await openPhotoDialog();
     fireEvent.click(screen.getByRole("button", { name: "Přečíst text z fotky" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(PRACTICE_PHOTO_UNREADABLE_MESSAGE);
-    expect(screen.getByRole("button", { name: "Vyfotit znovu" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Zkusit znovu" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Upravit / doplnit ručně" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Spustit procvičování" })).toBeDisabled();
     expect(mocks.saveSource).not.toHaveBeenCalled();

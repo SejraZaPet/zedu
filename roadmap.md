@@ -1,5 +1,11 @@
 # Roadmap
 
+## Učím se – více fotografií
+- [x] Galerie do šesti fotek, samostatný foťák, sekvenční přepis, pořadí/odebrání/opakování a úklid náhledů bez DB či nasazení.
+- [x] Mock testy dávek a potvrzení, regrese procvičování; typy a build OK. Přihlášená stránka při 390 px: dvě fotky, mock OCR, pořadí/odebrání/potvrzení bez posunu a bez zápisů ověřeny.
+- Neověřeno: živé AI, nativní galerie iOS/Android a HEIC; nic nenasazeno.
+
+
 ## Více fotografií – diagnostika a oprava
 - [x] Rozšířená kontrola: Z materiálu, herní pozadí, knihovna a přetažení/schránka lekce; opraveny nalezené ztráty a chyby. 247 testů / 49 souborů, typy a build OK; dvě fotky Z materiálu při 390 px bez AI a bez posunu ověřeny.
 - [x] Prověřit portfolio, galerie/prezentace, úkoly, avatary, listy a sešit; opravit dávkové zpracování.

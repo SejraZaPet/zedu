@@ -63,3 +63,5 @@
 - Standalone cheat sheets use owner-only notebook/page rows tagged by CHEATSHEET_STORAGE_MARKER in cover_color and content.kind; exclude these containers from every notebook picker/read and never normalize them as notebook content, preserving separate lists without schema changes.
 - Material lesson/worksheet lists are normalized by assignment-content.ts; worksheet_id mirrors the first settings.worksheets entry and material previews never create attempts or own-work rows, preserving task grading and legacy records.
 - Live answer time and manual "Spustit" use only `_shared/live-timing.ts` (re-exported by `src/lib/live-timing.ts`): `activitySpec.timeLimitSec` overrides game time, `settings.activityStartMode`/`armedQuestion` gate answers on client and server; missing keys keep legacy behaviour (incl. 20 s fallback).
+
+- Practice photo batches are ephemeral in use-practice-photos; process one JPEG per existing OCR call and cancel stale batches by epoch so page exits cannot restore discarded previews.
