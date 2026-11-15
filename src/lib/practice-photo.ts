@@ -9,6 +9,9 @@ export const PRACTICE_PHOTO_PRIVACY_NOTICE =
 export const PRACTICE_PHOTO_HEIC_MESSAGE =
   "Fotku HEIC se v tomto prohlížeči nepodařilo otevřít. Zkus ji nahrát jako JPEG, nebo v telefonu vyber pro fotografování formát JPEG.";
 
+export const PRACTICE_PHOTO_UNREADABLE_MESSAGE =
+  "Text se nepodařilo spolehlivě přečíst. Vyfot stránku znovu ostřeji a při lepším světle, nebo text opiš ručně.";
+
 export type PracticePhotoErrorCode =
   | "INVALID_TYPE"
   | "INPUT_TOO_LARGE"

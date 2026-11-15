@@ -19,12 +19,14 @@ import { notebookPageText, savePracticeSource, type PracticeSource } from "@/lib
 import {
   disposePracticePhoto,
   PRACTICE_PHOTO_PRIVACY_NOTICE,
+  PRACTICE_PHOTO_UNREADABLE_MESSAGE,
   preparePracticePhoto,
   type PreparedPracticePhoto,
 } from "@/lib/practice-photo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
 import { SelectGroup, SelectLabel } from "@/components/ui/select";
 import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
+import { practiceErrorMessage } from "@/lib/practice-error";
 import { methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
@@ -67,7 +69,11 @@ const StudentMethods = () => {
   const [photo, setPhoto] = useState<PreparedPracticePhoto | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoText, setPhotoText] = useState("");
+  const [photoReview, setPhotoReview] = useState(false);
+  const [photoConfirmed, setPhotoConfirmed] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoTextRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => () => disposePracticePhoto(photo), [photo]);
 
@@ -75,6 +81,9 @@ const StudentMethods = () => {
     if (sourceKind !== "photo") {
       setPhoto(null);
       setPhotoError(null);
+      setPhotoText("");
+      setPhotoReview(false);
+      setPhotoConfirmed(false);
     }
   }, [sourceKind]);
   const [notebooks, setNotebooks] = useState<{ id: string; title: string }[]>([]);
@@ -132,6 +141,9 @@ const StudentMethods = () => {
     if (!file) return;
     setPhoto(null);
     setPhotoError(null);
+    setPhotoText("");
+    setPhotoReview(false);
+    setPhotoConfirmed(false);
     setPhotoBusy(true);
     try {
       setPhoto(await preparePracticePhoto(file));
@@ -142,10 +154,77 @@ const StudentMethods = () => {
     }
   };
 
+  const handlePhotoTranscription = async () => {
+    if (!photo) return;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    setPhotoConfirmed(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("extract-practice-photo-text", {
+        body: { imageBase64: photo.imageBase64, mimeType: photo.mimeType },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        const code = data.error;
+        throw new Error(code === "UNREADABLE_PHOTO" || code === "INSUFFICIENT_TEXT" ? code : (data.message ?? code));
+      }
+      const text = typeof data?.text === "string" ? data.text.trim() : "";
+      if (!text) {
+        setPhotoText("");
+        setPhotoReview(true);
+        setPhotoError(PRACTICE_PHOTO_UNREADABLE_MESSAGE);
+        return;
+      }
+      setPhotoText(text);
+      setPhotoReview(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      const readable = await practiceErrorMessage(error);
+      const code = message || readable;
+      if (code.includes("INSUFFICIENT_TEXT")) setPhotoError(`Text je moc krátký. Potřebuju aspoň ${MIN_SOURCE_TEXT_LENGTH} znaků.`);
+      else setPhotoError(code.includes("UNREADABLE_PHOTO") ? PRACTICE_PHOTO_UNREADABLE_MESSAGE : readable);
+      setPhotoReview(true);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handlePhotoTextChange = (value: string) => {
+    setPhotoText(value);
+    setPhotoConfirmed(false);
+    setPhotoError(null);
+  };
+
+  const handlePhotoConfirm = () => {
+    const text = photoText.trim();
+    if (text.length < MIN_SOURCE_TEXT_LENGTH) {
+      setPhotoError(`Text je moc krátký. Potřebuju aspoň ${MIN_SOURCE_TEXT_LENGTH} znaků.`);
+      setPhotoConfirmed(false);
+      return;
+    }
+    if (text.length > SOURCE_TEXT_LIMIT) {
+      setPhotoError(`Text je moc dlouhý. Zkrať ho na ${SOURCE_TEXT_LIMIT} znaků.`);
+      setPhotoConfirmed(false);
+      return;
+    }
+    setPhotoText(text);
+    setPhotoError(null);
+    setPhotoConfirmed(true);
+  };
+
+  const handlePhotoEdit = () => {
+    setPhotoReview(true);
+    setPhotoConfirmed(false);
+    requestAnimationFrame(() => photoTextRef.current?.focus());
+  };
+
   const chosenSource = ((): PracticeSource | null => {
     if (sourceKind === "text") return { kind: "text", text: customText.slice(0, SOURCE_TEXT_LIMIT), label: "Vlastní text" };
     if (sourceKind === "file") return fileSource ? { kind: "file", ...fileSource } : null;
-    if (sourceKind === "photo") return null;
+    if (sourceKind === "photo") {
+      // Do napojení nového typu v kroku 3 použijeme potvrzený text stávající cestou.
+      return photoConfirmed ? { kind: "text", text: photoText, label: "Fotografie" } : null;
+    }
     if (sourceKind === "notebook") {
       const pg = pages.find((x) => x.id === pageId);
       const nb = notebooks.find((x) => x.id === notebookId);
@@ -154,6 +233,7 @@ const StudentMethods = () => {
     return null;
   })();
   const sourceTooShort = sourceKind !== "lesson" && (!chosenSource || chosenSource.text.trim().length < MIN_SOURCE_TEXT_LENGTH);
+  const sourceTooLong = sourceKind === "photo" && photoText.trim().length > SOURCE_TEXT_LIMIT;
 
   useEffect(() => {
     (async () => {
@@ -430,6 +510,9 @@ const StudentMethods = () => {
           setPracticeFor(null);
           setPhoto(null);
           setPhotoError(null);
+          setPhotoText("");
+          setPhotoReview(false);
+          setPhotoConfirmed(false);
         }
       }}>
         <DialogContent>
@@ -517,18 +600,58 @@ const StudentMethods = () => {
                     <p className="text-xs text-muted-foreground">
                       Zmenšený JPEG {photo.width} × {photo.height} px. Původní fotka ani EXIF se nepoužijí.
                     </p>
-                    <p className="text-sm text-muted-foreground">Fotka je zatím připravená jen v tomto zařízení, bez AI přepisu.</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-11"
-                      onClick={() => {
-                        setPhoto(null);
-                        setPhotoError(null);
-                      }}
-                    >
-                      Odebrat fotku
-                    </Button>
+                    {!photoReview && (
+                      <Button type="button" className="min-h-11 w-full gap-2" disabled={photoBusy} onClick={() => void handlePhotoTranscription()}>
+                        {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        {photoBusy ? "Přepisuji text…" : "Přečíst text z fotky"}
+                      </Button>
+                    )}
+                    {photoReview && (
+                      <div className="space-y-3">
+                        <Label htmlFor="practice-photo-text" className="font-medium">Přepsáno AI – zkontroluj text</Label>
+                        <Textarea
+                          ref={photoTextRef}
+                          id="practice-photo-text"
+                          rows={8}
+                          value={photoText}
+                          onChange={(event) => handlePhotoTextChange(event.target.value)}
+                          className="mt-1 text-base"
+                          placeholder="Doplň nebo opiš text z fotky."
+                          disabled={photoBusy}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {photoText.trim().length} / {SOURCE_TEXT_LIMIT} znaků (aspoň {MIN_SOURCE_TEXT_LENGTH}). Fotka se neukládá; po potvrzení se použije jen tento text.
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={() => {
+                            setPhoto(null);
+                            setPhotoText("");
+                            setPhotoReview(false);
+                            setPhotoConfirmed(false);
+                            setPhotoError(null);
+                            photoInputRef.current?.click();
+                          }}>
+                            Vyfotit znovu
+                          </Button>
+                          <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={handlePhotoEdit}>
+                            Upravit / doplnit ručně
+                          </Button>
+                        </div>
+                        <Button
+                          type="button"
+                          className="min-h-11 w-full"
+                          disabled={photoBusy || photoText.trim().length < MIN_SOURCE_TEXT_LENGTH || sourceTooLong}
+                          onClick={handlePhotoConfirm}
+                        >
+                          Potvrdit text
+                        </Button>
+                        {photoConfirmed && (
+                          <p role="status" className="flex items-center gap-2 text-sm text-primary">
+                            <CheckCircle2 className="h-4 w-4" /> Text je potvrzený. Teď můžeš spustit procvičování.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -565,8 +688,11 @@ const StudentMethods = () => {
               </div>
             )}
 
-            {sourceKind !== "lesson" && sourceTooShort && (
+            {sourceKind !== "lesson" && sourceTooShort && (sourceKind !== "photo" || photoReview) && (
               <p className="text-xs text-muted-foreground">Potřebuju aspoň {MIN_SOURCE_TEXT_LENGTH} znaků textu.</p>
+            )}
+            {sourceTooLong && (
+              <p className="text-xs text-muted-foreground">Text je potřeba zkrátit na {SOURCE_TEXT_LIMIT} znaků.</p>
             )}
 
             {sourceKind === "lesson" && (
@@ -620,7 +746,7 @@ const StudentMethods = () => {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPracticeFor(null)}>Zrušit</Button>
-            <Button onClick={startPractice} disabled={submitting || sourceTooShort || fileBusy} className="gap-2">
+            <Button onClick={startPractice} disabled={submitting || sourceTooShort || sourceTooLong || fileBusy || photoBusy} className="gap-2">
               <Play className="w-4 h-4" /> Spustit procvičování
             </Button>
           </DialogFooter>
