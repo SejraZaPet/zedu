@@ -181,7 +181,9 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
   const addFiles = (fileList: FileList | File[]) => {
     // NOTE: copy the FileList into a real array immediately — a live `input.files`
     // reference is emptied as soon as the input's value is reset.
-    const arr = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+    const picked = Array.from(fileList);
+    const arr = picked.filter((f) => f.type.startsWith("image/") || (!f.type && /\.(png|webp|jpe?g)$/i.test(f.name)));
+    if (arr.length !== picked.length) toast({ title: "Některé soubory nejsou obrázky", description: "Vyberte PNG, WEBP nebo JPEG.", variant: "destructive" });
     if (arr.length === 0) return;
 
     // Group `<name>_1` (catalog thumbnail) with `<name>_2` (layered image).
@@ -194,7 +196,8 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
         groups.set(groupKey, { thumb: null, layered: null, label: index ? key : stripExt(f.name) });
         order.push(groupKey);
       }
-      const g = groups.get(groupKey)!;
+      const g = groups.get(groupKey);
+      if (!g) continue;
       if (index === 1) g.thumb = f;
       else if (index === 2) g.layered = f;
       else g.layered = f;
@@ -202,9 +205,11 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
 
     const pending: { row: Row; layered: File; thumb: File | null }[] = [];
     for (const groupKey of order) {
-      const g = groups.get(groupKey)!;
+      const g = groups.get(groupKey);
+      if (!g) continue;
       // Only a `_1` file present → treat it as the layered image.
-      const layered = g.layered ?? g.thumb!;
+      const layered = g.layered ?? g.thumb;
+      if (!layered) continue;
       const thumb = g.layered ? g.thumb : null;
       const label = g.label;
       const slot = guessSlot(label);

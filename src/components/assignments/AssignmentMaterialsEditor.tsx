@@ -38,6 +38,9 @@ const AssignmentMaterialsEditor = ({ materials, onChange, teacherId }: Props) =>
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const materialsRef = useRef(materials);
+  materialsRef.current = materials;
+  const batchBusy = useRef(false);
 
   const addLink = () => {
     const url = normalizeUrl(linkUrl);
@@ -54,10 +57,12 @@ const AssignmentMaterialsEditor = ({ materials, onChange, teacherId }: Props) =>
   };
 
   const handleFiles = async (list: FileList | null) => {
-    if (!list?.length) return;
+    const picked = Array.from(list ?? []);
+    if (!picked.length || batchBusy.current) return;
+    batchBusy.current = true;
     setUploading(true);
     const added: AssignmentMaterial[] = [];
-    for (const file of Array.from(list)) {
+    for (const file of picked) {
       const err = validateMaterialFile(file);
       if (err) {
         toast({ title: `Soubor ${file.name} zamítnut`, description: err, variant: "destructive" });
@@ -70,8 +75,9 @@ const AssignmentMaterialsEditor = ({ materials, onChange, teacherId }: Props) =>
       }
     }
     setUploading(false);
+    batchBusy.current = false;
     if (added.length) {
-      onChange([...materials, ...added]);
+      onChange([...materialsRef.current, ...added]);
       toast({ title: added.length === 1 ? "Soubor nahrán" : `Nahráno ${added.length} souborů` });
     }
   };

@@ -1211,6 +1211,23 @@ export const PresentationEditorDialog = ({
 
                       <MediaPickerDialog
                         imageOnly
+                        onPickMany={async (picked) => {
+                          const targetSlideId = currentSlide?.slideId;
+                          const added: Block[] = [];
+                          for (const { url, item } of picked) {
+                            const finalUrl = await persistSlideImageUrl(url, item, user?.id);
+                            const newBlock = createDefaultBlock("image");
+                            newBlock.props = { ...newBlock.props, url: finalUrl };
+                            added.push(newBlock);
+                          }
+                          const latest = pendingSlidesRef.current;
+                          const index = latest.findIndex((slide) => slide.slideId === targetSlideId);
+                          if (index < 0) throw new Error("Snímek již není dostupný.");
+                          const slide = latest[index];
+                          const next = [...latest];
+                          next[index] = markSlideEditedByTeacher({ ...slide, blocks: [...(slide.blocks || []), ...added], structureEditedByTeacher: true }, linkedToLesson);
+                          setPendingSlides(next);
+                        }}
                         onPick={(url, item) => {
                           void insertPersistentImage(url, item, (finalUrl) => {
                             const newBlock = createDefaultBlock("image");

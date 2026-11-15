@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Multi-file uploads snapshot FileList before resetting inputs, complete the batch before clearing busy state, and append once against latest content to prevent lost files and unrelated edits.
+
 - Worksheet attachment helpers preserve assignment state and unrelated settings; existing links use owner-scoped optimistic updates, so attaching never republishes or overwrites concurrent edits.
 
 - AI lesson-derived drafts use CreateFromLessonDialog and lesson-ai-source, scoped to non-copied owner textbooks; insertion stays local until explicit review and existing save, with provenance in existing JSON to avoid schema and permission changes.

@@ -88,7 +88,6 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
       toast({ title: "Soubor zamítnut", description: err, variant: "destructive" });
       return;
     }
-    setUploading(true);
     try {
       const safeName = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${assignmentId}/${studentId}/${crypto.randomUUID()}-${safeName}`;
@@ -108,17 +107,24 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
         throw insErr;
       }
       toast({ title: "Příloha nahrána" });
-      load();
     } catch (e: any) {
       toast({ title: "Chyba", description: e.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleFiles = (list: FileList | null) => {
-    if (!list) return;
-    Array.from(list).forEach(handleUpload);
+  const batchBusy = useRef(false);
+  const handleFiles = async (list: FileList | null) => {
+    const picked = Array.from(list ?? []);
+    if (!picked.length || disabled || batchBusy.current) return;
+    batchBusy.current = true;
+    setUploading(true);
+    try {
+      for (const file of picked) await handleUpload(file);
+      await load();
+    } finally {
+      batchBusy.current = false;
+      setUploading(false);
+    }
   };
 
   const handleDelete = async (att: Attachment) => {
@@ -160,7 +166,7 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
-            Vybrat soubor
+            Vybrat soubory
           </Button>
           <input
             ref={inputRef}

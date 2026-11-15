@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface Props {
   block: Block;
@@ -18,16 +19,20 @@ const ImageTextBlock = ({ block, onChange }: Props) => {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     setUploading(true);
+    try {
     const ext = file.name.split(".").pop();
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("lesson-images").upload(path, file);
-    if (!error) {
+    if (error) throw error;
+    {
       const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
       onChange({ ...block.props, imageUrl: data.publicUrl });
     }
-    setUploading(false);
+    } catch (error: any) { toast.error(error.message || "Obrázek se nepodařilo nahrát."); }
+    finally { setUploading(false); }
   };
 
   return (

@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Block } from "@/lib/textbook-config";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface GalleryImage {
   url: string;
@@ -20,6 +21,9 @@ interface Props {
 const GalleryBlock = ({ block, onChange }: Props) => {
   const images: GalleryImage[] = block.props.images || [];
   const [uploading, setUploading] = useState<number | null>(null);
+  const latest = useRef(block.props);
+  latest.current = block.props;
+  const batchBusy = useRef(false);
 
   const update = (i: number, field: string, val: string) => {
     const next = [...images];
@@ -32,17 +36,36 @@ const GalleryBlock = ({ block, onChange }: Props) => {
   const remove = (i: number) => onChange({ ...block.props, images: images.filter((_, idx) => idx !== i) });
 
   const handleUpload = async (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!picked.length || batchBusy.current) return;
+    batchBusy.current = true;
     setUploading(i);
-    const ext = file.name.split(".").pop();
-    const path = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("lesson-images").upload(path, file);
-    if (!error) {
-      const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
-      update(i, "url", data.publicUrl);
+    const uploaded: GalleryImage[] = [];
+    try {
+      for (const file of picked) {
+        try {
+          const path = `${crypto.randomUUID()}.${file.name.split(".").pop()}`;
+          const { error } = await supabase.storage.from("lesson-images").upload(path, file);
+          if (error) throw error;
+          const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+          uploaded.push({ url: data.publicUrl, caption: "" });
+        } catch (error: any) {
+          toast.error(`${file.name}: ${error.message || "Nahrání selhalo."}`);
+        }
+      }
+      if (uploaded.length) {
+        const next = [...(latest.current.images || [])] as GalleryImage[];
+        if (i >= 0 && next[i]) {
+          next[i] = { ...next[i], url: uploaded[0].url };
+          next.push(...uploaded.slice(1));
+        } else next.push(...uploaded);
+        onChange({ ...latest.current, images: next });
+      }
+    } finally {
+      batchBusy.current = false;
+      setUploading(null);
     }
-    setUploading(null);
   };
 
   return (
@@ -69,7 +92,7 @@ const GalleryBlock = ({ block, onChange }: Props) => {
                 <Input value={img.url} onChange={(e) => update(i, "url", e.target.value)} placeholder="URL…" className="text-sm h-8" />
                 <Button size="sm" variant="outline" className="relative h-8 px-2" disabled={uploading === i}>
                   <Upload className="w-3 h-3" />
-                  <input type="file" accept="image/*" onChange={(e) => handleUpload(i, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <input type="file" accept="image/*" multiple disabled={uploading !== null} onChange={(e) => void handleUpload(i, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </Button>
               </div>
               <Input value={img.caption} onChange={(e) => update(i, "caption", e.target.value)} placeholder="Popisek…" className="text-sm h-8" />
@@ -81,6 +104,10 @@ const GalleryBlock = ({ block, onChange }: Props) => {
         ))}
       </div>
       <Button size="sm" variant="ghost" onClick={add}><Plus className="w-3 h-3 mr-1" />Přidat obrázek</Button>
+      <Button type="button" variant="outline" className="relative min-h-11" disabled={uploading !== null}>
+        <Upload className="mr-1 h-4 w-4" />Nahrát více obrázků
+        <input aria-label="Nahrát více obrázků do galerie" type="file" accept="image/*" multiple disabled={uploading !== null} onChange={(e) => void handleUpload(-1, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+      </Button>
     </div>
   );
 };

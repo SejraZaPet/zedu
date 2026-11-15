@@ -88,6 +88,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const latestContent = useRef(content);
+  latestContent.current = content;
+  const imageBatchBusy = useRef(false);
 
   const strokes = content.strokes;
   const textBoxes = content.textBoxes;
@@ -525,20 +528,34 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   };
 
   /* --- obrázky --- */
-  const onPickImage = async (file: File | null) => {
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) return toast.error("Obrázek může mít max. 10 MB.");
+  const onPickImages = async (list: FileList | null) => {
+    const picked = Array.from(list ?? []);
+    if (!picked.length || readOnly || imageBatchBusy.current) return;
+    imageBatchBusy.current = true;
     setUploading(true);
+    const added: NotebookImage[] = [];
     try {
-      const path = await uploadNotebookImage(ownerId, file);
-      const img: NotebookImage = { id: uid(), path, x: 0.1, y: 0.1, w: 0.5, h: 0.3 };
-      patch({ images: [...images, img] });
-      setSelectedId(img.id);
-      setMode("select");
-      toast.success("Obrázek vložen. Kreslit můžeš přímo na něj.");
-    } catch (e: any) {
-      toast.error(e.message || "Nahrání obrázku se nepodařilo.");
+      for (const file of picked) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name}: Obrázek může mít max. 10 MB.`);
+          continue;
+        }
+        try {
+          const path = await uploadNotebookImage(ownerId, file);
+          const offset = (added.length % 6) * 0.04;
+          added.push({ id: uid(), path, x: 0.1 + offset, y: 0.1 + offset, w: 0.5, h: 0.3 });
+        } catch (e: any) {
+          toast.error(`${file.name}: ${e.message || "Nahrání obrázku se nepodařilo."}`);
+        }
+      }
+      if (added.length) {
+        onChange({ ...latestContent.current, images: [...latestContent.current.images, ...added] });
+        setSelectedId(added[added.length - 1].id);
+        setMode("select");
+        toast.success(`Vloženo obrázků: ${added.length}`);
+      }
     } finally {
+      imageBatchBusy.current = false;
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -728,8 +745,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
             ref={fileRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
-            onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+            onChange={(e) => { void onPickImages(e.target.files); e.target.value = ""; }}
           />
           <Button type="button" size="icon" variant="outline" title="Smazat obsah stránky" onClick={clearPage}>
             <Trash2 className="h-4 w-4" />

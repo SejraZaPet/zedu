@@ -1,5 +1,10 @@
 # Roadmap
 
+## Více fotografií – diagnostika a oprava
+- [x] Prověřit portfolio, galerie/prezentace, úkoly, avatary, listy a sešit; opravit dávkové zpracování.
+- [x] 246 testů / 47 souborů, typy a build OK; portfolio při 390 px i skutečné uložení/načtení dvou fotek ověřeno, vlastní test uklizen. Bez DB/RLS a nasazení.
+- Neověřeno: nativní galerie iOS/Android a skutečné uložení dávky mimo portfolio. Samostatný obrázkový blok a obrázek položky listu zůstávají jednosouborové; více obrázků patří do galerie.
+
 ## Učím se – fotografie jako zdroj (schválené kroky 0–3)
 - [x] Krok 0: izolace posledních výsledků žáka v `ai-practice-rag` a test obtížnosti.
 - [x] Krok 1: lokální příprava fotografie, mobilní výběr, soukromí a náhled bez AI.
