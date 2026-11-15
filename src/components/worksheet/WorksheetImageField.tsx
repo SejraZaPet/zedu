@@ -75,10 +75,16 @@ export default function WorksheetImageField({ label = "Obrázek", url, alt, onCh
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
+          if (e.dataTransfer.files.length > 1) {
+            fail(new Error("Tato položka má místo pro jeden obrázek. Přetáhněte prosím pouze jeden soubor."));
+            return;
+          }
           void handleFile(e.dataTransfer.files?.[0]);
         }}
         onPaste={(e) => {
-          const file = Array.from(e.clipboardData.files ?? []).find((f) => f.type.startsWith("image/"));
+          const files = Array.from(e.clipboardData.files ?? []).filter((f) => f.type.startsWith("image/"));
+          if (files.length > 1) { e.preventDefault(); fail(new Error("Tato položka má místo pro jeden obrázek. Vložte prosím pouze jeden soubor.")); return; }
+          const file = files[0];
           if (file) { e.preventDefault(); void handleFile(file); }
         }}
         className={`rounded-lg border-2 border-dashed p-3 text-center ${compact ? "flex min-h-[120px] flex-col items-center justify-center gap-2" : ""} outline-none focus-visible:ring-2 focus-visible:ring-ring ${

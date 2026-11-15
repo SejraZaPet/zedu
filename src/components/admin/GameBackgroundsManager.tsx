@@ -76,7 +76,7 @@ const GameBackgroundsManager = () => {
       const dot = file.name.lastIndexOf(".");
       const base = dot >= 0 ? file.name.slice(0, dot) : file.name;
       const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "png";
-      const path = `game-backgrounds/${Date.now()}_${slugifyName(base) || "bg"}.${ext}`;
+      const path = `game-backgrounds/${crypto.randomUUID()}_${slugifyName(base) || "bg"}.${ext}`;
       const { error } = await supabase.storage
         .from("lesson-images")
         .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
@@ -96,7 +96,9 @@ const GameBackgroundsManager = () => {
   };
 
   const addFiles = (files: FileList | File[]) => {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const picked = Array.from(files);
+    const arr = picked.filter((f) => f.type.startsWith("image/") || (!f.type && /\.(png|webp|jpe?g)$/i.test(f.name)));
+    if (arr.length !== picked.length) toast({ title: "Některé soubory nejsou obrázky", description: "Vyberte PNG, JPEG nebo WEBP.", variant: "destructive" });
     if (arr.length === 0) return;
     const newRows: Row[] = arr.map((f) => ({
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`,

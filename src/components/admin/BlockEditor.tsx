@@ -1717,6 +1717,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       .upload(path, file, { contentType: file.type || `image/${ext}`, upsert: false });
     if (error) {
       console.warn("Image upload failed:", error);
+      toast.error(`${file.name}: ${error.message || "Nahrání obrázku selhalo."}`);
       return null;
     }
     const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
@@ -1735,7 +1736,9 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    const picked = Array.from(e.dataTransfer.files);
+    const files = picked.filter((f) => f.type.startsWith("image/") || (!f.type && /\.(jpe?g|png|gif|webp)$/i.test(f.name)));
+    if (files.length !== picked.length) toast.error("Některé soubory nejsou podporované obrázky.");
     if (files.length === 0) return;
     setUploading(true);
     try {
@@ -1756,8 +1759,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const items = Array.from(e.clipboardData?.items || []);
-      const imageItem = items.find((i) => i.type.startsWith("image/"));
-      if (!imageItem) return;
+      const imageItems = items.filter((i) => i.type.startsWith("image/"));
+      if (!imageItems.length) return;
       // Don't hijack paste when user is typing in an input/textarea/contentEditable
       const target = e.target as HTMLElement | null;
       if (target) {
@@ -1765,16 +1768,18 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
         if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
       }
       e.preventDefault();
-      const file = imageItem.getAsFile();
-      if (!file) return;
       setUploading(true);
       try {
+        for (const imageItem of imageItems) {
+        const file = imageItem.getAsFile();
+        if (!file) continue;
         const url = await uploadImageFile(file);
         if (url) {
           appendImageBlock(url);
           toast.success("Obrázek vložen");
         } else {
           toast.error("Nahrání obrázku se nezdařilo.");
+        }
         }
       } finally {
         setUploading(false);

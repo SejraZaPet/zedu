@@ -21,6 +21,7 @@ export function MediaUploadZone({ teacherId, defaultTags = [], onUploaded }: Pro
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const batchBusy = useRef(false);
   const [dragOver, setDragOver] = useState(false);
   const [tagInput, setTagInput] = useState(defaultTags.join(", "));
 
@@ -31,11 +32,13 @@ export function MediaUploadZone({ teacherId, defaultTags = [], onUploaded }: Pro
 
   const handleFiles = useCallback(
     async (files: FileList | null) => {
-      if (!files || files.length === 0) return;
+      const picked = Array.from(files ?? []);
+      if (!picked.length || batchBusy.current) return;
+      batchBusy.current = true;
       setBusy(true);
       let ok = 0;
       let failed = 0;
-      for (const file of Array.from(files)) {
+      for (const file of picked) {
         const err = validateFile(file);
         if (err) {
           toast({ title: file.name, description: err, variant: "destructive" });
@@ -56,6 +59,7 @@ export function MediaUploadZone({ teacherId, defaultTags = [], onUploaded }: Pro
         }
       }
       setBusy(false);
+      batchBusy.current = false;
       if (ok > 0)
         toast({ title: `Nahráno ${ok} ${ok === 1 ? "soubor" : "souborů"}.` });
       if (inputRef.current) inputRef.current.value = "";
@@ -104,7 +108,7 @@ export function MediaUploadZone({ teacherId, defaultTags = [], onUploaded }: Pro
           className="gap-2"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          Nahrát soubor
+          Nahrát soubory
         </Button>
       </div>
       <input

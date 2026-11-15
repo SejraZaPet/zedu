@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,6 +100,11 @@ export default function FromMaterialView({ role }: Props) {
   const [extractedText, setExtractedText] = useState("");
   const [sourceFileName, setSourceFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const imageBusy = useRef(false);
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
+  useEffect(() => () => { imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview)); }, []);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   // Step 2: choice
   const [outputType, setOutputType] = useState<OutputType>(
@@ -116,16 +121,31 @@ export default function FromMaterialView({ role }: Props) {
   const hasInput = images.length > 0 || extractedText.trim().length > 20;
 
   async function handleImagePick(files: FileList | null) {
-    if (!files) return;
-    const items = await Promise.all(
-      Array.from(files).slice(0, 6).map(async (file) => {
-        const b64 = await fileToBase64Raw(file);
-        const preview = URL.createObjectURL(file);
-        return { file, preview, b64: `data:${file.type || "image/jpeg"};base64,${b64}` };
-      })
-    );
-    setImages((prev) => [...prev, ...items].slice(0, 6));
-    setExtractedText("");
+    const picked = Array.from(files ?? []);
+    if (!picked.length || imageBusy.current) return;
+    const remaining = Math.max(0, 6 - imagesRef.current.length);
+    if (picked.length > remaining) {
+      toast({ title: "Nejvýše 6 fotek", description: `Zbývá místo pro ${remaining} fotek. Vyber menší dávku nebo odeber některou fotku.`, variant: "destructive" });
+      return;
+    }
+    imageBusy.current = true;
+    setUploading(true);
+    const items: typeof images = [];
+    try {
+      for (const file of picked) {
+        try {
+          const b64 = await fileToBase64Raw(file);
+          const preview = URL.createObjectURL(file);
+          items.push({ file, preview, b64: `data:${file.type || "image/jpeg"};base64,${b64}` });
+        } catch {
+          toast({ title: `Fotku ${file.name} se nepodařilo načíst`, description: "Vyber ji znovu nebo zkus JPEG.", variant: "destructive" });
+        }
+      }
+      if (items.length) {
+        setImages((prev) => [...prev, ...items]);
+        setExtractedText("");
+      }
+    } finally { imageBusy.current = false; setUploading(false); }
   }
 
   async function handleDocumentPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -158,6 +178,7 @@ export default function FromMaterialView({ role }: Props) {
       }
       setExtractedText(text.slice(0, 20000));
       setSourceFileName(file.name);
+      imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
       setImages([]);
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
       toast({ title: "Text načten", description: `Extrahováno ${text.length} znaků.` });
@@ -348,15 +369,15 @@ export default function FromMaterialView({ role }: Props) {
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer hover:bg-muted/40 transition-colors">
               <Camera className="w-6 h-6 text-muted-foreground" />
-              <span className="text-sm font-medium">Vyfotit / nahrát obrázek</span>
+              <span className="text-sm font-medium">Nahrát fotky z galerie</span>
               <span className="text-xs text-muted-foreground">Až 6 fotek</span>
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 className="hidden"
-                onChange={(e) => handleImagePick(e.target.files)}
+                disabled={uploading}
+                onChange={(e) => { void handleImagePick(e.target.files); e.target.value = ""; }}
               />
             </label>
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer hover:bg-muted/40 transition-colors">
@@ -377,6 +398,9 @@ export default function FromMaterialView({ role }: Props) {
             </label>
           </div>
 
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" disabled={uploading} className="hidden" onChange={(e) => { void handleImagePick(e.target.files); e.target.value = ""; }} />
+          <Button type="button" variant="outline" className="min-h-11" disabled={uploading} onClick={() => cameraRef.current?.click()}><Camera className="mr-2 h-4 w-4" />Vyfotit stránku</Button>
+
           {images.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {images.map((img, i) => (
@@ -384,7 +408,7 @@ export default function FromMaterialView({ role }: Props) {
                   <img src={img.preview} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                    onClick={() => { URL.revokeObjectURL(img.preview); setImages((prev) => prev.filter((_, j) => j !== i)); }}
                     className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"
                     aria-label="Odebrat"
                   >

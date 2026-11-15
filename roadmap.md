@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Více fotografií – diagnostika a oprava
+- [x] Rozšířená kontrola: Z materiálu, herní pozadí, knihovna a přetažení/schránka lekce; opraveny nalezené ztráty a chyby. 247 testů / 49 souborů, typy a build OK; dvě fotky Z materiálu při 390 px bez AI a bez posunu ověřeny.
 - [x] Prověřit portfolio, galerie/prezentace, úkoly, avatary, listy a sešit; opravit dávkové zpracování.
 - [x] 246 testů / 47 souborů, typy a build OK; portfolio při 390 px i skutečné uložení/načtení dvou fotek ověřeno, vlastní test uklizen. Bez DB/RLS a nasazení.
 - Neověřeno: nativní galerie iOS/Android a skutečné uložení dávky mimo portfolio. Samostatný obrázkový blok a obrázek položky listu zůstávají jednosouborové; více obrázků patří do galerie.
