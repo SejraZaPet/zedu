@@ -2532,6 +2532,7 @@ export type Database = {
           cleanup_batch: number
           id: boolean
           inactive_days: number
+          reminder_max_per_run: number
           upload_max_bytes: number
           upload_max_files: number
         }
@@ -2541,6 +2542,7 @@ export type Database = {
           cleanup_batch?: number
           id?: boolean
           inactive_days?: number
+          reminder_max_per_run?: number
           upload_max_bytes?: number
           upload_max_files?: number
         }
@@ -2550,10 +2552,64 @@ export type Database = {
           cleanup_batch?: number
           id?: boolean
           inactive_days?: number
+          reminder_max_per_run?: number
           upload_max_bytes?: number
           upload_max_files?: number
         }
         Relationships: []
+      }
+      demo_contacts: {
+        Row: {
+          consent_at: string
+          consent_text_hash: string
+          consent_version: string
+          created_at: string
+          email: string
+          pair_id: string
+          reminder_1d_sent_at: string | null
+          reminder_3d_sent_at: string | null
+          reminder_deadline_at: string | null
+          transfer_token_hash: string | null
+          unsubscribe_token_hashes: string[]
+          updated_at: string
+        }
+        Insert: {
+          consent_at?: string
+          consent_text_hash: string
+          consent_version: string
+          created_at?: string
+          email: string
+          pair_id: string
+          reminder_1d_sent_at?: string | null
+          reminder_3d_sent_at?: string | null
+          reminder_deadline_at?: string | null
+          transfer_token_hash?: string | null
+          unsubscribe_token_hashes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          consent_at?: string
+          consent_text_hash?: string
+          consent_version?: string
+          created_at?: string
+          email?: string
+          pair_id?: string
+          reminder_1d_sent_at?: string | null
+          reminder_3d_sent_at?: string | null
+          reminder_deadline_at?: string | null
+          transfer_token_hash?: string | null
+          unsubscribe_token_hashes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_contacts_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: true
+            referencedRelation: "demo_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demo_game_sources: {
         Row: {
@@ -2610,6 +2666,7 @@ export type Database = {
         Row: {
           created_at: string
           event_tag: string | null
+          extended_at: string | null
           group_id: string | null
           id: string
           ip_hash: string
@@ -2621,6 +2678,7 @@ export type Database = {
         Insert: {
           created_at?: string
           event_tag?: string | null
+          extended_at?: string | null
           group_id?: string | null
           id?: string
           ip_hash: string
@@ -2632,6 +2690,7 @@ export type Database = {
         Update: {
           created_at?: string
           event_tag?: string | null
+          extended_at?: string | null
           group_id?: string | null
           id?: string
           ip_hash?: string
@@ -9073,6 +9132,15 @@ export type Database = {
       demo_can_see_portfolio_item: { Args: { _iid: string }; Returns: boolean }
       demo_can_see_session: { Args: { _sid: string }; Returns: boolean }
       demo_can_see_user: { Args: { _target: string }; Returns: boolean }
+      demo_claim_reminders: {
+        Args: { _limit: number }
+        Returns: {
+          deletes_at: string
+          email: string
+          kind: string
+          pair_id: string
+        }[]
+      }
       demo_cleanup_candidates: {
         Args: never
         Returns: {
@@ -9082,7 +9150,10 @@ export type Database = {
           teacher_user_id: string
         }[]
       }
+      demo_extend_once: { Args: never; Returns: string }
       demo_fill_game_templates: { Args: { _pair_id: string }; Returns: number }
+      demo_my_pair_id: { Args: never; Returns: string }
+      demo_pair_deletes_at: { Args: { _pair_id: string }; Returns: string }
       demo_pair_storage_objects: {
         Args: { _pair_id: string }
         Returns: {
@@ -9091,6 +9162,10 @@ export type Database = {
         }[]
       }
       demo_purge_pair: { Args: { _pair_id: string }; Returns: Json }
+      demo_release_reminder: {
+        Args: { _had_3d: boolean; _kind: string; _pair_id: string }
+        Returns: undefined
+      }
       demo_reset_seed: { Args: never; Returns: number }
       demo_seed_pair: { Args: { _pair_id: string }; Returns: string }
       demo_storage_upload_ok: {
@@ -9163,6 +9238,22 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_my_demo_contact_status: {
+        Args: never
+        Returns: {
+          consent_version: string
+          email_masked: string
+          has_contact: boolean
+        }[]
+      }
+      get_my_demo_expiry: {
+        Args: never
+        Returns: {
+          days_left: number
+          deletes_at: string
+          extended: boolean
+        }[]
       }
       get_my_demo_pair: {
         Args: never
