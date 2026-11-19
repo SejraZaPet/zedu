@@ -253,7 +253,7 @@ Tato Příloha se uzavírá mezi Školou jako správcem a Provozovatelem jako zp
 | Učitelé a zaměstnanci školy | jméno a příjmení, e-mail, role, škola, vytvořený obsah |
 | Rodiče | jméno a příjmení, e-mail, vazba na žáka |
 
-Zvláštní kategorie osobních údajů (např. zdravotní údaje, podpůrná opatření) se ve Službě nezpracovávají a Uživatelé je nesmějí vkládat.
+Zvláštní kategorie osobních údajů (např. zdravotní údaje, podpůrná opatření) se ve Službě nezpracovávají a Uživatelé je nesmějí vkládat. Nastavení přístupnosti (například písmo pro snazší čtení) je dobrovolná volba uživatele, nevyžaduje uvedení důvodu a Provozovatel z ní nevyvozuje žádné údaje o zdravotním stavu.
 
 **Z4. Povinnosti zpracovatele.** Zpracovávat údaje jen podle pokynů Školy. Zajistit mlčenlivost osob, které mají k údajům přístup. Přijmout opatření podle čl. 32 GDPR. Pomoci Škole splnit povinnosti vůči subjektům údajů (přístup, oprava, výmaz, přenositelnost). Informovat Školu o incidentu do 48 hodin. Po skončení údaje vymazat nebo vrátit podle čl. 6.5 Podmínek. Poskytnout Škole informace potřebné k prokázání souladu a umožnit audit v rozumném rozsahu po předchozí dohodě. Provozovatel Školu bez zbytečného odkladu upozorní, pokud má za to, že pokyn Školy porušuje nařízení GDPR nebo jiné předpisy o ochraně osobních údajů. Pomůže Škole s posouzením vlivu na ochranu osobních údajů, s oznamováním porušení zabezpečení Úřadu a s konzultacemi s Úřadem, a to v rozsahu, v jakém to Provozovatel může s ohledem na povahu zpracování a dostupné informace.
 
