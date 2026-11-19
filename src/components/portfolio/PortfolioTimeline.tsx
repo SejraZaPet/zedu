@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import {
   PortfolioItem, PortfolioComment, PortfolioFile, TYPE_LABEL,
-  getAttachmentSignedUrl, getStudentAttachmentSignedUrl,
+  getAttachmentSignedUrl, getStudentAttachmentSignedUrl, portfolioAttachmentRefs,
 } from "@/lib/portfolio";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -241,8 +241,11 @@ function PortfolioCard({
       const cj = item.content_json || {};
       const { data, error } = await supabase.functions.invoke("suggest-grading-feedback", {
         body: {
-          question: item.title || "",
+          itemId: item.synthetic ? null : item.id,
+          question: [item.title, cj.instructions || cj.assignment_description || ""].filter(Boolean).join("\n\n"),
+          criteria: typeof cj.criteria === "string" ? cj.criteria : "",
           studentAnswer: item.description || cj.answers || cj.student_answer || "",
+          attachments: portfolioAttachmentRefs(item),
           score: cj.score ?? null,
           maxScore: cj.max_score ?? null,
         },

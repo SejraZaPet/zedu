@@ -272,3 +272,16 @@ export function portfolioWorksheetHref(item: PortfolioItem): string | null {
   const href = item.content_json?.href;
   return typeof href === "string" && href.startsWith("/student/pracovni-list/") ? href : null;
 }
+
+/** Storage references of an item's attachments for AI feedback (paths only, never signed URLs). */
+export function portfolioAttachmentRefs(
+  item: Pick<PortfolioItem, "files" | "attachment_url">,
+): { path: string; name: string; type: string }[] {
+  const refs = (item.files ?? [])
+    .filter((f) => !!f.file_url)
+    .map((f) => ({ path: f.file_url, name: f.file_name || f.file_url.split("/").pop() || "příloha", type: f.file_type || "" }));
+  if (item.attachment_url && !refs.some((r) => r.path === item.attachment_url)) {
+    refs.push({ path: item.attachment_url, name: item.attachment_url.split("/").pop() || "příloha", type: "" });
+  }
+  return refs.slice(0, 5);
+}
