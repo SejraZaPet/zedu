@@ -157,7 +157,7 @@ Platné od **1. 9. 2026** · verze 1.0.
 
 ## 12. Ochrana osobních údajů
 
-12.1 **Role stran.** U osobních údajů Uživatelů Školy (žáků, učitelů, rodičů a zaměstnanců) je správcem Škola a Provozovatel je jejím zpracovatelem podle čl. 28 nařízení (EU) 2016/679 (GDPR). Podmínky zpracování upravuje Příloha 2, která se uzavírá společně s Licenční smlouvou.
+12.1 **Role stran.** U osobních údajů Uživatelů Školy (žáků, učitelů, rodičů a zaměstnanců) je správcem Škola a Provozovatel je jejím zpracovatelem podle čl. 28 nařízení (EU) 2016/679 (GDPR). Podmínky zpracování upravuje Příloha 2, která se uzavírá spolu s Licenční smlouvou.
 
 12.2 **Provozovatel jako správce.** Provozovatel je správcem u fakturačních a kontaktních údajů Zákazníků, u údajů Lektorů, u poptávek zaslaných přes formulář a u e-mailů zadaných v Demu. Dále u provozních záznamů nutných k zabezpečení Služby. Podrobnosti jsou v Zásadách ochrany osobních údajů na bezli.cz/gdpr.
 
