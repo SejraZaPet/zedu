@@ -4,8 +4,8 @@ import { normalizeAiProps, assertAiFillContent } from "@/lib/activity-ai-normali
 import type { Block } from "@/lib/textbook-config";
 
 export type LessonAiType = "mcq" | "true_false" | "matching" | "fill_blanks" | "flashcards";
-export interface LessonAiSource { lessonId: string; lessonSource: "teacher_textbook_lessons"; sectionIds: string[]; textHash: string; createdAt: string }
-export interface OwnedAiLesson { id: string; title: string; blocks: unknown; textbook_id: string }
+export interface LessonAiSource { lessonId: string; lessonSource: "teacher_textbook_lessons" | "textbook_lessons"; sectionIds: string[]; textHash: string; createdAt: string }
+export interface OwnedAiLesson { id: string; title: string; blocks: unknown; textbook_id: string; source?: "teacher_textbook_lessons" | "textbook_lessons" }
 export interface AiSourceBook { id: string; teacher_id: string; copied_from_textbook_id: string | null; is_system: boolean; is_demo_seed: boolean }
 export function ownSourceBook(book: AiSourceBook, userId: string) {
   return book.teacher_id === userId && !book.copied_from_textbook_id && !book.is_system && !book.is_demo_seed;
@@ -43,7 +43,7 @@ export function lessonAiRequest(type: LessonAiType, text: string, title: string,
 export async function makeLessonSource(lesson: OwnedAiLesson, sectionIds: string[], text: string): Promise<LessonAiSource> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   const textHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
-  return { lessonId: lesson.id, lessonSource: "teacher_textbook_lessons", sectionIds: [...sectionIds], textHash, createdAt: new Date().toISOString() };
+  return { lessonId: lesson.id, lessonSource: lesson.source ?? "teacher_textbook_lessons", sectionIds: [...sectionIds], textHash, createdAt: new Date().toISOString() };
 }
 export function lessonAiDraft(type: LessonAiType, data: any, title: string, source: LessonAiSource): Block {
   let props: Record<string, any>;

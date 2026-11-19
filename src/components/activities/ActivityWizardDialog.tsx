@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import CreateFromLessonDialog from "./CreateFromLessonDialog";
+import { loadTeacherSourceLessons, sourceLessonBooks, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -78,38 +79,28 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     setStep("source"); setMode(info?.manualOnly ? "empty" : "lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
   }, [open, catalogId]);
 
-  // Jen učebnice, které učitel vlastní (teacher_textbooks.teacher_id = já, RLS owns_textbook).
+  // Stejný zdroj lekcí jako „Vytvořit z lekce“ (teacher-source-lessons): vlastní učebnice i kopie,
+  // katalogové lekce témat předmětu; ukázkové lekce dema jsou jen pro čtení, proto nejsou cílem vložení.
+  const [targetLessons, setTargetLessons] = useState<TeacherSourceLesson[]>([]);
+  const [lessonsError, setLessonsError] = useState(false);
   useEffect(() => {
     if (!open || !user) return;
-    (async () => {
-      const { data } = await supabase.from("teacher_textbooks").select("id, title, subject").eq("teacher_id", user.id).is("copied_from_textbook_id", null).eq("is_system", false).eq("is_demo_seed", false).is("deleted_at", null).order("title");
-      setTextbooks((data as TbRow[]) ?? []);
-    })();
-  }, [open, user]);
-
-  // Lekce učebnice se načítají stejně jako na stránce učebnice (TeacherTextbooks):
-  // katalogové lekce témat předmětu + lekce umístěné přes lesson_placements + přímé lekce.
-  useEffect(() => {
-    if (!textbookId || !textbooks.some(t => t.id === textbookId)) { setLessons([]); return; }
     let cancelled = false;
-    setLessonsLoading(true);
-    (async () => {
-      const tb = textbooks.find((t) => t.id === textbookId);
-      const out: LessonRow[] = [];
-      const seen = new Set<string>();
-      const push = (l: any, source: LessonRow["source"]) => {
-        if (!l || seen.has(l.id)) return;
-        seen.add(l.id);
-        out.push({ ...l, title: l.title || "Bez názvu", source });
-      };
-      const cols = "id, title, blocks, sort_order, status, hero_image_url, scheduled_publish_at";
-      const { data: direct } = await supabase.from("teacher_textbook_lessons")
-        .select(cols).eq("textbook_id", textbookId).order("sort_order");
-      (direct ?? []).forEach((l) => push(l, "teacher_textbook_lessons"));
-      if (!cancelled) { setLessons(out); setLessonsLoading(false); }
-    })().catch(() => { if (!cancelled) { setLessons([]); setLessonsLoading(false); } });
+    setLessonsLoading(true); setLessonsError(false);
+    loadTeacherSourceLessons(user.id).then((rows) => {
+      if (cancelled) return;
+      const editable = rows.filter((l) => !l.readOnly);
+      setTargetLessons(editable);
+      setTextbooks(sourceLessonBooks(editable).map((b) => ({ id: b.id, title: b.title })) as TbRow[]);
+    }).catch(() => { if (!cancelled) { setTargetLessons([]); setTextbooks([]); setLessonsError(true); } })
+      .finally(() => { if (!cancelled) setLessonsLoading(false); });
     return () => { cancelled = true; };
-  }, [textbookId, textbooks]);
+  }, [open, user]);
+  useEffect(() => {
+    setLessons(targetLessons.filter((l) => l.textbookId === textbookId).map((l) => ({
+      id: l.id, title: l.title, blocks: [], sort_order: l.sortOrder, status: "", hero_image_url: null, scheduled_publish_at: null, source: l.source,
+    })));
+  }, [textbookId, targetLessons]);
 
   const pickedLessons = useMemo(() => lessons.filter((l) => picked.includes(l.id)), [lessons, picked]);
 
@@ -336,6 +327,8 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                 <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
                   onChange={(ids) => { setTextbookId(ids[0] ?? ""); setTargetLessonId(""); }}
                   label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
+                {lessonsError && <p role="alert" className="text-sm text-destructive">Lekce se nepodařilo načíst. Zavřete průvodce a zkuste to znovu.</p>}
+                {!lessonsLoading && !lessonsError && !textbooks.length && <p className="text-sm text-muted-foreground">Ve vašich učebnicích zatím není lekce, do které lze vložit. Aktivitu můžete uložit do Moje aktivity.</p>}
                 {textbookId && (lessonsLoading
                   ? <p className="text-sm text-muted-foreground">Načítám lekce…</p>
                   : <SearchablePickList items={allLessonsForTarget} mode="single" selected={targetLessonId ? [targetLessonId] : []}
@@ -362,7 +355,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
           )}
         </DialogContent>
       </Dialog>
-      <CreateFromLessonDialog open={fromLessonOpen} onOpenChange={setFromLessonOpen} onInsert={draft => { setBlock(draft); setStep("preview"); }} />
+      <CreateFromLessonDialog open={fromLessonOpen} onOpenChange={setFromLessonOpen} onUseText={() => setMode("text")} onInsert={draft => { setBlock(draft); setStep("preview"); }} />
       <TeacherTextbookLessonEditorSheet
         lesson={editorLesson}
         open={!!editorLesson}

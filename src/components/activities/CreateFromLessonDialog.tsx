@@ -10,19 +10,24 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import ActivityBlock from "@/components/admin/block-editors/ActivityBlock";
 import { Loader2, Sparkles } from "lucide-react";
 import { practiceErrorMessage } from "@/lib/practice-error";
-import { ownSourceBook, lessonAiParts, sourceText, aiTypeLimits, lessonAiRequest, makeLessonSource, lessonAiDraft, type OwnedAiLesson, type LessonAiType } from "@/lib/lesson-ai-source";
+import { Link } from "react-router-dom";
+import { loadTeacherSourceLessons, isAllowedSourceLesson, sourceLessonBooks, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
+import { lessonAiParts, sourceText, aiTypeLimits, lessonAiRequest, makeLessonSource, lessonAiDraft, type LessonAiType } from "@/lib/lesson-ai-source";
 import type { Block } from "@/lib/textbook-config";
 
 const TYPES: { value: LessonAiType; label: string }[] = [
   { value: "mcq", label: "Kvíz ABCD" }, { value: "true_false", label: "Pravda / nepravda" },
   { value: "matching", label: "Dvojice" }, { value: "fill_blanks", label: "Doplňování" }, { value: "flashcards", label: "Kartičky" },
 ];
-export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, allowedTypes, initialType = "mcq" }: {
+export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, allowedTypes, initialType = "mcq", onUseText }: {
   open: boolean; onOpenChange: (open: boolean) => void; onInsert: (block: Block) => void;
   allowedTypes?: LessonAiType[]; initialType?: LessonAiType;
+  /** Alternativa bez lekce: přepne volajícího na vložení textu nebo dokumentu. */
+  onUseText?: () => void;
 }) {
   const { user } = useAuth();
-  const [lessons, setLessons] = useState<OwnedAiLesson[]>([]);
+  const [lessons, setLessons] = useState<TeacherSourceLesson[]>([]);
+  const [bookId, setBookId] = useState("");
   const [lessonId, setLessonId] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [type, setType] = useState<LessonAiType>(initialType);
@@ -37,22 +42,17 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
     generation.current++;
     if (!open || !user) return;
     let cancelled = false;
-    setLessons([]); setLessonId(""); setSelected([]); setDraft(null); setReviewed(false); setError(""); setType(initialType); setBusy(false); setLoading(true);
-    (async () => {
-      const books = await supabase.from("teacher_textbooks").select("id, teacher_id, copied_from_textbook_id, is_system, is_demo_seed")
-        .eq("teacher_id", user.id).is("deleted_at", null).is("copied_from_textbook_id", null).eq("is_system", false).eq("is_demo_seed", false);
-      if (books.error) throw books.error;
-      const ids = (books.data ?? []).filter(b => ownSourceBook(b, user.id)).map(b => b.id);
-      if (!ids.length) return;
-      const result = await supabase.from("teacher_textbook_lessons").select("id,title,blocks,textbook_id").in("textbook_id", ids).order("title");
-      if (result.error) throw result.error;
-      if (!cancelled) setLessons(result.data ?? []);
-    })().catch(() => { if (!cancelled) setError("Vlastní lekce se nepodařilo načíst. Zavřete okno a zkuste to znovu."); })
+    setLessons([]); setBookId(""); setLessonId(""); setSelected([]); setDraft(null); setReviewed(false); setError(""); setType(initialType); setBusy(false); setLoading(true);
+    loadTeacherSourceLessons(user.id, { withBlocks: true }).then(rows => { if (!cancelled) setLessons(rows); })
+      .catch(() => { if (!cancelled) setError("Lekce se nepodařilo načíst. Zavřete okno a zkuste to znovu."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; generation.current++; };
   }, [open, user?.id, initialType]);
   const lesson = lessons.find(l => l.id === lessonId);
-  const parts = lesson ? lessonAiParts(lesson) : [];
+  const books = sourceLessonBooks(lessons);
+  const bookLessons = bookId ? lessons.filter(l => l.textbookId === bookId) : lessons;
+  const aiLesson = lesson ? { id: lesson.id, title: lesson.title, blocks: lesson.blocks, textbook_id: lesson.textbookId, source: lesson.source } : null;
+  const parts = aiLesson ? lessonAiParts(aiLesson) : [];
   const limits = aiTypeLimits(type);
   const text = sourceText(parts, selected, limits.text);
   const generate = async () => {
@@ -60,11 +60,10 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
     const run = ++generation.current;
     setBusy(true); setError(""); setReviewed(false);
     try {
-      // Re-read owner scope before sending any lesson text. No global/shared sources.
-      const owner = await supabase.from("teacher_textbooks").select("id,teacher_id,copied_from_textbook_id,is_system,is_demo_seed,deleted_at").eq("id", lesson.textbook_id).eq("teacher_id", user.id).maybeSingle();
-      if (owner.error || !owner.data || owner.data.deleted_at || !ownSourceBook(owner.data, user.id)) throw new Error("Tato lekce již není dostupná jako vlastní zdroj.");
+      // Před odesláním textu znovu ověřit, že lekce je stále povoleným zdrojem (vlastní, kopie, učebnice, demo).
+      if (!aiLesson || !(await isAllowedSourceLesson(user.id, lesson))) throw new Error("Tato lekce již není dostupná jako zdroj.");
       const request = lessonAiRequest(type, text, lesson.title, count);
-      const source = await makeLessonSource(lesson, selected, text);
+      const source = await makeLessonSource(aiLesson, selected, text);
       const result = await supabase.functions.invoke(request.name, { body: request.body });
       if (result.error) throw new Error(await practiceErrorMessage(result.error));
       if (result.data?.error) throw new Error(result.data.error);
@@ -75,11 +74,16 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-3xl max-h-[92dvh] overflow-y-auto overflow-x-hidden [&_button]:min-h-11 [&_input]:min-h-11 [&_[role=checkbox]]:min-h-11 [&_[role=checkbox]]:min-w-11">
-      <DialogHeader><DialogTitle>Vytvořit z lekce</DialogTitle><DialogDescription>{draft ? "Návrh ke kontrole" : "Vlastní lekce"}</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>Vytvořit z lekce</DialogTitle><DialogDescription>{draft ? "Návrh ke kontrole" : "Lekce z vašich učebnic"}</DialogDescription></DialogHeader>
       {error && <p role="alert" className="text-sm text-destructive break-words">{error}</p>}
       {!draft ? <div className="space-y-4 min-w-0">
-        {loading ? <p role="status">Načítám vlastní lekce…</p> : !lessons.length && <p>Nemáte vlastní lekce pro vytvoření návrhu.</p>}
-        <SearchableSelect label="Vybrat vlastní lekci" value={lessonId} disabled={loading || busy} options={lessons.map(l => ({ value: l.id, label: l.title }))} onValueChange={id => { setLessonId(id); setSelected([]); }} />
+        {loading ? <p role="status">Načítám lekce…</p> : !lessons.length && !error && <div className="space-y-2 rounded-md border border-border p-3">
+          <p>Ve vašich učebnicích zatím není žádná lekce. Nejdřív vytvořte lekci v Učebnici.</p>
+          <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/ucitel/ucebnice">Otevřít Učebnice</Link></Button>
+            {onUseText && <Button variant="outline" onClick={() => { onOpenChange(false); onUseText(); }}>Vložit text nebo dokument</Button>}</div>
+        </div>}
+        {books.length > 1 && <SearchableSelect label="Učebnice" value={bookId} disabled={loading || busy} options={[{ value: "", label: "Všechny učebnice" }, ...books.map(b => ({ value: b.id, label: b.title, subtitle: `${b.count} lekcí` }))]} onValueChange={id => { setBookId(id); setLessonId(""); setSelected([]); }} />}
+        <SearchableSelect label="Vybrat lekci" value={lessonId} disabled={loading || busy || !lessons.length} options={bookLessons.map(l => ({ value: l.id, label: l.title, subtitle: l.readOnly ? `${l.textbookTitle} · ukázka` : l.textbookTitle }))} onValueChange={id => { setLessonId(id); setSelected([]); }} />
         {parts.length > 0 && <fieldset disabled={busy} className="space-y-2"><legend className="text-sm font-medium">Části lekce</legend>
           {parts.map(p => <Label key={p.id} className="flex min-h-11 gap-3 items-center cursor-pointer"><Checkbox checked={selected.includes(p.id)} onCheckedChange={yes => setSelected(ids => yes ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="min-w-0 break-words">{p.title}</span></Label>)}
           <details className="text-sm"><summary className="cursor-pointer min-h-11">Zdrojový text ({text.length} / {limits.text} znaků)</summary><p className="whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{text}</p></details>

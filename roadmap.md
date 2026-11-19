@@ -80,3 +80,8 @@
 ## Pozdější etapy (NESCHVÁLENO – nedělat)
 - Etapa 3: stupnice/známky, převodní tabulka, zobrazení žákovi po „zkontrolováno“
 - Etapa 4: vrácení k přepracování, známka rodiči (DB, samostatné schválení)
+
+## Výběr lekcí jako zdroje (19. 11.)
+- [x] Diagnostika na datech Tyny
+- [x] Sdílené načítání lekcí a napojení výběrů lekcí pro AI a hry
+- [x] Prázdný stav, seskupení, bez tichého ořezu, testy, 390 px

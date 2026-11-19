@@ -1,6 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
-
+import { loadTeacherSourceLessons } from "@/lib/teacher-source-lessons";
 export interface TeacherLessonOption {
   id: string;
   title: string;
@@ -18,79 +16,21 @@ export interface TeacherLessonOption {
 }
 
 /**
- * Načte lekce dostupné učiteli: jeho vlastní lekce z jeho učebnic
- * a k tomu katalogové lekce z témat pro předměty, které učí.
- * Duplicity podle id jsou odstraněné, vlastní lekce mají přednost.
+ * Lekce dostupné učiteli jako zdroj – sdílená logika teacher-source-lessons
+ * (vlastní učebnice i kopie, katalog témat předmětu, demo ukázky jen pro čtení),
+ * bez tichého omezení na 1000 řádků.
  */
 export async function loadTeacherLessonOptions(uid: string): Promise<TeacherLessonOption[]> {
-  const { data: books, error: booksErr } = await supabase
-    .from("teacher_textbooks")
-    .select("id, title, subject")
-    .or(await ownTextbooksOr(uid))
-    .is("deleted_at", null);
-  if (booksErr) throw booksErr;
-
-  const bookRows = ((books as any[]) || []);
-  const bookIds = bookRows.map((b) => b.id);
-  const titleByBook = new Map(bookRows.map((b) => [b.id, b.title as string]));
-  const subjectByBook = new Map(bookRows.map((b) => [b.id, (b.subject as string) || null]));
-
-  let own: TeacherLessonOption[] = [];
-  if (bookIds.length) {
-    const { data, error } = await supabase
-      .from("teacher_textbook_lessons")
-      .select("id, title, blocks, textbook_id")
-      .in("textbook_id", bookIds)
-      .order("sort_order", { ascending: true });
-    if (error) throw error;
-    own = ((data as any[]) || []).map((l) => ({
-      id: l.id,
-      title: l.title || "Bez názvu",
-      blocks: Array.isArray(l.blocks) ? l.blocks : [],
-      source: titleByBook.get(l.textbook_id) || undefined,
-      subject: subjectByBook.get(l.textbook_id) ?? null,
-      textbookTitle: titleByBook.get(l.textbook_id) ?? null,
-      topicTitle: null,
-      origin: "own" as const,
-      textbookId: l.textbook_id ?? null,
-    }));
-  }
-
-  // Katalogová struktura (textbook_topics / textbook_lessons) – tam vzniká většina obsahu.
-  const subjects = Array.from(
-    new Set(bookRows.map((b) => b.subject).filter(Boolean)),
-  ) as string[];
-
-  let catalog: TeacherLessonOption[] = [];
-  if (subjects.length) {
-    const { data: topics } = await supabase
-      .from("textbook_topics" as any)
-      .select("id, title, subject")
-      .in("subject", subjects);
-    const topicRows = ((topics as any[]) || []);
-    if (topicRows.length) {
-      const topicLabel = new Map(topicRows.map((t) => [t.id, t.title as string]));
-      const topicSubject = new Map(topicRows.map((t) => [t.id, (t.subject as string) || null]));
-      const { data: cl } = await supabase
-        .from("textbook_lessons" as any)
-        .select("id, title, blocks, topic_id, sort_order")
-        .in("topic_id", topicRows.map((t) => t.id))
-        .order("sort_order", { ascending: true });
-      catalog = ((cl as any[]) || []).map((l) => ({
-        id: l.id,
-        title: l.title || "Bez názvu",
-        blocks: Array.isArray(l.blocks) ? l.blocks : [],
-        source: topicLabel.get(l.topic_id) || undefined,
-        subject: topicSubject.get(l.topic_id) ?? null,
-        textbookTitle: null,
-        topicTitle: topicLabel.get(l.topic_id) ?? null,
-        origin: "catalog" as const,
-        textbookId: null,
-      }));
-    }
-  }
-
-  return [...own, ...catalog].filter(
-    (l, i, arr) => arr.findIndex((x) => x.id === l.id) === i,
-  );
+  const rows = await loadTeacherSourceLessons(uid, { withBlocks: true });
+  return rows.map((l) => ({
+    id: l.id,
+    title: l.title,
+    blocks: Array.isArray(l.blocks) ? l.blocks : [],
+    source: l.textbookTitle,
+    subject: l.subject,
+    textbookTitle: l.textbookTitle,
+    topicTitle: null,
+    origin: l.kind === "catalog" ? "catalog" as const : "own" as const,
+    textbookId: l.textbookId,
+  }));
 }

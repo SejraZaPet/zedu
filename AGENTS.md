@@ -4,7 +4,7 @@
 
 - Worksheet attachment helpers preserve assignment state and unrelated settings; existing links use owner-scoped optimistic updates, so attaching never republishes or overwrites concurrent edits.
 
-- AI lesson-derived drafts use CreateFromLessonDialog and lesson-ai-source, scoped to non-copied owner textbooks; insertion stays local until explicit review and existing save, with provenance in existing JSON to avoid schema and permission changes.
+- AI lesson-derived drafts use CreateFromLessonDialog and lesson-ai-source; lesson pickers load via teacher-source-lessons (own books incl. copies, subject catalog, demo seed read-only, paged, re-checked before AI) so they match the Textbooks page without RLS changes; insertion stays local until review.
 
 - FillWordBank is lesson-only; occurrence IDs allow duplicate words.
 - Snapshots: student_activity_results.answers via ActivityAnswerReview, not live-game grading.
