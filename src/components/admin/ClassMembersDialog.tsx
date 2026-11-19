@@ -12,7 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, UserPlus, X, UserCheck, Ban, CheckCheck } from "lucide-react";
+import { Search, UserPlus, X, UserCheck, Ban, CheckCheck, FolderOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 
 interface ClassItem {
@@ -307,6 +308,11 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
                           {statusLabels[m.status] || m.status}
                         </Badge>
                         <div className="flex gap-1 shrink-0">
+                          <Button size="sm" variant="outline" asChild className="h-7 px-2 text-xs">
+                            <Link to={`/portfolio/${m.id}`}>
+                              <FolderOpen className="w-4 h-4" /> Portfolio
+                            </Link>
+                          </Button>
                           {m.status !== "approved" && (
                             <Button
                               size="sm"

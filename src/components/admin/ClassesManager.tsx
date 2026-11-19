@@ -32,7 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMySchool } from "@/hooks/useMySchool";
 import ClassMembersDialog from "./ClassMembersDialog";
@@ -403,7 +404,7 @@ const ClassesManager = () => {
                   <div>
                     <a
                       href={`/ucitel/tridy/${c.id}`}
-                      className="hover:text-primary hover:underline cursor-pointer"
+                      className="text-primary font-medium underline-offset-2 hover:underline cursor-pointer"
                       onClick={(e) => { e.preventDefault(); window.location.href = `/ucitel/tridy/${c.id}`; }}
                     >
                       {c.name}
@@ -464,6 +465,11 @@ const ClassesManager = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-1 justify-end">
+                    <Button size="sm" variant="outline" asChild className="h-8 px-2.5">
+                      <Link to={`/ucitel/tridy/${c.id}`}>
+                        <ArrowRight className="w-4 h-4" /> Otevřít
+                      </Link>
+                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => setMembersClass(c)} className="h-8 px-2" title="Studenti">
                       <Users className="w-4 h-4" />
                     </Button>
