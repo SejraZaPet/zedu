@@ -73,3 +73,4 @@
 - AI sources: `source-bundle.ts` limits (no silent truncation), `SourceInput`, `fetch-source-url` with SSRF rules only in `_shared/url-guard.ts`; nothing stored.
 - Studio drafts (`fromtext-slides.ts`) stay local until confirmed, emit existing slide types; `activitySpec.points` 0/1/2 (missing=1) only via server `slidePointsFactor`.
 - License inquiries: insert only by `send-license-inquiry` before e-mail (`_shared/license-inquiry.ts`, server consent time); admin-only RLS read, trigger locks personal/consent fields.
+- Teacher games/activities entry is only `/ucitel/studio` (`studio-routes.ts`, tab in URL); `/ucitel/hry` and teacher `/aktivity` redirect, StudioPage composes TeacherGames + ActivitiesPage embedded, so game logic and nested game routes stay untouched.
