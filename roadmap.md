@@ -1,5 +1,15 @@
 # Roadmap
 
+## Demo – uložení práce a připomínky (schváleno etapy 1–2, termín 25. 11.)
+- [ ] (1) migrace a RPC – finální SQL ukázat před spuštěním
+- [ ] (2) demo-save-contact + dialog + odpočet + export
+- [ ] (3) demo-expiry-reminders + demo-unsubscribe + plán úlohy
+- [ ] (4) testy, dokumentace, celá sada
+- Etapy 3 a 4 jen návrh.
+
+## Poptávky licencí – jen plán (bez změn)
+- [ ] Plán `.lovable/plan/poptavky-licence-ulozeni-admin-2026-11-19.md`
+
 ## Datumové řazení úloh a materiálů
 - [x] Projití učitelských i žákovských seznamů; strukturální pořadí, kalendář, termíny a žebříčky zůstaly beze změny.
 - [x] Listy v lekci a fronta „Ke kontrole“ nyní od nejnovějšího; ostatní datumové seznamy zachovávají směr a shodná data řadí podle ID. Bez DB/RLS a nasazení.
