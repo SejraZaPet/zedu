@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 import { scorePractice, buildPracticeSessionAnswersJson, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, masteryFromPercents, type ExplainData } from "@/lib/student-practice";
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
@@ -296,7 +297,7 @@ const StudentPractice = () => {
           score,
           totalScorable,
           percent,
-        }),
+        }) as unknown as Json,
       });
       if (insErr) {
         toast({
