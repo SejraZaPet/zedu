@@ -128,7 +128,9 @@ export function urlErrorMessage(code: unknown): string {
   switch (code) {
     case "BLOCKED_URL": return "Tento odkaz nelze načíst. Použijte veřejnou webovou adresu začínající http(s)://.";
     case "AUTH_REQUIRED": return "Stránka vyžaduje přihlášení. Zkopírujte text ručně.";
-    case "JS_ONLY": return "Stránka se načítá jen skriptem. Zkopírujte text ručně.";
+    case "JS_ONLY": return "Stránka se vykresluje skriptem a text z ní nejde načíst. Uložte ji jako PDF (Ctrl+P) a nahrajte, nebo text zkopírujte.";
+    case "FRAMES": return "Stránka používá rámce. Vložte odkaz na konkrétní podstránku s textem, nebo text zkopírujte.";
+    case "CANVA": return "Web z Canvy nejde načíst odkazem. V Canvě stáhněte PDF (Sdílet → Stáhnout) a nahrajte ho jako soubor.";
     case "TOO_LARGE": return "Stránka je příliš velká (víc než 2 MB).";
     case "UNSUPPORTED_TYPE": return "Odkaz nevede na webovou stránku, text ani PDF.";
     default: return "Odkaz se nepodařilo načíst.";

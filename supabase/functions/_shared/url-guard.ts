@@ -108,22 +108,59 @@ function decodeEntities(s: string): string {
 }
 
 /** Čitelný text z HTML bez AI: bez skriptů, navigace a patiček; preferuje <article>/<main>. */
-export function htmlToText(html: string): { title: string; text: string; loginForm: boolean } {
-  const titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const title = titleM ? decodeEntities(titleM[1]).replace(/\s+/g, " ").trim().slice(0, 200) : "";
-  const loginForm = /<input[^>]+type=["']?password/i.test(html);
-  let body = html.replace(/<!--[\s\S]*?-->/g, " ");
-  body = body.replace(/<(script|style|noscript|template|svg|iframe|nav|footer|header|aside|form)\b[\s\S]*?<\/\1>/gi, " ");
-  const main = body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i);
-  if (main && main[2].replace(/<[^>]+>/g, "").trim().length > 300) body = main[2];
+/** Weby z Canvy se vykreslují skriptem – nenačítáme je, nabídneme PDF. */
+export function isCanvaHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, "");
+  return h === "canva.site" || h.endsWith(".canva.site") || h === "canva.com" || h.endsWith(".canva.com");
+}
+
+const stripTags = (html: string, tags: string) =>
+  html.replace(new RegExp(`<(${tags})\\b[\\s\\S]*?<\\/\\1\\s*>`, "gi"), " ");
+const plainLen = (html: string) => html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().length;
+
+/** Odstraní jen přihlašovací a krátké vyhledávací formuláře; obalový form (ASP.NET) zůstane. */
+function stripUtilityForms(html: string): string {
+  return html.replace(/<form\b([^>]*)>([\s\S]*?)<\/form\s*>/gi, (whole, attrs: string, inner: string) => {
+    if (/<input[^>]+type=["']?password/i.test(inner)) return " ";
+    const searchy = /(search|hledat|vyhled|login|signin|prihl)/i.test(attrs) || /role=["']?search/i.test(attrs)
+      || /<input[^>]+type=["']?search/i.test(inner);
+    if (searchy && plainLen(inner) < 300) return " ";
+    return `${inner}`; // zachovat obsah, zahodit jen samotnou značku
+  });
+}
+
+function toPlain(body: string): string {
   body = body
-    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^>]*>/gi, "\n")
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article|\/header)\b[^>]*>/gi, "\n")
     .replace(/<li\b[^>]*>/gi, "\n- ")
     .replace(/<[^>]+>/g, " ");
-  const text = decodeEntities(body)
+  return decodeEntities(body)
     .replace(/[ \t\u00a0]+/g, " ")
     .split("\n").map((l) => l.trim()).filter(Boolean).join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-  return { title, text, loginForm };
+}
+
+export function htmlToText(html: string): { title: string; text: string; loginForm: boolean; frames: boolean } {
+  const titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = titleM ? decodeEntities(titleM[1]).replace(/\s+/g, " ").trim().slice(0, 200) : "";
+  const loginForm = /<input[^>]+type=["']?password/i.test(html);
+  const frames = /<frameset\b/i.test(html) || /použity rámce/i.test(html);
+  // Mírný průchod: jen neviditelné části.
+  const mild = stripTags(html.replace(/<!--[\s\S]*?-->/g, " "), "script|style|noscript|template|svg|iframe");
+  // Přísný průchod: navigace, patička, boční panely, pomocné formuláře.
+  let strict = stripUtilityForms(mild);
+  const main = strict.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i);
+  if (main && plainLen(main[2]) > 300) {
+    // Uvnitř článku zůstává <header> (nadpis článku).
+    strict = stripTags(main[2], "nav|footer|aside");
+  } else {
+    strict = stripTags(strict, "nav|footer|header|aside");
+  }
+  let text = toPlain(strict);
+  if (text.length < 150) {
+    const alt = toPlain(stripUtilityForms(mild));
+    if (alt.length > text.length) text = alt;
+  }
+  return { title, text, loginForm, frames };
 }

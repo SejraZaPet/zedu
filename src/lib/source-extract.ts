@@ -25,6 +25,10 @@ export async function extractFileSource(file: File, kind: SourceKind): Promise<s
 }
 
 export async function extractUrlSource(url: string): Promise<{ text: string; origin: string; note?: string }> {
+  try {
+    const h = new URL(url).hostname.toLowerCase();
+    if (/(^|\.)canva\.(site|com)$/.test(h)) throw new Error(urlErrorMessage("CANVA"));
+  } catch (e) { if (e instanceof Error && e.message === urlErrorMessage("CANVA")) throw e; }
   const { data, error } = await supabase.functions.invoke("fetch-source-url", { body: { url } });
   let code: unknown = (data as any)?.error;
   if (error) {

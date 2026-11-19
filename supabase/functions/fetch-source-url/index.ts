@@ -4,6 +4,7 @@ import { requireAuth } from "../_shared/auth.ts";
 import {
   checkUrlShape, htmlToText, ipLiteral, isBlockedIp,
   URL_FETCH_MAX_BYTES, URL_FETCH_MAX_REDIRECTS, URL_FETCH_TIMEOUT_MS, URL_TEXT_MAX_CHARS,
+  isCanvaHost,
 } from "../_shared/url-guard.ts";
 
 const cors = {
@@ -68,6 +69,7 @@ Deno.serve(async (req) => {
   if (!shape.ok) return done("BLOCKED_URL", { error: "BLOCKED_URL" }, 400);
 
   let url = shape.url;
+  if (isCanvaHost(url.hostname)) return done("CANVA", { error: "CANVA" }, 422);
   try {
     for (let hop = 0; hop <= URL_FETCH_MAX_REDIRECTS; hop++) {
       if (!(await hostAllowed(url.hostname))) return done("BLOCKED_URL", { error: "BLOCKED_URL" }, 400);
@@ -98,9 +100,10 @@ Deno.serve(async (req) => {
         return done("UNSUPPORTED_TYPE", { error: "UNSUPPORTED_TYPE" }, 415);
       }
       const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-      const parsed = type.includes("text/plain") ? { title: "", text: raw.trim(), loginForm: false } : htmlToText(raw);
+      const parsed = type.includes("text/plain") ? { title: "", text: raw.trim(), loginForm: false, frames: false } : htmlToText(raw);
       if (parsed.text.length < 150) {
-        return done(parsed.loginForm ? "AUTH_REQUIRED" : "JS_ONLY", { error: parsed.loginForm ? "AUTH_REQUIRED" : "JS_ONLY" }, 422);
+        const code = parsed.loginForm ? "AUTH_REQUIRED" : parsed.frames ? "FRAMES" : "JS_ONLY";
+        return done(code, { error: code }, 422);
       }
       const truncated = parsed.text.length > URL_TEXT_MAX_CHARS;
       return done("OK", {
