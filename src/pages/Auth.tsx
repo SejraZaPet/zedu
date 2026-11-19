@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash, Presentation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TERMS_VERSION, registrationConsentError, requiresTermsConsent } from "@/lib/terms";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
@@ -312,8 +313,9 @@ const Auth = () => {
       return;
     }
 
-    if (!gdprConsent) {
-      setError("Pro registraci je nutný souhlas se zpracováním osobních údajů.");
+    const consentError = registrationConsentError(role, gdprConsent);
+    if (consentError) {
+      setError(consentError);
       setLoading(false);
       return;
     }
@@ -348,6 +350,12 @@ const Auth = () => {
         : "user",
       status: "pending",
     };
+
+    if (requiresTermsConsent(role)) {
+      // Doklad o souhlasu do schválení tabulky terms_acceptances.
+      metadata.terms_version = TERMS_VERSION;
+      metadata.terms_accepted_at = new Date().toISOString();
+    }
 
     if (role === "student") {
       metadata.field_of_study = fieldOfStudy;
@@ -852,16 +860,33 @@ const Auth = () => {
             <div className="flex items-start gap-2">
               <Checkbox
                 id="gdprConsent"
+                required
+                aria-required="true"
                 checked={gdprConsent}
                 onCheckedChange={(v) => setGdprConsent(!!v)}
                 className="mt-0.5"
               />
               <Label htmlFor="gdprConsent" className="text-xs leading-relaxed font-normal cursor-pointer">
-                Souhlasím se{" "}
-                <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  zpracováním osobních údajů
-                </a>
-                {" "}a podmínkami užívání služby bezli.cz. *
+                {requiresTermsConsent(role) ? (
+                  <>
+                    Souhlasím s{" "}
+                    <a href="/podminky" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      obchodními podmínkami
+                    </a>
+                    {" "}a beru na vědomí{" "}
+                    <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      zásady ochrany osobních údajů
+                    </a>. *
+                  </>
+                ) : (
+                  <>
+                    Souhlasím se{" "}
+                    <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      zpracováním osobních údajů
+                    </a>
+                    {" "}a podmínkami užívání služby bezli.cz. *
+                  </>
+                )}
               </Label>
             </div>
 
