@@ -108,6 +108,7 @@ export default function TeacherLessonPlans() {
       .neq("teacher_id", user.id)
       .in("shared_visibility", ["public", "school"])
       .order("updated_at", { ascending: false })
+      .order("id", { ascending: true })
       .limit(200);
     const rows = ((data as any[]) ?? []) as SharedPlan[];
     // Resolve author names for non-anonymous
@@ -192,12 +193,14 @@ export default function TeacherLessonPlans() {
         .from("lesson_plans")
         .select("id, title, subject, updated_at, input_data, copied_from_lesson_plan_id, ai_generated, ai_modified_at")
         .eq("teacher_id", user.id)
-        .order("updated_at", { ascending: false }),
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true }),
       supabase
         .from("lesson_plan_templates")
         .select("id, title, description, phases_json, created_at")
         .eq("teacher_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true }),
     ]);
     setItems((plans as any[]) ?? []);
     setTemplates((tpls as any[]) ?? []);

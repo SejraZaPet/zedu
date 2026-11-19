@@ -57,17 +57,18 @@ describe("buildReviewRows", () => {
     expect(rows[0].targetName).toBe("7.A");
   });
 
-  it("řadí nejstarší odevzdání nahoře", () => {
+  it("řadí nejnovější odevzdání nahoře a při shodném datu podle ID", () => {
     const rows = buildReviewRows({
       assignments: asg,
       attempts: [
-        attempt({ id: "t1", student_id: "s1", submitted_at: "2026-11-05T10:00:00Z" }),
         attempt({ id: "t2", student_id: "s2", submitted_at: "2026-11-01T10:00:00Z" }),
+        attempt({ id: "t3", student_id: "s3", submitted_at: "2026-11-05T10:00:00Z" }),
+        attempt({ id: "t1", student_id: "s1", submitted_at: "2026-11-05T10:00:00Z" }),
       ],
       profiles,
       targetNames: {},
     });
-    expect(rows.map((r) => r.attemptId)).toEqual(["t2", "t1"]);
+    expect(rows.map((r) => r.attemptId)).toEqual(["t1", "t3", "t2"]);
   });
 
   it("skupinové odevzdání označí jednou, ne dvakrát", () => {

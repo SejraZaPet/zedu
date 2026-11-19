@@ -56,6 +56,7 @@ export const MyLessonActivitiesList = ({
         .select("id, title, blocks, created_at, teacher_textbooks!inner(teacher_id)")
         .eq("teacher_textbooks.teacher_id", userId)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .limit(60);
       if (cancelled) return;
       if (err) {

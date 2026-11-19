@@ -88,7 +88,7 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
     setLoading(true);
     try {
       const [assignmentsRes, classesRes] = await Promise.all([
-        supabase.from("assignments" as any).select("*").eq("teacher_id", teacherId).order("created_at", { ascending: false }),
+        supabase.from("assignments" as any).select("*").eq("teacher_id", teacherId).order("created_at", { ascending: false }).order("id", { ascending: true }),
         supabase.from("classes").select("id, name").eq("archived", false),
       ]);
 

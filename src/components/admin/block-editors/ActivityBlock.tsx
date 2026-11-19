@@ -1926,7 +1926,8 @@ const ActivityBlock = ({ block, onChange }: Props) => {
     const { data } = await supabase
       .from("activity_templates")
       .select("id, name, activity_type, template_props")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     setTemplates(((data as any[]) ?? []) as ActivityTemplateRow[]);
     setBusy(false);
   };

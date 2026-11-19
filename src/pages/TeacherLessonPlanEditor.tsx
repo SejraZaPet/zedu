@@ -1088,7 +1088,8 @@ export default function TeacherLessonPlanEditor() {
       .from("lesson_plan_templates")
       .select("id, title, description, phases_json, created_at")
       .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     setTemplates((data as any[]) ?? []);
   }
   useEffect(() => {

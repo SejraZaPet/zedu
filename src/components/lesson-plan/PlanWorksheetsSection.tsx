@@ -38,7 +38,8 @@ export default function PlanWorksheetsSection({ teacherId, value, onChange, subj
       .from("worksheets")
       .select("id, title, status, scheduled_publish_at, subject, subject_id, created_at")
       .eq("teacher_id", teacherId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     setAll(((data as any[]) ?? []) as PlanWorksheetOption[]);
   };
 

@@ -8,7 +8,13 @@ const rows = [
   { id: "w2", title: "List B", status: "draft", scheduled_publish_at: null, subject: "Dějepis", subject_id: "s1", created_at: "2026-10-02" },
 ];
 vi.mock("@/integrations/supabase/client", () => {
-  const b: any = { select: () => b, eq: () => b, order: () => Promise.resolve({ data: rows, error: null }) };
+  const b: any = {
+    select: () => b,
+    eq: () => b,
+    order: () => b,
+    then: (resolve: (value: { data: typeof rows; error: null }) => unknown) =>
+      Promise.resolve({ data: rows, error: null }).then(resolve),
+  };
   return { supabase: { from: () => b } };
 });
 vi.mock("@/components/worksheet/PublishWorksheetDialog", () => ({ default: () => null }));
@@ -27,8 +33,12 @@ describe("pracovní listy k hodině", () => {
   });
 
   it("nabídka: nejnovější první a filtr předmětu", () => {
-    const list = filterWorksheetOptions([...rows, { ...rows[0], id: "w3", subject_id: "s2", created_at: "2026-10-03" }], { subjectId: "s1", onlySubject: true });
-    expect(list.map((w) => w.id)).toEqual(["w2", "w1"]);
+    const list = filterWorksheetOptions([
+      ...rows,
+      { ...rows[0], id: "w0", created_at: "2026-10-02" },
+      { ...rows[0], id: "w3", subject_id: "s2", created_at: "2026-10-03" },
+    ], { subjectId: "s1", onlySubject: true });
+    expect(list.map((w) => w.id)).toEqual(["w0", "w2", "w1"]);
   });
 
   it("editor ukládá i načítá worksheet_ids", () => {

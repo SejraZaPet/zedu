@@ -6,7 +6,7 @@ async function currentOwner(ownerId: string) {
   if (error || data.user?.id !== ownerId) throw new Error("Přihlášení se změnilo. Obnov stránku a zkus to znovu.");
 }
 export async function loadCheatsheets(ownerId: string): Promise<Cheatsheet[]> {
-  const { data: notebooks, error } = await supabase.from("notebooks").select("id, notebook_pages(id, content)").eq("owner_id", ownerId).eq("cover_color", CHEATSHEET_STORAGE_MARKER).order("updated_at", { ascending: false });
+  const { data: notebooks, error } = await supabase.from("notebooks").select("id, notebook_pages(id, content)").eq("owner_id", ownerId).eq("cover_color", CHEATSHEET_STORAGE_MARKER).order("updated_at", { ascending: false }).order("id", { ascending: true });
   if (error) throw error;
   return (notebooks ?? []).flatMap(n => (n.notebook_pages ?? []).flatMap(p => {
     const content = p.content as Record<string, unknown> | null;

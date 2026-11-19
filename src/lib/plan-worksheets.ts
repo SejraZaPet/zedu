@@ -65,5 +65,5 @@ export function filterWorksheetOptions(
       if (opts.subjectId && w.subject_id) return w.subject_id === opts.subjectId;
       return !!subj && (w.subject || "").trim().toLowerCase() === subj;
     })
-    .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+    .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "") || a.id.localeCompare(b.id));
 }

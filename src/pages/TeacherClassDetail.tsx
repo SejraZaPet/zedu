@@ -146,7 +146,7 @@ const TeacherClassDetail = () => {
           .select("*, subjects(name, color, abbreviation), subject_groups(name)")
           .eq("class_id", id),
         supabase.from("class_textbooks").select("textbook_id, textbook_type").eq("class_id", id),
-        supabase.from("assignments").select("id,title,status,deadline,worksheet_id,created_at,settings").eq("class_id", id).order("created_at", { ascending: false }),
+        supabase.from("assignments").select("id,title,status,deadline,worksheet_id,created_at,settings").eq("class_id", id).order("created_at", { ascending: false }).order("id", { ascending: true }),
         supabase
           .from("notification_broadcasts")
           .select("id,title,content,sent_at,created_at,status,receiver_ids,receiver_type")

@@ -257,7 +257,7 @@ export default function StudentSubjectClass() {
         assignQuery = assignQuery.or(
           `subject_id.eq.${subjectIdKey},subject_id.is.null`,
         );
-      assignQuery = assignQuery.order("created_at", { ascending: false });
+      assignQuery = assignQuery.order("created_at", { ascending: false }).order("id", { ascending: true });
 
       const [classRes, slotsRes, assignRes] = await Promise.all([
         isGroup

@@ -70,7 +70,7 @@ export default function PublishWorksheetDialog({
       if (!user) throw new Error("Přihlaste se znovu.");
       const [kind, id] = target.split(":");
       const { data, error } = await supabase.from("assignments").select("id,title,teacher_id,subject_id,class_id,group_id,worksheet_id,settings")
-        .eq("teacher_id", user.id).eq(kind === "group" ? "group_id" : "class_id", id).order("created_at", { ascending: false });
+        .eq("teacher_id", user.id).eq(kind === "group" ? "group_id" : "class_id", id).order("created_at", { ascending: false }).order("id", { ascending: true });
       if (error) throw error;
       if (!cancelled) { setOwnerId(user.id); setExisting((data ?? []) as LinkAssignment[]); }
     })().catch(() => { if (!cancelled) setLoadError("Úlohy se nepodařilo načíst. Zkuste znovu vybrat třídu nebo skupinu."); })

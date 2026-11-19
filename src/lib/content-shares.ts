@@ -112,7 +112,8 @@ export async function listSharedWithMe(userId: string): Promise<SharedWithMeItem
     )
     .eq("shared_with", userId)
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
 
   return (data ?? []).map((r: any) => {
@@ -175,7 +176,8 @@ export async function listPublicShares(
     )
     .is("shared_with", null)
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
 
   let items: PublicShareItem[] = (data ?? []).map((r: any) => {
@@ -902,7 +904,8 @@ export async function listMyShares(
     .eq(KIND_COLUMN[kind], targetId)
     .eq("shared_by", userId)
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
   return ((data ?? []) as any[]).map((r) => ({
     id: r.id as string,

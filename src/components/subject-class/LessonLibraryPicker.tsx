@@ -39,11 +39,11 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
       let out: Item[] = [];
       try {
         if (type === "worksheet") {
-          let qb = supabase.from("worksheets").select("id, title, subject").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
+          let qb = supabase.from("worksheets").select("id, title, subject").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).order("id", { ascending: true }).limit(1000);
           const { data } = await qb;
           out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Pracovní list", contentType: "worksheet", extra: r.subject ?? undefined }));
         } else if (type === "presentation") {
-          let qb = supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).limit(1000);
+          let qb = supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("updated_at", { ascending: false }).order("id", { ascending: true }).limit(1000);
           const { data } = await qb;
           out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Prezentace", contentType: "presentation" }));
         } else {
@@ -51,7 +51,7 @@ export default function LessonLibraryPicker({ teacherId, selected, onChange }: P
           const tbList = (tbs as any[]) ?? [];
           const tbTitle = new Map(tbList.map((t) => [t.id, t.title]));
           if (tbList.length) {
-            let qb = supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id").in("textbook_id", tbList.map((t) => t.id)).order("updated_at", { ascending: false }).limit(1000);
+            let qb = supabase.from("teacher_textbook_lessons" as any).select("id, title, textbook_id").in("textbook_id", tbList.map((t) => t.id)).order("updated_at", { ascending: false }).order("id", { ascending: true }).limit(1000);
               const { data } = await qb;
             out = ((data as any[]) ?? []).map((r) => ({ refId: r.id, title: r.title || "Lekce", contentType: "lesson", lessonSource: "teacher_textbook_lessons", extra: tbTitle.get(r.textbook_id) }));
           }

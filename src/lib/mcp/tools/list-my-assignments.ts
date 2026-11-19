@@ -36,6 +36,7 @@ export default defineTool({
       .from("assignments")
       .select("id, title, description, due_at, created_at, class_id, status")
       .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
       .limit(n);
 
     if (error) {

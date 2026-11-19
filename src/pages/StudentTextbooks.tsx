@@ -59,7 +59,8 @@ const StudentTextbooks = () => {
       .from("teacher_textbook_enrollments")
       .select("textbook_id, teacher_textbooks(id, title, subject, description)")
       .eq("student_id", userId)
-      .order("enrolled_at", { ascending: false });
+      .order("enrolled_at", { ascending: false })
+      .order("id", { ascending: true });
 
     // Set B — textbooks via class membership
     const { data: memberships } = await supabase

@@ -33,7 +33,8 @@ async function loadPublicSharesByCreators(creatorIds: string[]): Promise<PublicS
     .is("shared_with", null)
     .eq("status", "active")
     .in("shared_by", creatorIds)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((r: any) => {
     const kind: ShareTargetKind = r.textbook_id

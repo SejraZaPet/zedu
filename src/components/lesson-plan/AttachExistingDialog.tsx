@@ -48,9 +48,9 @@ export default function AttachExistingDialog({ teacherId, open, onOpenChange, al
     setLoading(true);
     void (async () => {
       const [ws, games, pres, books] = await Promise.all([
-        supabase.from("worksheets").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
-        supabase.from("teacher_game_templates").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
-        supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("created_at", { ascending: false }).limit(200),
+        supabase.from("worksheets").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).order("id", { ascending: true }).limit(200),
+        supabase.from("teacher_game_templates").select("id, title, subject, created_at").eq("teacher_id", teacherId).order("created_at", { ascending: false }).order("id", { ascending: true }).limit(200),
+        supabase.from("teacher_presentations").select("id, title").eq("teacher_id", teacherId).order("created_at", { ascending: false }).order("id", { ascending: true }).limit(200),
         supabase.from("teacher_textbooks").select("id, title").eq("teacher_id", teacherId).limit(100),
       ]);
       const out: Option[] = [];
@@ -70,6 +70,7 @@ export default function AttachExistingDialog({ teacherId, open, onOpenChange, al
           .select("id, title, textbook_id")
           .in("textbook_id", bookIds)
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .limit(300);
         for (const l of (lessons as any[]) ?? []) {
           out.push({

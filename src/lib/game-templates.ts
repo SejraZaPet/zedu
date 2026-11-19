@@ -53,7 +53,8 @@ export async function fetchGameTemplates(): Promise<GameTemplate[]> {
     .from("teacher_game_templates" as any)
     .select("*")
     .eq("teacher_id", session.user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
   return ((data as any[]) || []) as GameTemplate[];
 }

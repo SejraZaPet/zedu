@@ -75,7 +75,9 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
       .eq("assignment_id", assignmentId)
       .eq("student_id", studentId)
       .order("uploaded_at", { ascending: false });
-    setFiles((data as any) || []);
+    setFiles((((data as any) || []) as any[]).sort((a, b) =>
+      (String(b.uploaded_at ?? "").localeCompare(String(a.uploaded_at ?? "")) || 0) || String(a.id).localeCompare(String(b.id))
+    ));
   };
 
   const validateFile = (file: File): string | null => {

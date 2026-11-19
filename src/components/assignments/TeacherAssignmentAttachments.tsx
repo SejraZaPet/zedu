@@ -49,7 +49,8 @@ const TeacherAssignmentAttachments = ({ assignmentId }: Props) => {
       .from("assignment_attachments" as any)
       .select("id, student_id, file_name, file_path, file_size, uploaded_at")
       .eq("assignment_id", assignmentId)
-      .order("uploaded_at", { ascending: false });
+      .order("uploaded_at", { ascending: false })
+      .order("id", { ascending: true });
     const list = (data as any[]) || [];
     if (list.length) {
       const ids = Array.from(new Set(list.map((f) => f.student_id)));

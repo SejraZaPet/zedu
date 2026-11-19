@@ -1,5 +1,11 @@
 # Roadmap
 
+## Datumové řazení úloh a materiálů
+- [x] Projití učitelských i žákovských seznamů; strukturální pořadí, kalendář, termíny a žebříčky zůstaly beze změny.
+- [x] Listy v lekci a fronta „Ke kontrole“ nyní od nejnovějšího; ostatní datumové seznamy zachovávají směr a shodná data řadí podle ID. Bez DB/RLS a nasazení.
+- [x] 40 cílených testů prošlo; celá sada 1113/1120, sedm starších nesouvisejících chyb. Typy a build OK.
+- Neověřeno vizuálně v učitelském účtu: administrátorský náhled se přesměroval na úvod. Explicitní ruční volba „od nejstaršího“ v katalogu učebnic zůstala zachována.
+
 ## Učím se – více fotografií
 - [x] Galerie do šesti fotek, samostatný foťák, sekvenční přepis, pořadí/odebrání/opakování a úklid náhledů bez DB či nasazení.
 - [x] Mock testy dávek a potvrzení, regrese procvičování; typy a build OK. Přihlášená stránka při 390 px: dvě fotky, mock OCR, pořadí/odebrání/potvrzení bez posunu a bez zápisů ověřeny.

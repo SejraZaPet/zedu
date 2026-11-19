@@ -46,7 +46,7 @@ export interface InsertableWorksheet {
 export async function loadInsertableWorksheets(): Promise<InsertableWorksheet[]> {
   const [{ data: ws }, { data: asg }] = await Promise.all([
     supabase.from("worksheets" as any).select("id, title, subject, status").eq("status", "published")
-      .order("updated_at", { ascending: false }).limit(200),
+      .order("updated_at", { ascending: false }).order("id", { ascending: true }).limit(200),
     supabase.from("assignments" as any).select("id, worksheet_id").not("worksheet_id", "is", null).limit(500),
   ]);
   const byWs = new Map<string, string>();

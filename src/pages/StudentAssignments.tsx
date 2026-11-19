@@ -62,7 +62,8 @@ const StudentAssignments = () => {
         .from("assignments" as any)
         .select("*")
         .eq("status", "published")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true });
 
       if (!assignmentsData) { setAssignments([]); setLoading(false); return; }
 

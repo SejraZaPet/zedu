@@ -77,7 +77,8 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId, classYear }: Pro
       .from("teacher_curriculum_plans")
       .select("id, title, subject, subject_id, class_id, group_id, content, content_blocks, file_url, file_name, updated_at")
       .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     }

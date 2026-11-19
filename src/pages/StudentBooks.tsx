@@ -62,7 +62,8 @@ export default function StudentBooks() {
       .from("student_books" as any)
       .select("*")
       .eq("student_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     if (error) toast.error(error.message);
     setBooks(((data ?? []) as unknown) as Book[]);
     setLoading(false);

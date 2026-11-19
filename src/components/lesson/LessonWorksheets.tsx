@@ -22,7 +22,8 @@ export default function LessonWorksheets({ lessonId }: { lessonId: string }) {
         .from("worksheets" as any)
         .select("id, title, status, show_in_lesson, scheduled_publish_at, source_lesson_id, created_at")
         .eq("source_lesson_id", lessonId)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .eq("show_in_lesson", true)
         .eq("status", "published");
       if (error) return { worksheets: [], assignments: [] };

@@ -57,7 +57,9 @@ export function nextLessonWorksheetTitle(lessonTitle: string, existingCount: num
   return existingCount > 0 ? `Pracovní list ${existingCount + 1} – ${base}` : `Pracovní list – ${base}`;
 }
 
-/** Stabilní pořadí listů u lekce: od nejstaršího. */
-export function sortLessonWorksheets<T extends { created_at?: string | null }>(rows: T[]): T[] {
-  return [...rows].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+/** Stabilní pořadí listů u lekce: od nejnovějšího, při shodném datu podle ID. */
+export function sortLessonWorksheets<T extends { id: string; created_at?: string | null }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) =>
+    (b.created_at || "").localeCompare(a.created_at || "") || a.id.localeCompare(b.id),
+  );
 }

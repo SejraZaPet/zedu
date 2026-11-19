@@ -46,6 +46,7 @@ export const InsertSlidesIntoPresentationDialog = ({
           .select("id, title, blocks, presentation_slides, teacher_textbooks!inner(teacher_id)")
           .eq("teacher_textbooks.teacher_id", user.id)
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .limit(60);
         if (error) throw error;
         setLessons(

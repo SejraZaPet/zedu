@@ -108,15 +108,15 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
     if (search) result = result.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
     if (!isTrash) result = result.filter(t => scope === "archived" ? !!t.archived : !t.archived);
     if (isTrash) {
-      result.sort((a, b) => new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime());
+      result.sort((a, b) => (new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime() || 0) || a.id.localeCompare(b.id));
       return result;
     }
     switch (sortBy) {
       case "name_asc": result.sort((a, b) => a.title.localeCompare(b.title, "cs")); break;
       case "name_desc": result.sort((a, b) => b.title.localeCompare(a.title, "cs")); break;
-      case "created_desc": result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
-      case "created_asc": result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
-      case "updated_desc": result.sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()); break;
+      case "created_desc": result.sort((a, b) => (new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || 0) || a.id.localeCompare(b.id)); break;
+      case "created_asc": result.sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || 0) || a.id.localeCompare(b.id)); break;
+      case "updated_desc": result.sort((a, b) => (new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime() || 0) || a.id.localeCompare(b.id)); break;
       case "manual": result.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)); break;
     }
     return result;

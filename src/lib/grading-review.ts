@@ -165,8 +165,9 @@ export function buildReviewRows(input: BuildInput): ReviewRow[] {
       worksheetId: asg.worksheet_id ?? null,
     });
   }
-  // Nejstarší nezkontrolované nahoře – co čeká nejdéle, kontroluje se dřív.
-  return rows.sort((a, b) => String(a.submittedAt ?? "").localeCompare(String(b.submittedAt ?? "")));
+  return rows.sort((a, b) =>
+    String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")) || a.attemptId.localeCompare(b.attemptId),
+  );
 }
 
 export interface ReviewFilters {

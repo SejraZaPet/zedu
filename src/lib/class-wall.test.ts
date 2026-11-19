@@ -15,6 +15,13 @@ describe("class wall feed", () => {
   it("shows only published, hides expired announcements, newest first", () => {
     expect(buildWallFeed(items, now).map((i) => i.id)).toEqual(["a1", "m", "t", "a2"]);
   });
+  it("uses id for equal creation dates", () => {
+    const sameDate = "2026-11-06T10:00:00Z";
+    expect(buildWallFeed([
+      { id: "b", status: "published", created_at: sameDate, settings: { kind: "material" } },
+      { id: "a", status: "published", created_at: sameDate, settings: { kind: "material" } },
+    ], now).map((i) => i.id)).toEqual(["a", "b"]);
+  });
   it("announcement block: pinned first, max 3", () => {
     expect(wallAnnouncements(items, 3, now).map((i) => i.id)).toEqual(["a2", "a1"]);
     expect(wallAnnouncements(items, 1, now).map((i) => i.id)).toEqual(["a2"]);

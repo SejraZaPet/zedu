@@ -78,19 +78,22 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
       .from("student_portfolio_items")
       .select("*")
       .eq("student_id", studentId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true }),
     supabase
       .from("assignment_attempts")
       .select("id, assignment_id, score, max_score, submitted_at, status, assignments!inner(title, subject_id, subjects(name))")
       .eq("student_id", studentId)
       .eq("status", "submitted")
       .not("score", "is", null)
-      .order("submitted_at", { ascending: false }),
+      .order("submitted_at", { ascending: false })
+      .order("id", { ascending: true }),
     supabase
       .from("student_badges")
       .select("id, badge_slug, earned_at")
       .eq("student_id", studentId)
-      .order("earned_at", { ascending: false }),
+      .order("earned_at", { ascending: false })
+      .order("id", { ascending: true }),
   ]);
 
   const manual: PortfolioItem[] = (manualRes.data ?? []).map((r: any) => ({
@@ -171,7 +174,7 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
   }
 
   return [...manual, ...auto].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    (a, b) => (new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || 0) || a.id.localeCompare(b.id),
   );
 }
 

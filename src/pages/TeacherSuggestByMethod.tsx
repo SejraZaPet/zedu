@@ -314,12 +314,14 @@ export default function TeacherSuggestByMethod() {
           .select("id, title, slides, subject")
           .eq("teacher_id", user.id)
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .limit(50),
         supabase
           .from("worksheets")
           .select("id, title, spec, subject")
           .eq("teacher_id", user.id)
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .limit(50),
       ]);
       if (cancelled) return;

@@ -328,7 +328,7 @@ export default function TeacherSubjectClass() {
         assignQuery = assignQuery.or(
           `subject_id.eq.${resolvedSubjectId},subject_id.is.null`,
         );
-      assignQuery = assignQuery.order("created_at", { ascending: false });
+      assignQuery = assignQuery.order("created_at", { ascending: false }).order("id", { ascending: true });
 
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
         isGroup
@@ -347,7 +347,8 @@ export default function TeacherSubjectClass() {
           .from("lesson_plans")
           .select("id, title, subject, subject_id, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
-          .order("updated_at", { ascending: false }),
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true }),
         assignQuery,
         isGroup
           ? supabase.from("subject_group_members").select("student_id").eq("group_id", groupId)

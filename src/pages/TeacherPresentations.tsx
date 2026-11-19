@@ -94,7 +94,8 @@ const TeacherPresentations = () => {
         .from("teacher_presentations" as any)
         .select("id, title, slides, lesson_id, source_lesson_id, source_lesson_type, created_at, updated_at")
         .eq("teacher_id", user.id)
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true });
       if (error) throw error;
 
       const rows = ((data ?? []) as any[]).map((r) => ({
@@ -282,7 +283,8 @@ const TeacherPresentations = () => {
         .select("id, title, updated_at, teacher_textbook_lessons(count)")
         .or(await ownTextbooksOr(user.id))
         .is("deleted_at", null)
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true });
       if (error) throw error;
       setTextbookOptions(((data ?? []) as any[]).map((t) => ({
         id: t.id,

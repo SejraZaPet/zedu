@@ -298,7 +298,8 @@ export async function loadNotebooks(ownerId: string): Promise<Notebook[]> {
     .select("*")
     .eq("owner_id", ownerId)
     .or(`cover_color.is.null,cover_color.neq.${CHEATSHEET_STORAGE_MARKER}`)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Notebook[];
 }

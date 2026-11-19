@@ -169,7 +169,7 @@ export default function TeacherWorksheets() {
         }))
         .sort(
           (a, b) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+            (new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime() || 0) || a.id.localeCompare(b.id)
         );
 
       console.log("[smart-flow] own worksheets count:", ownWorksheets.length);
@@ -262,7 +262,8 @@ export default function TeacherWorksheets() {
       .from("worksheets" as any)
       .select("*")
       .eq("teacher_id", user.id)
-      .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: true });
     if (error) {
       toast({ title: "Nepodařilo se načíst pracovní listy", description: error.message, variant: "destructive" });
     } else {

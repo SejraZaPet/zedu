@@ -90,7 +90,8 @@ export default function TeacherQuestionBank() {
         .from("question_bank_items")
         .select("*")
         .eq("teacher_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true }),
       supabase
         .from("teacher_curriculum_plans")
         .select("id, subject")

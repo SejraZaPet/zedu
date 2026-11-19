@@ -8,8 +8,12 @@ describe("multiple worksheets per lesson", () => {
   it("second worksheet is numbered 2", () => {
     expect(nextLessonWorksheetTitle("Maso", 1)).toBe("Pracovní list 2 – Maso");
   });
-  it("sorts oldest first", () => {
-    const r = sortLessonWorksheets([{ id: "b", created_at: "2026-02-01" }, { id: "a", created_at: "2026-01-01" }]);
-    expect(r.map((x) => x.id)).toEqual(["a", "b"]);
+  it("sorts newest first and uses id for equal dates", () => {
+    const r = sortLessonWorksheets([
+      { id: "b", created_at: "2026-02-01" },
+      { id: "a", created_at: "2026-01-01" },
+      { id: "c", created_at: "2026-02-01" },
+    ]);
+    expect(r.map((x) => x.id)).toEqual(["b", "c", "a"]);
   });
 });

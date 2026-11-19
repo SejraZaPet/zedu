@@ -73,7 +73,8 @@ export default function QuestionBankPickerDialog({
         .from("question_bank_items")
         .select("*")
         .eq("teacher_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true });
       const rows = (bank as QuestionBankItem[] | null) ?? [];
       setItems(rows);
 

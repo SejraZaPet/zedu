@@ -65,6 +65,7 @@ const LessonPlanPacing = ({ teacherId, sessionTitle, currentIndex, slideCount }:
         .select("id, title, input_data, class_id, group_id")
         .eq("teacher_id", teacherId)
         .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
         .limit(50);
       if (cancelled) return;
 

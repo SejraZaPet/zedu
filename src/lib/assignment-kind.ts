@@ -112,7 +112,7 @@ export function filterByKind<T extends { settings?: unknown }>(items: T[], kind:
   if (kind === "task") return list;
   // Materiály a oznámení: od nejnovějších (bez created_at pořadí beze změny).
   const t = (i: T) => { const v = (i as { created_at?: string }).created_at; const n = v ? new Date(v).getTime() : NaN; return Number.isFinite(n) ? n : -Infinity; };
-  list.sort((a, b) => t(b) - t(a));
+  list.sort((a, b) => (t(b) - t(a) || 0) || String((a as { id?: string }).id ?? "").localeCompare(String((b as { id?: string }).id ?? "")));
   if (kind !== "announcement") return list;
   const vis = opts.teacher ? list : list.filter((i) => announcementVisible(i.settings, opts.now));
   return [...vis.filter((i) => isPinned(i.settings)), ...vis.filter((i) => !isPinned(i.settings))];

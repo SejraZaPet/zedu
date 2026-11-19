@@ -396,12 +396,13 @@ const TeacherAssignments = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
     const [assignmentsRes, worksheetsRes] = await Promise.all([
-      supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
+      supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }).order("id", { ascending: true }),
       supabase
         .from("worksheets" as any)
         .select("id, title, status, updated_at")
         .in("status", ["draft", "scheduled", "published"])
-        .order("updated_at", { ascending: false }),
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true }),
     ]);
     const list = (assignmentsRes.data as any[]) || [];
     const subjectIds = [...new Set(list.map((assignment) => assignment.subject_id).filter(Boolean))] as string[];

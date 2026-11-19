@@ -23,7 +23,8 @@ const TextbookTemplatesManager = () => {
     const { data } = await supabase
       .from("textbook_templates")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     setTemplates((data ?? []) as any);
     setLoading(false);
   };

@@ -32,6 +32,7 @@ export async function loadWork(t: WorkTarget): Promise<{ draft: WorkRow | null; 
     .eq("student_id", t.studentId)
     .eq("variant_id", t.variantId)
     .order("updated_at", { ascending: false })
+    .order("id", { ascending: true })
     .limit(20);
   const rows = ((data ?? []) as unknown) as WorkRow[];
   return {

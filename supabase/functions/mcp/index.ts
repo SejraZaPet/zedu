@@ -92,7 +92,7 @@ var list_my_assignments_default = defineTool3({
     }
     const n = Math.min(Math.max(Number.isFinite(limit) ? limit : 25, 1), 100);
     const sb = supabaseForUser2(ctx);
-    const { data, error } = await sb.from("assignments").select("id, title, description, due_at, created_at, class_id, status").order("created_at", { ascending: false }).limit(n);
+    const { data, error } = await sb.from("assignments").select("id, title, description, due_at, created_at, class_id, status").order("created_at", { ascending: false }).order("id", { ascending: true }).limit(n);
     if (error) {
       return { content: [{ type: "text", text: error.message }], isError: true };
     }

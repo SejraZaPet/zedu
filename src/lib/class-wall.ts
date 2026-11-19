@@ -38,7 +38,7 @@ export function buildWallFeed<T extends WallItem>(items: T[], now: Date = new Da
   return items
     .filter((i) => (i.status ?? "published") === "published")
     .filter((i) => assignmentKind(i.settings) !== "announcement" || announcementVisible(i.settings, now))
-    .sort((a, b) => ts(b.created_at) - ts(a.created_at));
+    .sort((a, b) => (ts(b.created_at) - ts(a.created_at) || 0) || a.id.localeCompare(b.id));
 }
 
 export const WALL_PREVIEW = 5;

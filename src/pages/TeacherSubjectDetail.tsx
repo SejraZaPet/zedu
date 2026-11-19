@@ -76,7 +76,8 @@ export default function TeacherSubjectDetail() {
       .select("id, subject, title, content, file_url, file_name, updated_at")
       .eq("teacher_id", user.id)
       .ilike("subject", subject.name)
-      .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: true });
     if (!error) setPlans((data as any[]) ?? []);
     setLoadingPlans(false);
   };

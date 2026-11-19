@@ -110,7 +110,8 @@ export async function listMedia(teacherId: string): Promise<TeacherMediaItem[]> 
     .from("teacher_media")
     .select("*")
     .eq("teacher_id", teacherId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
   if (error) throw error;
   return (data ?? []) as TeacherMediaItem[];
 }

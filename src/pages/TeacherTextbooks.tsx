@@ -201,13 +201,15 @@ const TeacherTextbooks = () => {
         .select("*")
         .or(ownerFilter)
         .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true }),
       supabase
         .from("teacher_textbooks")
         .select("*")
         .eq("teacher_id", user.id)
         .not("deleted_at", "is", null)
-        .order("deleted_at", { ascending: false }),
+        .order("deleted_at", { ascending: false })
+        .order("id", { ascending: true }),
     ]);
     if (data) setTextbooks(data as Textbook[]);
     setTrashedTextbooks((trashed ?? []) as Textbook[]);

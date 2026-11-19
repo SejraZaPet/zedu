@@ -425,6 +425,7 @@ export default function CurriculumTopicsSection({
         .select("id, title, subject")
         .eq("teacher_id", teacherId)
         .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
         .limit(1000),
     ]);
     const out: Candidate[] = [];
