@@ -19,7 +19,7 @@ describe("run_log_retention (návrh SQL)", () => {
     expect(sql).toMatch(/email_row_days integer NOT NULL DEFAULT 365 CHECK \(email_row_days >= 365\)/);
   });
   it("po vyčištění e-mailu zůstává typ, stav, čas a příjemce", () => {
-    const set = code.match(/SET ([^\n]+)\n/)![1];
+    const set = code.match(/SET (subject[^\n]+)\n/)![1];
     for (const kept of ["email_type", "status", "created_at", "recipient"]) expect(set).not.toContain(kept);
     for (const cleared of ["subject", "html", "body_text"]) expect(set).toContain(cleared);
   });
