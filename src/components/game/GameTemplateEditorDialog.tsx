@@ -305,6 +305,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                       )}
                     >
                       <div className="text-sm font-semibold">{m.emoji} {m.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{m.summary}</div>
                       <div className="text-[11px] text-muted-foreground">{m.scoringHint}</div>
                     </button>
                   );

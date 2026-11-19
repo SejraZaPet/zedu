@@ -9,12 +9,13 @@ import { Gamepad2, Trash2, Plus, Play, Pencil, Library, Copy, Zap } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { getModeDef, getThemeDef } from "@/lib/game-modes";
 import {
-  fetchGameTemplates, launchTemplateSession, purposeLabel, gameTemplateCopy,
+  fetchGameTemplates, launchTemplateSession, purposeLabel, gameTemplateCopy, liveLaunchSkipped,
   GAME_PURPOSES, type GameTemplate,
 } from "@/lib/game-templates";
 import { GameTemplateEditorDialog } from "@/components/game/GameTemplateEditorDialog";
 import { QuickGameDialog } from "@/components/game/QuickGameDialog";
 import { gameLibraryType, countQuestions, LIBRARY_TYPE_LABEL, type LibraryType } from "@/lib/quick-game";
+import { isStudioSet } from "@/lib/studio-step";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 
 const TYPE_EMOJI: Record<LibraryType, string> = { mcq: "❓", true_false: "✅", matching: "🔗", mixed: "🧩", presentation: "🖼️" };
@@ -35,7 +36,7 @@ const ALL = "__all__";
  * Obsah záložky „Sady a hry“ ve Studiu (dřív samostatná stránka /ucitel/hry).
  * `reloadKey` změní rodič po uložení nové sady, aby se knihovna načetla znovu.
  */
-const TeacherGames = ({ reloadKey = 0 }: { reloadKey?: number }) => {
+const TeacherGames = ({ reloadKey = 0, onEditStudioSet }: { reloadKey?: number; onEditStudioSet?: (t: GameTemplate) => void }) => {
   const [sessions, setSessions] = useState<GameSessionRow[]>([]);
   const [templates, setTemplates] = useState<GameTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +113,10 @@ const TeacherGames = ({ reloadKey = 0 }: { reloadKey?: number }) => {
 
   const launch = async (tpl: GameTemplate) => {
     try {
+      const skipped = liveLaunchSkipped(tpl);
+      if (skipped.length) {
+        toast({ title: `Živě se vynechá ${skipped.length} ${skipped.length === 1 ? "krok" : skipped.length < 5 ? "kroky" : "kroků"}`, description: skipped.map((x) => `${x.label}: ${x.title}`).join(" · ") });
+      }
       const sessionId = await launchTemplateSession(tpl);
       navigate(`/live/ucitel/${sessionId}`);
     } catch (e: any) {
@@ -241,7 +246,7 @@ const TeacherGames = ({ reloadKey = 0 }: { reloadKey?: number }) => {
                             <Button size="sm" className="gap-1.5 flex-1" onClick={() => launch(t)}>
                               <Play className="w-3.5 h-3.5" /> Spustit
                             </Button>
-                            {!t.demo_seed_key && <Button size="icon" variant="ghost" onClick={() => { setEditing(t); setEditorOpen(true); }} aria-label="Upravit" title="Upravit">
+                            {!t.demo_seed_key && <Button size="icon" variant="ghost" onClick={() => { if (onEditStudioSet && isStudioSet(t.activity_data)) { onEditStudioSet(t); return; } setEditing(t); setEditorOpen(true); }} aria-label="Upravit" title="Upravit">
                               <Pencil className="w-4 h-4" />
                             </Button>}
                             <Button size="icon" variant="ghost" onClick={() => duplicateTemplate(t)} aria-label="Duplikovat" title="Duplikovat">

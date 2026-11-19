@@ -2076,4 +2076,26 @@ const ActivityBlock = ({ block, onChange }: Props) => {
   );
 };
 
+/**
+ * Jen editor obsahu aktivity podle typu (bez hlavičky, AI a šablon) – znovupoužívá
+ * Studio (sestavovač sady), aby se obsah kroku upravoval stejně jako v lekci.
+ */
+export const ActivityContentEditor = ({ activityType, props: p, onChange }: { activityType: string; props: any; onChange: (p: any) => void }) => (
+  <div className="space-y-3">
+    {activityType === "flashcards" && <FlashcardsEditor props={p} onChange={onChange} />}
+    {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
+    {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
+    {activityType === "ordering" && <OrderingEditor props={p} onChange={onChange} />}
+    {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
+    {activityType === "image_hotspot" && <ImageHotspotEditor props={p} onChange={onChange} />}
+    {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
+    {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
+    {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
+    {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
+    {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
+    {activityType === "crossword" && <CrosswordEditor props={p} onChange={onChange} />}
+    {activityType === "poll" && <PollEditor props={p} onChange={onChange} />}
+  </div>
+);
+
 export default ActivityBlock;

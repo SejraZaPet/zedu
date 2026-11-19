@@ -74,3 +74,4 @@
 - Studio drafts (`fromtext-slides.ts`) stay local until confirmed, emit existing slide types; `activitySpec.points` 0/1/2 (missing=1) only via server `slidePointsFactor`.
 - License inquiries: insert only by `send-license-inquiry` before e-mail (`_shared/license-inquiry.ts`, server consent time); admin-only RLS read, trigger locks personal/consent fields.
 - Teacher games/activities live only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect, so game routes stay intact.
+- Studio sets use `src/lib/studio-step.ts` adapters (unknown props in `_extra`, non-live types stored as `studio_step` and dropped only at launch via `prepareSlidesForLiveLaunch`), so game logic and old games stay unchanged.

@@ -72,7 +72,9 @@ serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ steps }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const proposed = Array.isArray((args as any)?.steps) ? (args as any).steps.length : 0;
+      const dropped = Math.max(0, Math.min(proposed, parsedReq.count) - steps.length);
+      return new Response(JSON.stringify({ steps, dropped }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const systemPrompt = `Jsi zkušený český pedagog. Ze zadaného textu vytvoříš jednu kvalitní testovou otázku s výběrem odpovědí (kvíz) pro české školy.

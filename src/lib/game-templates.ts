@@ -1,3 +1,4 @@
+import { prepareSlidesForLiveLaunch } from "@/lib/studio-step";
 import { subjectKeyFromLabel } from "@/lib/game-backgrounds";
 import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,8 +71,11 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) throw new Error("Nejste přihlášeni.");
 
-  const slides = Array.isArray(template.activity_data) ? template.activity_data : [];
-  if (slides.length === 0) throw new Error("Hra neobsahuje žádný obsah.");
+  const raw = Array.isArray(template.activity_data) ? template.activity_data : [];
+  if (raw.length === 0) throw new Error("Hra neobsahuje žádný obsah.");
+  // Studio: kroky, které živě nejdou, se vynechají (UI je předem vyjmenuje přes liveLaunchSkipped).
+  const { slides } = prepareSlidesForLiveLaunch(raw);
+  if (slides.length === 0) throw new Error("Sada nemá žádný krok, který jde hrát živě.");
 
   const mode = (template.default_game_mode || "standard") as GameMode;
   const teamKind = (template.default_team_mode || "none") as TeamMode;
@@ -106,3 +110,7 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
   if (!data?.id) throw new Error("Nepodařilo se vytvořit session.");
   return data.id as string;
 }
+
+/** Kroky sady, které se při živém spuštění vynechají (typ živě zatím nejde). */
+export const liveLaunchSkipped = (template: Pick<GameTemplate, "activity_data">) =>
+  prepareSlidesForLiveLaunch(Array.isArray(template.activity_data) ? template.activity_data : []).skipped;

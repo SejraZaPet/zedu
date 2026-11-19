@@ -6,12 +6,15 @@ export interface GameModeDef {
   emoji: string;
   description: string;
   scoringHint: string;
+  /** Jedna věta pro učitele: co režim dělá (ověřeno proti _shared/game-scoring.ts). */
+  summary: string;
   themes: { id: string; name: string; emoji: string }[];
 }
 
 export const GAME_MODES: GameModeDef[] = [
   {
     id: "standard",
+    summary: "Všichni odpovídají naráz a za správnou a rychlou odpověď získají víc bodů.",
     name: "Klasický kvíz",
     emoji: "🎯",
     description: "Body podle rychlosti a správnosti odpovědí (jako Kahoot).",
@@ -20,6 +23,7 @@ export const GAME_MODES: GameModeDef[] = [
   },
   {
     id: "race",
+    summary: "Každý postupuje svým tempem a za správnou odpověď posune svou postavu na dráze.",
     name: "Závod",
     emoji: "🏁",
     description: "Každý odpovídá svým tempem, za správnou odpověď postoupí. Avataři běží po trati.",
@@ -32,6 +36,7 @@ export const GAME_MODES: GameModeDef[] = [
   },
   {
     id: "tower",
+    summary: "Za každou správnou odpověď přibude patro věže.",
     name: "Stavění věže",
     emoji: "🧱",
     description: "Každá správná odpověď přidá kostku. Nejvyšší věž vyhrává.",
@@ -44,6 +49,7 @@ export const GAME_MODES: GameModeDef[] = [
   },
   {
     id: "steal",
+    summary: "Správná odpověď ukradne body vedoucímu hráči, špatná body ubere.",
     name: "Krádež bodů",
     emoji: "🏴‍☠️",
     description: "Správně = 100 bodů a krádež 10 % bodů vedoucímu soupeři (50–300). Špatně = −100. Tři správně v řadě = lupič, krade dvojnásobek. Spoluhráčům se nekrade.",
