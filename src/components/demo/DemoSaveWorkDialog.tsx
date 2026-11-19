@@ -67,7 +67,10 @@ const DemoSaveWorkDialog = ({ open, onOpenChange, status, onChanged }: Props) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent
+        className="overflow-y-auto sm:max-w-lg"
+        style={{ top: "calc(50% + var(--demo-banner-h, 0px) / 2)", maxHeight: "calc(92vh - var(--demo-banner-h, 0px))" }}
+      >
         <DialogHeader>
           <DialogTitle>Uložit moji práci</DialogTitle>
           <DialogDescription>

@@ -1,0 +1,50 @@
+import { describe, it, expect } from "vitest";
+import {
+  buildDemoReminderEmail, DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION, normalizeDemoEmail, sha256Hex, showCountdown,
+} from "../../supabase/functions/_shared/demo-contact";
+import { DEMO_EXPORT_MAX_ITEMS, exportLimitMessage, onlyOwnRows, uniqueName } from "@/lib/demo-export";
+
+describe("demo kontakt", () => {
+  it("souhlas má přesné znění a verzi z plánu", () => {
+    expect(DEMO_CONSENT_VERSION).toBe("2026-11-19.v1");
+    expect(DEMO_CONSENT_TEXT).toBe("Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu a k převodu mé práce do ostrého účtu. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat; e-mail smažeme nejpozději se smazáním dema.");
+  });
+  it("odmítne neplatný a vymyšlený demo e-mail", () => {
+    expect(normalizeDemoEmail("x")).toBeNull();
+    expect(normalizeDemoEmail("ucitel-1@demo.bezli.cz")).toBeNull();
+    expect(normalizeDemoEmail(" Jana@Skola.CZ ")).toBe("jana@skola.cz");
+  });
+  it("odpočet se ukáže až od 3 dnů", () => {
+    expect(showCountdown(4)).toBe(false);
+    expect(showCountdown(3)).toBe(true);
+    expect(showCountdown(0)).toBe(true);
+    expect(showCountdown(null)).toBe(false);
+  });
+  it("připomínka D−1 říká zítra a obsahuje odhlášení", () => {
+    const e = buildDemoReminderEmail({ kind: "1d", deletesAt: "2026-11-27T10:00:00Z", unsubscribeUrl: "https://x/u?t=abc" });
+    expect(e.subject).toBe("Váš ukázkový účet Bezli se smaže zítra");
+    expect(e.text).toContain("https://x/u?t=abc");
+    expect(e.html).toContain("27. 11. 2026");
+  });
+  it("připomínka D−3 říká za 3 dny", () => {
+    expect(buildDemoReminderEmail({ kind: "3d", deletesAt: "2026-11-27T10:00:00Z", unsubscribeUrl: "u" }).subject).toContain("za 3 dny");
+  });
+  it("otisk tokenu je stabilní sha256", async () => {
+    expect(await sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  });
+});
+
+describe("demo export", () => {
+  it("nepošle ukázkový obsah", () => {
+    expect(onlyOwnRows([{ id: 1 }, { id: 2, is_demo_seed: true }, { id: 3, demo_seed_key: "k" }]).map((r) => r.id)).toEqual([1]);
+  });
+  it("limit 200 položek a hláška nabídne kategorie", () => {
+    expect(DEMO_EXPORT_MAX_ITEMS).toBe(200);
+    expect(exportLimitMessage("bytes")).toContain("50 MB");
+    expect(exportLimitMessage("items")).toContain("po kategoriích");
+  });
+  it("shodné názvy v ZIP se nepřepíšou", () => {
+    const used = new Set<string>();
+    expect([uniqueName("a.png", used, true), uniqueName("a.png", used, true)]).toEqual(["a.png", "a-2.png"]);
+  });
+});

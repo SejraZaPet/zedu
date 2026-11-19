@@ -65,3 +65,5 @@
 - Live answer time and manual "Spustit" use only `_shared/live-timing.ts` (re-exported by `src/lib/live-timing.ts`): `activitySpec.timeLimitSec` overrides game time, `settings.activityStartMode`/`armedQuestion` gate answers on client and server; missing keys keep legacy behaviour (incl. 20 s fallback).
 
 - Practice photo batches are ephemeral in use-practice-photos; process one JPEG per existing OCR call and cancel stale batches by epoch so page exits cannot restore discarded previews.
+
+- Demo visitor contacts live only in service-only `demo_contacts` (pair from JWT via `demo-save-contact`; clients read masked state via `get_my_demo_contact_status`); consent text/reminder copy only in `_shared/demo-contact.ts`, reminders claimed atomically by `demo_claim_reminders`, so e-mails never leak and sends stay idempotent.

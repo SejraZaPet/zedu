@@ -118,3 +118,15 @@ Na návštěvníka nejvýš 2 připomínky + případně 1 potvrzení převodu. 
   - rozšíření demo_purge_pair o mazání kontaktu;
   - plán úlohy připomínek.
 - Nové funkce: demo-save-contact, demo-expiry-reminders, demo-unsubscribe; později demo-transfer.
+
+## Realizace etap 1–2 (2026-11-19)
+- Migrace 0091:
+  - `demo_contacts` jen pro service_role;
+  - RPC `get_my_demo_expiry`, `get_my_demo_contact_status`, `demo_extend_once`;
+  - `demo_claim_reminders` a `demo_release_reminder` jen pro service_role;
+  - `demo_purge_pair` maže kontakt ve stejné transakci, FK cascade je pojistka.
+- Funkce `demo-save-contact`, `demo-expiry-reminders`, `demo-unsubscribe`. Nic není nasazeno.
+- Plánovaná úloha se vytvoří **až po nasazení** funkcí, jinak by denně volala neexistující funkci. Vzor je stejný jako `demo-cleanup-nightly`:
+  - `net.http_post` na `/functions/v1/demo-expiry-reminders`;
+  - hlavička `X-Cron-Secret` čtená v příkazu přímo z trezoru (`vault.decrypted_secrets`, název `cron_internal_secret`), žádná doslovná hodnota;
+  - rozvrh `0 8 * * *` (denně 8:00 UTC, před nočním úklidem ve 3:00).
