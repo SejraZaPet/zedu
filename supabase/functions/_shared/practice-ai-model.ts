@@ -1,5 +1,3 @@
-/**
- * Jediné místo modelu pro „Učím se“ (OCR fotky + generování otázek).
- * Katalog Lovable AI: chat-completions = zero data retention (ZDR), vstup text i obrázek.
- */
-export const PRACTICE_AI_MODEL = "google/gemini-3.8-flash";
+/** „Učím se“ (OCR fotky + generování otázek) používá kvalitní model ze sdílené konstanty. */
+import { AI_MODEL_QUALITY } from "./ai-models.ts";
+export const PRACTICE_AI_MODEL = AI_MODEL_QUALITY;

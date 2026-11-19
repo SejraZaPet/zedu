@@ -1,6 +1,7 @@
 import { limitActivityItems } from "../_shared/activity-item-limit.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -167,7 +168,7 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: AI_MODEL_QUALITY,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

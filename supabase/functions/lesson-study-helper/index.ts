@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { loadPracticeLesson } from "../_shared/practice-lesson.ts";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: AI_MODEL_QUALITY,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

@@ -4,6 +4,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_QUALITY_REASONING } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +53,7 @@ Bez nadpisu, bez úvodu a závěru, bez markdownu kromě odrážek.`;
         "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
-        model: "openai/gpt-6-astra",
+        model: AI_MODEL_QUALITY_REASONING,
         instructions,
         input: `Lekce: ${lessonTitle || "(neuvedeno)"}\nSekce: ${sectionTitle}\n\nText sekce:\n${sectionText}`,
         stream: true,

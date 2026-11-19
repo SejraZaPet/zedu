@@ -1,3 +1,4 @@
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 // Generate 3 variant worksheet block suggestions from a snippet of lesson content.
 // Uses Lovable AI Gateway (google/gemini-2.5-flash) with tool calling for structured output.
 
@@ -179,7 +180,7 @@ ${userInstruction ? `Speciální požadavek učitele: ${userInstruction}\n` : ""
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODEL_QUALITY,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,7 +96,7 @@ PRAVIDLA:
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODEL_QUALITY,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userContent },
@@ -191,7 +192,7 @@ PRAVIDLA:
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_MODEL_QUALITY,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },

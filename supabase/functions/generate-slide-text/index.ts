@@ -1,3 +1,4 @@
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 // Krátký text pro blok slidu (AI). Vrací jeden odstavec nebo odrážky
 // v kontextu nadpisu slidu a názvu lekce. Lovable AI Gateway (Gemini Flash).
 
@@ -66,7 +67,7 @@ ${existingText ? `Stávající text bloku (navaž nebo jej vylepši):\n"""\n${ex
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_MODEL_QUALITY,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

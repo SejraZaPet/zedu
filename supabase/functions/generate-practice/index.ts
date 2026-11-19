@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, cleanLessonText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { loadPracticeLesson, clampQuestionCount } from "../_shared/practice-lesson.ts";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,7 +114,7 @@ Vytvoř pro každou fázi metody 2–3 otázky, které žáka touto fází prove
 ${question_count ? `Celkem vytvoř přibližně ${clampQuestionCount(question_count, 8)} otázek (rozděl je mezi fáze).\n` : ""}Vrať strukturovaný JSON přes nástroj generate_practice_set.`;
 
     const aiBody = {
-      model: "google/gemini-3-flash-preview",
+      model: AI_MODEL_QUALITY,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

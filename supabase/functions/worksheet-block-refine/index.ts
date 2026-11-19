@@ -1,6 +1,7 @@
 // Refine a single worksheet block based on a quick action or custom instruction.
 // Returns the refined block + a human-readable summary of changes.
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +115,7 @@ Vrať upravený blok + souhrn změn.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODEL_QUALITY,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

@@ -4,6 +4,7 @@ import { requireAuth } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { answerDistribution, classSuccessSummary, computeParticipantStats, isGradedSlide, pct } from "../_shared/session-participants.ts";
 import { sessionDisplayName } from "../_shared/session-display-name.ts";
+import { AI_MODEL_FAST } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,7 +194,7 @@ ${weakSlides.map((s) => `- Slide ${s.index} "${s.headline}" (${s.successRate}%):
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: AI_MODEL_FAST,
             messages: [
               {
                 role: "system",

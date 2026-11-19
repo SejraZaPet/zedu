@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_QUALITY_REASONING } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ ${shape}`;
         ...(incomingRunId ? { "X-Lovable-AIG-Run-ID": incomingRunId } : {}),
       },
       body: JSON.stringify({
-        model: "openai/gpt-6-astra",
+        model: AI_MODEL_QUALITY_REASONING,
         reasoning_effort: "low",
         stream: true,
         messages: [

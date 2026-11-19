@@ -67,3 +67,5 @@
 - Practice photo batches are ephemeral in use-practice-photos; process one JPEG per existing OCR call and cancel stale batches by epoch so page exits cannot restore discarded previews.
 
 - Demo visitor contacts live only in service-only `demo_contacts` (pair from JWT via `demo-save-contact`; clients read masked state via `get_my_demo_contact_status`); consent text/reminder copy only in `_shared/demo-contact.ts`, reminders claimed atomically by `demo_claim_reminders`, so e-mails never leak and sends stay idempotent.
+- Server AI models come only from `supabase/functions/_shared/ai-models.ts` (fast / quality / quality-reasoning), guarded by ai-models-single-source test, so upgrades are one-line and auditable.
+- Log retention (website chat, email content) runs only via SQL `run_log_retention()` with limits in service-only `retention_config` (min 90/365 days), called by `log-retention-cleanup` cron, so periods change without migrations.

@@ -2,6 +2,7 @@
 // Vstup: { texts: string[], question?: string }
 // Výstup: { clusters: [{ label, summary, count, examples[] }], outliers: string[] }
 import { requireAuth } from "../_shared/auth.ts";
+import { AI_MODEL_FAST } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_MODEL_FAST,
         messages: [
           {
             role: "system",

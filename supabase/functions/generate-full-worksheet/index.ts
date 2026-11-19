@@ -3,6 +3,7 @@ import { parseCaseStudy, caseStudyPromptBlock } from "../_shared/worksheet-case-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { parseSections, missingByType, assembleSections, projectBriefToItems, type ProjectBrief } from "../_shared/worksheet-sections.ts";
+import { AI_MODEL_QUALITY, AI_MODEL_QUALITY_REASONING } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -389,7 +390,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODEL_QUALITY,
           messages: [
             { role: "system", content: buildSystemPrompt(count, sections, isFirst) },
             { role: "user", content: buildUserPrompt(chunk, count, sections, partInfo) + extraInstruction },
@@ -503,7 +504,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "openai/gpt-6-astra",
+          model: AI_MODEL_QUALITY_REASONING,
           messages: [
             { role: "system", content: `Jsi expert na projektovou výuku na českých školách. Z dodaného obsahu navrhni zadání žákovského projektu. Použij jen informace z obsahu. Jazyk čeština.${planGradeBand ? ` Ročník: ${planGradeBand}.` : ""} Kritéria hodnocení: 3–6 položek s body (celé číslo).` },
             { role: "user", content: `Téma: ${lessonTitle || "(bez názvu)"}\n${planSubject ? `Předmět: ${planSubject}\n` : ""}Obsah:\n${lessonContent.slice(0, 30000)}\n\n${hint ? `Pokyn učitele: ${hint}\n` : ""}Navrhni zadání projektu.` },

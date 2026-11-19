@@ -170,6 +170,7 @@ async function extractDocxText(bytes: Uint8Array) {
 // ---------------------------------------------------------------------------
 
 import { XMLParser as _XMLParser } from "https://esm.sh/fast-xml-parser@4.5.0";
+import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 
 const xmlParser = new _XMLParser({
   preserveOrder: true,
@@ -595,7 +596,7 @@ async function callGatewayWithFile(
   return await callGateway(
     apiKey,
     {
-      model: "google/gemini-2.5-flash",
+      model: AI_MODEL_QUALITY,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -627,7 +628,7 @@ async function callGatewayWithText(
   return await callGateway(
     apiKey,
     {
-      model: "google/gemini-2.5-flash",
+      model: AI_MODEL_QUALITY,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
