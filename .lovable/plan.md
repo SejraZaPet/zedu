@@ -1,168 +1,135 @@
-# Jednotný vstup zdrojů – analýza a návrh (19. 11. 2026)
+# Studio – aktivity a hry (návrh, 19. 11. 2026)
 
-Jen analýza a návrh. Kód, databáze, migrace ani nasazení se neměnily. Implementace začne až po schválení konkrétní etapy.
+Jen návrh. Bez kódu, DB, migrací a nasazení. Etapa 0 = plán `.lovable/plan/jednotny-vstup-zdroju-2026-11-19.md` (balík zdrojů, limity, odkaz, demo); zde se neopakuje. Po schválení se tento dokument uloží také jako `.lovable/plan/studio-aktivit-2026-11-19.md`.
 
-## A) Inventář
+## Otázka pro Tynu jednou větou
+„Když je ve hře třeba křížovka, kterou nejde soutěžit na rychlost, má ji každý žák řešit na svém telefonu s odpočtem a body se mu přičtou do hry (samostatné kolo)? Nebo ji raději ze živé hry vynechat a dát jen za domácí úkol?“
 
-Ověřeno čtením kódu (soubor:řádek). Místa označená „neověřeno“ pocházejí ze zadání a ověří se v etapě 3.
+## A) Inventář typů (ověřeno v kódu)
 
-| Místo | Kdo | Zdroje dnes | Limity | Kam text jde (model) | Demo guard | Ukládá zdroj |
-|---|---|---|---|---|---|---|
-| ActivityWizardDialog | učitel | lekce / text / 1 soubor | 6000 znaků, **tiché oříznutí** (activity-wizard.ts:8, 59, 89) | generate-activity-content (gemini-3-flash-preview, :170; server ořízne 6000, :150) | ano (:45) | ne |
-| BlockEditor – AI z bloku | učitel/admin | text lekce | **tiché oříznutí slice(0,6000)** (BlockEditor.tsx:1569, 1598, 1905); LessonSourcePickerDialog 6000 | generate-activity-content | ano | ne |
-| FromMaterialView („Z materiálu“) | učitel i žák | 6 fotek NEBO 1 dokument, bez pole pro text; soubor nahradí fotky a naopak | klient 20 000, **server tiše ořízne na 12 000** (generate-content-from-material:82, 178); fotky slice(0,6) (:87, 183) | process-file-content → generate-content-from-material (gemini-2.5-flash) | ano (:31) | ne (neověřeno do detailu) |
-| StudentMethods („Učím se“) | žák | text / 1 PDF nebo TXT / až 6 fotek | 150–8000, bez ořezu, viditelné upozornění (practice-phases.ts:50) | extract-practice-photo-text + ai-practice-rag (gemini-2.5-flash) | ano | jen { kind } |
-| TeacherSuggestByMethod | učitel | .pdf/.docx/.pptx, text lekce | **tiché oříznutí na 20 000** (:437, 467) | process-file-content | **ne** | ne |
-| TeacherCurriculumPlans / curriculum-file-extract | učitel | dokument (extractDocumentText, :364) | 20 000 (curriculum-file-extract.ts:5) | process-file-content + AI plán | neověřeno | plán ano |
-| ImportTextbookFileDialog | učitel/admin | dokument | neověřeno | process-file-content | **ne** | vytváří lekce (záměrně) |
-| WorksheetEditor – z lekce | učitel | text lekce | 20 000 jako podmínka (:1769) | generování listu | neověřeno | ne |
-| SchoolCurriculumManager, AcademyView, ZedAI, AttachmentsUploader | různé | neověřeno | neověřeno | neověřeno | neověřeno | přílohy ano (nejsou AI zdroj) |
-| Webový odkaz | – | nikde v kódu | – | – | – | – |
+Zdroje: `live-game-core.ts:10`, `activity-wizard.ts:31`, `ActivityBlock.tsx`, `worksheet-spec.ts:16`, `AddSlideSheet.tsx:675–691`.
 
-**Edge funkce**
-- process-file-content: requireAuth, 25 MB base64 (:11), gemini-2.5-flash (:598, 630), 3 pokusy. **Chybí demoAiGuard.** Do logu zapisuje až 400 znaků chybového těla AI (:569).
-- generate-activity-content: zapisuje do logu **celý neparsovatelný výstup AI** (:203), který může citovat zdroj. Model gemini-3-flash-preview je preview.
+| Typ | Blok lekce | Slide hry | Položka listu | Šablona (Moje aktivity) | Živě dnes | Samostatně | Tisk |
+|---|---|---|---|---|---|---|---|
+| Kvíz (MCQ) | quiz | mcq | mcq | ano | ano | ano | ano |
+| Pravda/nepravda | true_false | → mcq | true_false | ano | ano (jako MCQ) | ano | ano |
+| Přiřazování | matching | → rozpad na MCQ | matching | ano | jen rozpadem | ano | ano |
+| Řazení | ordering | → MCQ | ordering | ano | jen rozpadem | ano | ano |
+| Doplňování | fill_blanks / fill_choice | → MCQ | fill_blank | ano | jen rozpadem | ano | ano |
+| Popis obrázku | image_label, image_hotspot | – | image_label, image_hotspot | ano | ne | ano | ano |
+| Kartičky | flashcards | – | flashcards | ano | ne | ano | ano |
+| Křížovka | crossword | – | crossword | jen v lekci | ne | ano | ano |
+| Osmisměrka | – | – | word_search | **jen list** | ne | ne | ano |
+| Třídění | sorting | – | sorting | jen v lekci | ne | ano | ano |
+| Pexeso | memory_game | – | – | jen lekce | ne | ano | ne |
+| Odkrývací karty | reveal_cards | – | – | jen lekce | ne | ano | ne |
+| Anketa | poll | (wordcloud/wall) | – | – | ano bez bodů | – | – |
+| Zeď / slovní mrak / exit ticket | wall | wall, wordcloud, exit | open_answer | „Otevřená odpověď“ | ano bez bodů | – | částečně |
+| Krátká odpověď | – | – | short_answer | **jen list** | ne | ne | ano |
+| Úniková hra, diferencovaná, týmy | – | escape, differentiated, teams | – | **jen hra** | ano | ne | ne |
+| Text / Shrnutí / Tabulka | text, summary | text | instruction_box, table | summary | jako slide | ano | ano |
 
-**Hlavní nekonzistence**
-- Limity se liší: 6000 / 8000 / 12 000 / 20 000 znaků.
-- Na čtyřech místech se text tiše ořezává.
-- Nový zdroj přepíše předchozí: průvodce aktivit i „Z materiálu“.
-- Demo: zpracování souboru i OCR je volání AI. Funkce process-file-content ale ochranu dema nemá, takže demo může AI používat bez limitu.
-- Modely: všude gemini-2.5-flash (zastaralý), jen aktivity používají 3-flash-preview.
+**Nesoulady**
+- Čas, body a vysvětlení mají jen slidy hry (`game-slide-settings`, `timeLimitSec`); aktivity z Moje aktivity je nemají.
+- Obrázek u otázky/odpovědi: hra MCQ má, aktivity v lekci jen u image_label/hotspot.
+- Živá hra vše převádí na MCQ (`activityToCoreQuestions`) – přiřazování a řazení ztrácí původní mechaniku; ostatní typy „nelze hrát živě“.
+- „Aktivita z vlastního textu“ (`AddSlideSheet.tsx:462`) posílá jen text (server ořízne `slice(0,4000)`), vytvoří **jednu** MCQ. Má přihlášení i demo guard, model `gemini-3-flash-preview`.
+- Osmisměrka a krátká odpověď existují jen v listu; úniková hra a týmy jen ve hře.
 
-## B) Společný modul
+## B) Společný model kroku
 
-- `src/lib/source-bundle.ts` – čisté funkce bez React:
-  - typy položek,
-  - sloučení textů,
-  - kontrola limitů,
-  - jednotné české hlášky.
-  - Bude se dát testovat bez prohlížeče.
-- `src/lib/source-extract.ts` – jedna cesta extrakce podle typu:
-  - TXT: lokálně,
-  - DOCX/PPTX/PDF s textem: process-file-content v režimu „jen text“,
-  - foto: practice-photo.ts a extract-practice-photo-text,
-  - URL: nová funkce fetch-source-url.
-- `useSourceBundle` – převezme z use-practice-photos:
-  - rušení starých dávek číslem dávky,
-  - zámek busy,
-  - pořadí, opakování a odebrání jedné položky,
-  - uvolnění náhledů.
-- `<SourceInput>` – dlaždice a seznam zdrojů. Zobrazuje se podle props `allowed`, `limits`, `audience` (učitel/žák/demo).
-
-**Tvar položky**
 ```text
-{ id, kind: text|pdf|docx|pptx|txt|photo|url, label, status: pending|loading|ready|error,
-  text?, chars, error?, origin? (název souboru / host odkazu) }
+ActivityStep {
+  id, type,                    // quiz | true_false | matching | ... | text | wall | escape ...
+  title, instructions?,
+  content,                     // typově specifická data = dnešní activitySpec/props
+  media?: { questionImage?, answerImages? },
+  explanation?, hint?,
+  settings: { timeLimitSec?, points?, shuffle?, mode?: "live"|"solo_round"|"self" },
+  ai?: { generated, modifiedAt }
+}
+ActivitySet { id, title, purpose?, gameMode?, background?, teams?, steps: ActivityStep[], publish? }
 ```
 
-**Sloučení:** jen připravené položky v zobrazeném pořadí. Každá dostane záhlaví `--- Zdroj 2: Fotka (strana 1) ---` a mezi položkami je prázdný řádek. Před generováním uživatel vidí výsledek a počet znaků.
+Adaptéry (čisté funkce, `src/lib/activity-step/`), oba směry, s testy „tam a zpět beze ztráty“:
+- `fromGameSlide / toGameSlide` (teacher_game_templates.activity_data),
+- `fromLessonBlock / toLessonBlock` (bloky lekcí, activity_templates),
+- `toWorksheetItem` (jednosměrně, list je tiskový výstup; zpět jen pro shodné typy),
+- neznámé pole se uchovají v `content._extra`, aby se nic neztratilo.
 
-## C) Jednotné limity (návrh)
+Doplnit u všech typů: `timeLimitSec` (výchozí z `live-timing.ts`), `points` (výchozí 1000 standard; skutečné bodování dál jen server `_shared/game-scoring.ts`), `explanation`, volitelný obrázek. V první fázi uloženo uvnitř stávajících JSON polí, bez změny DB.
 
-| Limit | Hodnota | Důvod |
-|---|---|---|
-| Zdrojů celkem | 10 | Přehledný seznam na mobilu |
-| Fotek | 6 | Shoda s dneškem; každá je 1 OCR volání |
-| Souborů | 4 | Přiměřená doba extrakce |
-| Velikost souboru | 20 MB dokument, 15 MB fotka (po zmenšení 4 MB) | Shoda s existujícími limity |
-| Znaků na zdroj | 20 000 | Shoda s dnešní extrakcí |
-| Znaků celkem do AI | 20 000 učitel, 8000 žák, 8000 demo | Flash modely zvládnou víc, ale cena i doba odpovědi rostou. Žákovské procvičování dnes 8000. |
-| Minimum | 150 znaků | Shoda s Učím se |
+## C) Studio UX
 
-**Při překročení**
-- Nikdy tiše neořezat.
-- Ukázat „Vešlo se 14 200 z 20 000 znaků, přebývá 3 400“.
-- Generování zablokovat, dokud uživatel neodebere zdroj nebo nezkrátí text v náhledu.
-- Serverové ořezy (12 000 a 6000) se sjednotí na stejnou hodnotu jako klient. Server pak nadlimitní text odmítne chybou 413, místo aby ho tiše zkrátil.
+```text
+Studio (aktivity a hry)
+ ├ Knihovna sad: hledání, filtr (hry / aktivity / šablony / sdílené), karty
+ ├ + Nová sada → Z mého materiálu | Z lekce | Od nuly | Ze šablony
+ └ Sestavovač
+    [Seznam kroků – drag&drop, ↑↓]  [Náhled: Projekce | Telefon žáka, úpravy přímo]  [Nastavení kroku / sady]
+    Horní lišta: Zpět/Znovu · Koncept uložen · Zkušební běh jako žák · Použít ▾
+    Použít: Spustit živě · Zadat jako úkol · Vytisknout · Do prezentace · Do lekce
+    Kontrolní seznam: „Chybí správná odpověď u kroku 3“, „Krok 5 nejde živě – bude samostatné kolo“
+```
+- „Přidat krok“: hledání + skupiny (Otázky, Přiřazování a řazení, Slova a doplňování, Obrázky, Hry a kola, Názor třídy, Obsah).
+- 390 px: tři panely jako záložky (Kroky / Náhled / Nastavení), lišta dole.
+- Komponenty: `StudioLibrary`, `SetBuilder`, `StepList`, `StepPreview` (znovupoužije existující přehrávače a `InlineText`), `StepSettingsPanel`, `AddStepPicker`, `SetChecklist`, `useSetDraft` (autosave + undo jako `useSlidesHistory`).
+- Stávající editory (GameTemplateEditorDialog, ActivityBlock) se vloží jako panel nastavení – nepíšou se znovu.
 
-## D) Webový odkaz – fetch-source-url
+## D) AI
+- „Navrhnout sadu“: balík zdrojů → 1 volání → návrh 5–12 kroků smíšených typů; učitel zaškrtne/upraví, vloží až po potvrzení.
+- „Jeden typ“: zachová dnešní průvodce (obtížnost, počet, možnosti, banka slov).
+- „Přegenerovat krok“ a „Upravit pomocí AI“: 1 volání na krok, ostatní kroky se nemění.
+- Model: sjednotit na aktuální flash model (rozhodnutí o `gemini-2.5-flash` stále čeká); normalizace jen v `activity-ai-normalize.ts`.
+- Demo: 1 generování = 1 volání přes `demoAiGuard`; upozornění na zbývající volání.
+- Každý AI krok má `ai_generated` + `AiContentBadge`, ruční úprava nastaví `ai_modified_at`.
 
-- Přihlášení je povinné (requireAuth).
-- Demo počítá 1 volání na odkaz, rate limit 20 odkazů/h na uživatele.
-- Povolené jen http/https na portech 80 a 443. Zakázané jsou přihlašovací údaje v URL a IP literály privátních, lokálních, link-local a metadata rozsahů (IPv4 i IPv6).
-- Proti DNS rebindingu: vlastní resolve, kontrola všech adres a připojení na ověřenou IP.
-- Přesměrování ručně, max 3, každé znovu ověřit.
-- Timeout 8 s, max 2 MB.
-- Povolené typy obsahu: text/html, text/plain, application/pdf (PDF jde do stávající extrakce).
-- Čitelný text se vytáhne bez AI: odstranit skripty, navigaci a patičky, vzít hlavní článek.
-- Srozumitelné chyby:
-  - „Stránka vyžaduje přihlášení“ (401/403, přihlašovací formulář),
-  - „Stránka se načítá jen skriptem, zkopíruj text ručně“ (prázdný text),
-  - „Odkaz se nepodařilo načíst“.
-- U zdroje upozornění: „Použij jen obsah, který smíš ve výuce použít; uveď zdroj.“ Do výstupu se přidá origin.
-- Ukládat jen odkaz, a to pouze u učitelského obsahu, který se sám ukládá. Text se neukládá a u žáků se neukládá nic. Do logů nic z obsahu, jen stav a doba.
+## E) Zveřejnění žákům (návrh, DB až po „schvaluji“)
+- Bez nové tabulky v 1. fázi: zveřejnění = **materiál** přes stávající `assignments` (`settings.kind = material`, `settings.activitySet`, `visibleUntil`, příjemci přes `assignment_recipients`). Stavy: Soukromé → Naplánováno (publish_at) → Zveřejněno → Staženo (archivace). RLS beze změny.
+- Žák ji najde v Úkolech/materiálech třídy a v „Učím se“ jako „Procvičit sadu“.
+- Ukládá se jen výsledek do existujícího `student_activity_results` (skóre, odpovědi pro učitele); bez XP mimo `add_xp`. Domácí procvičování nemá žebříček.
+- Pozdější varianta (etapa 7): tabulka `activity_set_publications` – jen pokud materiál nestačí.
 
-## E) Soukromí a demo
+## Samostatné kolo – zhodnocení
+- Výchozí návrh je dobrý: zachová tempo hry, používá stávající časování (`live-timing`, ruční „Spustit“). Body: podíl správných × body kroku, počítá server.
+- Alternativy: (a) krok se ve hře přeskočí a nabídne jako domácí úkol; (b) projekce jen ukáže úlohu a třída řeší společně bez bodů; (c) týmové kolo – jeden telefon na tým.
+- Riziko: server musí umět hodnotit nové typy – to je etapa 5 a nejcitlivější část.
 
-- Žákovské zdroje se neukládají ani nelogují.
-- Fotky jen v paměti prohlížeče, na server jdou jen jako přenos k OCR.
-- Odstranit z logů těla AI odpovědí: process-file-content:569, generate-activity-content:182 a 203, ai-practice-rag:193.
-- Demo dnes: limit 5 AI volání na účet a denní strop (demo_config).
+## F) Etapy
 
-**Návrh pro demo – „zdroje zdarma, generování se počítá“:**
-- Extrakce textu z DOCX, PPTX, TXT a PDF s textovou vrstvou poběží bez AI (parsování), takže se nepočítá.
-- OCR fotek a skenované PDF se počítají. Celá dávka OCR zabere dohromady jedno volání, ne jedno na fotku. Technicky jedna rezervace demo limitu pro dávku s krátkým tokenem, takže změna server funkce extract-practice-photo-text potřebuje schválení.
-- Výsledek: jedno generování stojí 1–2 volání.
-- Pro přednášku s 50 lidmi: limit na pár (účet), ne sdílený. Upozornění předem kolik volání zbývá.
-- Denní strop zkontrolovat, zda stačí: 50 lidí × 5 = 250 volání.
+| # | Rozsah | Rizika | Testy / regrese | Náročnost |
+|---|---|---|---|---|
+| 0 | Jednotný vstup zdrojů (samostatný plán) | viz plán | viz plán | M–L |
+| 1 | Aktivita z vlastního textu: zdroje, víc kroků a typů; výběr lekce v Moje aktivity | změna serverové funkce | nové + `live-game-core`, `live-game-expand`, `game-scoring` | M |
+| 2 | ActivityStep + adaptéry, čas/body/vysvětlení/obrázek všude | ztráta polí | round-trip testy všech typů, `lesson-to-slides-fidelity`, `lesson-activity-to-worksheet` | L |
+| 3 | Sestavovač za příznakem (jen Tyna) | výkon, mobil | e2e uložení/načtení, 390 px | L |
+| 4 | Menu Studio, knihovna, přesměrování `/ucitel/hry`, `/aktivity` | zlomené odkazy | test tras, staré odkazy fungují | M |
+| 5 | Živé hraní všech typů (samostatná kola, server bodování) | férovost, výkon | `game-scoring`, `game-session-sync`, `live-timing`, zátěž 50 hráčů | L |
+| 6 | Zveřejnění žákům přes materiály | soukromí, viditelnost | recipients/RLS testy, demo izolace | M |
+| 7 | Úklid, případná společná tabulka (migrace po schválení) | data | migrace + rollback, zpětná čitelnost | M |
 
-## F) UX
+Každá etapa se nasazuje samostatně; regrese živé hry vždy: celá sada testů + ruční hra se 2 telefony (PIN bez účtu, režimy Klasický/Závod/Věž/Krádež, týmy, projekce).
 
-- Čtyři dlaždice v mřížce 2×2 (na 390 px), jejich množina se může zúžit podle místa:
-  - Vložit text,
-  - Nahrát soubory (multiple),
-  - Vyfotit / Z galerie (foťák zvlášť),
-  - Vložit odkaz.
-- Seznam zdrojů:
-  - ikona typu, název, počet znaků, stav (načítá se / hotovo / chyba + Zkusit znovu),
-  - šipky pro pořadí, Odebrat,
-  - souhrnný ukazatel „14 200 / 20 000 znaků“.
-- Přidání nikdy nic nenahradí.
-- Přístupnost:
-  - stav načítání přes aria-live,
-  - tlačítka s popisky („Posunout zdroj 2 nahoru“),
-  - po odebrání se fokus přesune na sousední položku,
-  - celé ovládání klávesnicí.
-- Hlášky: učitel vykání, žák tykání (UI_COPY).
+## G) Etapa 1 – implementační plán
+1. `generate-activity-from-text`: nový volitelný vstup `{ text, types?: ["mcq","true_false",...], count?: 1–10 }`; bez `types` vrací dnešní tvar (zpětná kompatibilita). Odstranit tichý `slice(0,4000)` → odmítnout >limit chybou 413 s hláškou. Zachovat requireAuth + demoAiGuard (1 volání).
+2. `AddSlideSheet` (fromtext): místo samotného textového pole `SourceInput` z etapy 0 (text, soubory, foto, odkaz); výběr počtu (1–10) a typů (Kvíz, Pravda/nepravda, Slovní mrak/Zeď jako otázka bez bodů); náhled návrhu se zaškrtáváním, vložení přes stávající `appendMany` + `buildMcqSlide`, nic nenahradí existující slidy.
+3. Nový čistý `src/lib/fromtext-slides.ts`: normalizace AI výstupu → slidy (přes `activity-ai-normalize.ts`), označení AI.
+4. `ActivityWizardDialog`: zdroj „Z lekce“ přes existující `teacher-source-lessons` picker (jako CreateFromLessonDialog); odstranit tiché `limitSourceText` → viditelné upozornění.
+5. Testy: `fromtext-slides.test.ts` (3 typy, neplatný výstup odmítnut, pořadí), test zpětné kompatibility funkce (mock), `activity-wizard` (žádné tiché ořezání), regrese `live-game-core`, `live-game-expand`, `game-scoring`.
+- Nasaditelné samostatně: **ano**, pokud je hotová etapa 0 (jinak verze 1a jen s textem a více kroky). Edge funkci nasazuje Tyna na pokyn.
 
-## G) Etapy
+## H) Rizika, otázky, neověřitelné
+**Rizika:** bodování nových typů na serveru; velký zásah do AddSlideSheet (1600+ řádků); dvě knihovny během přechodu; demo limit při „Navrhnout sadu“.
 
-1. **Sdílený modul + „Z materiálu“ + průvodce aktivit** (L). Bez DB.
-   - Odstraní tiché ořezy a nahrazování.
-   - Server zjednoduší limity na stejné číslo.
-   - Riziko: změna serverového ořezu u generate-content-from-material. Testy: source-bundle unit, mobil 390, regrese from-material a activity-wizard.
-2. **Demo a soukromí** (M).
-   - demoAiGuard do process-file-content jen pro OCR/AI cestu,
-   - odstranění logování obsahu,
-   - dávková rezervace OCR.
-   - Případný sloupec v demo_config jen po schválení SQL.
-3. **Napojení dalších míst** (M): Učím se (převzít hook), TeacherSuggestByMethod, BlockEditor, plány, WorksheetEditor. Napřed doplnit neověřené řádky inventáře.
-4. **Webový odkaz** (M). Nová edge funkce, testy SSRF (privátní IP, přesměrování, rebinding, velikost, typy).
-5. **Zbytek a modely** (S): ImportTextbookFileDialog, SchoolCurriculumManager, AcademyView, ZedAI; sjednocení modelu po rozhodnutí.
+**Otázky na Tynu**
+1. Samostatné kolo jako výchozí pro nehratelné typy? (ano/ne)
+2. Zveřejnění žákům přes stávající Materiály (bez nové tabulky)? (ano/ne)
+3. Etapa 1 až po etapě 0, nebo nejdřív rychlá verze jen s textem? (po 0 / rychlá)
+4. Model AI: ponechat `gemini-2.5-flash`, nebo přejít na novější flash? (ponechat / přejít)
+5. Mají žáci při domácím procvičování vidět body a správné odpovědi hned? (ano/ne)
 
-## H) Dotčené testy (nerozbít)
+**Bez živého testu nelze ověřit:** skutečné AI výstupy a jejich kvalitu, zátěž 50 hráčů v samostatném kole, chování na skutečných telefonech (galerie, HEIC), čitelnost na projektoru.
 
-- practice-photo.test, practice-photo-batch.test, student-practice-photo.test, practice-method.test, student-practice*.test
-- supabase/functions/extract-practice-photo-text/index.test.ts
-- multiple-image-uploads.test, multiple-upload-batches.test
-- testy activity-wizard a from-material: dohledat v etapě 1
-- known failing (nesouvisí): classroom-people-source, lesson-study-bar, „useAuth must be used“
-
-## Otázky pro Tynu
-
-1. Celkový limit: 20 000 pro učitele a 8000 pro žáka/demo – souhlas?
-2. Demo: počítat celou dávku OCR jako jedno volání a extrakci dokumentů zdarma? Vyžaduje změnu serveru.
-3. Odkaz u učitelského obsahu ukládat (jako citaci), nebo vůbec?
-4. Smí žák vkládat odkazy, nebo jen učitel?
-5. Model: sjednotit na novější Flash?
-6. Pořadí etap: odkaz jako druhá etapa, nebo až po napojení všech míst?
-
-## Neověřeno bez živého testu
-
-- Skutečné AI odpovědi a doba zpracování velkých zdrojů.
-- HEIC, galerie a foťák na skutečném iPhonu/Androidu.
-- Chování konkrétních webů (JS-only, cookie lišty, paywall).
-- Skenované PDF bez textové vrstvy.
-- Hodnota denního demo stropu a ZDR u modelů.
-- Řádky inventáře označené „neověřeno“.
+## Technické poznámky
+- Bez změny DB v etapách 0–5; etapa 6 bez migrace, etapa 7 jen po „schvaluji“.
+- Zachovat: `live-game-core.ts` jako jediný převod, `_shared/game-scoring.ts`, `live-timing.ts`, demo_iso/demo_guard, `assignment_recipients`.
