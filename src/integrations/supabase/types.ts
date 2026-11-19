@@ -5119,6 +5119,30 @@ export type Database = {
           },
         ]
       }
+      retention_config: {
+        Row: {
+          batch_size: number
+          email_content_days: number
+          email_row_days: number
+          id: boolean
+          website_chat_days: number
+        }
+        Insert: {
+          batch_size?: number
+          email_content_days?: number
+          email_row_days?: number
+          id?: boolean
+          website_chat_days?: number
+        }
+        Update: {
+          batch_size?: number
+          email_content_days?: number
+          email_row_days?: number
+          id?: boolean
+          website_chat_days?: number
+        }
+        Relationships: []
+      }
       rubric_criteria: {
         Row: {
           created_at: string
@@ -8041,6 +8065,27 @@ export type Database = {
           },
         ]
       }
+      terms_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_sessions: {
         Row: {
           assignment_id: string
@@ -9658,6 +9703,7 @@ export type Database = {
         Args: { _resource_id: string }
         Returns: boolean
       }
+      run_log_retention: { Args: never; Returns: Json }
       save_schedule_exception: {
         Args: {
           _action: string

@@ -652,6 +652,20 @@
       "when": 1795099339052,
       "tag": "0092_demo_extend_from_current_deadline",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1795108075490,
+      "tag": "0093_log_retention_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1795108079334,
+      "tag": "0094_terms_acceptances",
+      "breakpoints": true
     }
   ]
 }
