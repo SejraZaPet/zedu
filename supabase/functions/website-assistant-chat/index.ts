@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
           }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
-      console.error("AI gateway error:", resp.status, await resp.text());
+      console.error("AI gateway error:", resp.status, `body_len=${(await resp.text()).length}`);
       return new Response(JSON.stringify({ error: "Chyba AI služby" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

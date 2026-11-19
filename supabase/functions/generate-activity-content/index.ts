@@ -179,7 +179,7 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
     if (!response.ok) {
       if (response.status === 429) return json({ error: "Příliš mnoho požadavků, zkuste to za chvíli." }, 429);
       if (response.status === 402) return json({ error: "Nedostatek kreditů pro AI generování." }, 402);
-      console.error("AI gateway error:", response.status, await response.text());
+      console.error("AI gateway error:", response.status, `body_len=${(await response.text()).length}`);
       return json({ error: "Chyba AI služby" }, 500);
     }
 
@@ -200,7 +200,7 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quiz
     }
 
     if (!parsed || typeof parsed !== "object") {
-      console.error("Unparsable AI output:", raw);
+      console.error("Unparsable AI output", `len=${typeof raw === "string" ? raw.length : 0}`);
       return json({ error: "AI nevrátila použitelný výstup. Zkuste to znovu." }, 500);
     }
 

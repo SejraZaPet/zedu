@@ -157,7 +157,7 @@ Vše česky.`;
       if (resp.status === 429) return new Response(JSON.stringify({ error: "Příliš mnoho požadavků, zkuste to později." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (resp.status === 402) return new Response(JSON.stringify({ error: "Nedostatek kreditů pro AI generování." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, `body_len=${t.length}`);
       return new Response(JSON.stringify({ error: "Chyba AI služby" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const data = await resp.json();

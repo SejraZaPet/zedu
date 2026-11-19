@@ -190,7 +190,7 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
     }
     if (!aiRes.ok) {
       const t = await aiRes.text();
-      console.error("AI gateway error", aiRes.status, t);
+      console.error("AI gateway error", aiRes.status, `body_len=${t.length}`);
       return new Response(JSON.stringify({ error: "AI teď neodpovídá. Zkus to za chvíli." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -230,9 +230,9 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
       recommendation,
     });
   } catch (e) {
-    console.error("ai-practice-rag error", e);
+    console.error("ai-practice-rag error", e instanceof Error ? e.name : "unknown");
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }),
+      JSON.stringify({ error: "Procvičování se teď nepodařilo připravit. Zkus to za chvíli." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

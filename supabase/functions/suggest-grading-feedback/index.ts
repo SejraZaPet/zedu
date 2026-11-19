@@ -112,7 +112,7 @@ Napiš návrh zpětné vazby (2–3 věty).`;
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, `body_len=${t.length}`);
       return new Response(JSON.stringify({ error: "Chyba AI služby" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -566,7 +566,7 @@ async function callGateway(apiKey: string, body: unknown, label: string) {
       if (response.ok) return await response.json();
       const errText = await response.text();
       const err = new AiError(
-        `AI Gateway ${label} failed: ${response.status} - ${errText.slice(0, 400)}`,
+        `AI Gateway ${label} failed: ${response.status} (tělo ${errText.length} znaků)`,
         response.status,
       );
       if (!TRANSIENT.has(response.status)) throw err;

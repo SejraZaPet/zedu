@@ -127,14 +127,14 @@ ${hint ? `Pokyn učitele: ${hint}` : ""}`;
     if (!response.ok) {
       if (response.status === 429) return json({ error: "Příliš mnoho požadavků, zkuste to za chvíli." }, 429);
       if (response.status === 402) return json({ error: "Nedostatek kreditů pro AI generování." }, 402);
-      console.error("AI gateway error:", response.status, await response.text());
+      console.error("AI gateway error:", response.status, `body_len=${(await response.text()).length}`);
       return json({ error: "Chyba AI služby" }, 500);
     }
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      console.error("No tool call:", JSON.stringify(data).slice(0, 800));
+      console.error("No tool call:", `finish=${data?.choices?.[0]?.finish_reason ?? "?"}`);
       return json({ error: "AI nevrátila strukturovaný výstup" }, 500);
     }
 

@@ -82,7 +82,7 @@ ${shape}`;
 
     if (!response.ok || !response.body) {
       const t = await response.text().catch(() => "");
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", response.status, `body_len=${t.length}`);
       if (response.status === 429) return json({ error: "Příliš mnoho požadavků, zkuste to za chvíli." }, 429, runHdr);
       if (response.status === 402) return json({ error: "Nedostatek kreditů pro AI generování." }, 402, runHdr);
       if (response.status === 403) return json({ error: "AI generování není pro tento účet dostupné." }, 403, runHdr);

@@ -124,7 +124,7 @@ Navrhni 3–5 kontrolních bodů (checkpointů) pro toto video. Zvol rozumné č
         });
       }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", response.status, `body_len=${t.length}`);
       return new Response(JSON.stringify({ error: "Chyba AI služby" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

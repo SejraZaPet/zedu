@@ -76,7 +76,7 @@ ${existingText ? `Stávající text bloku (navaž nebo jej vylepši):\n"""\n${ex
 
     if (!aiResp.ok) {
       const txt = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, txt);
+      console.error("AI gateway error", aiResp.status, `body_len=${txt.length}`);
       if (aiResp.status === 429) {
         return new Response(JSON.stringify({ error: "Překročen limit AI dotazů. Zkuste to za chvíli." }), {
           status: 429,

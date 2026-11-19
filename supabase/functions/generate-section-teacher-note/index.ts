@@ -63,7 +63,7 @@ Bez nadpisu, bez úvodu a závěru, bez markdownu kromě odrážek.`;
 
     if (!res.ok || !res.body) {
       const t = await res.text().catch(() => "");
-      console.error("AI gateway error:", res.status, t);
+      console.error("AI gateway error:", res.status, `body_len=${t.length}`);
       if (res.status === 429) return json({ error: "Příliš mnoho požadavků, zkuste to za chvíli." }, 429);
       if (res.status === 402) return json({ error: "Nedostatek kreditů pro AI generování." }, 402);
       if (res.status === 403) return json({ error: "AI generování není pro tento prostor povoleno." }, 403);

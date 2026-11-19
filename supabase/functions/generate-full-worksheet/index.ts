@@ -478,14 +478,14 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
         if (response.status === 429) throw new AiError(429, "Příliš mnoho požadavků, zkuste to později.");
         if (response.status === 402) throw new AiError(402, "Nedostatek kreditů pro AI generování.");
         const t = await response.text();
-        console.error("AI gateway error:", response.status, t);
+        console.error("AI gateway error:", response.status, `body_len=${t.length}`);
         throw new AiError(500, "Chyba AI služby");
       }
 
       const data = await response.json();
       const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall) {
-        console.error("No tool call in response:", JSON.stringify(data).slice(0, 2000));
+        console.error("No tool call in response:", `finish=${data?.choices?.[0]?.finish_reason ?? "?"}`);
         throw new AiError(500, "AI nevrátila strukturovaný výstup");
       }
       const parsed = JSON.parse(toolCall.function.arguments);
@@ -540,7 +540,7 @@ ${sections.length > 0 ? `Sekce v této části textu, které musíš pokrýt: ${
       if (!response.ok) {
         if (response.status === 429) throw new AiError(429, "Příliš mnoho požadavků, zkuste to později.");
         if (response.status === 402) throw new AiError(402, "Nedostatek kreditů pro AI generování.");
-        console.error("AI gateway error:", response.status, await response.text());
+        console.error("AI gateway error:", response.status, `body_len=${(await response.text()).length}`);
         throw new AiError(500, "Chyba AI služby");
       }
       const data = await response.json();

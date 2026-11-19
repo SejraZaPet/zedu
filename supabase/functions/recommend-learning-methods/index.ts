@@ -109,7 +109,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, `body_len=${t.length}`);
       return new Response(JSON.stringify({ error: "Chyba AI služby" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

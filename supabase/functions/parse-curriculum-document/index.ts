@@ -143,7 +143,7 @@ Pravidla:
           402,
         );
       const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, `body_len=${t.length}`);
       return json({ error: "Chyba AI služby. Zkuste to prosím znovu." }, 500);
     }
 

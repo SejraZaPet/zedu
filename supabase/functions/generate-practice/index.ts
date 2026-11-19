@@ -202,7 +202,7 @@ ${question_count ? `Celkem vytvoř přibližně ${clampQuestionCount(question_co
         );
       }
       const t = await aiResp.text();
-      console.error("AI gateway error:", aiResp.status, t);
+      console.error("AI gateway error:", aiResp.status, `body_len=${t.length}`);
       return json({ error: "Chyba AI brány" }, 500);
     }
 
