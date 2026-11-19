@@ -9,6 +9,7 @@ import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
 import { isTooOld } from "../_shared/email-delivery.ts";
 import { buildAssignmentEmail, shouldEmail } from "../_shared/assignment-email.ts";
+import { notificationTypeSendsEmail } from "../_shared/notification-email-types.ts";
 
 const APP_URL = "https://www.bezli.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const { data: n } = await db.from("notifications").select("id, recipient_id, type, title, body, link, payload, created_at").eq("id", id).maybeSingle();
   if (!n) return json({ skipped: "not_found" });
+  if (!notificationTypeSendsEmail((n as any).type)) return json({ skipped: "type_email_disabled" });
   if (isTooOld((n as any).created_at)) {
     console.log("skipped: too_old", id);
     return json({ skipped: "too_old" });
