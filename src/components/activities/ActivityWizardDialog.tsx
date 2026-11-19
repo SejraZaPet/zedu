@@ -179,7 +179,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     setBusy(false);
     toast(error
       ? { title: "Uložení se nezdařilo", description: error.message, variant: "destructive" }
-      : { title: "Uloženo do Moje aktivity", description: "Najdete ji v editoru lekce pod „Načíst šablonu“." });
+      : { title: "Uloženo do Studia", description: "Najdete ji v editoru lekce pod „Načíst šablonu“." });
   }
 
   async function saveAsGame() {
@@ -329,7 +329,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Vložit do lekce</h3>
                 {lessonsError && <p role="alert" className="text-sm text-destructive">Lekce se nepodařilo načíst. Zavřete průvodce a zkuste to znovu.</p>}
-                {!lessonsLoading && !lessonsError && !textbooks.length && <p className="text-sm text-muted-foreground">Ve vašich učebnicích zatím není lekce, do které lze vložit. Aktivitu můžete uložit do Moje aktivity.</p>}
+                {!lessonsLoading && !lessonsError && !textbooks.length && <p className="text-sm text-muted-foreground">Ve vašich učebnicích zatím není lekce, do které lze vložit. Aktivitu můžete uložit do Studia.</p>}
                 {lessonsLoading
                   ? <p className="text-sm text-muted-foreground">Načítám lekce…</p>
                   : targetLessons.length > 0 && <LessonFinder items={targetFinderItems} selectedId={targetLessonId} label="Lekce"
@@ -339,7 +339,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
               </section>
               {info.template && (
                 <section className="space-y-2">
-                  <h3 className="font-semibold text-sm">Uložit do Moje aktivity</h3>
+                  <h3 className="font-semibold text-sm">Uložit do Studia</h3>
                   <Button variant="outline" onClick={saveTemplate} disabled={busy}>Uložit jako šablonu</Button>
                 </section>
               )}

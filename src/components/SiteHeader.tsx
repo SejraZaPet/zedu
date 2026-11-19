@@ -27,6 +27,8 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  /** Volitelný podtitulek položen pod název (mobilní menu) nebo do tooltipu (desktop). */
+  subtitle?: string;
 }
 
 interface TeacherExtraNavItem {
@@ -198,7 +200,7 @@ const SiteHeader = () => {
     }
     return [
       { label: "Učebnice", href: "/ucebnice", icon: BookOpen },
-      { label: "Aktivity", href: "/aktivity", icon: Activity },
+      { label: "Studio", href: "/aktivity", icon: Activity, subtitle: "aktivity a hry" },
       { label: "Pro školy", href: "/licence#licence", icon: School },
       { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
     ];
@@ -267,7 +269,7 @@ const SiteHeader = () => {
               return (
                 <button
                   key={item.label}
-                  title={item.label}
+                  title={item.subtitle ? `${item.label} – ${item.subtitle}` : item.label}
                   onClick={() => handleNavClick(item.href)}
                   className={`flex items-center gap-1.5 px-2 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     active
@@ -412,7 +414,14 @@ const SiteHeader = () => {
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  {item.label}
+                  <span>
+                    {item.label}
+                    {item.subtitle && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {item.subtitle}
+                      </span>
+                    )}
+                  </span>
                 </button>
               );
             })}

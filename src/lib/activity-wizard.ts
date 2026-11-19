@@ -21,7 +21,7 @@ export interface WizardTypeInfo {
   activityType: string | null;
   /** Lze spustit jako živou hru (knihovna her = MCQ). */
   liveGame: boolean;
-  /** Lze uložit do „Moje aktivity“ (activity_templates). */
+  /** Lze uložit do „Studia“ (activity_templates). */
   template: boolean;
   /** Jen ruční vyplnění (AI se nepoužije, např. Zeď odpovědí). */
   manualOnly?: boolean;

@@ -210,8 +210,8 @@ const TeacherDashboard = () => {
     activities: {
       id: "activities",
       icon: Gamepad2,
-      title: "Moje aktivity",
-      description: "Vytvářejte kvízy a interaktivní úkoly pro studenty.",
+      title: "Studio",
+      description: "Aktivity a hry: kvízy, hry a úkoly pro žáky.",
       to: "/aktivity",
     },
     assignments: {
