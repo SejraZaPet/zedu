@@ -48,3 +48,14 @@ describe("demo export", () => {
     expect([uniqueName("a.png", used, true), uniqueName("a.png", used, true)]).toEqual(["a.png", "a-2.png"]);
   });
 });
+
+import { demoCountdownText, demoExtendedText } from "../../supabase/functions/_shared/demo-contact";
+describe("odpočet a prodloužení", () => {
+  it("české tvary dnů", () => {
+    expect(demoCountdownText(14, "3. 12.")).toBe("Vaše práce se smaže za 14 dní (3. 12.).");
+    expect(demoCountdownText(3, null)).toBe("Vaše práce se smaže za 3 dny.");
+    expect(demoCountdownText(1, null)).toBe("Vaše práce se smaže zítra.");
+    expect(demoCountdownText(0, null)).toBe("Vaše práce se smaže dnes.");
+  });
+  it("po prodloužení ukáže datum", () => expect(demoExtendedText("17. 12.")).toBe("Prodlouženo do 17. 12."));
+});

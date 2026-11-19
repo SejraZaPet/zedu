@@ -63,3 +63,13 @@ ${lines.map((l) => `<p>${esc(l)}</p>`).join("\n")}
 <p style="font-size:12px;color:#64748B">E-mail jste nám dali jen pro připomínky dema. <a href="${esc(o.unsubscribeUrl)}">Odhlásit a smazat e-mail</a></p></div>`;
   return { subject, text, html };
 }
+
+/** Text odpočtu v demo pruhu (vykání, české tvary). */
+export function demoCountdownText(daysLeft: number, day: string | null): string {
+  const d = day ? ` (${day})` : "";
+  if (daysLeft <= 0) return `Vaše práce se smaže dnes${d}.`;
+  if (daysLeft === 1) return `Vaše práce se smaže zítra${d}.`;
+  const unit = daysLeft <= 4 ? "dny" : "dní";
+  return `Vaše práce se smaže za ${daysLeft} ${unit}${d}.`;
+}
+export const demoExtendedText = (day: string) => `Prodlouženo do ${day.replace(/\.$/, "")}.`;

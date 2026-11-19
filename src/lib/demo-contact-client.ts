@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_CONSENT_VERSION } from "../../supabase/functions/_shared/demo-contact";
 
-export { DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION, showCountdown, normalizeDemoEmail } from "../../supabase/functions/_shared/demo-contact";
+export { DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION, showCountdown, normalizeDemoEmail, demoCountdownText, demoExtendedText } from "../../supabase/functions/_shared/demo-contact";
 
 export const DEMO_SAVE_OFFERED_KEY = "Bezli:demo-save-offered";
 
@@ -19,7 +19,7 @@ export function useDemoStatus(enabled: boolean) {
   const [status, setStatus] = useState<DemoStatus | null>(null);
   const reload = useCallback(async () => {
     if (!enabled) return;
-    const rpc = supabase.rpc as any;
+    const rpc = (supabase.rpc as any).bind(supabase);
     const [e, c] = await Promise.all([rpc("get_my_demo_expiry"), rpc("get_my_demo_contact_status")]);
     const er = Array.isArray(e.data) ? e.data[0] : null;
     const cr = Array.isArray(c.data) ? c.data[0] : null;
@@ -44,8 +44,13 @@ export const saveDemoContact = (email: string) => invokeSave({ action: "save", e
 export const deleteDemoContact = () => invokeSave({ action: "delete" });
 
 export async function extendDemoOnce() {
-  const { error } = await (supabase.rpc as any)("demo_extend_once");
-  if (error) throw new Error(/Already/.test(error.message) ? "Prodloužení už jste využili." : "Prodloužení se nepodařilo.");
+  const { data, error } = await (supabase.rpc as any)("demo_extend_once");
+  if (error) {
+    throw new Error(/Already/.test(error.message)
+      ? "Prodloužení už jste využili."
+      : "Prodloužení se nepodařilo. Zkontrolujte připojení a zkuste to prosím znovu.");
+  }
+  return data as string;
 }
 
 /** Má návštěvník (učitel) aspoň jednu vlastní položku? Seed se nepočítá. */

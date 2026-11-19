@@ -2667,6 +2667,7 @@ export type Database = {
           created_at: string
           event_tag: string | null
           extended_at: string | null
+          extension_until: string | null
           group_id: string | null
           id: string
           ip_hash: string
@@ -2679,6 +2680,7 @@ export type Database = {
           created_at?: string
           event_tag?: string | null
           extended_at?: string | null
+          extension_until?: string | null
           group_id?: string | null
           id?: string
           ip_hash: string
@@ -2691,6 +2693,7 @@ export type Database = {
           created_at?: string
           event_tag?: string | null
           extended_at?: string | null
+          extension_until?: string | null
           group_id?: string | null
           id?: string
           ip_hash?: string
