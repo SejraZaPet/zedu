@@ -87,6 +87,13 @@ const DemoPage = () => {
           </Button>
         </div>
 
+        <p className="text-xs text-muted-foreground text-center">
+          Vstupem do dema souhlasíte s{" "}
+          <a href="/podminky" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">obchodními podmínkami (čl. 7)</a>
+          {" "}a{" "}
+          <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">zásadami ochrany osobních údajů</a>.
+        </p>
+
         {error && <p role="alert" className="text-sm text-destructive text-center">{error}</p>}
 
         <div className="text-center">

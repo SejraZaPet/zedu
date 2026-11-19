@@ -16,7 +16,7 @@ Aktualizace plánu `poptavky-licence-ulozeni-admin-2026-11-19.md` podle odpověd
 - Ostatní zjištění platí podle původního plánu: `send-license-inquiry` dnes nic neukládá, rate limit drží jen v paměti a volá ji jen `LicenseInquiryDialog`.
 
 ## Co se postaví
-- **Formulář /licence:** povinné zaškrtávátko „Souhlasím se zpracováním osobních údajů podle zásad“ s odkazem na zásady. Bez zaškrtnutí nejde odeslat (kontroluje se i na serveru).
+- **Formulář /licence:** povinné zaškrtávátko „Souhlasím se zpracováním osobních údajů podle zásad“ s odkazy na /gdpr a /podminky (do té doby jen informační věta s oběma odkazy, bez políčka). Bez zaškrtnutí nejde odeslat (kontroluje se i na serveru).
 - **Funkce `send-license-inquiry`:**
   - nejdřív uloží poptávku, pak pošle e-mail na info@bezli.cz;
   - uživatel vždy dostane „Děkujeme, ozveme se“, i když e-mail selže;

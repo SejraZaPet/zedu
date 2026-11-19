@@ -169,6 +169,13 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
             </div>
           </div>
 
+          <p className="text-xs text-muted-foreground">
+            Odesláním poptávky berete na vědomí{" "}
+            <a href="/podminky" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">obchodní podmínky</a>
+            {" "}a{" "}
+            <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">zásady ochrany osobních údajů</a>.
+          </p>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Zrušit</Button>
             <Button type="submit" variant="hero" disabled={submitting}>
