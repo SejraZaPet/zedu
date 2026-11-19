@@ -1,6 +1,7 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import Seo from "@/components/Seo";
+import { Link } from "react-router-dom";
 
 const GdprPage = () => {
   return (
@@ -14,30 +15,83 @@ const GdprPage = () => {
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full" style={{ paddingTop: "calc(70px + 3rem)" }}>
         <h1 className="font-heading text-3xl font-bold mb-6">Zásady ochrany osobních údajů</h1>
 
-        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4 mb-8 text-sm text-amber-900 dark:text-amber-200">
-          ⚠️ Tento dokument je připravován. Finální verze zásad ochrany osobních údajů bude doplněna po právní konzultaci. Mezitím platí, že bezli.cz zpracovává pouze údaje nezbytné pro fungování vzdělávací platformy.
-        </div>
-
         <section className="space-y-4 text-foreground">
-          <h2 className="font-heading text-xl font-semibold mt-6">Správce osobních údajů</h2>
-          <p>bezli.cz – provozovatel vzdělávací platformy. Kontakt: <a href="mailto:info@bezli.cz" className="text-primary hover:underline">info@bezli.cz</a></p>
+          <p>Poslední aktualizace: 19. listopadu 2026</p>
 
-          <h2 className="font-heading text-xl font-semibold mt-6">Jaké údaje zpracováváme</h2>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Jméno a příjmení</li>
-            <li>E-mailová adresa (pokud je zadána)</li>
-            <li>Výsledky vzdělávacích aktivit</li>
-            <li>Název školy a ročník</li>
-          </ul>
+          <h2 className="font-heading text-xl font-semibold mt-6">1. Kdo údaje zpracovává</h2>
+          <p>
+            Službu Bezli provozuje Kristýna Herinková, IČO 87462273, Růžová 2716, 438 01 Žatec, e-mail{" "}
+            <a href="mailto:info@bezli.cz" className="text-primary hover:underline">info@bezli.cz</a>. U osobních
+            údajů, které do služby vkládá škola nebo její uživatelé (žáci, učitelé, rodiče, zaměstnanci), je správcem
+            škola a Bezli je jejím zpracovatelem. U údajů, které získáváme sami (například poptávky, kontakty
+            zákazníků, demo), jsme správcem my.
+          </p>
 
-          <h2 className="font-heading text-xl font-semibold mt-6">Účel zpracování</h2>
-          <p>Údaje jsou zpracovávány výhradně za účelem poskytování vzdělávacích služeb platformy bezli.cz.</p>
+          <h2 className="font-heading text-xl font-semibold mt-6">2. Jaké údaje a proč</h2>
+          <p>
+            Zpracováváme jen údaje potřebné k poskytování služby: identifikační a kontaktní údaje, údaje o používání
+            služby a obsah, který uživatelé sami vytvoří. Účely jsou poskytování služby, plnění smlouvy, komunikace s
+            uživateli, zabezpečení služby a plnění právních povinností. Právním základem je podle situace smlouva,
+            zákonná povinnost, oprávněný zájem (zabezpečení služby) nebo souhlas.
+          </p>
 
-          <h2 className="font-heading text-xl font-semibold mt-6">Právo na výmaz</h2>
-          <p>Máte právo požádat o smazání vašeho účtu a všech souvisejících dat. Kontaktujte nás na <a href="mailto:info@bezli.cz" className="text-primary hover:underline">info@bezli.cz</a>.</p>
+          <h2 className="font-heading text-xl font-semibold mt-6">3. Co neděláme</h2>
+          <p>
+            Osobní údaje neprodáváme a nepoužíváme je k reklamě. Údaje žáků nepoužíváme pro vlastní účely,
+            zpracováváme je jen podle pokynů školy.
+          </p>
 
-          <h2 className="font-heading text-xl font-semibold mt-6">Souhlas rodičů</h2>
-          <p>Pro žáky mladší 15 let je vyžadován souhlas zákonného zástupce. Administrátor školy odpovídá za zajištění souhlasů při hromadném importu žáků.</p>
+          <h2 className="font-heading text-xl font-semibold mt-6">4. Komu údaje předáváme</h2>
+          <p>
+            Údaje mohou zpracovávat naši poskytovatelé technických služeb (hosting a databáze, e-mail, umělá
+            inteligence) na základě smluv o zpracování. Seznam poskytovatelů a jejich umístění poskytneme škole ve
+            zpracovatelské smlouvě a komukoli na vyžádání na{" "}
+            <a href="mailto:info@bezli.cz" className="text-primary hover:underline">info@bezli.cz</a>. Pokud se údaje
+            předávají mimo Evropský hospodářský prostor, děje se tak jen při zárukách podle GDPR, například na základě
+            standardních smluvních doložek nebo rozhodnutí o odpovídající úrovni ochrany.
+          </p>
+
+          <h2 className="font-heading text-xl font-semibold mt-6">5. Jak dlouho údaje uchováváme</h2>
+          <p>
+            Jen po dobu, která je nutná pro daný účel. Údaje školy uchováváme po dobu trvání smlouvy a po jejím
+            skončení je po omezenou dobu zpřístupníme k exportu a poté vymažeme. Provozní záznamy uchováváme jen po
+            dobu potřebnou k zabezpečení a ladění služby. Údaje, které musíme uchovávat ze zákona (například účetní
+            doklady), uchováváme po dobu stanovenou zákonem. Konkrétní lhůty jsou uvedeny ve smlouvě a v obchodních
+            podmínkách.
+          </p>
+
+          <h2 className="font-heading text-xl font-semibold mt-6">6. Vaše práva</h2>
+          <p>
+            Máte právo na přístup k údajům, jejich opravu, výmaz, omezení zpracování, přenositelnost a právo vznést
+            námitku. Souhlas můžete kdykoli odvolat, aniž by tím bylo dotčeno zpracování před odvoláním. Pište na{" "}
+            <a href="mailto:info@bezli.cz" className="text-primary hover:underline">info@bezli.cz</a>. Pokud jde o
+            údaje zpracovávané pro školu, žádost vyřídí škola, případně vám pomůžeme my. Stížnost můžete podat u Úřadu
+            pro ochranu osobních údajů (uoou.gov.cz).
+          </p>
+
+          <h2 className="font-heading text-xl font-semibold mt-6">7. Děti</h2>
+          <p>
+            Službu používají žáci v rámci školy. Souhlas zákonného zástupce u dětí, u kterých je podle zákona
+            potřeba, zajišťuje škola.
+          </p>
+
+          <h2 className="font-heading text-xl font-semibold mt-6">8. Umělá inteligence</h2>
+          <p>
+            Některé funkce využívají umělou inteligenci a obsah odeslaný k jejich použití se zpracovává u
+            poskytovatelů AI modelů. Do těchto funkcí nevkládejte citlivé údaje. Výstup AI je jen návrh a rozhoduje
+            člověk. Nedochází k automatizovanému rozhodování ani profilování s právními účinky.
+          </p>
+
+          <h2 className="font-heading text-xl font-semibold mt-6">9. Povinnost poskytnout údaje</h2>
+          <p>
+            Poskytnutí údajů potřebných k vytvoření účtu a poskytování služby je podmínkou jejího využívání. Bez nich
+            službu nelze poskytnout. Poskytnutí údajů nad rámec toho (například e-mailu v demu) je dobrovolné.
+          </p>
+
+          <p>
+            Další informace jsou v obchodních podmínkách (
+            <Link to="/podminky" className="text-primary hover:underline">/podminky</Link>).
+          </p>
         </section>
       </main>
       <SiteFooter />
