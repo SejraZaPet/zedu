@@ -255,9 +255,9 @@ Tato Příloha se uzavírá mezi Školou jako správcem a Provozovatelem jako zp
 
 Zvláštní kategorie osobních údajů (např. zdravotní údaje, podpůrná opatření) se ve Službě nezpracovávají a Uživatelé je nesmějí vkládat.
 
-**Z4. Povinnosti zpracovatele.** Zpracovávat údaje jen podle pokynů Školy. Zajistit mlčenlivost osob, které mají k údajům přístup. Přijmout opatření podle čl. 32 GDPR. Pomoci Škole splnit povinnosti vůči subjektům údajů (přístup, oprava, výmaz, přenositelnost). Informovat Školu o incidentu do 48 hodin. Po skončení údaje vymazat nebo vrátit podle čl. 6.5 Podmínek. Poskytnout Škole informace potřebné k prokázání souladu a umožnit audit v rozumném rozsahu po předchozí dohodě.
+**Z4. Povinnosti zpracovatele.** Zpracovávat údaje jen podle pokynů Školy. Zajistit mlčenlivost osob, které mají k údajům přístup. Přijmout opatření podle čl. 32 GDPR. Pomoci Škole splnit povinnosti vůči subjektům údajů (přístup, oprava, výmaz, přenositelnost). Informovat Školu o incidentu do 48 hodin. Po skončení údaje vymazat nebo vrátit podle čl. 6.5 Podmínek. Poskytnout Škole informace potřebné k prokázání souladu a umožnit audit v rozumném rozsahu po předchozí dohodě. Provozovatel Školu bez zbytečného odkladu upozorní, pokud má za to, že pokyn Školy porušuje nařízení GDPR nebo jiné předpisy o ochraně osobních údajů. Pomůže Škole s posouzením vlivu na ochranu osobních údajů, s oznamováním porušení zabezpečení Úřadu a s konzultacemi s Úřadem, a to v rozsahu, v jakém to Provozovatel může s ohledem na povahu zpracování a dostupné informace.
 
-**Z5. Subzpracovatelé.** Škola uděluje Provozovateli obecné povolení zapojit subzpracovatele. O změnách Provozovatel informuje alespoň 30 dnů předem a Škola může proti nim vznést oprávněnou námitku. Subzpracovatelé mají stejné povinnosti ochrany údajů.
+**Z5. Subzpracovatelé.** Škola uděluje Provozovateli obecné povolení zapojit subzpracovatele. O změnách Provozovatel informuje alespoň 14 dnů předem a Škola může proti nim vznést oprávněnou námitku. Subzpracovatelé mají stejné povinnosti ochrany údajů.
 
 | Subzpracovatel | Účel | Umístění |
 |---|---|---|
@@ -265,7 +265,7 @@ Zvláštní kategorie osobních údajů (např. zdravotní údaje, podpůrná op
 | Lovable | provoz aplikace a brána k AI modelům | EU (Google Cloud, Nizozemsko); úložiště a mezipaměť ve Velké Británii (AWS, Londýn) |
 | Google (modely Gemini přes bránu Lovable) | zpracování požadavků AI funkcí | EU (Nizozemsko, Google Cloud Vertex AI) |
 | Microsoft (modely OpenAI přes Azure AI Foundry) | zpracování požadavků AI funkcí | EU (Západní Evropa, Francie, Německo), případně USA |
-| Resend | odesílání provozních e-mailů | USA (odesílání z Irska), standardní smluvní doložky |
+| Resend | odesílání provozních e-mailů | USA; standardní smluvní doložky a EU-US Data Privacy Framework |
 
 **Z6. Předávání mimo EHP.** Pokud k němu dochází, probíhá jen při zárukách podle kapitoly V GDPR (např. standardní smluvní doložky nebo rozhodnutí o odpovídající úrovni ochrany). Poskytovatelé AI funkcí (Google, Microsoft) mohou zpracovávat požadavky v EU i v USA; Resend ukládá data v USA. U těchto přenosů se uplatňují standardní smluvní doložky nebo jiné záruky podle zpracovatelských smluv těchto poskytovatelů.
 
