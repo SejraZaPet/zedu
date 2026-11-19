@@ -23,8 +23,8 @@ export default function MarkdownDocument({ source }: { source: string }) {
       )}
       {blocks.map((b, i) => {
         if (b.type === "heading") {
-          const Tag = (`h${b.level}`) as "h2" | "h3" | "h4";
-          return <Tag key={i} id={b.id} className={`font-heading font-semibold scroll-mt-24 ${b.level === 2 ? "text-xl mt-8" : "text-lg mt-5"}`}><InlineText text={b.text} /></Tag>;
+          const Tag = (`h${b.level}`) as "h1" | "h2" | "h3" | "h4";
+          return <Tag key={i} id={b.id} className={`font-heading scroll-mt-24 ${b.level === 1 ? "text-3xl font-bold mb-6" : b.level === 2 ? "text-xl font-semibold mt-8" : "text-lg font-semibold mt-5"}`}><InlineText text={b.text} /></Tag>;
         }
         if (b.type === "paragraph") return <p key={i} className="leading-relaxed"><InlineText text={b.text} /></p>;
         if (b.type === "list") {

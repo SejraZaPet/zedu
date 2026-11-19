@@ -1,6 +1,6 @@
 /** Malý markdown parser pro právní texty: nadpisy, odstavce, seznamy, tabulky, **tučné**, [odkazy](url). */
 export type MdBlock =
-  | { type: "heading"; level: 2 | 3 | 4; text: string; id: string }
+  | { type: "heading"; level: 1 | 2 | 3 | 4; text: string; id: string }
   | { type: "paragraph"; text: string }
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "table"; header: string[]; rows: string[][] };
@@ -23,7 +23,7 @@ export function parseMarkdown(src: string): MdBlock[] {
     const h = /^(#{1,4})\s+(.*)$/.exec(line);
     if (h) {
       flush();
-      const level = Math.min(4, Math.max(2, h[1].length)) as 2 | 3 | 4;
+      const level = Math.min(4, Math.max(1, h[1].length)) as 1 | 2 | 3 | 4;
       const base = slugify(h[2]); const n = used.get(base) ?? 0; used.set(base, n + 1);
       out.push({ type: "heading", level, text: h[2].trim(), id: n ? `${base}-${n + 1}` : base });
       continue;

@@ -12,8 +12,7 @@ const TermsPage = () => (
       path="/podminky"
     />
     <div className="print:hidden"><SiteHeader /></div>
-    <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full min-w-0 print:p-0 print:max-w-none" style={{ paddingTop: "calc(70px + 3rem)" }}>
-      <h1 className="font-heading text-3xl font-bold mb-6">Všeobecné obchodní podmínky</h1>
+    <main className="print-area flex-1 max-w-3xl mx-auto px-4 py-12 pt-[calc(70px+3rem)] w-full min-w-0 print:p-0 print:max-w-none">
       <MarkdownDocument source={termsSource} />
     </main>
     <div className="print:hidden"><SiteFooter /></div>
