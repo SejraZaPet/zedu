@@ -32,10 +32,13 @@ describe("activity wizard – výběr zdroje", () => {
     expect(r.kind).toBe("ai");
     if (r.kind === "ai") { expect(r.text).toContain("Druhá lekce"); expect(r.text).not.toContain("<p>"); }
   });
-  it("vložený text: krátký odmítne, dlouhý ořízne", () => {
+  it("vložený text: krátký i dlouhý odmítne, lekce zkrátí s upozorněním", () => {
     expect(resolveSource({ mode: "text", text: "krátké" }).kind).toBe("error");
     const r = resolveSource({ mode: "text", text: "x".repeat(SOURCE_TEXT_LIMIT + 500) });
-    expect(r.kind === "ai" && r.text.length).toBe(SOURCE_TEXT_LIMIT);
+    expect(r.kind).toBe("error"); // vložený text se nikdy tiše neořízne
+    const l = resolveSource({ mode: "lesson", lessons: [{ title: "L", blocks: [{ props: { text: "y".repeat(SOURCE_TEXT_LIMIT + 500) } }] }] });
+    expect(l.kind === "ai" && l.text.length).toBe(SOURCE_TEXT_LIMIT);
+    expect(l.kind === "ai" && (l.truncatedFrom ?? 0) > SOURCE_TEXT_LIMIT).toBe(true);
   });
 });
 

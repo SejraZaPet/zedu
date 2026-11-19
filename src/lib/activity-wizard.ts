@@ -69,7 +69,7 @@ export interface SourceInput {
 }
 
 export type ResolvedSource =
-  | { kind: "ai"; text: string }
+  | { kind: "ai"; text: string; /** Původní délka, když se lekce musely zkrátit (vždy se ukáže upozornění). */ truncatedFrom?: number }
   | { kind: "empty" }
   | { kind: "error"; message: string };
 
@@ -86,7 +86,11 @@ export function resolveSource(input: SourceInput): ResolvedSource {
   } else {
     text = input.text ?? "";
   }
-  const limited = limitSourceText(text);
+  const clean = (text ?? "").replace(/\s+\n/g, "\n").trim();
+  if (input.mode === "text" && clean.length > SOURCE_TEXT_LIMIT) {
+    return { kind: "error", message: `Text má ${clean.length} znaků, limit je ${SOURCE_TEXT_LIMIT}. Zkraťte ho, nic se neořízne automaticky.` };
+  }
+  const limited = limitSourceText(clean);
   if (limited.length < MIN_SOURCE_TEXT) {
     return {
       kind: "error",
@@ -95,7 +99,7 @@ export function resolveSource(input: SourceInput): ResolvedSource {
         : "Vložte alespoň pár vět textu nebo nahrajte dokument.",
     };
   }
-  return { kind: "ai", text: limited };
+  return clean.length > limited.length ? { kind: "ai", text: limited, truncatedFrom: clean.length } : { kind: "ai", text: limited };
 }
 
 export type Difficulty = "easy" | "medium" | "hard";

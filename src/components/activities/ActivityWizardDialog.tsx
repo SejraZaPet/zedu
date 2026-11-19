@@ -26,7 +26,7 @@ import { practiceErrorMessage } from "@/lib/practice-error";
 import { buildGameSlidesFromQuiz, GAMES_HREF } from "@/lib/plan-suggested-activities";
 import { activityPropsToTemplate } from "@/components/admin/block-editors/ActivityBlock";
 import {
-  buildAiRequest, buildBlock, clampItemCount, limitSourceText, resolveSource,
+  buildAiRequest, buildBlock, clampItemCount, resolveSource, SOURCE_TEXT_LIMIT,
   activityToGameQuestions,
   MAX_ITEMS, MIN_ITEMS, WIZARD_TYPES,
   type CatalogId, type Difficulty, type SourceMode, type WizardSettings,
@@ -111,8 +111,11 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     setUploading(true);
     try {
       const text = await extractDocumentText(file);
-      setPasted(limitSourceText(text));
-      toast({ title: "Text načten", description: `${file.name}: ${Math.min(text.length, 6000)} znaků.` });
+      const clean = text.trim();
+      setPasted(clean);
+      toast(clean.length > SOURCE_TEXT_LIMIT
+        ? { title: "Text je delší než limit", description: `${file.name}: ${clean.length} znaků, limit ${SOURCE_TEXT_LIMIT}. Před generováním ho zkraťte.`, variant: "destructive" }
+        : { title: "Text načten", description: `${file.name}: ${clean.length} znaků.` });
     } catch (err: any) {
       toast({ title: "Soubor se nepodařilo načíst", description: err?.message ?? String(err), variant: "destructive" });
     } finally {
@@ -123,6 +126,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   function goSettings() {
     const r = resolveSource({ mode, lessons: pickedLessons, text: pasted });
     if (r.kind === "error") { toast({ title: "Doplňte zdroj", description: r.message, variant: "destructive" }); return; }
+    if (r.kind === "ai" && r.truncatedFrom) toast({ title: "Lekce jsou delší než limit", description: `AI dostane prvních ${SOURCE_TEXT_LIMIT} z ${r.truncatedFrom} znaků. Pro celý obsah vyberte méně lekcí.` });
     setStep("settings");
   }
 
@@ -227,9 +231,9 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
                 </TabsContent>
                 <TabsContent value="text" className="space-y-3">
                   <Label htmlFor="wiz-text">Text podkladu</Label>
-                  <Textarea id="wiz-text" rows={8} value={pasted} maxLength={6000}
+                  <Textarea id="wiz-text" rows={8} value={pasted}
                     onChange={(e) => setPasted(e.target.value)} placeholder="Vložte text, ze kterého má AI aktivitu vytvořit…" />
-                  <p className="text-xs text-muted-foreground">{pasted.length} / 6000 znaků</p>
+                  <p className={pasted.length > SOURCE_TEXT_LIMIT ? "text-xs text-destructive" : "text-xs text-muted-foreground"} aria-live="polite">{pasted.length} / {SOURCE_TEXT_LIMIT} znaků{pasted.length > SOURCE_TEXT_LIMIT ? " – zkraťte text, nic se neořízne automaticky" : ""}</p>
                   <label className="inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer hover:bg-muted">
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     Nahrát PDF, Word nebo fotku
