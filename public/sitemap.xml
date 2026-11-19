@@ -26,6 +26,11 @@
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>https://www.bezli.cz/podminky</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://www.bezli.cz/gdpr</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

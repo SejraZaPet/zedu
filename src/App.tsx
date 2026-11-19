@@ -60,6 +60,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import ParentMessages from "./pages/ParentMessages";
 import TeacherParentMessages from "./pages/TeacherParentMessages";
 import GdprPage from "./pages/GdprPage";
+import TermsPage from "./pages/TermsPage";
 import LicencePage from "./pages/LicencePage";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import TodoPage from "./pages/TodoPage";
@@ -196,6 +197,7 @@ const App = () => (
             <Route path="/napoveda/pruvodce/:guideId" element={<HelpDetailPage />} />
             <Route path="/napoveda/:slug" element={<HelpArticlePage />} />
             <Route path="/gdpr" element={<GdprPage />} />
+            <Route path="/podminky" element={<TermsPage />} />
             <Route path="/licence" element={<LicencePage />} />
             <Route path="/overit/:certificateNumber" element={<VerifyCertificate />} />
 

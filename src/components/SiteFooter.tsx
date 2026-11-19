@@ -47,7 +47,7 @@ const SiteFooter = () => {
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Právní</h4>
             <nav className="flex flex-col gap-2">
               <button onClick={() => navigate("/gdpr")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">GDPR</button>
-              <span className="text-sm text-muted-foreground cursor-default">Podmínky používání</span>
+              <button onClick={() => navigate("/podminky")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Obchodní podmínky</button>
               <span className="text-sm text-muted-foreground cursor-default">Cookies</span>
             </nav>
           </div>
