@@ -150,12 +150,14 @@ const SiteHeader = () => {
         ...(roles.includes("school_admin")
           ? [{ label: "Správa školy", href: "/skola", icon: School }]
           : []),
+        { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
     if (userRole === "school_admin") {
       return [
         { label: "Správa školy", href: "/skola", icon: School },
+        { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }

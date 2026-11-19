@@ -3,7 +3,7 @@ import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import BannerManager from "@/components/banners/BannerManager";
 import { useEffect, useState } from "react";
 import { SchoolLeagueCard } from "@/components/school/SchoolLeagueCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2, LayoutDashboard } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2, LayoutDashboard, FolderOpen } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -306,10 +306,16 @@ const SchoolAdmin = () => {
             <h1 className="font-heading text-2xl">{school.name}</h1>
             <p className="text-sm text-muted-foreground">Správa školy ({members.length} uživatelů)</p>
           </div>
-          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-1" /> Pozvat uživatele</Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/ucitel/tridy">
+                <FolderOpen className="w-4 h-4 mr-1" /> Třídy
+              </Link>
+            </Button>
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="w-4 h-4 mr-1" /> Pozvat uživatele</Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Pozvat učitele nebo studenta</DialogTitle></DialogHeader>
               <div className="space-y-3">
@@ -331,7 +337,8 @@ const SchoolAdmin = () => {
                 <Button onClick={inviteUser} disabled={submitting}>Pozvat</Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+           </Dialog>
+          </div>
         </div>
 
         {/* Registration code card */}
