@@ -72,6 +72,6 @@
 - Terms consent proof lives in `terms_acceptances` (insert/read own, admin reads, no update/delete); registration keeps version/time in user metadata and `recordTermsAcceptance` copies it after sign-in, so the record survives email confirmation.
 - AI sources: `source-bundle.ts` limits (no silent truncation), `SourceInput`, `fetch-source-url` with SSRF rules only in `_shared/url-guard.ts`; nothing stored.
 - Studio drafts (`fromtext-slides.ts`) stay local until confirmed, emit existing slide types; `activitySpec.points` 0/1/2 (missing=1) only via server `slidePointsFactor`.
-- License inquiries: insert only by `send-license-inquiry` before e-mail (`_shared/license-inquiry.ts`, server consent time); admin-only RLS read, trigger locks personal/consent fields.
-- Teacher games/activities live only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect, so game routes stay intact.
-- Studio sets: `studio-step.ts` adapters; non-live steps skipped only at launch, game logic untouched.
+- License inquiries: inserted only by `send-license-inquiry` before e-mail; admin-only read, trigger locks personal/consent fields.
+- Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
+- Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
