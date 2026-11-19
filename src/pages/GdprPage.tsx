@@ -97,7 +97,9 @@ const GdprPage = () => {
           <p>
             Používáme jen technické cookies a místní úložiště prohlížeče nezbytné pro fungování služby (přihlášení,
             nastavení vzhledu a přístupnosti, stav panelů). Ty nevyžadují souhlas. Nepoužíváme reklamní ani sledovací
-            cookies. Vložený obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.
+            cookies. Návštěvnost měříme anonymně vestavěným měřením hostingu, bez cookies a bez ukládání IP adres
+            (zobrazené stránky, země, typ zařízení); podrobné údaje se uchovávají 90 dnů, souhrny jeden rok. Vložený
+            obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.
           </p>
 
           <p>

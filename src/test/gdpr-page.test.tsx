@@ -62,6 +62,6 @@ describe("stránka /gdpr", () => {
     const { default: GdprPage } = await import("@/pages/GdprPage");
     const { container } = render(<HelmetProvider><MemoryRouter><GdprPage /></MemoryRouter></HelmetProvider>);
     expect(container.querySelector("h2#cookies")?.textContent).toBe("10. Cookies a místní úložiště");
-    expect(container.textContent?.replace(/\s+/g, " ")).toContain("Používáme jen technické cookies a místní úložiště prohlížeče nezbytné pro fungování služby (přihlášení, nastavení vzhledu a přístupnosti, stav panelů). Ty nevyžadují souhlas. Nepoužíváme reklamní ani sledovací cookies. Vložený obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.");
+    expect(container.textContent?.replace(/\s+/g, " ")).toContain("Používáme jen technické cookies a místní úložiště prohlížeče nezbytné pro fungování služby (přihlášení, nastavení vzhledu a přístupnosti, stav panelů). Ty nevyžadují souhlas. Nepoužíváme reklamní ani sledovací cookies. Návštěvnost měříme anonymně vestavěným měřením hostingu, bez cookies a bez ukládání IP adres (zobrazené stránky, země, typ zařízení); podrobné údaje se uchovávají 90 dnů, souhrny jeden rok. Vložený obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.");
   });
 });
