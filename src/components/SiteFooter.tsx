@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Settings } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,7 +48,7 @@ const SiteFooter = () => {
             <nav className="flex flex-col gap-2">
               <button onClick={() => navigate("/gdpr")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">GDPR</button>
               <button onClick={() => navigate("/podminky")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Obchodní podmínky</button>
-              <span className="text-sm text-muted-foreground cursor-default">Cookies</span>
+              <Link to="/gdpr#cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Cookies</Link>
             </nav>
           </div>
 

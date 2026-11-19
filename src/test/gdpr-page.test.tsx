@@ -9,7 +9,7 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: null, role: null, loading: false }),
 }));
 
-/** Všech 9 bodů znění z 19. 11. 2026 – každý musí zůstat samostatný. */
+/** Všech 10 bodů znění z 19. 11. 2026 – každý musí zůstat samostatný. */
 const HEADINGS = [
   "1. Kdo údaje zpracovává",
   "2. Jaké údaje a proč",
@@ -20,6 +20,7 @@ const HEADINGS = [
   "7. Děti",
   "8. Umělá inteligence",
   "9. Povinnost poskytnout údaje",
+  "10. Cookies a místní úložiště",
 ];
 
 const open = async () => {
@@ -34,13 +35,13 @@ const open = async () => {
 };
 
 describe("stránka /gdpr", () => {
-  it("má nadpis Zásady ochrany osobních údajů a všech 9 bodů", async () => {
+  it("má nadpis Zásady ochrany osobních údajů a všech 10 bodů", async () => {
     const { container } = await open();
     expect(screen.getByRole("heading", { level: 1, name: "Zásady ochrany osobních údajů" })).toBeTruthy();
     for (const h of HEADINGS) {
       expect(screen.getByRole("heading", { level: 2, name: h })).toBeTruthy();
     }
-    expect(container.querySelectorAll("main h2")).toHaveLength(9);
+    expect(container.querySelectorAll("main h2")).toHaveLength(10);
   });
 
   it("obsahuje datum aktualizace, klikací odkazy a žádnou pracovní hlášku", async () => {
@@ -56,5 +57,11 @@ describe("stránka /gdpr", () => {
     const { container } = await open();
     expect(container.querySelectorAll("main ul")).toHaveLength(0);
     expect(container.textContent).not.toContain("Jméno a příjmení");
+  });
+  it("bod 10 má id cookies a přesné znění", async () => {
+    const { default: GdprPage } = await import("@/pages/GdprPage");
+    const { container } = render(<HelmetProvider><MemoryRouter><GdprPage /></MemoryRouter></HelmetProvider>);
+    expect(container.querySelector("h2#cookies")?.textContent).toBe("10. Cookies a místní úložiště");
+    expect(container.textContent?.replace(/\s+/g, " ")).toContain("Používáme jen technické cookies a místní úložiště prohlížeče nezbytné pro fungování služby (přihlášení, nastavení vzhledu a přístupnosti, stav panelů). Ty nevyžadují souhlas. Nepoužíváme reklamní ani sledovací cookies. Vložený obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.");
   });
 });

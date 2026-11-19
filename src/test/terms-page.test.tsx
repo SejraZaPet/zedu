@@ -61,6 +61,6 @@ describe("obchodní podmínky", () => {
     const { default: SiteFooter } = await import("@/components/SiteFooter");
     render(<MemoryRouter><SiteFooter /></MemoryRouter>);
     expect(screen.getByRole("button", { name: "Obchodní podmínky" })).toBeTruthy();
-    expect(screen.getByText("Cookies")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Cookies" }).getAttribute("href")).toBe("/gdpr#cookies");
   });
 });

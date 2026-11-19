@@ -1,9 +1,14 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import Seo from "@/components/Seo";
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 const GdprPage = () => {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+  }, [hash]);
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Seo
@@ -86,6 +91,13 @@ const GdprPage = () => {
           <p>
             Poskytnutí údajů potřebných k vytvoření účtu a poskytování služby je podmínkou jejího využívání. Bez nich
             službu nelze poskytnout. Poskytnutí údajů nad rámec toho (například e-mailu v demu) je dobrovolné.
+          </p>
+
+          <h2 id="cookies" className="font-heading text-xl font-semibold mt-6 scroll-mt-24">10. Cookies a místní úložiště</h2>
+          <p>
+            Používáme jen technické cookies a místní úložiště prohlížeče nezbytné pro fungování služby (přihlášení,
+            nastavení vzhledu a přístupnosti, stav panelů). Ty nevyžadují souhlas. Nepoužíváme reklamní ani sledovací
+            cookies. Vložený obsah třetích stran (například videa) může po spuštění nastavovat vlastní cookies.
           </p>
 
           <p>
