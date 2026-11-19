@@ -20,6 +20,8 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PLANS, LICENSE_ROLES, type PlanKey } from "@/lib/license-plans";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TERMS_VERSION } from "@/lib/terms";
 
 interface Props {
   open: boolean;
@@ -30,6 +32,8 @@ interface Props {
 const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => Date.now());
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -56,6 +60,11 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
       toast.error("Zadejte platný e-mail.");
       return;
     }
+    if (!consent) {
+      setConsentError(true);
+      toast.error("Pro odeslání poptávky je nutný souhlas s obchodními podmínkami.");
+      return;
+    }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-license-inquiry", {
@@ -70,6 +79,8 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
           message: form.message.trim(),
           website: form.website,
           startedAt,
+          termsVersion: TERMS_VERSION,
+          termsAcceptedAt: new Date().toISOString(),
         },
       });
       if (error || (data && (data as any).error)) {
@@ -87,6 +98,7 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
         studentCount: "",
         message: "",
       }));
+      setConsent(false);
     } catch (err: any) {
       toast.error(err?.message || "Odeslání se nepodařilo. Zkuste to prosím znovu.");
     } finally {
@@ -169,12 +181,29 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Odesláním poptávky berete na vědomí{" "}
-            <a href="/podminky" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">obchodní podmínky</a>
-            {" "}a{" "}
-            <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">zásady ochrany osobních údajů</a>.
-          </p>
+          <div className="space-y-1">
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="lic-consent"
+                checked={consent}
+                onCheckedChange={(v) => { setConsent(v === true); if (v === true) setConsentError(false); }}
+                aria-invalid={consentError}
+                aria-describedby={consentError ? "lic-consent-error" : undefined}
+                className="mt-0.5"
+              />
+              <Label htmlFor="lic-consent" className="text-sm font-normal leading-snug">
+                Souhlasím s{" "}
+                <a href="/podminky" target="_blank" rel="noopener noreferrer" className="text-primary underline">obchodními podmínkami</a>
+                {" "}a beru na vědomí{" "}
+                <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary underline">zásady ochrany osobních údajů</a> *
+              </Label>
+            </div>
+            {consentError && (
+              <p id="lic-consent-error" role="alert" className="text-xs text-destructive">
+                Bez souhlasu nelze poptávku odeslat.
+              </p>
+            )}
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Zrušit</Button>
