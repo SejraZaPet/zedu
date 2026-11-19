@@ -15,9 +15,10 @@ describe("plan-suggested-activities", () => {
   });
 
   it("odkazy míří na existující cesty (žádné 404)", () => {
-    // /ucitel/aktivity neexistuje – správná cesta je /aktivity
-    expect(ACTIVITIES_HREF).toBe("/aktivity");
-    expect(GAMES_HREF).toBe("/ucitel/hry");
+    // Učitele vedeme do jednoho místa Studio; staré cesty dál existují (přesměrování).
+    expect(ACTIVITIES_HREF).toBe("/ucitel/studio?tab=aktivity");
+    expect(GAMES_HREF).toBe("/ucitel/studio?tab=hry");
+    expect(ACTIVITY_ROUTES_EXIST).toContain("/ucitel/studio");
     expect(ACTIVITY_ROUTES_EXIST).toContain("/aktivity");
     expect(ACTIVITY_ROUTES_EXIST).toContain("/ucitel/hry");
     expect(ACTIVITY_ROUTES_EXIST).toContain("/ucitel/pracovni-listy/:id");
@@ -26,7 +27,7 @@ describe("plan-suggested-activities", () => {
 
   it("createdHref: list → editor, hra → knihovna her", () => {
     expect(createdHref({ type: "worksheet", id: "w1" })).toBe("/ucitel/pracovni-listy/w1");
-    expect(createdHref({ type: "game_template", id: "g1" })).toBe("/ucitel/hry");
+    expect(createdHref({ type: "game_template", id: "g1" })).toBe("/ucitel/studio?tab=hry");
   });
 
   it("buildWorksheetSpecFromAi sestaví koncept s klíčem odpovědí", () => {

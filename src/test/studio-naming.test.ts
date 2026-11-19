@@ -40,7 +40,7 @@ describe("název místa Studio (dřív Moje aktivity)", () => {
   it("dlaždice v učitelském panelu se jmenuje Studio s popisem „Aktivity a hry:“", () => {
     expect(activitiesTile).toContain('title: "Studio"');
     expect(activitiesTile).toContain('description: "Aktivity a hry:');
-    expect(activitiesTile).toContain('to: "/aktivity"');
+    expect(activitiesTile).toContain('to: "/ucitel/studio"');
     expect(activitiesTile).not.toContain("Moje aktivity");
   });
 
@@ -58,6 +58,21 @@ describe("název místa Studio (dřív Moje aktivity)", () => {
   it("nikde v kódu appky už nezůstal starý název Moje aktivity", () => {
     const stale = sourceFiles(SRC).filter((f) => readFileSync(f, "utf8").includes("Moje aktivity"));
     expect(stale).toEqual([]);
+  });
+
+  it("menu učitele má Studio a nemá Živé hry ani Moje aktivity", () => {
+    const groups = header.slice(header.indexOf("const TEACHER_MENU_GROUPS"), header.indexOf("const SCHOOL_ONLY_GROUP"));
+    expect(groups).toContain('label: "Studio", href: "/ucitel/studio"');
+    expect(groups).not.toContain("Živé hry");
+    expect(groups).not.toContain("Moje aktivity");
+    expect(groups).not.toContain('"/ucitel/hry"');
+  });
+
+  it("knihovna her uvnitř Studia už nemá nadpis Živé hry", () => {
+    const games = read("pages/TeacherGames.tsx");
+    expect(games).toContain("Hry ve Studiu");
+    expect(games).not.toContain("Živé hry");
+    expect(games).not.toContain("Moje hry a aktivity");
   });
 
   it("cesta /aktivity zůstává beze změny", () => {

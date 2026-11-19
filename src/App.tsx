@@ -39,7 +39,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import TeacherGameScreen from "./pages/TeacherGameScreen";
 import StudentGameJoin from "./pages/StudentGameJoin";
 import StudentGamePlay from "./pages/StudentGamePlay";
-import TeacherGames from "./pages/TeacherGames";
+import StudioPage from "./pages/StudioPage";
 import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import LiveProjectorScreen from "./pages/LiveProjectorScreen";
 import PresenterRemote from "./pages/PresenterRemote";
@@ -180,7 +180,8 @@ const App = () => (
             <Route path="/hra" element={<StudentGameJoin />} />
             <Route path="/live" element={<StudentGameJoin />} />
             <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
-            <Route path="/ucitel/hry" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherGames /></ProtectedRoute>} />
+            <Route path="/ucitel/studio" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><StudioPage /></ProtectedRoute>} />
+            <Route path="/ucitel/hry" element={<Navigate to="/ucitel/studio?tab=hry" replace />} />
             <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><LiveTeacherScreen /></ProtectedRoute>} />
             <Route path="/live/projektor/:sessionId" element={<LiveProjectorScreen />} />
             <Route path="/prezentace/ovladani/:sessionId" element={<ProtectedRoute><PresenterRemote /></ProtectedRoute>} />

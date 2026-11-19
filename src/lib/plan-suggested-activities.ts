@@ -1,3 +1,4 @@
+import { STUDIO_ACTIVITIES_HREF, STUDIO_GAMES_HREF } from "@/lib/studio-routes";
 /**
  * „Vytvořit z návrhu“ u navržených Bezli aktivit v plánu hodiny.
  *
@@ -32,8 +33,8 @@ export interface CreatedRef {
 }
 
 /** Existující cesty (ověřené v App.tsx) – žádný odkaz nesmí vést na 404. */
-export const ACTIVITIES_HREF = "/aktivity";
-export const GAMES_HREF = "/ucitel/hry";
+export const ACTIVITIES_HREF = STUDIO_ACTIVITIES_HREF;
+export const GAMES_HREF = STUDIO_GAMES_HREF;
 export const teacherWorksheetEditorHref = (id: string) => `/ucitel/pracovni-listy/${id}`;
 
 export function createdHref(ref: CreatedRef): string {

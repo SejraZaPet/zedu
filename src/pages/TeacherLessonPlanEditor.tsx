@@ -1,3 +1,4 @@
+import { STUDIO_ACTIVITIES_HREF, STUDIO_GAMES_HREF } from "@/lib/studio-routes";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SearchField, SearchEmpty } from "@/components/ui/search-field";
 import { matchesSearch } from "@/lib/picker-search";
@@ -166,9 +167,9 @@ interface PhaseValue {
 }
 
 const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
-  quiz: { label: "Kvíz / interaktivní aktivita", href: "/aktivity", hrefLabel: "Otevřít aktivity" },
+  quiz: { label: "Kvíz / interaktivní aktivita", href: STUDIO_ACTIVITIES_HREF, hrefLabel: "Otevřít Studio" },
   worksheet: { label: "Pracovní list", href: "/ucitel/pracovni-listy", hrefLabel: "Pracovní listy" },
-  live_game: { label: "Živá hra", href: "/ucitel/hry", hrefLabel: "Spustit živou hru" },
+  live_game: { label: "Živá hra", href: STUDIO_GAMES_HREF, hrefLabel: "Spustit živou hru" },
   lesson_block: { label: "Blok z učebnice", href: null, hrefLabel: "Otevřít lekci" },
   offline_activity: { label: "Offline aktivita z učebnice", href: null, hrefLabel: "Otevřít lekci" },
   discussion: { label: "Řízená diskuse", href: null, hrefLabel: "" },
@@ -1357,7 +1358,7 @@ export default function TeacherLessonPlanEditor() {
         description: "Obsah je uložen jako koncept – žáci ho zatím nevidí.",
       });
       if (isWorksheet) navigate(createdHref(ref));
-      else navigate("/ucitel/hry");
+      else navigate(STUDIO_GAMES_HREF);
     } catch (e: any) {
       toast({
         title: "Nepodařilo se vytvořit",

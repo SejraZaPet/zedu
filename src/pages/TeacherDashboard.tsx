@@ -212,7 +212,7 @@ const TeacherDashboard = () => {
       icon: Gamepad2,
       title: "Studio",
       description: "Aktivity a hry: kvízy, hry a úkoly pro žáky.",
-      to: "/aktivity",
+      to: "/ucitel/studio",
     },
     assignments: {
       id: "assignments",

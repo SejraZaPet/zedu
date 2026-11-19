@@ -1,3 +1,4 @@
+import { STUDIO_GAMES_HREF } from "@/lib/studio-routes";
 /** Přiložené aktivity ke kroku (fázi) plánu hodiny. Čisté funkce – testovatelné bez UI. */
 import { teacherPresentationHref, teacherWorksheetHref } from "@/lib/plan-links";
 
@@ -44,7 +45,7 @@ export function attachedHref(item: AttachedItem): string | null {
     case "worksheet":
       return item.id ? teacherWorksheetHref(item.id) : null;
     case "game_template":
-      return "/ucitel/hry";
+      return STUDIO_GAMES_HREF;
     case "presentation":
       return item.id ? teacherPresentationHref(item.id) : null;
     case "lesson":

@@ -10,6 +10,7 @@ const appTsx = readFileSync(resolve(__dirname, "../App.tsx"), "utf8");
 export const ACTIVITY_ROUTES_EXIST = [
   "/aktivity",
   "/ucitel/hry",
+  "/ucitel/studio",
   "/ucitel/pracovni-listy/:id",
   "/live/ucitel/:sessionId",
 ].filter((p) => appTsx.includes(`path="${p}"`));

@@ -35,6 +35,7 @@ interface TeacherExtraNavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  subtitle?: string;
 }
 
 interface TeacherMenuGroup {
@@ -77,7 +78,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   {
     title: "Aktivity a výsledky",
     items: [
-      { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+      { label: "Studio", href: "/ucitel/studio", icon: Gamepad2, subtitle: "aktivity a hry" },
       { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
       { label: "Ke kontrole", href: "/ucitel/ke-kontrole", icon: ListChecks },
       { label: "Bezli Akademie", href: "/ucitel/akademie", icon: Award },
@@ -335,6 +336,7 @@ const SiteHeader = () => {
                               >
                                 <Icon size={16} />
                                 {item.label}
+                                {item.subtitle && <span className="text-xs text-muted-foreground">– {item.subtitle}</span>}
                               </DropdownMenuItem>
                             );
                           })}
@@ -441,6 +443,7 @@ const SiteHeader = () => {
                   >
                     <Icon size={16} />
                     {item.label}
+                    {item.subtitle && <span className="text-xs text-muted-foreground">– {item.subtitle}</span>}
                   </button>
                 );
               })

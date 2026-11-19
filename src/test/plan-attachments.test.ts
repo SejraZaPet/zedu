@@ -31,7 +31,7 @@ describe("attachedHref", () => {
     expect(attachedHref({ type: "worksheet", id: "w1", title: "List" })).toBe("/ucitel/pracovni-listy/w1");
   });
   it("hra → knihovna her", () => {
-    expect(attachedHref({ type: "game_template", id: "g1", title: "Hra" })).toBe("/ucitel/hry");
+    expect(attachedHref({ type: "game_template", id: "g1", title: "Hra" })).toBe("/ucitel/studio?tab=hry");
   });
   it("prezentace → přehled prezentací", () => {
     expect(attachedHref({ type: "presentation", id: "p1", title: "Prez" })).toBe("/ucitel/prezentace?open=p1");

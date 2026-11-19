@@ -82,3 +82,18 @@ describe("horní lišta – položka Třídy", () => {
     expect(navTitles()).toContain("Třídy");
   });
 });
+
+describe("menu učitele – jedno místo Studio", () => {
+  it("mobilní menu učitele obsahuje Studio a neobsahuje Živé hry", () => {
+    state.role = "teacher";
+    state.roles = ["teacher"];
+    renderHeader();
+    fireEvent.click(document.querySelector("button[aria-label=\"Menu\"]") as HTMLElement);
+    const studio = screen.getByRole("button", { name: /Studio/ });
+    expect(studio).toHaveTextContent("aktivity a hry");
+    expect(screen.queryByText("Živé hry")).toBeNull();
+    expect(screen.queryByText("Moje aktivity")).toBeNull();
+    fireEvent.click(studio);
+    expect(screen.getByTestId("loc")).toHaveTextContent("/ucitel/studio");
+  });
+});

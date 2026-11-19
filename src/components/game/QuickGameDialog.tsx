@@ -31,9 +31,11 @@ interface Props {
   initialTopic?: string;
   initialType?: QuickType;
   initialSubject?: string;
+  /** Studio „Z lekce“: po otevření rovnou nabídne výběr lekce. */
+  startFromLesson?: boolean;
 }
 
-export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, initialType, initialSubject }: Props) => {
+export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, initialType, initialSubject, startFromLesson }: Props) => {
   const { subjects } = useTeacherSubjects();
   const [type, setType] = useState<QuickType | null>(null);
   const [title, setTitle] = useState("");
@@ -57,6 +59,11 @@ export const QuickGameDialog = ({ open, onOpenChange, onSaved, initialTopic, ini
     setTopic(""); setGrade(""); setAiUsed(false); setTab("manual");
     setSource(null); setFromLessonOpen(false);
   };
+  useEffect(() => {
+    if (!open || !startFromLesson) return;
+    setType((t) => t ?? "mcq");
+    setFromLessonOpen(true);
+  }, [open, startFromLesson]);
   useEffect(() => {
     if (!open || !initialTopic) return;
     setType(initialType ?? "mcq");

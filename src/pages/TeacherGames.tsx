@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -33,7 +31,11 @@ interface GameSessionRow {
 
 const ALL = "__all__";
 
-const TeacherGames = () => {
+/**
+ * Obsah záložky „Sady a hry“ ve Studiu (dřív samostatná stránka /ucitel/hry).
+ * `reloadKey` změní rodič po uložení nové sady, aby se knihovna načetla znovu.
+ */
+const TeacherGames = ({ reloadKey = 0 }: { reloadKey?: number }) => {
   const [sessions, setSessions] = useState<GameSessionRow[]>([]);
   const [templates, setTemplates] = useState<GameTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +74,7 @@ const TeacherGames = () => {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [reloadKey]);
 
   const subjectOptions = useMemo(
     () => Array.from(new Set(templates.map((t) => t.subject).filter(Boolean))) as string[],
@@ -142,36 +144,20 @@ const TeacherGames = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <SiteHeader />
-      <main className="flex-1 pb-16 px-4 md:px-8" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground flex items-center gap-3">
-              <Gamepad2 className="w-7 h-7 text-primary" />
-              Moje hry a aktivity
-            </h1>
-            <div className="flex gap-2 flex-wrap">
-              <Button className="gap-1.5" onClick={() => setQuickOpen(true)}>
-                <Zap className="w-4 h-4" /> Rychlá hra
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-1.5"
-                onClick={() => { setEditing(null); setEditorOpen(true); }}
-              >
-                <Plus className="w-4 h-4" /> Nová hra
-              </Button>
-            </div>
+    <div className="space-y-4">
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Button variant="outline" className="gap-1.5 min-h-11" onClick={() => setQuickOpen(true)}>
+              <Zap className="w-4 h-4" /> Rychlá hra
+            </Button>
           </div>
-
+          <h2 className="sr-only">Hry ve Studiu</h2>
           <Tabs defaultValue="library">
             <TabsList>
               <TabsTrigger value="library" className="gap-1.5">
                 <Library className="w-4 h-4" /> Knihovna her
               </TabsTrigger>
               <TabsTrigger value="sessions" className="gap-1.5">
-                <Gamepad2 className="w-4 h-4" /> Živé hry
+                <Gamepad2 className="w-4 h-4" /> Spuštěné hry
               </TabsTrigger>
             </TabsList>
 
@@ -218,7 +204,7 @@ const TeacherGames = () => {
                         : "Žádná hra neodpovídá filtru."}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Vytvořte samostatnou hru nebo aktivitu tlačítkem „Rychlá hra" nebo „Nová hra".
+                      Vytvořte samostatnou hru nebo aktivitu tlačítkem „+ Nová sada“ nebo „Rychlá hra“.
                     </p>
                   </CardContent>
                 </Card>
@@ -280,7 +266,7 @@ const TeacherGames = () => {
                 <Card>
                   <CardContent className="py-12 text-center">
                     <Gamepad2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Zatím nemáte žádné živé hry.</p>
+                    <p className="text-muted-foreground">Zatím nemáte žádné spuštěné hry.</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Hru spustíte z knihovny her nebo z aktivity v lekci.
                     </p>
@@ -338,9 +324,6 @@ const TeacherGames = () => {
               )}
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-      <SiteFooter />
 
       <GameTemplateEditorDialog
         open={editorOpen}

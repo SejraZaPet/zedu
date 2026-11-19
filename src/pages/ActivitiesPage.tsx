@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
+import { activitiesRedirectFor } from "@/lib/studio-routes";
+import { wizardTypeFor } from "@/lib/activity-wizard";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import {
@@ -299,7 +301,8 @@ const previewMap: Record<string, React.FC> = {
   wordcloud: PreviewWordCloud,
 };
 
-const ActivitiesPage = () => {
+/** Výchozí: veřejná stránka /aktivity. `embedded`: záložka „Aktivity a šablony“ ve Studiu. */
+const ActivitiesPage = ({ embedded = false }: { embedded?: boolean }) => {
   const [activeCategory, setActiveCategory] = useState("all");
   const navigate = useNavigate();
   const { isLoggedIn, role, loading } = useAuth();
@@ -320,28 +323,11 @@ const ActivitiesPage = () => {
       ? activities
       : activities.filter((a) => a.category === activeCategory);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Seo
-        title="Interaktivní aktivity pro výuku | Bezli"
-        description="Kvízy, spojovačky, seřazování, otevřené otázky i vizuální aktivity. Prohlédněte si typy interaktivních aktivit, které v Bezli přidáte do lekce."
-        path="/aktivity"
-      />
-      <SiteHeader />
-      <main className="pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
-        {/* Header */}
-        <div className="container mx-auto px-4 md:px-8 text-center mb-10">
-          <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-1">
-            Studio
-          </h1>
-          <p className="font-heading text-lg md:text-xl text-muted-foreground mb-3">
-            aktivity a hry
-          </p>
-          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
-            Vyberte si typ aktivity, který chcete do lekce přidat.
-          </p>
-        </div>
+  const redirect = embedded || loading ? null : activitiesRedirectFor(isLoggedIn, role);
+  if (redirect) return <Navigate to={redirect} replace />;
 
+  const catalog = (
+    <>
         {/* Filters */}
         <div className="container mx-auto px-4 md:px-8 mb-8">
           <div className="flex flex-wrap gap-2 justify-center">
@@ -400,6 +386,14 @@ const ActivitiesPage = () => {
                     {activity.description}
                   </p>
 
+                  {supported && !activity.liveHref && (
+                    <p className="mb-2 text-[11px] font-medium">
+                      {wizardTypeFor(activity.id)?.liveGame
+                        ? <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5">Živě · do lekce</span>
+                        : <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5">Zatím jen samostatně/tisk</span>}
+                    </p>
+                  )}
+
                   {/* Preview */}
                   <div className="rounded-xl border border-border bg-muted/20 p-3 mb-4 flex-1">
                     {Preview && <Preview />}
@@ -437,13 +431,39 @@ const ActivitiesPage = () => {
             })}
           </div>
         </div>
-      </main>
-      <SiteFooter />
       <ActivityWizardDialog
         catalogId={wizard?.id ?? null}
         title={wizard?.title ?? ""}
         onOpenChange={(o) => { if (!o) setWizard(null); }}
       />
+    </>
+  );
+
+  if (embedded) return <div className="pt-4">{catalog}</div>;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Seo
+        title="Interaktivní aktivity pro výuku | Bezli"
+        description="Kvízy, spojovačky, seřazování, otevřené otázky i vizuální aktivity. Prohlédněte si typy interaktivních aktivit, které v Bezli přidáte do lekce."
+        path="/aktivity"
+      />
+      <SiteHeader />
+      <main className="pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
+        <div className="container mx-auto px-4 md:px-8 text-center mb-10">
+          <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-1">
+            Studio
+          </h1>
+          <p className="font-heading text-lg md:text-xl text-muted-foreground mb-3">
+            aktivity a hry
+          </p>
+          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
+            Vyberte si typ aktivity, který chcete do lekce přidat.
+          </p>
+        </div>
+        {catalog}
+      </main>
+      <SiteFooter />
     </div>
   );
 };
