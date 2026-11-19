@@ -352,7 +352,7 @@ const Auth = () => {
     };
 
     if (requiresTermsConsent(role)) {
-      // Doklad o souhlasu do schválení tabulky terms_acceptances.
+      // Doklad o souhlasu; po přihlášení se zapíše do terms_acceptances (recordTermsAcceptance).
       metadata.terms_version = TERMS_VERSION;
       metadata.terms_accepted_at = new Date().toISOString();
     }

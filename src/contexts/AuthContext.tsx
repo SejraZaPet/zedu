@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { recordTermsAcceptance } from "@/lib/terms-acceptance";
 
 type AppRole = "admin" | "school_admin" | "teacher" | "lektor" | "rodic" | "user" | null;
 
@@ -162,7 +163,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => { applySession(session); }
+      (_event, session) => {
+        applySession(session);
+        if (session?.user) void recordTermsAcceptance(session.user.id, session.user.user_metadata).catch(() => {});
+      }
     );
 
     const bootstrap = async () => {
