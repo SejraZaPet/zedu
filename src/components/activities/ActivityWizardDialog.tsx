@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CreateFromLessonDialog from "./CreateFromLessonDialog";
-import { loadTeacherSourceLessons, sourceLessonBooks, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
+import LessonFinder from "@/components/lessons/LessonFinder";
+import { loadTeacherSourceLessons, sourceLessonBooks, toFinderItem, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import SearchablePickList from "@/components/activities/SearchablePickList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -194,7 +194,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
     navigate(GAMES_HREF);
   }
 
-  const allLessonsForTarget = lessons;
+  const targetFinderItems = useMemo(() => targetLessons.map(toFinderItem), [targetLessons]);
 
   return (
     <>
@@ -324,15 +324,12 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
             <div className="space-y-5">
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Vložit do lekce</h3>
-                <SearchablePickList items={textbooks} mode="single" selected={textbookId ? [textbookId] : []}
-                  onChange={(ids) => { setTextbookId(ids[0] ?? ""); setTargetLessonId(""); }}
-                  label="Učebnice" searchPlaceholder="Hledat učebnici" searchFrom={1} />
                 {lessonsError && <p role="alert" className="text-sm text-destructive">Lekce se nepodařilo načíst. Zavřete průvodce a zkuste to znovu.</p>}
                 {!lessonsLoading && !lessonsError && !textbooks.length && <p className="text-sm text-muted-foreground">Ve vašich učebnicích zatím není lekce, do které lze vložit. Aktivitu můžete uložit do Moje aktivity.</p>}
-                {textbookId && (lessonsLoading
+                {lessonsLoading
                   ? <p className="text-sm text-muted-foreground">Načítám lekce…</p>
-                  : <SearchablePickList items={allLessonsForTarget} mode="single" selected={targetLessonId ? [targetLessonId] : []}
-                      onChange={(ids) => setTargetLessonId(ids[0] ?? "")} label="Lekce" searchPlaceholder="Hledat lekci" />)}
+                  : targetLessons.length > 0 && <LessonFinder items={targetFinderItems} selectedId={targetLessonId} label="Lekce"
+                      onSelect={(l) => { setTextbookId(l.textbookId ?? ""); setTargetLessonId(l.id); }} />}
                 <p className="text-xs text-muted-foreground">Otevře se editor lekce s aktivitou na konci. Nic se neuloží, dokud lekci neuložíte.</p>
                 <Button onClick={openInLesson} disabled={!targetLessonId || busy}>Otevřít v editoru lekce</Button>
               </section>

@@ -13,6 +13,8 @@ export interface TeacherLessonOption {
   topicTitle?: string | null;
   origin: "own" | "catalog";
   textbookId?: string | null;
+  updatedAt?: string | null;
+  sortOrder?: number;
 }
 
 /**
@@ -29,7 +31,9 @@ export async function loadTeacherLessonOptions(uid: string): Promise<TeacherLess
     source: l.textbookTitle,
     subject: l.subject,
     textbookTitle: l.textbookTitle,
-    topicTitle: null,
+    topicTitle: l.topicTitle ?? null,
+    updatedAt: l.updatedAt ?? null,
+    sortOrder: l.sortOrder,
     origin: l.kind === "catalog" ? "catalog" as const : "own" as const,
     textbookId: l.textbookId,
   }));

@@ -22,6 +22,7 @@ import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
+import LessonFinder, { EMPTY_FINDER_STATE, type LessonFinderState } from "@/components/lessons/LessonFinder";
 import { dropEmptyActivitySlides } from "@/lib/game-activity-validity";
 import { extractTextFromBlocks } from "@/lib/lesson-content-splitter";
 
@@ -45,6 +46,11 @@ interface LessonOption {
   blocks: any[];
   /** Zdrojová učebnice / předmět – jen pro popisek v seznamu. */
   source?: string;
+  textbookId?: string | null;
+  subject?: string | null;
+  topicTitle?: string | null;
+  updatedAt?: string | null;
+  sortOrder?: number;
 }
 
 const BEZLISTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
@@ -278,7 +284,7 @@ export function AddSlideSheet({
   const [aiLoading, setAiLoading] = useState(false);
 
   const reset = () => {
-
+    setLessonFinderState(EMPTY_FINDER_STATE);
     setKind("menu");
     setTextHeadline("");
     setTextBody("");
@@ -379,6 +385,7 @@ export function AddSlideSheet({
   const insertPreset = (preset: ActivityPreset) => appendAndJump(preset.build());
 
   /** Načte lekce učitele (učebnicové i vlastní) pro převzetí obsahu do hry. */
+  const [lessonFinderState, setLessonFinderState] = useState<LessonFinderState>(EMPTY_FINDER_STATE);
   const openLessonPicker = async (purpose: "slides" | "quiz" = "slides") => {
     setLessonPurpose(purpose);
     setKind("lesson");
@@ -965,23 +972,18 @@ export function AddSlideSheet({
                   Zatím nemáte žádnou lekci s obsahem.
                 </p>
               ) : (
-                lessonOptions.map((l) => (
-                  <Button
-                    key={l.id}
-                    variant="outline"
-                    className="justify-start h-auto py-3 w-full whitespace-normal"
-                    disabled={busy}
-                    onClick={() => (lessonPurpose === "quiz" ? generateLessonQuiz(l) : openLessonPreview(l))}
-                  >
-                    <div className="text-left">
-                      <p className="font-medium">{l.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {l.source ? `${l.source} · ` : ""}{l.blocks.length} bloků obsahu
-                      </p>
-
-                    </div>
-                  </Button>
-                ))
+                <LessonFinder
+                  items={lessonOptions.map((l) => ({ id: l.id, title: l.title, textbookId: l.textbookId ?? null, textbookTitle: l.source ?? null,
+                    subject: l.subject ?? null, topic: l.topicTitle ?? null, updatedAt: l.updatedAt ?? null, sortOrder: l.sortOrder,
+                    note: `${l.blocks.length} bloků obsahu` }))}
+                  disabled={busy}
+                  state={lessonFinderState}
+                  onStateChange={setLessonFinderState}
+                  onSelect={(item) => {
+                    const l = lessonOptions.find((x) => x.id === item.id);
+                    if (l) (lessonPurpose === "quiz" ? generateLessonQuiz(l) : openLessonPreview(l));
+                  }}
+                />
               )}
             </div>
           )}

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import LessonFinder from "@/components/lessons/LessonFinder";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -11,7 +12,7 @@ import ActivityBlock from "@/components/admin/block-editors/ActivityBlock";
 import { Loader2, Sparkles } from "lucide-react";
 import { practiceErrorMessage } from "@/lib/practice-error";
 import { Link } from "react-router-dom";
-import { loadTeacherSourceLessons, isAllowedSourceLesson, sourceLessonBooks, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
+import { loadTeacherSourceLessons, isAllowedSourceLesson, toFinderItem, type TeacherSourceLesson } from "@/lib/teacher-source-lessons";
 import { lessonAiParts, sourceText, aiTypeLimits, lessonAiRequest, makeLessonSource, lessonAiDraft, type LessonAiType } from "@/lib/lesson-ai-source";
 import type { Block } from "@/lib/textbook-config";
 
@@ -27,7 +28,6 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
 }) {
   const { user } = useAuth();
   const [lessons, setLessons] = useState<TeacherSourceLesson[]>([]);
-  const [bookId, setBookId] = useState("");
   const [lessonId, setLessonId] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [type, setType] = useState<LessonAiType>(initialType);
@@ -42,15 +42,14 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
     generation.current++;
     if (!open || !user) return;
     let cancelled = false;
-    setLessons([]); setBookId(""); setLessonId(""); setSelected([]); setDraft(null); setReviewed(false); setError(""); setType(initialType); setBusy(false); setLoading(true);
+    setLessons([]); setLessonId(""); setSelected([]); setDraft(null); setReviewed(false); setError(""); setType(initialType); setBusy(false); setLoading(true);
     loadTeacherSourceLessons(user.id, { withBlocks: true }).then(rows => { if (!cancelled) setLessons(rows); })
       .catch(() => { if (!cancelled) setError("Lekce se nepodařilo načíst. Zavřete okno a zkuste to znovu."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; generation.current++; };
   }, [open, user?.id, initialType]);
   const lesson = lessons.find(l => l.id === lessonId);
-  const books = sourceLessonBooks(lessons);
-  const bookLessons = bookId ? lessons.filter(l => l.textbookId === bookId) : lessons;
+  const finderItems = useMemo(() => lessons.map(toFinderItem), [lessons]);
   const aiLesson = lesson ? { id: lesson.id, title: lesson.title, blocks: lesson.blocks, textbook_id: lesson.textbookId, source: lesson.source } : null;
   const parts = aiLesson ? lessonAiParts(aiLesson) : [];
   const limits = aiTypeLimits(type);
@@ -82,8 +81,7 @@ export default function CreateFromLessonDialog({ open, onOpenChange, onInsert, a
           <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/ucitel/ucebnice">Otevřít Učebnice</Link></Button>
             {onUseText && <Button variant="outline" onClick={() => { onOpenChange(false); onUseText(); }}>Vložit text nebo dokument</Button>}</div>
         </div>}
-        {books.length > 1 && <SearchableSelect label="Učebnice" value={bookId} disabled={loading || busy} options={[{ value: "", label: "Všechny učebnice" }, ...books.map(b => ({ value: b.id, label: b.title, subtitle: `${b.count} lekcí` }))]} onValueChange={id => { setBookId(id); setLessonId(""); setSelected([]); }} />}
-        <SearchableSelect label="Vybrat lekci" value={lessonId} disabled={loading || busy || !lessons.length} options={bookLessons.map(l => ({ value: l.id, label: l.title, subtitle: l.readOnly ? `${l.textbookTitle} · ukázka` : l.textbookTitle }))} onValueChange={id => { setLessonId(id); setSelected([]); }} />
+        {lessons.length > 0 && <LessonFinder items={finderItems} selectedId={lessonId} disabled={loading || busy} onSelect={l => { setLessonId(l.id); setSelected([]); }} />}
         {parts.length > 0 && <fieldset disabled={busy} className="space-y-2"><legend className="text-sm font-medium">Části lekce</legend>
           {parts.map(p => <Label key={p.id} className="flex min-h-11 gap-3 items-center cursor-pointer"><Checkbox checked={selected.includes(p.id)} onCheckedChange={yes => setSelected(ids => yes ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="min-w-0 break-words">{p.title}</span></Label>)}
           <details className="text-sm"><summary className="cursor-pointer min-h-11">Zdrojový text ({text.length} / {limits.text} znaků)</summary><p className="whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{text}</p></details>

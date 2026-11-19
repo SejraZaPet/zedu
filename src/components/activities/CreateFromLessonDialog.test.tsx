@@ -21,8 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 describe("Vytvořit z lekce – lokální kontrola", () => {
   beforeEach(() => { vi.stubGlobal("crypto", webcrypto); invoke.mockReset(); state.empty = false; });
   async function selectSource() {
-    await screen.findByRole("option", { name: "[TEST] Vlastní lekce" });
-    fireEvent.change(screen.getByLabelText("Vybrat lekci"), { target: { value: "lesson" } });
+    fireEvent.click(await screen.findByRole("button", { name: /\[TEST\] Vlastní lekce/ }));
     fireEvent.click(screen.getByRole("checkbox"));
   }
   it("chyba AI nic nevloží a zachová zdroj", async () => {
@@ -33,7 +32,7 @@ describe("Vytvořit z lekce – lokální kontrola", () => {
     fireEvent.click(screen.getByRole("button", { name: "Navrhnout" }));
     await screen.findByRole("alert");
     expect(onInsert).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Vybrat lekci")).toHaveValue("lesson");
+    expect(screen.getByRole("button", { name: /\[TEST\] Vlastní lekce/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("checkbox")).toBeChecked();
   });
   it("návrh se vloží až po výslovné kontrole učitelem", async () => {

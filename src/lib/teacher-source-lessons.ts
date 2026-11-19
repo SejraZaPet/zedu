@@ -19,6 +19,10 @@ export interface TeacherSourceLesson {
   kind: SourceBookKind | "catalog"; readOnly: boolean;
   /** Předmět učebnice, pod kterou se lekce zobrazuje. */
   subject: string | null;
+  /** Poslední úprava lekce (pro řazení „nejnovější“). */
+  updatedAt?: string | null;
+  /** Téma katalogové lekce (u vlastních učebnic chybí). */
+  topicTitle?: string | null;
 }
 
 export function usableSourceBook(book: SourceBookRow, uid: string, isDemo: boolean): SourceBookKind | null {
@@ -54,7 +58,7 @@ export async function loadTeacherSourceLessons(uid: string, opts: { withBlocks?:
     .or(textbookOwnerOr(uid, isDemo)).is("deleted_at", null).order("title").order("id").range(from, to) as any);
   const usable = books.map(b => ({ book: b, kind: usableSourceBook(b, uid, isDemo) })).filter((x): x is { book: SourceBookRow; kind: SourceBookKind } => !!x.kind);
   const byId = new Map(usable.map(x => [x.book.id, x]));
-  const cols = opts.withBlocks ? "id, title, blocks, sort_order" : "id, title, sort_order";
+  const cols = opts.withBlocks ? "id, title, blocks, sort_order, updated_at" : "id, title, sort_order, updated_at";
   const seen = new Set<string>();
   const out: TeacherSourceLesson[] = [];
 
@@ -66,7 +70,7 @@ export async function loadTeacherSourceLessons(uid: string, opts: { withBlocks?:
       if (!owner || seen.has(l.id)) continue;
       seen.add(l.id);
       out.push({ id: l.id, title: l.title || "Bez názvu", blocks: l.blocks ?? [], sortOrder: l.sort_order ?? 0, source: "teacher_textbook_lessons",
-        textbookId: owner.book.id, textbookTitle: owner.book.title || "Učebnice", kind: owner.kind, readOnly: owner.kind === "demo", subject: owner.book.subject ?? null });
+        textbookId: owner.book.id, textbookTitle: owner.book.title || "Učebnice", kind: owner.kind, readOnly: owner.kind === "demo", subject: owner.book.subject ?? null, updatedAt: l.updated_at ?? null, topicTitle: null });
     }
   }
 
@@ -76,8 +80,9 @@ export async function loadTeacherSourceLessons(uid: string, opts: { withBlocks?:
   const subjects = [...bookBySubject.keys()];
   if (subjects.length) {
     const topics = await fetchAllPages<any>((from, to) => supabase.from("textbook_topics")
-      .select("id, subject").in("subject", subjects).order("id").range(from, to) as any);
+      .select("id, subject, title").in("subject", subjects).order("id").range(from, to) as any);
     const subjectByTopic = new Map(topics.map(t => [t.id as string, t.subject as string]));
+    const titleByTopic = new Map(topics.map(t => [t.id as string, (t.title as string | null) ?? null]));
     for (const ids of chunks([...subjectByTopic.keys()])) {
       const rows = await fetchAllPages<any>((from, to) => supabase.from("textbook_lessons")
         .select(`${cols}, topic_id, is_demo_seed`).in("topic_id", ids).order("sort_order").order("id").range(from, to) as any);
@@ -86,7 +91,7 @@ export async function loadTeacherSourceLessons(uid: string, opts: { withBlocks?:
         if (!owner || l.is_demo_seed || seen.has(l.id)) continue;
         seen.add(l.id);
         out.push({ id: l.id, title: l.title || "Bez názvu", blocks: l.blocks ?? [], sortOrder: l.sort_order ?? 0, source: "textbook_lessons",
-          textbookId: owner.book.id, textbookTitle: owner.book.title || "Učebnice", kind: "catalog", readOnly: false, subject: owner.book.subject ?? null });
+          textbookId: owner.book.id, textbookTitle: owner.book.title || "Učebnice", kind: "catalog", readOnly: false, subject: owner.book.subject ?? null, updatedAt: l.updated_at ?? null, topicTitle: titleByTopic.get(l.topic_id) ?? null });
       }
     }
   }
@@ -112,4 +117,10 @@ export function sourceLessonBooks(lessons: TeacherSourceLesson[]): { id: string;
 export async function isAllowedSourceLesson(uid: string, lesson: { id: string; source: SourceLessonTable }): Promise<boolean> {
   const fresh = await loadTeacherSourceLessons(uid);
   return fresh.some(l => l.id === lesson.id && l.source === lesson.source);
+}
+
+/** Položka pro sdílený LessonFinder (stejná data, žádná nová lekce). */
+export function toFinderItem(l: TeacherSourceLesson) {
+  return { id: l.id, title: l.title, textbookId: l.textbookId, textbookTitle: l.textbookTitle, subject: l.subject,
+    topic: l.topicTitle ?? null, updatedAt: l.updatedAt ?? null, sortOrder: l.sortOrder, note: l.readOnly ? "ukázka" : null };
 }

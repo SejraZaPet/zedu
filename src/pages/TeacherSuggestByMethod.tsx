@@ -26,6 +26,7 @@ import { phasesToSlides } from "@/lib/plan-to-slides";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
+import LessonFinder from "@/components/lessons/LessonFinder";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { savePlanEquipment } from "@/lib/lesson-plan-equipment";
 import { emptyWorksheetSpec, createDefaultItem } from "@/lib/worksheet-defaults";
@@ -65,6 +66,11 @@ interface TeacherSource {
   lessonId?: string;
   /** Lze do lekce zapisovat obsah (jen vlastní lekce učitele). */
   editable?: boolean;
+  textbookId?: string | null;
+  textbookTitle?: string | null;
+  topic?: string | null;
+  updatedAt?: string | null;
+  sortOrder?: number;
 }
 
 const SOURCE_KIND_LABEL: Record<TeacherSourceKind, string> = {
@@ -195,49 +201,11 @@ export default function TeacherSuggestByMethod() {
   const [methods, setMethods] = useState<LearningMethod[]>([]);
   const [selectedMethodIds, setSelectedMethodIds] = useState<string[]>([]);
   const [teacherLessons, setTeacherLessons] = useState<TeacherSource[]>([]);
-  const [lessonSubjectFilter, setLessonSubjectFilter] = useState<string>("__all");
-  const [lessonSearch, setLessonSearch] = useState("");
-  // Předměty bývají uložené jako název („Mediální výchova“) i jako kód („medialni_vychova“) – sjednotíme.
-  const subjectKey = (s?: string | null) =>
-    s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim() : "";
-  const subjectLabels = useMemo(() => {
-    const m = new Map<string, string>();
-    const score = (s: string) => (s.includes("_") ? 0 : 2) + (/[A-ZÁ-Ž]/.test(s[0]) ? 1 : 0);
-    const raw = new Map<string, string>();
-    for (const l of teacherLessons) {
-      if (!l.subject) continue;
-      const k = subjectKey(l.subject);
-      const cur = raw.get(k);
-      if (!cur || score(l.subject) > score(cur)) raw.set(k, l.subject);
-    }
-    for (const [k, s] of raw) m.set(k, s.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()));
-    return m;
-  }, [teacherLessons]);
-  const lessonSubjects = useMemo(
-    () => Array.from(subjectLabels.entries()).sort(([, a], [, b]) => a.localeCompare(b, "cs")),
-    [subjectLabels],
-  );
-  const groupedLessons = useMemo(() => {
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const q = norm(lessonSearch.trim());
-    const filtered = teacherLessons.filter((l) => {
-      if (lessonSubjectFilter === "__none" && l.subject) return false;
-      if (lessonSubjectFilter !== "__all" && lessonSubjectFilter !== "__none" && subjectKey(l.subject) !== lessonSubjectFilter)
-        return false;
-      if (q && !norm(`${l.title} ${l.source ?? ""}`).includes(q)) return false;
-      return true;
-    });
-    const map = new Map<string, TeacherSource[]>();
-    for (const l of filtered) {
-      const key = (l.subject && subjectLabels.get(subjectKey(l.subject))) || "Bez předmětu";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(l);
-    }
-    const groups = Array.from(map.entries()).sort(([a], [b]) =>
-      a === "Bez předmětu" ? 1 : b === "Bez předmětu" ? -1 : a.localeCompare(b, "cs"),
-    );
-    return { groups, count: filtered.length };
-  }, [teacherLessons, lessonSubjectFilter, lessonSearch, subjectLabels]);
+  const finderItems = useMemo(() => teacherLessons.map((l) => ({
+    id: l.id, title: l.title, subject: l.subject ?? null, textbookId: l.textbookId ?? null,
+    textbookTitle: l.textbookTitle ?? (l.kind === "plan" || l.kind === "worksheet" ? null : l.source ?? null),
+    topic: l.topic ?? null, updatedAt: l.updatedAt ?? null, sortOrder: l.sortOrder, note: SOURCE_KIND_LABEL[l.kind],
+  })), [teacherLessons]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [sourcesError, setSourcesError] = useState(false);
   const [sourceMode, setSourceMode] = useState<"text" | "lesson" | "file">("text");
@@ -345,6 +313,11 @@ export default function TeacherSuggestByMethod() {
           subject: l.subject ?? null,
           lessonId: l.id,
           editable: true,
+          textbookId: l.textbookId ?? null,
+          textbookTitle: l.textbookTitle ?? null,
+          topic: l.topicTitle ?? null,
+          updatedAt: l.updatedAt ?? null,
+          sortOrder: l.sortOrder,
         })),
         ...((plansRes.data as any[]) ?? []).map((p) => ({
           id: `plan:${p.id}`,
@@ -924,63 +897,19 @@ export default function TeacherSuggestByMethod() {
             {sourceMode === "lesson" && (
               <div>
                 <Label>Materiál (vlastní lekce, lekce z katalogu, plán hodiny, pracovní list)</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
-                  <Select value={lessonSubjectFilter} onValueChange={setLessonSubjectFilter}>
-                    <SelectTrigger aria-label="Filtr předmětu">
-                      <SelectValue placeholder="Všechny předměty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all">Všechny předměty</SelectItem>
-                      {lessonSubjects.map(([k, label]) => (
-                        <SelectItem key={k} value={k}>{label}</SelectItem>
-                      ))}
-                      <SelectItem value="__none">Bez předmětu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="search"
-                    aria-label="Hledat lekci"
-                    value={lessonSearch}
-                    onChange={(e) => setLessonSearch(e.target.value)}
-                    placeholder="Hledat podle názvu lekce, učebnice nebo tématu…"
-                  />
+                <div className="my-2">
+                  {sourcesLoading ? (
+                    <p className="text-sm text-muted-foreground">Načítám…</p>
+                  ) : (
+                    <LessonFinder
+                      items={finderItems}
+                      selectedId={sourceLessonId}
+                      label="Vyberte materiál"
+                      emptyText={sourcesError ? "Nepodařilo se načíst lekce, zkuste to prosím znovu." : "Zatím nemáte žádné vlastní materiály."}
+                      onSelect={(item) => setSourceLessonId(item.id)}
+                    />
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">
-                  Nalezeno {groupedLessons.count} z {teacherLessons.length} materiálů
-                </p>
-                <Select value={sourceLessonId} onValueChange={setSourceLessonId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyberte materiál…" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-96">
-                    {sourcePreview && !groupedLessons.groups.some(([, ls]) => ls.some((l) => l.id === sourceLessonId)) && (
-                      <SelectItem value={sourceLessonId} className="hidden">{sourcePreview.title}</SelectItem>
-                    )}
-                    {groupedLessons.groups.map(([subject, ls]) => (
-                      <SelectGroup key={subject}>
-                        <SelectLabel className="text-primary">{subject} ({ls.length})</SelectLabel>
-                        {ls.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {SOURCE_KIND_LABEL[l.kind]}: {l.title}
-                            {l.source ? ` · ${l.source}` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                    {teacherLessons.length > 0 && groupedLessons.count === 0 && (
-                      <div className="p-3 text-sm text-muted-foreground">Žádný materiál neodpovídá filtru.</div>
-                    )}
-                    {teacherLessons.length === 0 && (
-                      <div className="p-3 text-sm text-muted-foreground">
-                        {sourcesLoading
-                          ? "Načítám…"
-                          : sourcesError
-                            ? "Nepodařilo se načíst lekce, zkuste to prosím znovu."
-                            : "Zatím nemáte žádné vlastní materiály."}
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
                 {sourcesError && (
                   <p className="text-xs text-destructive mt-1">
                     Nepodařilo se načíst lekce, zkuste to prosím znovu.
