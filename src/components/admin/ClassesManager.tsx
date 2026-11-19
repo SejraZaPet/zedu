@@ -35,7 +35,9 @@ import {
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useMySchool } from "@/hooks/useMySchool";
+import { countHiddenDemoClasses, filterClassesForDisplay, hiddenDemoClassesLabel } from "@/lib/class-demo-visibility";
 import ClassMembersDialog from "./ClassMembersDialog";
 import ClassScheduleDialog from "./ClassScheduleDialog";
 import ClassTextbooksDialog from "./ClassTextbooksDialog";
@@ -49,6 +51,9 @@ interface ClassItem {
   year: number | null;
   archived: boolean;
   created_at: string;
+  created_by: string | null;
+  is_demo_school: boolean;
+  taught_by_current_user: boolean;
   member_count: number;
   access_code: string | null;
   access_code_active: boolean;
@@ -65,6 +70,7 @@ const ClassesManager = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [showDemoClasses, setShowDemoClasses] = useState(() => sessionStorage.getItem("classes-manager-show-demo") === "true");
 
   // Form dialog
   const [formOpen, setFormOpen] = useState(false);
@@ -99,7 +105,7 @@ const ClassesManager = () => {
 
     const { data: classesData, error } = await supabase
       .from("classes")
-      .select("*")
+      .select("*, schools(is_demo)")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -182,7 +188,20 @@ const ClassesManager = () => {
         .sort((a, b) => a.name.localeCompare(b.name, "cs")),
     );
 
-    setClasses(enriched);
+    const taughtClassIds = new Set(
+      (classTeachers ?? [])
+        .filter((teacher: any) => teacher.user_id === user?.id)
+        .map((teacher: any) => teacher.class_id),
+    );
+    setClasses(enriched.map((item: any) => {
+      const school = Array.isArray(item.schools) ? item.schools[0] : item.schools;
+      const { schools: _schools, ...classItem } = item;
+      return {
+        ...classItem,
+        is_demo_school: school?.is_demo === true,
+        taught_by_current_user: taughtClassIds.has(item.id),
+      };
+    }));
     setLoading(false);
   };
 
@@ -199,18 +218,24 @@ const ClassesManager = () => {
   };
 
 
-  useEffect(() => { fetchClasses(); }, []);
+  useEffect(() => { fetchClasses(); }, [user?.id]);
 
-  const filtered = useMemo(() => {
-    return classes.filter((c) => {
-      if (c.archived !== showArchived) return false;
-      if (search) {
-        const s = search.toLowerCase();
-        return `${c.name} ${c.school} ${c.field_of_study}`.toLowerCase().includes(s);
-      }
-      return true;
-    });
-  }, [classes, search, showArchived]);
+  const filtered = useMemo(() => filterClassesForDisplay(classes, {
+    userId: user?.id,
+    showArchived,
+    showDemoClasses,
+    search,
+  }), [classes, search, showArchived, showDemoClasses, user?.id]);
+
+  const hiddenDemoCount = useMemo(
+    () => countHiddenDemoClasses(classes, user?.id, showArchived),
+    [classes, showArchived, user?.id],
+  );
+
+  const changeShowDemoClasses = (checked: boolean) => {
+    setShowDemoClasses(checked);
+    sessionStorage.setItem("classes-manager-show-demo", String(checked));
+  };
 
   const openCreate = () => {
     setEditingClass(null);
@@ -375,6 +400,23 @@ const ClassesManager = () => {
             <Plus className="w-4 h-4 mr-1" /> Nová třída
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-demo-classes"
+            checked={showDemoClasses}
+            onCheckedChange={changeShowDemoClasses}
+            aria-label="Zobrazit i demo třídy"
+          />
+          <Label htmlFor="show-demo-classes" className="text-sm font-normal cursor-pointer">
+            Zobrazit i demo třídy
+          </Label>
+        </div>
+        {!showDemoClasses && hiddenDemoCount > 0 && (
+          <span className="text-sm text-muted-foreground">{hiddenDemoClassesLabel(hiddenDemoCount)}</span>
+        )}
       </div>
 
       <div className="text-sm text-muted-foreground">
