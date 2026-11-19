@@ -1,3 +1,6 @@
+import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { buildInquiryRow } from "../_shared/license-inquiry.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -60,21 +63,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!name || !email || !plan) {
-      return new Response(JSON.stringify({ error: "Chybí povinná pole" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (String(name).length > 200 || String(email).length > 255 || String(message ?? "").length > 5000) {
-      return new Response(JSON.stringify({ error: "Vstup je příliš dlouhý" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
-      return new Response(JSON.stringify({ error: "Neplatný e-mail" }), {
-        status: 400,
+    const built = buildInquiryRow(body, new Date().toISOString());
+    if ("error" in built) {
+      return new Response(JSON.stringify({ error: built.error }), {
+        status: built.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -92,13 +84,32 @@ Deno.serve(async (req) => {
     arr.push(now);
     recentByIp.set(ip, arr);
 
+    // Poptávka se uloží PŘED e-mailem; selhání e-mailu ji neztratí.
+    const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: saved, error: saveErr } = await db.from("license_inquiries").insert(built.row).select("id").single();
+    if (saveErr || !saved) {
+      console.error("license inquiry insert failed", saveErr?.code ?? "unknown");
+      return new Response(JSON.stringify({ error: "Poptávku se nepodařilo uložit, zkuste to prosím znovu." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const markEmail = async (email_status: "sent" | "failed", email_error: string | null) => {
+      const { error } = await db.from("license_inquiries").update({ email_status, email_error }).eq("id", saved.id);
+      if (error) console.error("license inquiry status update failed", error.code);
+    };
+    const savedOk = () => new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || Deno.env.get("RESEND_KEY");
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "Email služba není nakonfigurovaná" }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      await markEmail("failed", "NO_KEY");
+      return savedOk();
     }
 
     const rows: Array<[string, string]> = [
@@ -149,20 +160,16 @@ Deno.serve(async (req) => {
     });
 
     if (!res.ok) {
-      const errBody = await res.text();
-      console.error("Resend error", res.status, errBody);
-      return new Response(JSON.stringify({ error: "Odeslání se nepodařilo" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      try { await res.body?.cancel(); } catch { /* */ }
+      console.error("Resend error", res.status);
+      await markEmail("failed", `HTTP ${res.status}`);
+      return savedOk();
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    await markEmail("sent", null);
+    return savedOk();
   } catch (e: any) {
-    console.error("send-license-inquiry error:", e?.message);
+    console.error("send-license-inquiry error:", e?.name ?? "unknown");
     return new Response(JSON.stringify({ error: "Interní chyba" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

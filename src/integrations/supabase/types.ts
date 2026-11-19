@@ -4146,6 +4146,75 @@ export type Database = {
         }
         Relationships: []
       }
+      license_inquiries: {
+        Row: {
+          consent_accepted_at: string | null
+          consent_terms_version: string | null
+          created_at: string
+          email: string | null
+          email_error: string | null
+          email_status: string
+          handled_at: string | null
+          handled_by: string | null
+          handled_note: string | null
+          handled_status: string
+          id: string
+          message: string | null
+          name: string | null
+          organization: string | null
+          phone: string | null
+          plan: string | null
+          role: string | null
+          source: string
+          student_count: string | null
+          updated_at: string
+        }
+        Insert: {
+          consent_accepted_at?: string | null
+          consent_terms_version?: string | null
+          created_at?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_note?: string | null
+          handled_status?: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          organization?: string | null
+          phone?: string | null
+          plan?: string | null
+          role?: string | null
+          source?: string
+          student_count?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consent_accepted_at?: string | null
+          consent_terms_version?: string | null
+          created_at?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_note?: string | null
+          handled_status?: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          organization?: string | null
+          phone?: string | null
+          plan?: string | null
+          role?: string | null
+          source?: string
+          student_count?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       live_session_drafts: {
         Row: {
           created_at: string

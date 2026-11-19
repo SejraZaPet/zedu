@@ -25,6 +25,7 @@ import NotificationsManager from "@/components/admin/NotificationsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import EmailLogManager from "@/components/admin/EmailLogManager";
+import LicenseInquiriesList from "@/components/admin/LicenseInquiriesList";
 import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
 import LandingPageManager from "@/components/admin/LandingPageManager";
 import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
@@ -69,6 +70,7 @@ const adminTabs = [
   { id: "notifications", label: "Notifikace", icon: Bell, module: "notifications" },
   { id: "website-assistant", label: "Bezlai web", icon: Bot, module: "website_assistant" },
   { id: "email-log", label: "Odeslané e-maily", icon: Mail, module: "admin_only" },
+  { id: "inquiries", label: "Poptávky licencí", icon: Mail, module: "admin_only" },
   { id: "audit", label: "Audit log", icon: FileText, module: "audit" },
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
@@ -88,7 +90,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers" | "website-assistant" | "schools" | "email-log";
+type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers" | "website-assistant" | "schools" | "email-log" | "inquiries";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
@@ -97,7 +99,7 @@ const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "Bezli Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars", "game-backgrounds"] },
-  { id: "system", label: "Systém", tabs: ["notifications", "website-assistant", "email-log", "audit"] },
+  { id: "system", label: "Systém", tabs: ["notifications", "website-assistant", "email-log", "inquiries", "audit"] },
 ];
 
 const Admin = () => {
@@ -323,6 +325,7 @@ const Admin = () => {
         {activeTab === "schools" && !isTeacher && <SchoolsManager />}
         {activeTab === "unassigned-teachers" && !isTeacher && <UnassignedTeachersManager />}
         {activeTab === "email-log" && !isTeacher && <EmailLogManager />}
+        {activeTab === "inquiries" && !isTeacher && <LicenseInquiriesList />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
