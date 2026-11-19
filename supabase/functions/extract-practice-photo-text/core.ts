@@ -1,3 +1,4 @@
+import { PRACTICE_AI_MODEL } from "../_shared/practice-ai-model.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@^4.4.3";
 
@@ -90,7 +91,7 @@ export async function handleExtractPracticePhotoText(req: Request, deps: Depende
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: PRACTICE_AI_MODEL,
           messages: [
             {
               role: "system",

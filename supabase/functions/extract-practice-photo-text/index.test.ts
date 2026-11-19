@@ -1,3 +1,4 @@
+import { PRACTICE_AI_MODEL } from "../_shared/practice-ai-model.ts";
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
@@ -112,6 +113,6 @@ Deno.test("úspěch vrací pouze přepsaný text", async () => {
   const body = await response.json();
   assertEquals(Object.keys(body), ["text"]);
   assertEquals(body.text, LONG_TEXT);
-  assertEquals(requestBody.includes("google/gemini-2.5-flash"), true);
+  assertEquals(requestBody.includes(PRACTICE_AI_MODEL), true);
   assertEquals(requestBody.includes("data:image/jpeg;base64,aGVsbG8="), true);
 });

@@ -1,3 +1,4 @@
+import { PRACTICE_AI_MODEL } from "../_shared/practice-ai-model.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { blocksToText, hasEnoughLessonText, INSUFFICIENT_LESSON_TEXT } from "../_shared/lesson-text.ts";
 import { requireAuth, hasRole } from "../_shared/auth.ts";
@@ -156,7 +157,7 @@ Mix obtížností kolem cílové úrovně. Zhruba ${mcCount} multiple_choice + $
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: PRACTICE_AI_MODEL,
           messages: [
             {
               role: "system",
