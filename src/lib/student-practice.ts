@@ -87,3 +87,35 @@ export function masteryFromPercents(percents: number[], fallback: number): numbe
   percents.slice(0, 3).forEach((p, i) => { const w = weights[i] ?? 1; ws += p * w; wsum += w; });
   return wsum > 0 ? Math.round(ws / wsum) : fallback;
 }
+
+/**
+ * Obsah `answers_json` ukládaného sezení. U lekce beze změny (odpovědi a fáze bez obsahu);
+ * u zdrojů vložených žákem (foto, text, soubor) jen druh zdroje, skóre a počty –
+ * žádné znění otázek, možností, citací ani odpovědí odvozených ze zdroje.
+ */
+export function buildPracticeSessionAnswersJson(input: {
+  sourceKind: string | null | undefined;
+  answers: Record<string, PracticeAnswer>;
+  phases: Array<{ content?: unknown; questions?: unknown[]; [k: string]: unknown }>;
+  score: number;
+  totalScorable: number;
+  percent: number;
+}) {
+  const { sourceKind, answers, phases, score, totalScorable, percent } = input;
+  if (!sourceKind || sourceKind === "lesson") {
+    return {
+      answers,
+      phases: phases.map(({ content: _c, ...ph }) => ph),
+      score,
+      total_scorable: totalScorable,
+      percent,
+    };
+  }
+  return {
+    source: { kind: sourceKind },
+    question_count: phases.reduce((n, p) => n + (Array.isArray(p.questions) ? p.questions.length : 0), 0),
+    score,
+    total_scorable: totalScorable,
+    percent,
+  };
+}

@@ -79,7 +79,8 @@ describe("procvičování z potvrzené fotografie", () => {
       score: 1,
       answers_json: { source: { kind: "photo" }, score: 1, total_scorable: 1, percent: 100 },
     });
-    expect(saved.answers_json.phases[0].content).toBeUndefined();
+    expect(saved.answers_json.phases).toBeUndefined();
+    expect(saved.answers_json.answers).toBeUndefined();
     expect(JSON.stringify(saved)).not.toContain(SOURCE_TEXT);
     expect(mocks.tables).not.toContain("student_lesson_mastery");
     expect(await screen.findByText("1 / 1 (100 %)")).toBeInTheDocument();

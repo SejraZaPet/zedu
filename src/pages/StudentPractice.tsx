@@ -1,4 +1,4 @@
-import { scorePractice, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, masteryFromPercents, type ExplainData } from "@/lib/student-practice";
+import { scorePractice, buildPracticeSessionAnswersJson, correctAnswerLabel, difficultyLabelCs, hasOpenQuestions, explanationView, sourceOriginLabel, OPEN_QUESTIONS_NOTE, masteryFromPercents, type ExplainData } from "@/lib/student-practice";
 import { useEffect, useMemo, useState } from "react";
 import { questionCountForDuration } from "@/lib/study-method-info";
 import { practiceErrorMessage } from "@/lib/practice-error";
@@ -289,15 +289,14 @@ const StudentPractice = () => {
         duration_min: duration,
         ai_generated: true,
         score: totalScorable > 0 ? score : null,
-        answers_json: {
+        answers_json: buildPracticeSessionAnswersJson({
+          sourceKind,
           answers,
-          // Bez obsahu fází: kopie žákova textu se neukládá.
-          phases: data.practice.phases.map(({ content: _c, ...ph }) => ph),
-          ...(sourceKind && sourceKind !== "lesson" ? { source: { kind: sourceKind } } : {}),
+          phases: data.practice.phases,
           score,
-          total_scorable: totalScorable,
+          totalScorable,
           percent,
-        },
+        }),
       });
       if (insErr) {
         toast({
