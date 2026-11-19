@@ -1,8 +1,13 @@
-import { useLayoutEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Copy, Check, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDemoPair } from "@/lib/demo";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DEMO_SAVE_OFFERED_KEY, extendDemoOnce, hasOwnDemoContent, showCountdown, useDemoStatus,
+} from "@/lib/demo-contact-client";
+import DemoSaveWorkDialog from "./DemoSaveWorkDialog";
 
 /**
  * Trvalý oranžový pruh nahoře — jen pro uživatele demo dvojice.
@@ -12,6 +17,24 @@ const DemoBanner = () => {
   const pair = useDemoPair();
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
+  const { pathname } = useLocation();
+  const { status, reload } = useDemoStatus(!!pair);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [extendMsg, setExtendMsg] = useState<string | null>(null);
+
+  // Nabídnout „Uložit moji práci“ jednou po prvním vlastním obsahu (jen učitel, bez uloženého e-mailu).
+  useEffect(() => {
+    if (!pair || pair.side !== "teacher" || !user || !status || status.hasContact) return;
+    try { if (window.localStorage.getItem(DEMO_SAVE_OFFERED_KEY)) return; } catch { return; }
+    let cancelled = false;
+    hasOwnDemoContent(user.id).then((has) => {
+      if (cancelled || !has) return;
+      try { window.localStorage.setItem(DEMO_SAVE_OFFERED_KEY, "1"); } catch { /* ignore */ }
+      setSaveOpen(true);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [pair, user, status, pathname]);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -37,6 +60,15 @@ const DemoBanner = () => {
   }, [pair]);
 
   if (!pair) return null;
+
+  const extend = async () => {
+    try { await extendDemoOnce(); setExtendMsg("Smazání jsme posunuli o 14 dní."); await reload(); }
+    catch (e) { setExtendMsg((e as Error).message); }
+  };
+  const countdown = showCountdown(status?.daysLeft);
+  const deleteDay = status?.deletesAt
+    ? new Intl.DateTimeFormat("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric" }).format(new Date(status.deletesAt))
+    : null;
 
   const copy = async () => {
     try {
@@ -73,6 +105,14 @@ const DemoBanner = () => {
           </Button>
         </div>
         <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setSaveOpen(true)}
+          className="h-7 px-2 text-demo-foreground hover:bg-demo-foreground/15 hover:text-demo-foreground underline underline-offset-2"
+        >
+          Uložit moji práci
+        </Button>
+        <Button
           asChild
           size="sm"
           className="ml-auto h-7 bg-demo-foreground text-demo hover:bg-demo-foreground/90"
@@ -80,6 +120,23 @@ const DemoBanner = () => {
           <Link to="/licence">Chci Bezli pro svou školu</Link>
         </Button>
       </div>
+      {countdown && (
+        <div role="status" aria-live="polite" className="border-t border-demo-foreground/20">
+          <div className="container mx-auto px-4 py-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold">
+            <span>
+              {status?.daysLeft === 0 ? "Ukázkový účet se smaže dnes" : status?.daysLeft === 1 ? "Ukázkový účet se smaže zítra" : `Ukázkový účet se smaže za ${status?.daysLeft} dny`}
+              {deleteDay ? ` (${deleteDay})` : ""}.
+            </span>
+            {!status?.extended && (
+              <Button size="sm" onClick={extend} className="h-7 bg-demo-foreground text-demo hover:bg-demo-foreground/90">Prodloužit o 14 dní</Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setSaveOpen(true)}
+              className="h-7 px-2 text-demo-foreground hover:bg-demo-foreground/15 hover:text-demo-foreground">Stáhnout práci</Button>
+            {extendMsg && <span className="font-normal">{extendMsg}</span>}
+          </div>
+        </div>
+      )}
+      <DemoSaveWorkDialog open={saveOpen} onOpenChange={setSaveOpen} status={status} onChanged={reload} />
     </div>
   );
 };
