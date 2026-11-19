@@ -1,120 +1,174 @@
-# Demo → ostrý účet: uložení práce, připomínky, převod a režim „nástroj“ (návrh, 2026-11-19)
+# Poptávky licencí: uložení před e-mailem a sekce v administraci (finální návrh)
 
-Cílové umístění po schválení: `.lovable/plan/demo-prevod-na-ostry-ucet-2026-11-19.md`. Jde jen o návrh: nic se nemění, nespouští ani nenasazuje. SQL je níže pouze popsané a před spuštěním vyžaduje „schvaluji“.
+Aktualizace plánu `poptavky-licence-ulozeni-admin-2026-11-19.md` podle odpovědí Tyny. Nic se nespouští ani nenasazuje, dokud nepřijde „schvaluji“.
 
-## A) Současný stav a přesný termín smazání (ověřeno)
-- Kandidáty na smazání vybírá `demo_cleanup_candidates()`. Rozhoduje nejnovější z hodnot `demo_pairs.last_active_at` a `profiles.last_active_at` učitele i žáka. Pár se smaže, když je tato hodnota starší než `now() − demo_config.inactive_days` (14). Dávku omezuje `cleanup_batch`.
-- **Termín smazání = greatest(tři hodnoty last_active_at) + inactive_days.** Skutečný úklid proběhne až při nejbližším nočním běhu demo-cleanup, takže smazání nastane nejvýš o 1 den později.
-- Aktivitu obnovuje:
-  - klient (AuthContext) zápisem `profiles.last_active_at`, nejvýš jednou za 15 minut na kartu;
-  - `demo-restore` (návrat přes kód) a `demo-switch`, které zapisují `demo_pairs.last_active_at`.
-- Návrat přes kód tedy odpočet vynuluje. Každé přihlášení posune smazání o 14 dní. „Prodloužit o 14 dní“ proto dnes fakticky dělá už samotné používání.
-- Bezpečné zobrazení klientovi: nová RPC `get_my_demo_expiry()` (SECURITY DEFINER, jen vlastní pár přes auth.uid(), stejný vzor jako `get_my_demo_pair()`). Vrátí `deletes_at` a `days_left`, nic dalšího.
-- Mapa dat:
-  - Mazání řídí `demo_purge_pair`. Projde všechny tabulky ve schématu public se sloupcem vlastníka (`teacher_id`, `created_by`, `owner_id`, `user_id`, …) a vynechá řádky `is_demo_seed`. Soubory najde `demo_pair_storage_objects`.
-  - Pro export a převod se použije **stejný seznam**: obsah, který pár vytvořil, kromě seedu.
-  - Hlavní vytvořený obsah: teacher_textbooks/teacher_textbook_lessons, teacher_presentations, worksheets, teacher_game_templates, activity_templates, lesson_plans (+phases), assignments (+attachments), question_bank_items, notebooks/pages, teacher_media.
-  - Soubory: teacher-media, lesson-images, assignment-uploads a další, které vrací demo_pair_storage_objects.
-- **Nikdy se neexportuje ani nepřevádí:**
-  - seed (`is_demo_seed`) a ukázkové učebnice,
-  - třídy, žáci, pokusy a odpovědi žáků, portfolio, XP, zprávy,
-  - demo_pairs, demo_config a tabulky rate/usage.
+## Rozhodnutí Tyny
+1. Uchování 24 měsíců, pak automatický úklid (spam po 30 dnech).
+2. Upozornění jen na info@bezli.cz. Druhá adresa ani tabulka `admin_settings` nebude.
+3. Povinné zaškrtávátko se souhlasem se zásadami zpracování osobních údajů. Ukládá se verze a čas souhlasu.
+4. Poptávky vidí jen admin Bezli. Správci škol ne. Zapisuje jen edge funkce se service_role.
+5. Zdroj poptávky je v poli `source`: `demo` / `form` / `license` / `other`.
 
-## B) Etapa 1 (do 28. 11.): kontakt, export, odpočet
-**Data (návrh SQL k potvrzení):**
-- Tabulka `demo_contacts`:
-  - pair_id (unikátní), email, consent_at, consent_version, consent_text_hash;
-  - reminder_3d_sent_at, reminder_1d_sent_at, extended_at;
-  - transfer_token_hash, unsubscribed_at, created_at.
-- Práva a RLS: GRANT jen service_role, RLS zapnuté bez policy pro authenticated. Klient čte pouze stav přes RPC `get_my_demo_contact_status()` (has_contact, maskovaný e-mail, extended), nikdy samotný e-mail.
-- Při `demo_purge_pair` se kontakt smaže ve stejné transakci, tedy rozšíření mazání o jeden řádek.
+## Ověřený stav
+- Tabulka `license_inquiries` zatím neexistuje.
+- Funkce `has_role` v databázi není. Admin se v projektu ověřuje přes `public.is_admin()` (SECURITY DEFINER, `user_roles.role = 'admin'`), proto ji SQL používá.
+- Pro úklid je k dispozici pg_cron.
+- Ostatní zjištění platí podle původního plánu: `send-license-inquiry` dnes nic neukládá, rate limit drží jen v paměti a volá ji jen `LicenseInquiryDialog`.
 
-**Funkce `demo-save-contact`:**
-- ověří JWT a `is_demo_user`, pár odvodí na serveru (nikdy z klienta);
-- validace e-mailu: zod, ≤254 znaků, bez + aliasů se neřeší;
-- povinný `consent: true` a verze textu;
-- rate limit přes existující `demo_rate_events`: 5 pokusů za hodinu na pár;
-- upsert podle pair_id; akce `delete` kontakt smaže (odvolání souhlasu).
+## Co se postaví
+- **Formulář /licence:** povinné zaškrtávátko „Souhlasím se zpracováním osobních údajů podle zásad“ s odkazem na zásady. Bez zaškrtnutí nejde odeslat (kontroluje se i na serveru).
+- **Funkce `send-license-inquiry`:**
+  - nejdřív uloží poptávku, pak pošle e-mail na info@bezli.cz;
+  - uživatel vždy dostane „Děkujeme, ozveme se“, i když e-mail selže;
+  - zdroj `demo` jen pro ověřeného návštěvníka dema (pár dohledá server);
+  - rate limit v databázi;
+  - obsah poptávky se nikam neloguje.
+- **Administrace → Poptávky** (jen admin):
+  - seznam s filtry zdroj/stav/balíček, hledání, stránkování po 50, karty na 390 px;
+  - detail s poznámkou a stavem, „Odeslat e-mail znovu“ a „Smazat osobní údaje“;
+  - export CSV.
+- **Úklid:** jednou týdně se smažou poptávky starší 24 měsíců a spam starší 30 dnů.
 
-**UI:**
-- Dialog „Uložit moji práci“ se nabídne jednou po prvním vytvořeném obsahu. Spouštěč: úspěšné uložení listu, prezentace, hry nebo lekce; v localStorage se zaznamená, že už se dialog ukázal. Kdykoli jde otevřít i z DemoBanneru.
-- Text souhlasu: „Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu a k převodu mé práce do ostrého účtu. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat; e-mail smažeme nejpozději se smazáním dema.“
-- Odpočet v DemoBanneru se ukáže od 3 dnů před smazáním (role=status, aria-live polite): „Ukázkový účet se smaže za 3 dny (21. 11.).“ Tlačítka: Prodloužit o 14 dní, Stáhnout práci, Uložit moji práci.
-- „Prodloužit“ jde použít jen jednou (extended_at). Jde o samostatnou funkci, ne o zápis klienta, a nastaví `demo_pairs.last_active_at = now()`. Protože běžné přihlášení dělá totéž, tlačítko hlavně uklidní návštěvníka.
-- Export „Stáhnout moji práci“ stáhne ZIP v prohlížeči z existujících generátorů bez AI:
-  - listy přes stávající tisk/PDF,
-  - prezentace přes export pipeline (PPTX/PDF),
-  - hry a aktivity jako JSON + PDF přehled,
-  - vlastní soubory z úložiště.
-  - Limit 50 MB a 200 položek; při překročení se zobrazí zpráva a nabídne export po kategoriích. Žádné odpovědi žáků.
-- Mobil 390 px: dialog jako spodní panel, tlačítka pod sebou, klávesnice/fokus podle WCAG 2.2 AA.
+## Finální SQL (ke schválení, nespuštěno)
+```sql
+CREATE TABLE public.license_inquiries (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  kind text NOT NULL DEFAULT 'license' CHECK (kind IN ('license','demo_transfer')),
+  source text NOT NULL DEFAULT 'form' CHECK (source IN ('demo','form','license','other')),
+  source_detail text CHECK (char_length(source_detail) <= 80),
+  name text, email text, phone text, organization text, role text, plan text, student_count text,
+  message text CHECK (char_length(message) <= 5000),
+  demo_pair_id uuid,                       -- bez FK, úklid dema poptávku nesmaže
+  demo_summary jsonb,
+  consent_version text NOT NULL,
+  consent_at timestamptz NOT NULL,
+  email_status text NOT NULL DEFAULT 'pending' CHECK (email_status IN ('pending','sent','failed')),
+  email_error text CHECK (char_length(email_error) <= 40),   -- jen kód, např. 'HTTP 429'
+  email_attempts int NOT NULL DEFAULT 0,
+  last_attempt_at timestamptz,
+  handled_status text NOT NULL DEFAULT 'new' CHECK (handled_status IN ('new','in_progress','done','spam')),
+  handled_note text CHECK (char_length(handled_note) <= 2000),
+  handled_at timestamptz,
+  handled_by uuid,
+  anonymized_at timestamptz,
+  ip_hash text
+);
 
-## C) Etapa 2 (do 28. 11.): připomínky D−3 a D−1
-- Nová funkce `demo-expiry-reminders`. Plánuje se jednou denně stejným mechanismem jako demo-cleanup (pg_cron, `X-Cron-Secret` ověřený proti trezoru `cron_internal_secret`), s časem posunutým před úklid.
-- Výběr kandidátů: kontakt existuje, bez unsubscribed_at, a termín smazání podle A) spadá do D−3 (reminder_3d_sent_at je null) nebo D−1 (reminder_1d_sent_at je null).
-- Idempotence: příznak sent_at se nastaví podmíněným UPDATE (`… WHERE reminder_3d_sent_at IS NULL RETURNING`) **před** odesláním. Při chybě odeslání se vrátí zpět, aby opakování proběhlo nejvýš jednou.
-- Odesílání: dnes notify-email volá send-email se service-role klíčem a send-email zapisuje email_log s **celým obsahem**. Pro demo navrhuji vlastní interní cestu:
-  - sdílený helper `_shared/resend-send.ts` (sendWithRetry + `reserve_email_send_slot`), volaný přímo z funkce bez admin session;
-  - do email_log jen typ `demo_reminder`, stav a příjemce, bez html/textu.
-- Dávky: při >20 kandidátech Resend batch API (až 100 e-mailů na požadavek). Jinak po jednom přes sdílený slot (~2/s). Při 429 platí existující Retry-After a opakování (1/3/8 s); co neodejde, zkusí další den, dokud termín platí.
-- Text (krátký): „Váš ukázkový účet Bezli se smaže za 3 dny (datum). Můžete: 1) převést práci do ostrého účtu, 2) stáhnout ji, 3) nic nedělat – vše smažeme.“
-  - Odkaz s jednorázovým tokenem (hash v DB, platnost do smazání) vede na stránku „Moje demo“.
-  - Patička obsahuje odkaz na odhlášení (`demo-unsubscribe` s tokenem).
-- GDPR:
-  - účel: připomínka a převod;
-  - právní základ: souhlas;
-  - doba uchování: do smazání dema nebo převodu, pak smazání;
-  - výmaz: odvolání v aplikaci nebo odkazem;
-  - kontakt se nesmí použít pro CRM.
+REVOKE ALL ON public.license_inquiries FROM PUBLIC, anon, authenticated;
+GRANT SELECT, UPDATE ON public.license_inquiries TO authenticated;
+GRANT ALL ON public.license_inquiries TO service_role;
 
-## D) Etapa 3: převod (jen návrh)
-- Funkce `demo-transfer` volá se z ostrého (ne-demo) účtu se schváleným stavem a tokenem z e-mailu nebo kódem dema. Ověří hash tokenu, nepoužitý stav a e-mail shodný s ostrým účtem (nebo potvrzení).
-- Náhled se zaškrtávátky podle kategorií z A). Kopíruje se jen obsah, ne žáci, třídy, výsledky ani seed.
-- Kopie dostanou nová ID; vazby (lekce↔učebnice, list↔lekce, obrázky) se přemapují. Soubory se zkopírují do cest nového vlastníka a URL v obsahu se přepíšou.
-- Převod probíhá v jedné SECURITY DEFINER funkci a jedné transakci; storage se kopíruje předem do dočasných cest, při chybě se soubory smažou.
-- Idempotence a limity: `transfer_completed_at` a mapa ID; nejvýš 3 pokusy za den. Po úspěchu se demo pár smaže včetně kontaktu.
-- Vztah k licenci: převedený obsah je soukromý obsah učitele. Školní licence ani schválení se tím neuděluje; učitel bez školy dostane režim „nástroj“ (E).
+ALTER TABLE public.license_inquiries ENABLE ROW LEVEL SECURITY;
 
-## E) Etapa 4: režim „nástroj“ (technický rámec, bez ceny)
-- Rozlišení bez nové role: učitel s rolí `teacher`, stavem `approved` a bez `school_id` / bez platné `school_licenses` = „nástroj“. Odvozuje se jednou funkcí `account_tier()` na serveru a zrcadlí v klientu.
-- Skryje se v SiteHeader a na nástěnce: třídy, žáci, zprávy, rodiče, rozvrh, škola, úkoly pro třídy.
-- Zůstane: aktivity, listy, prezentace, hry, živé hry s PINem (žáci bez účtu – už existuje přes join-game), knihovna.
-- Vynucení přes RESTRICTIVE policy `tool_guard_*` na tabulky tříd a úkolů, analogie demo_guard. Bez ní by šlo skrytí obejít.
-- Limity AI a úložiště: zobecnit `demo-ai-guard` a `demo_config` na limity podle úrovně účtu, bez dopadu na školní učitele.
+CREATE POLICY "Admin reads inquiries" ON public.license_inquiries
+  FOR SELECT TO authenticated USING (public.is_admin());
+CREATE POLICY "Admin updates inquiries" ON public.license_inquiries
+  FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+-- INSERT/DELETE pro klienty žádné pravidlo = zakázáno; zapisuje jen service_role.
 
-## F) Kvóta e-mailů
-Na návštěvníka nejvýš 2 připomínky + případně 1 potvrzení převodu. Při 60 % vyplněných kontaktů:
-- 50 návštěvníků: cca 30 kontaktů → nejvýš 60 připomínek. Rozloží se podle aktivity, typicky 20–30 v jeden den.
-- 100 návštěvníků: nejvýš 120 připomínek.
-- Po přednášce, kdy začne všem odpočet ve stejný den, hrozí přes 100 za den. Na bezplatném plánu proto nutně placený plán nebo rozložení.
+-- Admin smí měnit jen stav řešení a poznámku; osobní údaje, souhlas a zdroj nikdy.
+CREATE OR REPLACE FUNCTION public.license_inquiries_guard_update()
+RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF current_setting('request.jwt.claim.role', true) IS DISTINCT FROM 'service_role'
+     AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    IF (NEW.kind, NEW.source, NEW.source_detail, NEW.name, NEW.email, NEW.phone, NEW.organization,
+        NEW.role, NEW.plan, NEW.student_count, NEW.message, NEW.demo_pair_id, NEW.demo_summary,
+        NEW.consent_version, NEW.consent_at, NEW.email_status, NEW.email_error, NEW.email_attempts,
+        NEW.last_attempt_at, NEW.anonymized_at, NEW.ip_hash, NEW.created_at)
+       IS DISTINCT FROM
+       (OLD.kind, OLD.source, OLD.source_detail, OLD.name, OLD.email, OLD.phone, OLD.organization,
+        OLD.role, OLD.plan, OLD.student_count, OLD.message, OLD.demo_pair_id, OLD.demo_summary,
+        OLD.consent_version, OLD.consent_at, OLD.email_status, OLD.email_error, OLD.email_attempts,
+        OLD.last_attempt_at, OLD.anonymized_at, OLD.ip_hash, OLD.created_at) THEN
+      RAISE EXCEPTION 'Only handled_* fields can be changed' USING ERRCODE = '42501';
+    END IF;
+    NEW.handled_by := auth.uid();
+    NEW.handled_at := now();
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END $$;
+CREATE TRIGGER license_inquiries_guard_update BEFORE UPDATE ON public.license_inquiries
+  FOR EACH ROW EXECUTE FUNCTION public.license_inquiries_guard_update();
 
-## G) Rizika, testy, neověřitelné
-- Rizika:
-  - cizí pár (pár odvozovat jen z JWT);
-  - únik e-mailu klientovi (pouze RPC s maskou);
-  - dvojí odeslání (podmíněný UPDATE);
-  - úklid během převodu (zámek páru);
-  - nesoulad termínu, když se uživatel přihlásí po e-mailu (d−1 je informativní, nelze tím uškodit).
-- Testy:
-  - izolace a odmítnutí cizího páru;
-  - bez souhlasu nic neuloží;
-  - odpočet od 3 dnů a jednorázové prodloužení;
-  - výběr D−3/D−1, idempotence a opakování 429;
-  - mazání kontaktu při úklidu;
-  - export bez žákovských dat;
-  - převod: idempotence a vrácení při chybě.
-- Bez živého testu nelze ověřit: doručení a spam, skutečný limit Resend batch, export velkých prezentací na telefonu, převod souborů.
-- Otázky na Tynu:
-  1. Má „Prodloužit“ být, i když běžné přihlášení prodlužuje samo?
-  2. Odesílací adresa a doména pro demo e-maily?
-  3. Přejde se na placený Resend před 28. 11.?
-  4. Má export obsahovat i JSON pro pozdější import?
-  5. Smí převod proběhnout i na nový účet bez školy (rovnou „nástroj“)?
+CREATE INDEX license_inquiries_created_idx ON public.license_inquiries (created_at DESC);
+CREATE INDEX license_inquiries_status_idx  ON public.license_inquiries (handled_status, created_at DESC);
+CREATE INDEX license_inquiries_source_idx  ON public.license_inquiries (source, created_at DESC);
+CREATE INDEX license_inquiries_email_pending_idx ON public.license_inquiries (email_status, last_attempt_at)
+  WHERE email_status <> 'sent';
+CREATE INDEX license_inquiries_ip_idx ON public.license_inquiries (ip_hash, created_at DESC);
 
-## Technické poznámky
-- SQL k potvrzení (etapa 1–2):
-  - demo_contacts + GRANT service_role + RLS;
-  - RPC get_my_demo_expiry, get_my_demo_contact_status, demo_extend_once;
-  - rozšíření demo_purge_pair o mazání kontaktu;
-  - plán úlohy připomínek.
-- Nové funkce: demo-save-contact, demo-expiry-reminders, demo-unsubscribe; později demo-transfer.
+-- „Smazat osobní údaje“ z administrace (výmaz na žádost), jen admin.
+CREATE OR REPLACE FUNCTION public.admin_anonymize_license_inquiry(_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501'; END IF;
+  UPDATE public.license_inquiries
+     SET name = NULL, email = NULL, phone = NULL, message = NULL, handled_note = NULL,
+         ip_hash = NULL, anonymized_at = now(), updated_at = now()
+   WHERE id = _id;
+  INSERT INTO public.audit_log (user_id, action, entity_type, entity_id)
+  VALUES (auth.uid(), 'license_inquiry_anonymized', 'license_inquiry', _id);
+END $$;
+REVOKE EXECUTE ON FUNCTION public.admin_anonymize_license_inquiry(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_anonymize_license_inquiry(uuid) TO authenticated;
+
+-- Retenční úklid: >24 měsíců vše, spam >30 dní.
+CREATE OR REPLACE FUNCTION public.purge_old_license_inquiries()
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE n integer;
+BEGIN
+  DELETE FROM public.license_inquiries
+   WHERE greatest(created_at, coalesce(handled_at, created_at)) < now() - interval '24 months'
+      OR (handled_status = 'spam' AND created_at < now() - interval '30 days');
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+REVOKE EXECUTE ON FUNCTION public.purge_old_license_inquiries() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.purge_old_license_inquiries() TO service_role;
+
+SELECT cron.schedule('license-inquiries-retention-weekly', '30 3 * * 0',
+  $$SELECT public.purge_old_license_inquiries();$$);
+```
+Poznámky k SQL:
+- Úklid je čisté SQL v databázi, takže nepotřebuje žádný tajný klíč ani volání funkce.
+- Sloupce `audit_log` se před spuštěním ještě ověří. Pokud se liší, upraví se jen INSERT a SQL se ukáže znovu.
+- Retenční `DELETE` s podmínkou WHERE maže jen poptávky, nic jiného.
+- Rollback: `cron.unschedule('license-inquiries-retention-weekly')` a pak `DROP` triggeru, funkcí a tabulky. Smaže tím i uložené poptávky.
+
+## Soubory
+- Nové:
+  - `src/lib/license-inquiry.ts` (zdroj, validace, text a verze souhlasu, CSV);
+  - `src/components/admin/AdminInquiries.tsx`, `src/components/admin/InquiryDetailSheet.tsx`;
+  - `supabase/functions/_shared/license-inquiry.ts` (whitelist zdrojů, validace souhlasu, text e-mailu);
+  - `supabase/functions/resend-license-inquiry/index.ts` (jen admin).
+- Upravené:
+  - `supabase/functions/send-license-inquiry/index.ts` (INSERT před e-mailem, DB rate limit, souhlas, zdroj);
+  - `src/components/LicenseInquiryDialog.tsx` (zaškrtávátko, zdroj);
+  - `src/pages/Admin.tsx` + menu v `SiteHeader` (sekce Poptávky s odznakem nových);
+  - `src/components/demo/DemoBanner.tsx` (odkaz `/licence?zdroj=demo`);
+  - `AGENTS.md` (jedno pravidlo).
+
+## Testy
+- `src/test/license-inquiry.test.ts`:
+  - bez souhlasu odmítnuto;
+  - neznámý zdroj → `other`;
+  - `demo` bez ověřeného páru → `form`;
+  - CSV s BOM a ochranou proti vzorcům.
+- `src/test/license-inquiry-function.test.ts` (mock):
+  - zápis proběhne před Resendem;
+  - 429/5xx/chybějící klíč → failed + kód a uživatel dostane 200;
+  - honeypot nic neuloží;
+  - limit vrátí 429.
+- Živě s `[TEST]` řádky (po schválení):
+  - anon, žák, učitel a správce školy nic nevidí; admin vidí;
+  - admin nezmění e-mail ani souhlas, jen stav a poznámku;
+  - klient nesmí INSERT ani DELETE;
+  - úklid smaže řádek se starým datem a spam starší 30 dnů; nový řádek zůstane.
+- Celá sada, typy a build (7 starých selhání se nepočítá). Mobil 390 px: formulář i seznam.
+
+## Neověřitelné bez nasazení
+Skutečné doručení na info@bezli.cz a první běh týdenního úklidu.
