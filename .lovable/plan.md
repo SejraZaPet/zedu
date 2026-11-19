@@ -1,42 +1,168 @@
-# Učím se – kontrola připravenosti na ostrý provoz (19. 11. 2026, jen audit)
+# Jednotný vstup zdrojů – analýza a návrh (19. 11. 2026)
 
-Žádné změny kódu, DB, secretů ani nasazení. Níže jsou jen doporučení k pozdějšímu schválení.
+Jen analýza a návrh. Kód, databáze, migrace ani nasazení se neměnily. Implementace začne až po schválení konkrétní etapy.
 
-## Výsledky kontrol
-- Typy: OK (0 chyb). Sestavení: OK (výstup mimo projekt).
-- Testy procvičování a fotek: 9 souborů, 67/67 prošlo.
-- Celá sada: 1113 prošlo, 7 selhalo – jen známé classroom-people-source (2) a lesson-study-bar (5). Žádné nové.
+## A) Inventář
 
-| Oblast | Stav | Důkaz | Doporučení |
-|---|---|---|---|
-| Logy 7 dní (obě funkce) | Riziko | Žádné záznamy pro extract-practice-photo-text ani ai-practice-rag | Funkce zřejmě nebyly volány, nebo foto funkce není nasazená. Po nasazení udělat jeden živý test. |
-| AI model | Riziko | core.ts:93 a ai-practice-rag/index.ts:159: google/gemini-2.5-flash | Katalog ho vede jako zastaralý. ZDR je pro něj dostupné, ale na tomto projektu jsem ho neověřila. Rozhodnout o přechodu na novější Flash. |
-| Bez přihlášení | OK | extract index.ts:6 requireAuth; ai-practice-rag:22 | – |
-| Demo limit | OK | demoAiGuard před AI voláním (core.ts:80; rag:31). Upozornění v StudentMethods.tsx:504 | Denní strop je v demo_config, jeho hodnotu jsem nečetla. |
-| Velký obrázek | OK | Klient 15 MB vstup, 2048 px, JPEG 0,85, max 4 MB (practice-photo.ts:1-4, 158). Server odmítne nad 4 MB (core.ts:75) | – |
-| Ne-JPEG na serveru | OK | core.ts:14 mimeType jen image/jpeg | Kontroluje se jen deklarovaný typ, ne obsah. Nízké riziko, AI vrátí nečitelné. |
-| Nečitelná fotka | OK | core.ts:141-144 → unreadable / 422 INSUFFICIENT_TEXT | – |
-| Limit 6 fotek | OK | use-practice-photos.ts:6, 85 – celá dávka se viditelně odmítne | – |
-| Překrývání dávek / chyba jedné fotky | OK | Číslo dávky a busy (use-practice-photos.ts:14-76); test practice-photo-batch | – |
-| Text 150–8000 | OK | practice-phases.ts:50-51 a prepareSourceText (rag:68) | – |
-| Chybové odpovědi rag | Riziko (nízké) | rag:233-236 vrací klientovi e.message | Vracet obecnou hlášku. |
-| Soukromí – fotky | OK | Žádný zápis do storage/DB v core.ts; bez logů (core.ts:117, 147) | – |
-| Soukromí – logy rag | Riziko | rag:193 loguje tělo chybové odpovědi AI | Logovat jen stavový kód. Tělo vstupní text obvykle neobsahuje, ale neověřila jsem to. |
-| Soukromí – ukládání sezení | Riziko | StudentPractice.tsx:292-297: source = jen { kind } (OK). Ukládá ale `phases` bez `content` a `answers` | Otázky vytvořené z fotky (jejich znění, případně source_quote) se mohou uložit. Ověřit a případně ukládat jen skóre. |
-| Doporučení k lekci | OK | rag:216 ukládá jen u lekce, ne u vlastního textu | – |
-| HEIC z iPhonu | Riziko | practice-photo.ts:46, 109-172: dekódování umí jen prohlížeč | Safari HEIC většinou otevře, Chrome/Android ne. Pak se zobrazí srozumitelná hláška a fotka se nezpracuje. iPhone při výběru z galerie často sám převede na JPEG. |
-| Velká fotka z foťáku | OK/riziko | Zmenšení na 2048 px | Nad 15 MB odmítnuto. Na slabých telefonech hrozí nedostatek paměti při kreslení, neověřeno. |
-| Nasazení 8de5e8fc | Nelze zjistit | Commit je v historii (7. od konce). Jaká verze běží na bezli.cz, nevidím. | Ověřit při příštím publikování. Foto funkce nemá žádné logy, takže pravděpodobně nasazená není. |
+Ověřeno čtením kódu (soubor:řádek). Místa označená „neověřeno“ pocházejí ze zadání a ověří se v etapě 3.
 
-## Neověřeno
-- Živé AI volání (přepis fotky ani generování otázek).
-- Nastavení ZDR a skutečná dostupnost modelu na tomto projektu.
-- Nativní galerie iOS/Android, skutečný iPhone a HEIC.
-- Hodnota denního demo stropu.
-- Zda je publikovaná verze bezli.cz shodná s 8de5e8fc.
+| Místo | Kdo | Zdroje dnes | Limity | Kam text jde (model) | Demo guard | Ukládá zdroj |
+|---|---|---|---|---|---|---|
+| ActivityWizardDialog | učitel | lekce / text / 1 soubor | 6000 znaků, **tiché oříznutí** (activity-wizard.ts:8, 59, 89) | generate-activity-content (gemini-3-flash-preview, :170; server ořízne 6000, :150) | ano (:45) | ne |
+| BlockEditor – AI z bloku | učitel/admin | text lekce | **tiché oříznutí slice(0,6000)** (BlockEditor.tsx:1569, 1598, 1905); LessonSourcePickerDialog 6000 | generate-activity-content | ano | ne |
+| FromMaterialView („Z materiálu“) | učitel i žák | 6 fotek NEBO 1 dokument, bez pole pro text; soubor nahradí fotky a naopak | klient 20 000, **server tiše ořízne na 12 000** (generate-content-from-material:82, 178); fotky slice(0,6) (:87, 183) | process-file-content → generate-content-from-material (gemini-2.5-flash) | ano (:31) | ne (neověřeno do detailu) |
+| StudentMethods („Učím se“) | žák | text / 1 PDF nebo TXT / až 6 fotek | 150–8000, bez ořezu, viditelné upozornění (practice-phases.ts:50) | extract-practice-photo-text + ai-practice-rag (gemini-2.5-flash) | ano | jen { kind } |
+| TeacherSuggestByMethod | učitel | .pdf/.docx/.pptx, text lekce | **tiché oříznutí na 20 000** (:437, 467) | process-file-content | **ne** | ne |
+| TeacherCurriculumPlans / curriculum-file-extract | učitel | dokument (extractDocumentText, :364) | 20 000 (curriculum-file-extract.ts:5) | process-file-content + AI plán | neověřeno | plán ano |
+| ImportTextbookFileDialog | učitel/admin | dokument | neověřeno | process-file-content | **ne** | vytváří lekce (záměrně) |
+| WorksheetEditor – z lekce | učitel | text lekce | 20 000 jako podmínka (:1769) | generování listu | neověřeno | ne |
+| SchoolCurriculumManager, AcademyView, ZedAI, AttachmentsUploader | různé | neověřeno | neověřeno | neověřeno | neověřeno | přílohy ano (nejsou AI zdroj) |
+| Webový odkaz | – | nikde v kódu | – | – | – | – |
 
-## Navrhované opravy (každá až po schválení)
-1. rag: logovat jen stavový kód a klientovi vracet obecnou chybu.
-2. Ověřit/omezit, co se z `phases`/`answers` ukládá u zdrojů foto a vlastní text.
-3. Rozhodnout o modelu (ponechat 2.5 Flash, nebo přejít na novější).
-4. Po nasazení jeden živý test s [TEST] fotkou.
+**Edge funkce**
+- process-file-content: requireAuth, 25 MB base64 (:11), gemini-2.5-flash (:598, 630), 3 pokusy. **Chybí demoAiGuard.** Do logu zapisuje až 400 znaků chybového těla AI (:569).
+- generate-activity-content: zapisuje do logu **celý neparsovatelný výstup AI** (:203), který může citovat zdroj. Model gemini-3-flash-preview je preview.
+
+**Hlavní nekonzistence**
+- Limity se liší: 6000 / 8000 / 12 000 / 20 000 znaků.
+- Na čtyřech místech se text tiše ořezává.
+- Nový zdroj přepíše předchozí: průvodce aktivit i „Z materiálu“.
+- Demo: zpracování souboru i OCR je volání AI. Funkce process-file-content ale ochranu dema nemá, takže demo může AI používat bez limitu.
+- Modely: všude gemini-2.5-flash (zastaralý), jen aktivity používají 3-flash-preview.
+
+## B) Společný modul
+
+- `src/lib/source-bundle.ts` – čisté funkce bez React:
+  - typy položek,
+  - sloučení textů,
+  - kontrola limitů,
+  - jednotné české hlášky.
+  - Bude se dát testovat bez prohlížeče.
+- `src/lib/source-extract.ts` – jedna cesta extrakce podle typu:
+  - TXT: lokálně,
+  - DOCX/PPTX/PDF s textem: process-file-content v režimu „jen text“,
+  - foto: practice-photo.ts a extract-practice-photo-text,
+  - URL: nová funkce fetch-source-url.
+- `useSourceBundle` – převezme z use-practice-photos:
+  - rušení starých dávek číslem dávky,
+  - zámek busy,
+  - pořadí, opakování a odebrání jedné položky,
+  - uvolnění náhledů.
+- `<SourceInput>` – dlaždice a seznam zdrojů. Zobrazuje se podle props `allowed`, `limits`, `audience` (učitel/žák/demo).
+
+**Tvar položky**
+```text
+{ id, kind: text|pdf|docx|pptx|txt|photo|url, label, status: pending|loading|ready|error,
+  text?, chars, error?, origin? (název souboru / host odkazu) }
+```
+
+**Sloučení:** jen připravené položky v zobrazeném pořadí. Každá dostane záhlaví `--- Zdroj 2: Fotka (strana 1) ---` a mezi položkami je prázdný řádek. Před generováním uživatel vidí výsledek a počet znaků.
+
+## C) Jednotné limity (návrh)
+
+| Limit | Hodnota | Důvod |
+|---|---|---|
+| Zdrojů celkem | 10 | Přehledný seznam na mobilu |
+| Fotek | 6 | Shoda s dneškem; každá je 1 OCR volání |
+| Souborů | 4 | Přiměřená doba extrakce |
+| Velikost souboru | 20 MB dokument, 15 MB fotka (po zmenšení 4 MB) | Shoda s existujícími limity |
+| Znaků na zdroj | 20 000 | Shoda s dnešní extrakcí |
+| Znaků celkem do AI | 20 000 učitel, 8000 žák, 8000 demo | Flash modely zvládnou víc, ale cena i doba odpovědi rostou. Žákovské procvičování dnes 8000. |
+| Minimum | 150 znaků | Shoda s Učím se |
+
+**Při překročení**
+- Nikdy tiše neořezat.
+- Ukázat „Vešlo se 14 200 z 20 000 znaků, přebývá 3 400“.
+- Generování zablokovat, dokud uživatel neodebere zdroj nebo nezkrátí text v náhledu.
+- Serverové ořezy (12 000 a 6000) se sjednotí na stejnou hodnotu jako klient. Server pak nadlimitní text odmítne chybou 413, místo aby ho tiše zkrátil.
+
+## D) Webový odkaz – fetch-source-url
+
+- Přihlášení je povinné (requireAuth).
+- Demo počítá 1 volání na odkaz, rate limit 20 odkazů/h na uživatele.
+- Povolené jen http/https na portech 80 a 443. Zakázané jsou přihlašovací údaje v URL a IP literály privátních, lokálních, link-local a metadata rozsahů (IPv4 i IPv6).
+- Proti DNS rebindingu: vlastní resolve, kontrola všech adres a připojení na ověřenou IP.
+- Přesměrování ručně, max 3, každé znovu ověřit.
+- Timeout 8 s, max 2 MB.
+- Povolené typy obsahu: text/html, text/plain, application/pdf (PDF jde do stávající extrakce).
+- Čitelný text se vytáhne bez AI: odstranit skripty, navigaci a patičky, vzít hlavní článek.
+- Srozumitelné chyby:
+  - „Stránka vyžaduje přihlášení“ (401/403, přihlašovací formulář),
+  - „Stránka se načítá jen skriptem, zkopíruj text ručně“ (prázdný text),
+  - „Odkaz se nepodařilo načíst“.
+- U zdroje upozornění: „Použij jen obsah, který smíš ve výuce použít; uveď zdroj.“ Do výstupu se přidá origin.
+- Ukládat jen odkaz, a to pouze u učitelského obsahu, který se sám ukládá. Text se neukládá a u žáků se neukládá nic. Do logů nic z obsahu, jen stav a doba.
+
+## E) Soukromí a demo
+
+- Žákovské zdroje se neukládají ani nelogují.
+- Fotky jen v paměti prohlížeče, na server jdou jen jako přenos k OCR.
+- Odstranit z logů těla AI odpovědí: process-file-content:569, generate-activity-content:182 a 203, ai-practice-rag:193.
+- Demo dnes: limit 5 AI volání na účet a denní strop (demo_config).
+
+**Návrh pro demo – „zdroje zdarma, generování se počítá“:**
+- Extrakce textu z DOCX, PPTX, TXT a PDF s textovou vrstvou poběží bez AI (parsování), takže se nepočítá.
+- OCR fotek a skenované PDF se počítají. Celá dávka OCR zabere dohromady jedno volání, ne jedno na fotku. Technicky jedna rezervace demo limitu pro dávku s krátkým tokenem, takže změna server funkce extract-practice-photo-text potřebuje schválení.
+- Výsledek: jedno generování stojí 1–2 volání.
+- Pro přednášku s 50 lidmi: limit na pár (účet), ne sdílený. Upozornění předem kolik volání zbývá.
+- Denní strop zkontrolovat, zda stačí: 50 lidí × 5 = 250 volání.
+
+## F) UX
+
+- Čtyři dlaždice v mřížce 2×2 (na 390 px), jejich množina se může zúžit podle místa:
+  - Vložit text,
+  - Nahrát soubory (multiple),
+  - Vyfotit / Z galerie (foťák zvlášť),
+  - Vložit odkaz.
+- Seznam zdrojů:
+  - ikona typu, název, počet znaků, stav (načítá se / hotovo / chyba + Zkusit znovu),
+  - šipky pro pořadí, Odebrat,
+  - souhrnný ukazatel „14 200 / 20 000 znaků“.
+- Přidání nikdy nic nenahradí.
+- Přístupnost:
+  - stav načítání přes aria-live,
+  - tlačítka s popisky („Posunout zdroj 2 nahoru“),
+  - po odebrání se fokus přesune na sousední položku,
+  - celé ovládání klávesnicí.
+- Hlášky: učitel vykání, žák tykání (UI_COPY).
+
+## G) Etapy
+
+1. **Sdílený modul + „Z materiálu“ + průvodce aktivit** (L). Bez DB.
+   - Odstraní tiché ořezy a nahrazování.
+   - Server zjednoduší limity na stejné číslo.
+   - Riziko: změna serverového ořezu u generate-content-from-material. Testy: source-bundle unit, mobil 390, regrese from-material a activity-wizard.
+2. **Demo a soukromí** (M).
+   - demoAiGuard do process-file-content jen pro OCR/AI cestu,
+   - odstranění logování obsahu,
+   - dávková rezervace OCR.
+   - Případný sloupec v demo_config jen po schválení SQL.
+3. **Napojení dalších míst** (M): Učím se (převzít hook), TeacherSuggestByMethod, BlockEditor, plány, WorksheetEditor. Napřed doplnit neověřené řádky inventáře.
+4. **Webový odkaz** (M). Nová edge funkce, testy SSRF (privátní IP, přesměrování, rebinding, velikost, typy).
+5. **Zbytek a modely** (S): ImportTextbookFileDialog, SchoolCurriculumManager, AcademyView, ZedAI; sjednocení modelu po rozhodnutí.
+
+## H) Dotčené testy (nerozbít)
+
+- practice-photo.test, practice-photo-batch.test, student-practice-photo.test, practice-method.test, student-practice*.test
+- supabase/functions/extract-practice-photo-text/index.test.ts
+- multiple-image-uploads.test, multiple-upload-batches.test
+- testy activity-wizard a from-material: dohledat v etapě 1
+- known failing (nesouvisí): classroom-people-source, lesson-study-bar, „useAuth must be used“
+
+## Otázky pro Tynu
+
+1. Celkový limit: 20 000 pro učitele a 8000 pro žáka/demo – souhlas?
+2. Demo: počítat celou dávku OCR jako jedno volání a extrakci dokumentů zdarma? Vyžaduje změnu serveru.
+3. Odkaz u učitelského obsahu ukládat (jako citaci), nebo vůbec?
+4. Smí žák vkládat odkazy, nebo jen učitel?
+5. Model: sjednotit na novější Flash?
+6. Pořadí etap: odkaz jako druhá etapa, nebo až po napojení všech míst?
+
+## Neověřeno bez živého testu
+
+- Skutečné AI odpovědi a doba zpracování velkých zdrojů.
+- HEIC, galerie a foťák na skutečném iPhonu/Androidu.
+- Chování konkrétních webů (JS-only, cookie lišty, paywall).
+- Skenované PDF bez textové vrstvy.
+- Hodnota denního demo stropu a ZDR u modelů.
+- Řádky inventáře označené „neověřeno“.
