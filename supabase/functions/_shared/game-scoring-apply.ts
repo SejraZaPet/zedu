@@ -1,6 +1,6 @@
 // Načte data potřebná pro pravidla v game-scoring.ts a provede krádež.
 import {
-  computeScore, correctStreak, effectiveMode, pickVictim, stealCandidates, teamsActiveFor,
+  computeScore, correctStreak, slidePointsFactor, effectiveMode, pickVictim, stealCandidates, teamsActiveFor,
   type ScoreResult, type GameModeId,
 } from "./game-scoring.ts";
 import { scoringTimeLimitMs } from "./live-timing.ts";
@@ -35,7 +35,8 @@ export async function scoreLiveAnswer(admin: any, i: ApplyInput): Promise<ScoreR
     victim = pickVictim(stealCandidates(i.playerId, players || [], teams, teamsActiveFor(i.slide, i.settings)));
   }
 
-  const res = computeScore({ mode, correct: i.correct, elapsedMs: i.elapsedMs, timeLimitMs, myScore, streak, victim });
+  const base = computeScore({ mode, correct: i.correct, elapsedMs: i.elapsedMs, timeLimitMs, myScore, streak, victim });
+  const res = mode === "steal" ? base : { ...base, score: base.score * slidePointsFactor(i.slide) };
   if (res.victimId && res.victimDelta) {
     const { error } = await admin.rpc("increment_player_score", { _player_id: res.victimId, _score_delta: res.victimDelta });
     if (error) console.error("steal decrement failed:", error);

@@ -95,3 +95,9 @@
 - [x] Diagnostika na datech Tyny
 - [x] Sdílené načítání lekcí a napojení výběrů lekcí pro AI a hry
 - [x] Prázdný stav, seskupení, bez tichého ořezu, testy, 390 px
+
+## Studio – etapy 0 a 1 (schváleno Tynou)
+- [x] Etapa 0: jednotný vstup zdrojů (text, soubory, galerie, foťák, odkaz, lekce), funkce fetch-source-url, průvodce aktivit bez tichého ořezu; „Vytvořit z lekce“ už opraveno dříve.
+- [x] Etapa 1: Aktivita z vlastního materiálu – AI návrh sady smíšených kroků, zaškrtnutí a úprava (čas, body, obrázek, vysvětlení, obsah), vložení až po potvrzení.
+- Neověřeno: živá AI, načítání skutečných webů, prohlížeč 390 px (přihlášení se přesměrovalo), telefony. Nenasazeno.
+- Etapa 2+ (zveřejnění žákům, samostatné kolo, menu Studio) – neimplementováno.

@@ -25,6 +25,7 @@ import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
 import LessonFinder, { EMPTY_FINDER_STATE, type LessonFinderState } from "@/components/lessons/LessonFinder";
 import { dropEmptyActivitySlides } from "@/lib/game-activity-validity";
 import { extractTextFromBlocks } from "@/lib/lesson-content-splitter";
+import FromSourceActivityPanel from "@/components/studio/FromSourceActivityPanel";
 
 type AddKind =
   | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
@@ -386,6 +387,15 @@ export function AddSlideSheet({
 
   /** Načte lekce učitele (učebnicové i vlastní) pro převzetí obsahu do hry. */
   const [lessonFinderState, setLessonFinderState] = useState<LessonFinderState>(EMPTY_FINDER_STATE);
+  const loadLessonOptionsOnly = async () => {
+    if (lessonOptions.length > 0) return;
+    setLessonsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) setLessonOptions(await loadTeacherLessonOptions(session.user.id));
+    } catch { /* výběr lekce zůstane prázdný, ostatní zdroje fungují */ }
+    finally { setLessonsLoading(false); }
+  };
   const openLessonPicker = async (purpose: "slides" | "quiz" = "slides") => {
     setLessonPurpose(purpose);
     setKind("lesson");
@@ -463,39 +473,6 @@ export function AddSlideSheet({
     if (previewSlides.length === 0) return;
     appendMany(previewSlides);
   };
-
-
-  /** Z vloženého textu (prezentace, učebnice, vlastní příprava) vytvoří AI kvízovou aktivitu. */
-  const runAiFromText = async () => {
-    if (aiText.trim().length < 20) {
-      toast.error("Vložte alespoň krátký odstavec textu.");
-      return;
-    }
-    setAiLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-activity-from-text", {
-        body: { text: aiText.trim() },
-      });
-      if (error) throw error;
-      const quiz = (data as any)?.activity?.quiz;
-      const answers = Array.isArray(quiz?.answers) ? quiz.answers : [];
-      if (!quiz?.question || answers.length < 2) throw new Error("AI nevrátila platnou aktivitu.");
-      const correctIdx = Math.max(0, answers.findIndex((a: any) => a?.correct));
-      await appendMany([
-        buildMcqSlide(
-          String(quiz.question),
-          answers.map((a: any) => String(a?.text ?? "")),
-          correctIdx,
-        ),
-      ]);
-    } catch (e: any) {
-      toast.error(e?.message || "Nepodařilo se vygenerovat aktivitu.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-
 
 
   const fetchBezliStartPrompts = async (): Promise<BezliStartPrompt[]> => {
@@ -692,7 +669,7 @@ export function AddSlideSheet({
               {kind === "lesson" && (lessonPurpose === "quiz" ? "Kvíz z lekce (AI)" : "Vytvořit z lekce")}
               {kind === "lessonpreview" && "Náhled lekce"}
               {kind === "quizpreview" && "Kvíz z lekce (AI)"}
-              {kind === "fromtext" && "Aktivita z vlastního textu"}
+              {kind === "fromtext" && "Aktivita z vlastního materiálu"}
 
               {kind === "library" && "Vložit z knihovny her"}
               {kind === "bezlistart" && "BezliStart"}
@@ -920,13 +897,13 @@ export function AddSlideSheet({
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"
-                onClick={() => setKind("fromtext")}
+                onClick={() => { setKind("fromtext"); void loadLessonOptionsOnly(); }}
               >
                 <Wand2 className="w-5 h-5 mr-3 text-primary" />
                 <div className="text-left">
-                  <p className="font-medium">Aktivita z vlastního textu</p>
+                  <p className="font-medium">Aktivita z vlastního materiálu</p>
                   <p className="text-xs text-muted-foreground">
-                    Vlož text z prezentace, učebnice nebo vlastní přípravy
+                    Text, soubory, fotky, odkaz nebo lekce – AI navrhne sadu kroků
                   </p>
                 </div>
               </Button>
@@ -1163,26 +1140,27 @@ export function AddSlideSheet({
           )}
 
           {kind === "fromtext" && (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="ai-text">Vložte text z prezentace, učebnice nebo vlastní přípravy</Label>
-                <Textarea
-                  id="ai-text"
-                  rows={10}
-                  value={aiText}
-                  onChange={(e) => setAiText(e.target.value)}
-                  placeholder="Sem vložte text, ze kterého má AI vytvořit aktivitu…"
-                  disabled={aiLoading || busy}
-                />
-              </div>
-              <Button onClick={runAiFromText} disabled={aiLoading || busy} className="w-full gap-2">
-                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                Vytvořit aktivitu z textu
-              </Button>
-              <p className="text-[11px] text-muted-foreground">
-                Aktivitu vytváří AI – před použitím ji zkontrolujte.
-              </p>
-            </div>
+            <FromSourceActivityPanel
+              busy={busy}
+              onInsert={(added) => appendMany(added)}
+              lessonPicker={(bundle, closePicker) =>
+                lessonsLoading ? (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Načítání lekcí…</p>
+                ) : lessonOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Zatím nemáte žádnou lekci s obsahem.</p>
+                ) : (
+                  <LessonFinder
+                    items={lessonOptions.map((l) => ({ id: l.id, title: l.title, textbookId: l.textbookId ?? null, textbookTitle: l.source ?? null,
+                      subject: l.subject ?? null, topic: l.topicTitle ?? null, updatedAt: l.updatedAt ?? null, sortOrder: l.sortOrder }))}
+                    disabled={busy}
+                    onSelect={(item) => {
+                      const l = lessonOptions.find((x) => x.id === item.id);
+                      if (l && bundle.addLesson(l.title, () => [l.title, extractTextFromBlocks(l.blocks)].join("\n\n"))) closePicker();
+                    }}
+                  />
+                )
+              }
+            />
           )}
 
 

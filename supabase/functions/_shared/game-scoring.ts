@@ -115,3 +115,13 @@ export function mcqCorrectFromSelection(options: unknown, selected: unknown): bo
 
 export const teamsActiveFor = (slide: any, settings: any) =>
   String(slide?.gameSettings?.teamMode ?? settings?.teamModeKind ?? (settings?.teamMode ? "random" : "none")) !== "none";
+
+/**
+ * Body kroku (Studio): activitySpec.points = 0 bez bodů, 1 standard, 2 dvojnásobné.
+ * Chybějící/neplatná hodnota = 1, takže dosavadní hry se počítají beze změny.
+ * Krádež bodů se nenásobí (pravidla krádeže zůstávají).
+ */
+export function slidePointsFactor(slide: any): number {
+  const p = slide?.activitySpec?.points;
+  return p === 0 || p === 2 ? p : 1;
+}

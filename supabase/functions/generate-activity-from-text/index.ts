@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
+import { buildSetPrompt, normalizeSetSteps, parseRequest, SET_TOOL } from "./prompt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,12 +29,50 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { text } = await req.json();
-    if (typeof text !== "string" || text.trim().length < 8) {
-      return new Response(JSON.stringify({ error: "Missing or too short 'text'" }), {
-        status: 400,
+    const parsedReq = parseRequest(await req.json().catch(() => null));
+    if ("error" in parsedReq) {
+      return new Response(JSON.stringify({ error: parsedReq.error }), {
+        status: parsedReq.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    const text = parsedReq.text;
+
+    if (parsedReq.mode === "set") {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: AI_MODEL_QUALITY,
+          messages: [
+            { role: "system", content: buildSetPrompt(parsedReq.types, parsedReq.count) },
+            { role: "user", content: `Materiál:\n\n${text}` },
+          ],
+          tools: [SET_TOOL],
+          tool_choice: { type: "function", function: { name: "create_activity_set" } },
+        }),
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        console.error("AI gateway error:", r.status, `body_len=${t.length}`);
+        const msg = r.status === 429 ? "Příliš mnoho požadavků, zkuste to později."
+          : r.status === 402 ? "Nedostatek kreditů pro AI generování." : "Chyba AI služby";
+        return new Response(JSON.stringify({ error: msg }), {
+          status: r.status === 429 || r.status === 402 || r.status === 403 ? r.status : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const d = await r.json();
+      let args: unknown = null;
+      try { args = JSON.parse(d.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? "null"); } catch { args = null; }
+      const steps = normalizeSetSteps(args, parsedReq.types, parsedReq.count);
+      if (steps.length === 0) {
+        console.error("AI set: no valid steps");
+        return new Response(JSON.stringify({ error: "AI nevrátila použitelné kroky, zkuste to znovu." }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ steps }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const systemPrompt = `Jsi zkušený český pedagog. Ze zadaného textu vytvoříš jednu kvalitní testovou otázku s výběrem odpovědí (kvíz) pro české školy.
@@ -46,7 +85,7 @@ PRAVIDLA:
 
     const userPrompt = `Vytvoř kvízovou otázku z tohoto obsahu:
 
-${text.slice(0, 4000)}`;
+${text}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -119,7 +158,7 @@ ${text.slice(0, 4000)}`;
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      console.error("No tool call in response:", JSON.stringify(data));
+      console.error("No tool call in response");
       return new Response(JSON.stringify({ error: "AI nevrátila strukturovaný výstup" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -174,9 +213,9 @@ ${text.slice(0, 4000)}`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    console.error("generate-activity-from-text error:", e);
+    console.error("generate-activity-from-text error:", e instanceof Error ? e.name : "unknown");
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Aktivitu se nepodařilo vytvořit." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
