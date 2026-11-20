@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { getMcqOptionVisualIndex, type McqOptionLike } from "@/lib/mcq-option-visuals";
 import {
   Circle,
   Diamond,
@@ -44,15 +45,20 @@ const OPTION_NAMES = [
   "růžový osmiúhelník",
 ];
 
-export const getMcqOptionStyle = (index: number) => OPTION_STYLES[index % OPTION_STYLES.length];
+export const getMcqOptionStyle = (index: number, options?: readonly McqOptionLike[]) => {
+  const visualIndex = getMcqOptionVisualIndex(options, index);
+  return OPTION_STYLES[visualIndex % OPTION_STYLES.length];
+};
 
-export const getMcqOptionName = (index: number) => {
-  const cycle = Math.floor(index / OPTION_NAMES.length);
-  const base = OPTION_NAMES[index % OPTION_NAMES.length];
+export const getMcqOptionName = (index: number, options?: readonly McqOptionLike[]) => {
+  const visualIndex = getMcqOptionVisualIndex(options, index);
+  const cycle = Math.floor(visualIndex / OPTION_NAMES.length);
+  const base = OPTION_NAMES[visualIndex % OPTION_NAMES.length];
   return cycle > 0 ? `${base}, sada ${cycle + 1}` : base;
 };
 
-export const McqOptionIcon = ({ index, className = "h-8 w-8" }: { index: number; className?: string }) => {
-  const Icon = OPTION_ICONS[index % OPTION_ICONS.length];
+export const McqOptionIcon = ({ index, options, className = "h-8 w-8" }: { index: number; options?: readonly McqOptionLike[]; className?: string }) => {
+  const visualIndex = getMcqOptionVisualIndex(options, index);
+  const Icon = OPTION_ICONS[visualIndex % OPTION_ICONS.length];
   return <Icon className={className} fill="currentColor" strokeWidth={2.5} aria-hidden />;
 };

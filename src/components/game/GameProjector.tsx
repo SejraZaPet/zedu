@@ -12,6 +12,7 @@ import { getVisualTheme, playRecipe } from "@/lib/game-themes";
 import { cn } from "@/lib/utils";
 import { resolveGameMode } from "@/lib/game-slide-settings";
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
+import { getMcqOptionVisualIndex } from "@/lib/mcq-option-visuals";
 
 interface Props {
   session: GameSession;
@@ -157,6 +158,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
         {/* Answers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
           {question.answers.map((answer, i) => {
+            const visualIndex = getMcqOptionVisualIndex(question.answers, i);
             const isCorrect = answer.correct;
             let borderClass = "";
             if (isResults) {
@@ -167,9 +169,9 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
             return (
               <div
                 key={i}
-                className={`${ANSWER_COLORS[i % 4]} rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 ${borderClass}`}
+                className={`${ANSWER_COLORS[visualIndex % 4]} rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 ${borderClass}`}
               >
-                <span className="text-3xl text-white/80">{ANSWER_ICONS[i % 4]}</span>
+                <span className="text-3xl text-white/80">{ANSWER_ICONS[visualIndex % 4]}</span>
                 <span className="text-xl md:text-2xl font-semibold text-white">{answer.text}</span>
               </div>
             );

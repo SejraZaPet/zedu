@@ -20,15 +20,6 @@ interface Props {
   myUserId?: string | null;
 }
 
-const ANSWER_COLORS = [
-  "bg-red-500 hover:bg-red-600 active:bg-red-700",
-  "bg-blue-500 hover:bg-blue-600 active:bg-blue-700",
-  "bg-green-500 hover:bg-green-600 active:bg-green-700",
-  "bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700",
-];
-
-const ANSWER_ICONS = ["▲", "◆", "●", "■"];
-
 export const StudentGameQuestion = ({
   question,
   questionIndex,
@@ -123,9 +114,9 @@ export const StudentGameQuestion = ({
             key={i}
             variant="ghost"
             onClick={() => onAnswer(i)}
-            className={`live-phone-choice ${getMcqOptionStyle(i)} rounded-lg border-b-4 p-5 h-auto flex items-center justify-start gap-4 transition-transform active:scale-95 min-h-20 text-primary-foreground`}
+            className={`live-phone-choice ${getMcqOptionStyle(i, question.answers)} rounded-lg border-b-4 p-5 h-auto flex items-center justify-start gap-4 transition-transform active:scale-95 min-h-20 text-primary-foreground`}
           >
-            <McqOptionIcon index={i} className="h-7 w-7 shrink-0" />
+            <McqOptionIcon index={i} options={question.answers} className="h-7 w-7 shrink-0" />
             <span className="text-lg font-semibold text-left whitespace-normal [overflow-wrap:anywhere]">{answer?.text}</span>
           </Button>
         ))}

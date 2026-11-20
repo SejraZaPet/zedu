@@ -98,13 +98,13 @@ export const McqAnswerDistribution = ({ responses, questionIndex, options }: Dis
             <span className="font-bold tabular-nums" aria-hidden>{counts[index]}</span>
             <div className="flex h-20 w-full items-end overflow-hidden rounded-t-md bg-muted">
               <div
-                className={`flex w-full items-start justify-center pt-2 text-primary-foreground transition-[height] duration-500 ${getMcqOptionStyle(index)}`}
+                className={`flex w-full items-start justify-center pt-2 text-primary-foreground transition-[height] duration-500 ${getMcqOptionStyle(index, options)}`}
                 style={{ height: `${Math.max(counts[index] > 0 ? 18 : 0, (counts[index] / max) * 100)}%` }}
               >
-                <McqOptionIcon index={index} className="h-5 w-5 shrink-0" />
+                <McqOptionIcon index={index} options={options} className="h-5 w-5 shrink-0" />
               </div>
             </div>
-            <span className="sr-only">{getMcqOptionName(index)}: {counts[index]} odpovědí</span>
+            <span className="sr-only">{getMcqOptionName(index, options)}: {counts[index]} odpovědí</span>
           </div>
         ))}
       </div>

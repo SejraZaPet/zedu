@@ -5,6 +5,7 @@
  */
 import { expandSlide } from "@/lib/live-game-expand";
 import type { GameQuestion } from "@/lib/game-types";
+import { isTrueFalseMcqOptions } from "@/lib/mcq-option-visuals";
 
 /** Typy aktivit, které jdou hrát živě (rozloží se na samostatné otázky). */
 export const LIVE_GAME_ACTIVITY_TYPES = ["quiz", "true_false", "matching", "fill_blanks", "fill_choice", "ordering"] as const;
@@ -41,7 +42,7 @@ export function activityToCoreQuestions(props: any): CoreQuestion[] {
 /** Jednotné otázky → formát starší cesty /hra (game_sessions.activity_data). */
 export function coreToGameQuestions(qs: CoreQuestion[]): GameQuestion[] {
   return qs.map((q) => {
-    const tf = q.answers.length === 2 && q.answers[0] === "Pravda" && q.answers[1] === "Nepravda";
+    const tf = isTrueFalseMcqOptions(q.answers);
     return {
       question: q.question,
       answers: q.answers.map((text, i) => ({ text, correct: i === q.correctIndex })),

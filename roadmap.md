@@ -109,3 +109,8 @@
 - [x] Serverové bodování podílu, týmy a bezpečné chování režimů Závod/Krádež.
 - [x] 128 logických/regresních + 4 komponentové testy, typy a build; celá sada 1345/1352 se 7 staršími nesouvisejícími chybami. Bez migrace a nasazení.
 - Neověřeno: ostrá serverová funkce, hra se dvěma telefony, skutečný projektor a zátěž. Stará sada „Hovězí maso“ zůstává při přímém spuštění historicky rozložená; nové kolo se u ní volí v sestavovači.
+
+## Živá hra – barvy Pravda/Nepravda
+- [x] Sdílené rozpoznání přesných dvou možností; Pravda modrá, Nepravda červená, ostatní MCQ a data beze změny.
+- [x] Projektor, telefon, učitel, výsledky a stará cesta /hra; text a tvary zachovat.
+- [x] 9 rozšířených testů + 46 regresí, typy a build. Bez DB a nasazení; reálný projektor a telefon vizuálně neověřeny.
