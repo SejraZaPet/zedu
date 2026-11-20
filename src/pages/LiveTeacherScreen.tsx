@@ -28,6 +28,7 @@ import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideTeacher } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameOverview } from "@/components/game/EscapeGameSlide";
 import { supabase } from "@/integrations/supabase/client";
+import RaisedHandsIndicator from "@/components/game/RaisedHandsIndicator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
@@ -440,6 +441,7 @@ const LiveTeacherScreen = () => {
 
     return (
       <>
+        <RaisedHandsIndicator players={players as any} />
         {!mixed && (
         <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-3 max-h-[92vh] overflow-y-auto">
 
@@ -589,6 +591,7 @@ const LiveTeacherScreen = () => {
   // Playing: show current slide
   return (
     <>
+    <RaisedHandsIndicator players={players as any} />
     <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6" {...swipeHandlers}>
       {/* Header */}

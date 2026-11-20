@@ -83,3 +83,21 @@ export function computePersonalGameSummary(
   });
   return summary;
 }
+type AccuracyResponse = Pick<GameResponse, "is_correct"> & { answer?: unknown };
+
+/** Credit of one response: solo rounds count the share of correct items, others 0/1. */
+export function responseCredit(response: AccuracyResponse): number {
+  const a = response.answer as { soloRound?: boolean; correctCount?: number; totalCount?: number } | null | undefined;
+  if (a?.soloRound && typeof a.totalCount === "number" && a.totalCount > 0) {
+    const share = Number(a.correctCount ?? 0) / a.totalCount;
+    return Math.max(0, Math.min(1, Number.isFinite(share) ? share : 0));
+  }
+  return response.is_correct ? 1 : 0;
+}
+
+/** Accuracy in % over answered steps; null when nothing was answered (never a fake 0 %). */
+export function accuracyPct(responses: AccuracyResponse[]): number | null {
+  if (responses.length === 0) return null;
+  const credit = responses.reduce((sum, r) => sum + responseCredit(r), 0);
+  return Math.round((credit / responses.length) * 100);
+}

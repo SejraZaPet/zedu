@@ -1,4 +1,4 @@
-import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard } from "@/lib/game-types";
+import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard, buildAnonymousLabelMap } from "@/lib/game-types";
 import { useMemo, useState } from "react";
 import { Trophy, Home, Users, CheckCircle2, Target, Gamepad2, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import Confetti from "@/components/game/Confetti";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuickGameDialog } from "@/components/game/QuickGameDialog";
 import { weakSpotGameTopic } from "@/lib/assignment-difficulty";
-import { computeGameQuestionResults, computePersonalGameSummary } from "@/lib/game-results";
+import { computeGameQuestionResults, computePersonalGameSummary, accuracyPct } from "@/lib/game-results";
 import { rankGamePlayers } from "@/lib/game-ranking";
 
 
@@ -38,9 +38,15 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
 
 
   const totalQuestions = session.activity_data.length;
-  const totalCorrect = responses.filter((r) => r.is_correct).length;
-  const totalAnswers = responses.length;
-  const classAccuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
+  // On a student's phone RLS returns no other players' answers, so a class
+  // figure computed here would be false: show it only in the teacher view.
+  const classAccuracy = highlightPlayerId ? null : accuracyPct(responses);
+  const myResponses = highlightPlayerId ? responses.filter((r) => r.player_id === highlightPlayerId) : [];
+  const myAccuracy = highlightPlayerId ? accuracyPct(myResponses) : null;
+  const anonymous = !!(session.settings as any)?.anonymousAnswers;
+  const anonLabels = useMemo(() => (anonymous && highlightPlayerId ? buildAnonymousLabelMap(players) : null), [anonymous, highlightPlayerId, players]);
+  const displayName = (player: GamePlayer) =>
+    player.id === highlightPlayerId ? `${player.nickname} (ty)` : anonLabels?.[player.id] ?? player.nickname;
 
   const top3 = sortedPlayers.slice(0, 3);
   const rest = sortedPlayers.slice(3);
@@ -98,12 +104,12 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
               return (
                 <div key={player.id} className={`flex-1 min-w-0 flex flex-col items-center animate-scale-in ${order}`} style={{ animationDelay: `${rank * 0.2}s` }}>
                   <div className={isHighlighted ? "drop-shadow-[0_0_16px_hsl(var(--primary)/0.6)]" : ""}>
-                    <GameAvatarFigure userId={player.user_id} size={rank === 0 ? 140 : 108} crop="full" idleBounce idleDelaySec={rank * 0.4} />
+                    <GameAvatarFigure userId={anonLabels && player.id !== highlightPlayerId ? null : player.user_id} size={rank === 0 ? 140 : 108} crop="full" idleBounce idleDelaySec={rank * 0.4} />
                   </div>
                   <div className="w-full rounded-t-xl border-2 border-b-0 border-podium-foreground/20 flex flex-col items-center justify-start pt-2 text-podium-foreground shadow-lg min-w-0" data-podium-rank={slot.label} style={{ height: slot.height, background: `linear-gradient(180deg, hsl(var(--podium-${slot.blockColor}-from)), hsl(var(--podium-${slot.blockColor}-to)))` }}>
                     <span className="text-2xl md:text-3xl" aria-hidden>{PODIUM_SLOTS[(rankFor(player.id) ?? 1) - 1]?.medal ?? slot.medal}</span>
                     <span className="text-3xl md:text-4xl font-heading font-black leading-none">{rankFor(player.id)}</span>
-                    <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`} title={player.nickname}>{player.nickname}</p>
+                    <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`} title={displayName(player)}>{displayName(player)}</p>
                     <p className="text-sm md:text-base font-mono font-bold">{player.total_score} b.</p>
                   </div>
                 </div>
@@ -117,17 +123,17 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
             {rest.map((player, i) => (
               <div key={player.id} className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}>
                 <span className="text-sm font-bold text-foreground w-6 shrink-0">{rankFor(player.id)}.</span>
-                <GameAvatarFigure userId={player.user_id} size={32} crop="head" />
-                <span className="flex-1 min-w-0 truncate font-medium text-foreground" title={player.nickname}>{player.nickname}</span>
+                <GameAvatarFigure userId={anonLabels && player.id !== highlightPlayerId ? null : player.user_id} size={32} crop="head" />
+                <span className="flex-1 min-w-0 truncate font-medium text-foreground" title={displayName(player)}>{displayName(player)}</span>
                 <span className="shrink-0 font-mono font-bold text-foreground text-sm">{player.total_score} b.</span>
               </div>
             ))}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid gap-4 ${classAccuracy !== null ? "grid-cols-2" : "grid-cols-1"}`}>
           <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-foreground">{totalQuestions}</p><p className="text-sm text-muted-foreground">otázek</p></div>
-          <div className="bg-card border border-border rounded-xl p-4 text-center"><p className="text-3xl font-bold text-foreground">{classAccuracy}%</p><p className="text-sm text-muted-foreground">úspěšnost třídy</p></div>
+          {classAccuracy !== null && <div className="bg-card border border-border rounded-xl p-4 text-center" data-testid="class-accuracy"><p className="text-3xl font-bold text-foreground">{classAccuracy}%</p><p className="text-sm text-muted-foreground">úspěšnost třídy</p></div>}
         </div>
     </>
   );
@@ -153,10 +159,11 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 <div className="mt-2 flex items-end justify-center gap-8">
                   <div><p className="text-4xl font-heading font-bold text-primary">{highlightedPlayer.total_score}</p><p className="text-xs text-muted-foreground">bodů</p></div>
                   <div><p className="text-4xl font-heading font-bold text-foreground">{rankFor(highlightedPlayer.id)}.</p><p className="text-xs text-muted-foreground">místo</p></div>
+                  {myAccuracy !== null && <div data-testid="my-accuracy"><p className="text-4xl font-heading font-bold text-foreground">{myAccuracy}%</p><p className="text-xs text-muted-foreground">úspěšnost</p></div>}
                 </div>
               </section>
             )}
-            {personalSummary && (
+            {personalSummary && (!highlightPlayerId || myResponses.length > 0) && (
               <section className="grid gap-4 md:grid-cols-2 animate-fade-in">
                 <div className="bg-card border border-primary/30 rounded-2xl p-5">
                   <h2 className="flex items-center gap-2 font-heading font-bold text-lg"><CheckCircle2 className="h-5 w-5 text-primary" /> Tohle ti šlo skvěle</h2>

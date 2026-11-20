@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
+import { canStudentRaiseHand } from "@/lib/raised-hands";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import RaceTrack from "@/components/game/RaceTrack";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
@@ -232,9 +233,34 @@ const StudentGamePlay = () => {
 
   const myTeam = findPlayerTeam(session?.teams?.teams, playerId);
 
+  const toggleHand = async () => {
+    if (!joinToken) return;
+    await supabase.rpc("raise_hand" as any, {
+      _join_token: joinToken,
+      _raised: !myPlayer?.hand_raised,
+    });
+  };
+  const handButton = canStudentRaiseHand(session.status, !!joinToken) ? (
+    <button
+      type="button"
+      onClick={toggleHand}
+      className={`fixed top-3 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
+        myPlayer?.hand_raised
+          ? "bg-amber-400 text-slate-900 border-amber-300"
+          : "bg-card/90 text-foreground border-border backdrop-blur"
+      }`}
+      aria-pressed={!!myPlayer?.hand_raised}
+      aria-label={myPlayer?.hand_raised ? "Položit ruku" : "Zvednout ruku"}
+    >
+      <Hand className="w-4 h-4" aria-hidden />
+      {myPlayer?.hand_raised ? "Ruka nahoře" : "Zvednout ruku"}
+    </button>
+  ) : null;
+
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        {handButton}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
             <ProfileAvatarBubble userId={user?.id ?? null} size={96} editable={false} />
@@ -291,13 +317,7 @@ const StudentGamePlay = () => {
     await supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: bounded });
   };
 
-  const toggleHand = async () => {
-    if (!joinToken) return;
-    await supabase.rpc("raise_hand" as any, {
-      _join_token: joinToken,
-      _raised: !myPlayer?.hand_raised,
-    });
-  };
+
 
   // ---- Race mode (Time-to-Climb) student-side overlay ----
   const raceSettings = settingsAny;
@@ -319,6 +339,7 @@ const StudentGamePlay = () => {
           className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center gap-6 p-6 text-white"
           style={gameBackgroundStyle(gameBackgroundUrl)}
         >
+          {handButton}
           <p className="text-6xl">{finishedRace ? "🏁" : "⏰"}</p>
           <h1 className="text-3xl font-bold text-center">
             {finishedRace ? "Dojel jsi do cíle!" : "Čas vypršel"}
@@ -372,20 +393,7 @@ const StudentGamePlay = () => {
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={gameBackgroundStyle(gameBackgroundUrl)}
         >
-          {/* Floating hand-raise toggle */}
-          <button
-            onClick={toggleHand}
-            className={`fixed top-3 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
-              myPlayer?.hand_raised
-                ? "bg-amber-400 text-slate-900 border-amber-300"
-                : "bg-white/10 text-white border-white/20 backdrop-blur"
-            }`}
-            aria-pressed={!!myPlayer?.hand_raised}
-            aria-label={myPlayer?.hand_raised ? "Položit ruku" : "Zvednout ruku"}
-          >
-            <Hand className="w-4 h-4" />
-            {myPlayer?.hand_raised ? "Ruka nahoře" : "Zvednout ruku"}
-          </button>
+          {handButton}
 
           {/* Floating "Ask" button */}
           <button
@@ -787,6 +795,7 @@ const StudentGamePlay = () => {
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      {handButton}
       {modeFeedback && (
         <div
           className={`fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-full text-sm font-semibold shadow-xl border-2 pointer-events-none animate-in fade-in slide-in-from-top-2 ${
