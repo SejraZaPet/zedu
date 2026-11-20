@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RotateCcw, ChevronRight } from "lucide-react";
 import { t } from "@/lib/t";
@@ -14,14 +14,19 @@ interface Props {
   imageUrl: string;
   hotspots: Hotspot[];
   onComplete?: (score: number, maxScore: number) => void;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
-const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) => {
+const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete, deferFeedback = false, onStateChange }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [clickPos, setClickPos] = useState<{ x: number; y: number } | null>(null);
   const [results, setResults] = useState<Record<number, boolean>>({});
+  const [positions, setPositions] = useState<Record<number, { x: number; y: number }>>({});
+  const [selections, setSelections] = useState<Record<number, number>>({});
   const [answered, setAnswered] = useState(false);
+  useEffect(() => { onStateChange?.({ positions, selections }); }, [positions, selections, onStateChange]);
   const [finished, setFinished] = useState(false);
   const [useKeyboardMode, setUseKeyboardMode] = useState(false);
 
@@ -34,6 +39,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
       setClickPos({ x, y });
+      setPositions((prev) => ({ ...prev, [currentQuestion]: { x, y } }));
 
       const dx = x - current.x;
       const dy = y - current.y;
@@ -49,6 +55,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
   const handleKeyboardSelect = (selectedIdx: number) => {
     if (answered || finished) return;
     const isCorrect = selectedIdx === currentQuestion;
+    setSelections((prev) => ({ ...prev, [currentQuestion]: selectedIdx }));
     setResults((prev) => ({ ...prev, [currentQuestion]: isCorrect }));
     setAnswered(true);
   };
@@ -68,6 +75,8 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
     setCurrentQuestion(0);
     setClickPos(null);
     setResults({});
+    setPositions({});
+    setSelections({});
     setAnswered(false);
     setFinished(false);
   };
@@ -108,7 +117,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
         >
           <img src={imageUrl} alt={current?.label || "Aktivita"} className="w-full rounded-lg" draggable={false} />
 
-          {answered && (
+          {answered && !deferFeedback && (
             <div
               className={`absolute rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all ${
                 results[currentQuestion]
@@ -124,7 +133,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
             />
           )}
 
-          {clickPos && answered && (
+          {clickPos && answered && !deferFeedback && (
             <div
               className={`absolute w-5 h-5 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none ${
                 results[currentQuestion]
@@ -141,7 +150,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
             </div>
           )}
 
-          {finished &&
+          {finished && !deferFeedback &&
             hotspots.map((hs, i) => (
               <div
                 key={i}
@@ -176,11 +185,11 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
                 key={i}
                 onClick={() => handleKeyboardSelect(i)}
                 disabled={answered}
-                className={`w-full text-left rounded-lg border p-3 text-sm transition-colors ${
-                  answered && i === currentQuestion
-                    ? "border-green-500/60 bg-green-500/10"
-                    : answered
-                      ? "border-border bg-card opacity-60"
+                    className={`w-full text-left rounded-lg border p-3 text-sm transition-colors ${
+                      answered && !deferFeedback && i === currentQuestion
+                        ? "border-green-500/60 bg-green-500/10"
+                        : answered
+                        ? "border-border bg-card opacity-60"
                       : "border-border bg-card hover:border-primary/50 focus:ring-2 focus:ring-ring"
                 }`}
               >
@@ -194,7 +203,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
       {/* Feedback */}
       {answered && !finished && (
         <div className="flex items-center gap-3" role="alert">
-          <div
+          {!deferFeedback && <div
             className={`rounded-lg px-3 py-2 text-sm font-medium ${
               results[currentQuestion]
                 ? "bg-green-500/10 text-green-400"
@@ -202,7 +211,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
             }`}
           >
             {results[currentQuestion] ? `✓ ${t("a11y.hotspot.correct")}` : `✗ ${t("a11y.hotspot.wrong")}`}
-          </div>
+          </div>}
           <Button onClick={handleNext} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
             {currentQuestion < hotspots.length - 1 ? (
               <>{t("a11y.hotspot.next")} <ChevronRight className="w-4 h-4 ml-1" /></>
@@ -214,7 +223,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) =>
       )}
 
       {/* Final results */}
-      {finished && (
+      {finished && !deferFeedback && (
         <div className="space-y-3" role="alert">
           <div
             className={`rounded-lg p-3 flex items-center gap-3 ${

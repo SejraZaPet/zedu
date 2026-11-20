@@ -8,10 +8,12 @@ interface RevealCard {
 interface Props {
   cards: RevealCard[];
   onComplete?: (score: number, maxScore: number) => void;
+  onStateChange?: (state: any) => void;
 }
 
-const RevealCardsActivity = ({ cards = [], onComplete }: Props) => {
+const RevealCardsActivity = ({ cards = [], onComplete, onStateChange }: Props) => {
   const [opened, setOpened] = useState<Set<number>>(new Set());
+  useEffect(() => { onStateChange?.({ opened: [...opened] }); }, [opened, onStateChange]);
 
   const toggle = (idx: number) => {
     setOpened((prev) => {

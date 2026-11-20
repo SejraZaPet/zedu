@@ -6,9 +6,11 @@ import { generateCrosswordGrid, type CrosswordEntry, type PlacedWord } from "@/l
 interface Props {
   entries: CrosswordEntry[];
   onComplete?: (score: number, maxScore: number) => void;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
-const CrosswordActivity = ({ entries = [], onComplete }: Props) => {
+const CrosswordActivity = ({ entries = [], onComplete, deferFeedback = false, onStateChange }: Props) => {
   const grid = useMemo(() => generateCrosswordGrid(entries), [entries]);
 
   const [userGrid, setUserGrid] = useState<string[][]>([]);
@@ -17,6 +19,19 @@ const CrosswordActivity = ({ entries = [], onComplete }: Props) => {
   const [activeWord, setActiveWord] = useState<PlacedWord | null>(null);
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  useEffect(() => {
+    if (!grid) return;
+    const words = grid.words.map((word) => {
+      const index = entries.findIndex((entry) => entry.answer === word.answer && entry.clue === word.clue);
+      const value = Array.from({ length: word.answer.length }, (_, i) => {
+        const row = word.direction === "across" ? word.row : word.row + i;
+        const col = word.direction === "across" ? word.col + i : word.col;
+        return userGrid[row]?.[col] || "";
+      }).join("");
+      return { index, value };
+    });
+    onStateChange?.({ words });
+  }, [grid, userGrid, entries, onStateChange]);
 
   // Initialize user grid
   useEffect(() => {
@@ -321,7 +336,7 @@ const CrosswordActivity = ({ entries = [], onComplete }: Props) => {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-2">
+      <div className={deferFeedback ? "hidden" : "flex flex-wrap gap-2"}>
         {!checked && (
           <Button size="sm" onClick={handleCheck}>
             <CheckCircle2 className="w-4 h-4 mr-1" />

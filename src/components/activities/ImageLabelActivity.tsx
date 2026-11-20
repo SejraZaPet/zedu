@@ -16,11 +16,14 @@ interface Props {
   tolerance?: number; // percentage radius
   shuffleWords?: boolean;
   onComplete?: ActivityCompletion;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
-const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWords = true, onComplete }: Props) => {
+const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWords = true, onComplete, deferFeedback = false, onStateChange }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [placed, setPlaced] = useState<Record<number, string>>({});
+  useEffect(() => { onStateChange?.({ placed }); }, [placed, onStateChange]);
   const [dragging, setDragging] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<Record<number, boolean>>({});
@@ -181,7 +184,7 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className={deferFeedback ? "hidden" : "flex items-center gap-3 flex-wrap"}>
         {!checked && (
           <Button
             onClick={handleCheck}

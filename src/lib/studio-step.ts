@@ -9,6 +9,7 @@
 import { expandSlide } from "@/lib/live-game-expand";
 import { normalizeAiProps } from "@/lib/activity-ai-normalize";
 import { DEFAULT_NEW_QUIZ_TIME_SEC } from "@/lib/live-timing";
+import { isSoloRoundSlide, suggestedSoloRoundTimeSec, supportsSoloRoundType } from "@/lib/solo-round";
 
 export type StepTypeId =
   | "mcq" | "true_false" | "matching" | "ordering" | "fill_blanks" | "fill_choice"
@@ -51,12 +52,12 @@ export const STEP_TYPES: StepTypeInfo[] = [
   T({ id: "fill_blanks", label: "Doplňování", group: "Procvičování", live: "convert", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Text s mezerami" }),
   T({ id: "fill_choice", label: "Doplňování z nabídky", group: "Procvičování", live: "convert", solo: true, print: true, scored: true, ai: false, editor: "lesson", hint: "Mezery s bankou slov" }),
   T({ id: "sorting", label: "Třídění", group: "Procvičování", live: "no", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Položky do skupin" }),
-  T({ id: "flashcards", label: "Kartičky", group: "Procvičování", live: "no", solo: true, print: true, scored: false, ai: true, editor: "lesson", hint: "Dvoustranné kartičky" }),
+  T({ id: "flashcards", label: "Kartičky", group: "Procvičování", live: "no", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Dvoustranné kartičky" }),
   T({ id: "memory_game", label: "Pexeso", group: "Procvičování", live: "no", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Hledání dvojic" }),
   T({ id: "crossword", label: "Křížovka", group: "Procvičování", live: "no", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Mřížka s nápovědami" }),
   T({ id: "image_label", label: "Popis obrázku", group: "Obrázky", live: "no", solo: true, print: true, scored: true, ai: false, editor: "lesson", hint: "Popisky na obrázek" }),
   T({ id: "image_hotspot", label: "Hotspot", group: "Obrázky", live: "no", solo: true, print: true, scored: true, ai: false, editor: "lesson", hint: "Klik na správné místo" }),
-  T({ id: "reveal_cards", label: "Odkrývací karty", group: "Obrázky", live: "no", solo: true, print: true, scored: false, ai: true, editor: "lesson", hint: "Postupné odhalování" }),
+  T({ id: "reveal_cards", label: "Odkrývací karty", group: "Obrázky", live: "no", solo: true, print: true, scored: true, ai: true, editor: "lesson", hint: "Postupné odhalování" }),
   T({ id: "explain", label: "Text / výklad", group: "Text a otázky", live: "yes", solo: false, print: false, scored: false, ai: true, editor: "explain", hint: "Výkladový snímek" }),
   T({ id: "wall", label: "Zeď (otevřená otázka)", group: "Text a otázky", live: "yes", solo: true, print: true, scored: false, ai: true, editor: "wall", activityType: "wall", hint: "Odpovědi na společnou zeď" }),
   T({ id: "exit", label: "Exit ticket", group: "Text a otázky", live: "yes", solo: true, print: true, scored: false, ai: false, editor: "wall", activityType: "wall", hint: "Krátká reflexe na konci" }),
@@ -74,7 +75,7 @@ const RAW_TYPE: StepTypeInfo = { id: "slide", label: "Jiný snímek", group: "Ž
 
 export const STEP_GROUPS: StepGroup[] = ["Kvízy", "Procvičování", "Obrázky", "Text a otázky", "Živě se třídou"];
 export const stepTypeInfo = (id: string): StepTypeInfo => STEP_TYPES.find((t) => t.id === id) ?? RAW_TYPE;
-export const canGoLive = (id: string) => stepTypeInfo(id).live !== "no";
+export const canGoLive = (id: string) => supportsSoloRoundType(id) || stepTypeInfo(id).live !== "no";
 export const AI_STEP_TYPES = STEP_TYPES.filter((t) => t.ai).map((t) => t.id);
 
 /** Štítky do mřížky „Přidat krok“ a do seznamu kroků. */
@@ -83,7 +84,8 @@ export function stepBadges(id: string): string[] {
   if (t.worksheetOnly) return ["Jen pracovní list"];
   if (t.liveOnly) return ["Jen živě"];
   const b: string[] = [];
-  if (t.live !== "no") b.push("Živě");
+  if (supportsSoloRoundType(id)) b.push("Samostatné kolo");
+  else if (t.live !== "no") b.push("Živě");
   if (t.solo) b.push("Samostatně");
   if (t.print) b.push("Tisk");
   return b;
@@ -99,6 +101,12 @@ export interface StepSettings {
   points: StepPoints;
   /** true = krok se hraje jednotlivě i ve hře s týmy (gameSettings.teamMode = "none"). */
   individual: boolean;
+  /** Nové konvertibilní kroky = solo; chybějící hodnota u starých snímků = původní rozpad. */
+  liveMode?: "solo" | "expand";
+  /** Výchozí true; false = po skončení kola neukázat správné řešení. */
+  showSolution?: boolean;
+  /** true = čas se přepočítá podle velikosti obsahu, dokud ho učitel nezmění. */
+  timeAuto?: boolean;
 }
 
 export interface ActivityStep {
@@ -152,16 +160,24 @@ const DEFAULT_TITLE: Partial<Record<StepTypeId, string>> = { exit: "Co sis dnes 
 /** Nový prázdný krok daného typu (výchozí čas jako nový kvíz, u otevřených bez limitu). */
 export function newStep(type: StepTypeId): ActivityStep {
   const t = stepTypeInfo(type);
-  return {
+  const solo = supportsSoloRoundType(type);
+  const step: ActivityStep = {
     id: newStepId(), type, title: DEFAULT_TITLE[type] ?? "", content: DEFAULT_CONTENT[type]?.() ?? {},
-    settings: { timeLimitSec: t.scored && t.live !== "no" ? DEFAULT_NEW_QUIZ_TIME_SEC : t.live === "no" ? null : 0, points: 1, individual: false },
+    settings: {
+      timeLimitSec: solo ? 45 : t.scored && t.live !== "no" ? DEFAULT_NEW_QUIZ_TIME_SEC : t.live === "no" ? null : 0,
+      points: 1,
+      individual: false,
+      ...(solo ? { liveMode: "solo" as const, showSolution: true, timeAuto: true } : {}),
+    },
     explanation: "", imageUrl: "", ai: { generated: false }, _extra: {},
   };
+  if (solo) step.settings.timeLimitSec = suggestedSoloRoundTimeSec(stepToSlide(step).activitySpec);
+  return step;
 }
 
 // ── krok ↔ snímek ─────────────────────────────────────────────────────────
 
-const COMMON_SPEC = ["activityType", "question", "timeLimitSec", "points", "explanation", "imageUrl"];
+const COMMON_SPEC = ["activityType", "question", "timeLimitSec", "points", "explanation", "imageUrl", "soloRound", "showSolution", "timeAuto"];
 const omit = (o: Record<string, any>, keys: string[]) => Object.fromEntries(Object.entries(o ?? {}).filter(([k]) => !keys.includes(k)));
 
 /** Text doplňovačky s {{odpověď}} z tokenů (live-game-expand čte `fillBlanks.text`). */
@@ -208,9 +224,15 @@ export function stepToSlide(step: ActivityStep): any {
   }
   if (step.settings.timeLimitSec !== null) spec.timeLimitSec = step.settings.timeLimitSec;
   if (step.settings.points !== 1) spec.points = step.settings.points;
+  if (supportsSoloRoundType(step.type) && step.settings.liveMode !== "expand") spec.soloRound = true;
+  if (spec.soloRound && step.settings.timeAuto === true) {
+    spec.timeAuto = true;
+    spec.timeLimitSec = suggestedSoloRoundTimeSec(spec);
+  }
+  if (spec.soloRound && step.settings.showSolution === false) spec.showSolution = false;
   if (step.explanation.trim()) spec.explanation = step.explanation.trim();
   if (step.imageUrl.trim()) spec.imageUrl = step.imageUrl.trim();
-  const type = step.type === "slide" ? (slideExtra.type ?? "activity") : t.live === "no" ? "studio_step" : "activity";
+  const type = step.type === "slide" ? (slideExtra.type ?? "activity") : spec.soloRound || t.live !== "no" ? "activity" : "studio_step";
   return { ...base, type, activitySpec: spec };
 }
 
@@ -256,12 +278,20 @@ export function slideToStep(slide: any): ActivityStep {
   }
   extra.projector = projector;
   if (type === "slide" && !slide?.activitySpec) extra.__noSpec = true;
+  const expandable = ["matching", "ordering", "fill_blanks", "fill_choice"].includes(type);
+  const soloDefault = spec.soloRound === true || (supportsSoloRoundType(type) && !expandable);
   return {
     id: String(slideId ?? newStepId()),
     type,
     title: String(spec.question ?? headline ?? "") || headline,
     content,
-    settings: { timeLimitSec: clampStepTime(spec.timeLimitSec), points: normalizePoints(spec.points), individual },
+    settings: {
+      timeLimitSec: clampStepTime(spec.timeLimitSec),
+      points: normalizePoints(spec.points),
+      individual,
+      ...(soloDefault ? { liveMode: "solo" as const } : expandable ? { liveMode: "expand" as const } : {}),
+      ...(soloDefault ? { showSolution: spec.showSolution !== false, timeAuto: spec.soloRound === true ? spec.timeAuto === true : true } : {}),
+    },
     explanation: typeof spec.explanation === "string" ? spec.explanation : "",
     imageUrl,
     ai: { generated: ai_generated === true, ...(ai_modified_at ? { modifiedAt: ai_modified_at } : {}) },
@@ -317,10 +347,12 @@ export function blockToSteps(block: any): ActivityStep[] {
   const content: Record<string, any> = {};
   const blockProps: Record<string, any> = {};
   for (const [k, v] of Object.entries(omit(p, BLOCK_SKIP))) (contentKeys.includes(k) ? content : blockProps)[k] = v;
-  return [{
+  const imported: ActivityStep = {
     id: String(block.id ?? newStepId()), type, title: String(p.title ?? p.question ?? ""), content,
-    settings, explanation: String(p.explanation ?? ""), imageUrl: "", ai, _extra: { blockId: block.id, blockProps },
-  }];
+    settings: { ...newStep(type).settings }, explanation: String(p.explanation ?? ""), imageUrl: "", ai, _extra: { blockId: block.id, blockProps },
+  };
+  if (supportsSoloRoundType(type)) imported.settings.timeLimitSec = suggestedSoloRoundTimeSec(stepToSlide(imported).activitySpec);
+  return [imported];
 }
 
 // ── kontrola a spuštění ───────────────────────────────────────────────────
@@ -383,6 +415,7 @@ export function prepareSlidesForLiveLaunch(slides: any[] | null | undefined): { 
   const out: any[] = [];
   const skipped: { title: string; label: string }[] = [];
   for (const s of slides ?? []) {
+    if (isSoloRoundSlide(s)) { out.push(s); continue; }
     if (s?.type === "studio_step") {
       const t = stepTypeInfo(String(s.studioStepType ?? s.activitySpec?.activityType ?? ""));
       skipped.push({ title: String(s.activitySpec?.question || s.projector?.headline || t.label), label: t.label });
@@ -454,6 +487,7 @@ export function aiStepToStep(s: any): ActivityStep | null {
     const norm = normalizeAiProps(props);
     step.content = { ...step.content, ...norm };
   }
+  if (supportsSoloRoundType(type)) step.settings.timeLimitSec = suggestedSoloRoundTimeSec(stepToSlide(step).activitySpec);
   return stepProblem(step) ? null : step;
 }
 
@@ -463,6 +497,23 @@ export function aiStepsToSteps(raw: unknown): { steps: ActivityStep[]; dropped: 
   const steps = list.map(aiStepToStep).filter((x): x is ActivityStep => !!x);
   const serverDropped = Number((raw as any)?.dropped) || 0;
   return { steps, dropped: list.length - steps.length + serverDropped };
+}
+
+// ── souhrn živé sady ──────────────────────────────────────────────────────
+
+export function studioSetLiveSummary(steps: ActivityStep[]) {
+  const slides = prepareSlidesForLiveLaunch(steps.map(stepToSlide)).slides;
+  const soloRounds = slides.filter(isSoloRoundSlide).length;
+  const regularQuestions = slides.filter((s) => s?.type === "activity" && !isSoloRoundSlide(s)).length;
+  let estimatedSeconds = 0;
+  let openEnded = false;
+  for (const slide of slides) {
+    if (slide?.type !== "activity") continue;
+    const own = slide?.activitySpec?.timeLimitSec;
+    if (own === 0) { openEnded = true; continue; }
+    estimatedSeconds += Number.isFinite(Number(own)) && Number(own) > 0 ? Number(own) : DEFAULT_NEW_QUIZ_TIME_SEC;
+  }
+  return { regularQuestions, soloRounds, estimatedSeconds, openEnded };
 }
 
 // ── šablony ───────────────────────────────────────────────────────────────
@@ -497,5 +548,11 @@ export function activityTemplateToSteps(row: { name: string; activity_type: stri
   const base = newStep(info.id);
   if (info.id === "mcq" || !info.solo || info.editor === "slide") return [base];
   const steps = blockToSteps({ id: base.id, type: "activity", props: { ...base.content, ...(row.template_props ?? {}), activityType: info.activityType ?? info.id, title: "" } });
-  return steps.map((s) => ({ ...s, settings: base.settings }));
+  return steps.map((s) => ({
+    ...s,
+    settings: {
+      ...base.settings,
+      ...(supportsSoloRoundType(s.type) ? { timeLimitSec: suggestedSoloRoundTimeSec(stepToSlide(s).activitySpec) } : {}),
+    },
+  }));
 }

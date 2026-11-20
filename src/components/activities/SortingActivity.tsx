@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface SortingData { groups: string[]; items: { text: string; group: number }[]; }
 
-const SortingActivity = ({ sorting, onComplete }: { sorting: SortingData; onComplete?: (score: number, maxScore: number) => void }) => {
+const SortingActivity = ({ sorting, onComplete, deferFeedback = false, onStateChange }: { sorting: SortingData; onComplete?: (score: number, maxScore: number) => void; deferFeedback?: boolean; onStateChange?: (state: any) => void }) => {
   const [assignments, setAssignments] = useState<Record<number, number>>({});
   const [checked, setChecked] = useState(false);
+  useEffect(() => { onStateChange?.({ assignments }); }, [assignments, onStateChange]);
 
   // Shuffle items once
   const shuffled = useMemo(() => {
@@ -84,7 +85,7 @@ const SortingActivity = ({ sorting, onComplete }: { sorting: SortingData; onComp
         })}
       </div>
 
-      {allAssigned && !checked && (
+      {allAssigned && !checked && !deferFeedback && (
         <button onClick={() => {
           setChecked(true);
           const correct = sorting.items.filter((it, i) => assignments[i] === it.group).length;

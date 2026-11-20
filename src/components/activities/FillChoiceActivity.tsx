@@ -1,6 +1,6 @@
 import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import {
@@ -26,6 +26,8 @@ interface Props {
   tokens: FillChoiceToken[];
   options: string[];
   onComplete?: ActivityCompletion;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
 const DraggableWord = ({
@@ -107,9 +109,10 @@ const DroppableBlank = ({
   );
 };
 
-const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) => {
+const FillChoiceActivity = ({ tokens = [], options = [], onComplete, deferFeedback = false, onStateChange }: Props) => {
   const blanks = useMemo(() => tokens.filter((t) => t.type === "blank"), [tokens]);
   const [answers, setAnswers] = useState<(string | null)[]>(() => blanks.map(() => null));
+  useEffect(() => { onStateChange?.({ answers }); }, [answers, onStateChange]);
   const [checked, setChecked] = useState(false);
   const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
   const complete: ActivityCompletion = (score, maxScore, items) => {
@@ -290,7 +293,7 @@ const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) =>
       {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
 
         {/* Controls */}
-        <div className="flex flex-wrap gap-2 pt-2 print:hidden">
+        <div className={deferFeedback ? "hidden" : "flex flex-wrap gap-2 pt-2 print:hidden"}>
           {!checked && (
             <Button
               size="sm"

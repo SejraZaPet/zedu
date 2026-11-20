@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreLiveAnswer } from "../_shared/game-scoring-apply.ts";
-import { mcqCorrectFromSelection } from "../_shared/game-scoring.ts";
+import { effectiveMode, mcqCorrectFromSelection, slidePointsFactor, soloRoundPoints } from "../_shared/game-scoring.ts";
 import { isGradedSlide } from "../_shared/session-participants.ts";
-import { isAwaitingStart } from "../_shared/live-timing.ts";
+import { isAwaitingStart, resolveTimeLimitSec } from "../_shared/live-timing.ts";
+import { evaluateSoloRound, isSoloRoundSlide } from "../_shared/solo-round.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,7 +46,7 @@ serve(async (req) => {
     // Resolve player strictly via joinToken (no rawPlayerId fallback).
     const { data: players, error: pErr } = await admin
       .from("game_players")
-      .select("id, session_id, token_expires_at, user_id")
+      .select("id, session_id, token_expires_at, user_id, student_index")
       .eq("join_token", joinToken)
       .limit(1);
     if (pErr) throw pErr;
@@ -60,7 +61,7 @@ serve(async (req) => {
     // Load session activity_data to inspect question type
     const { data: sess } = await admin
       .from("game_sessions")
-      .select("activity_data, settings, teams, question_started_at")
+      .select("activity_data, settings, teams, question_started_at, status, current_question_index, updated_at")
       .eq("id", sessionId)
       .maybeSingle();
     const activityData = (sess?.activity_data as any[]) || [];
@@ -77,17 +78,49 @@ serve(async (req) => {
     // entry after the first, so the projector showed "no responses".
     const activityType = String(question?.activitySpec?.activityType || "");
     const openEnded = ["wordcloud", "wall", "open", "open_question"].includes(activityType);
+    const soloRound = isSoloRoundSlide(question);
+    if (soloRound) {
+      const mode = effectiveMode(sess?.settings?.gameMode, question?.gameSettings?.mode);
+      const expectedIndex = mode === "race" ? Number(p.student_index ?? 0) : Number(sess?.current_question_index);
+      if (questionIndex !== expectedIndex || !["playing", "question_results"].includes(String(sess?.status))) {
+        return json({ error: "Round is not active" }, 409);
+      }
+      // Po zveřejnění řešení je jen krátká síťová lhůta na automatické odeslání.
+      if (sess?.status === "question_results") {
+        const closedAt = sess?.updated_at ? new Date(sess.updated_at).getTime() : 0;
+        if (!closedAt || Date.now() - closedAt > 10_000) return json({ error: "Round is closed" }, 409);
+      }
+      if (mode !== "race") {
+        const limit = resolveTimeLimitSec(question, sess?.settings, "live");
+        const startedAt = sess?.question_started_at ? new Date(sess.question_started_at).getTime() : 0;
+        if (limit !== null && startedAt && Date.now() - startedAt > limit * 1000 + 10_000) {
+          return json({ error: "Round is closed" }, 409);
+        }
+      }
+    }
 
     // Idempotency (scored activities only)
     const { data: existing } = openEnded ? { data: null } : await admin
       .from("game_responses")
-      .select("id")
+      .select("id, score, is_correct, answer")
       .eq("session_id", sessionId)
       .eq("player_id", playerId)
       .eq("question_index", questionIndex)
       .limit(1);
     if (existing?.length) {
-      return json({ success: true, alreadyAnswered: true }, 200);
+      const previous = existing[0] as any;
+      return json({
+        success: true,
+        alreadyAnswered: true,
+        ...(soloRound ? {
+          score: previous.score,
+          isCorrect: previous.is_correct,
+          correctCount: previous.answer?.correctCount ?? 0,
+          totalCount: previous.answer?.totalCount ?? 0,
+          gameMode: previous.answer?.gameMode,
+          soloRound: true,
+        } : {}),
+      }, 200);
     }
 
     // Determine final isCorrect / score
@@ -98,7 +131,24 @@ serve(async (req) => {
     // spočítá podle herního režimu (stejná pravidla jako submit-answer).
     let modeExtras: Record<string, unknown> = {};
     let victimHandled = false;
-    if (!openEnded && question && isGradedSlide(question)) {
+    let soloEvaluation: ReturnType<typeof evaluateSoloRound> | null = null;
+    if (soloRound) {
+      const templateId = String(sess?.settings?.sourceTemplateId ?? "");
+      if (!templateId) return json({ error: "Solo round source is missing" }, 409);
+      const { data: template, error: templateError } = await admin
+        .from("teacher_game_templates")
+        .select("activity_data")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (templateError) throw templateError;
+      const original = ((template?.activity_data as any[]) ?? []).find((slide) => slide?.slideId === question?.slideId);
+      if (!original?.activitySpec) return json({ error: "Solo round source is missing" }, 409);
+      soloEvaluation = evaluateSoloRound(original.activitySpec, answerPayload);
+      const mode = effectiveMode(sess?.settings?.gameMode, question?.gameSettings?.mode);
+      finalIsCorrect = soloEvaluation.totalCount > 0 && soloEvaluation.correctCount === soloEvaluation.totalCount;
+      finalScore = soloRoundPoints(mode, soloEvaluation, slidePointsFactor(question));
+      modeExtras = { gameMode: mode, soloRound: true, correctCount: soloEvaluation.correctCount, totalCount: soloEvaluation.totalCount };
+    } else if (!openEnded && question && isGradedSlide(question)) {
       const verified = mcqCorrectFromSelection(question?.activitySpec?.options, answerPayload?.selected);
       if (verified !== null) finalIsCorrect = verified;
       const startedAt = sess?.question_started_at ? new Date(sess.question_started_at).getTime() : null;
@@ -113,14 +163,18 @@ serve(async (req) => {
       modeExtras = { gameMode: scored.mode, stolenFrom: scored.victimId, stolenAmount: -scored.victimDelta, robber: scored.robber };
     }
 
-    const safeScore = Math.max(-1000, Math.min(1000, Math.round(finalScore)));
+    const safeScore = soloRound
+      ? Math.max(0, Math.min(2000, Math.round(finalScore)))
+      : Math.max(-1000, Math.min(1000, Math.round(finalScore)));
     const safeRt = typeof responseTimeMs === "number" ? Math.max(0, Math.round(responseTimeMs)) : 0;
 
     const { error: insErr } = await admin.from("game_responses").insert({
       session_id: sessionId,
       player_id: playerId,
       question_index: questionIndex,
-      answer: victimHandled ? { ...answerPayload, ...modeExtras } : answerPayload,
+      answer: soloEvaluation
+        ? { ...answerPayload, ...modeExtras, itemResults: soloEvaluation.itemResults }
+        : victimHandled ? { ...answerPayload, ...modeExtras } : answerPayload,
       is_correct: finalIsCorrect,
       score: safeScore,
       response_time_ms: safeRt,

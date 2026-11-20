@@ -27,9 +27,10 @@ import { fetchGameTemplates, launchTemplateSession, type GameTemplate } from "@/
 import {
   AI_STEP_TYPES, STEP_GROUPS, STEP_POINTS_LABEL, STEP_TIME_MAX, STEP_TIME_MIN, STEP_TYPES,
   activityTemplateToSteps, aiStepsToSteps, blockToSteps, canGoLive, gameTemplateToSet, newStep,
-  prepareSlidesForLiveLaunch, slideToStep, stepBadges, stepProblem, stepToBlock, stepToSlide, stepTypeInfo,
+  prepareSlidesForLiveLaunch, slideToStep, stepBadges, stepProblem, stepToBlock, stepToSlide, stepTypeInfo, studioSetLiveSummary,
   type ActivityStep, type StepPoints, type StepTypeId,
 } from "@/lib/studio-step";
+import { suggestedSoloRoundTimeSec, supportsSoloRoundType } from "@/lib/solo-round";
 
 export type StudioStart = "blank" | "template" | "material" | "lesson";
 type Phase = "zdroj" | "kroky" | "nahled" | "pouzit";
@@ -63,6 +64,8 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
   const [editId, setEditId] = useState<string | null>(null);
   const [aiTypes, setAiTypes] = useState<StepTypeId[]>(AI_DEFAULT);
   const [aiCount, setAiCount] = useState(6);
+  const [includeLessonActivities, setIncludeLessonActivities] = useState(false);
+  const [lessonActivityLimit, setLessonActivityLimit] = useState(12);
   const [aiBusy, setAiBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -72,6 +75,7 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
   useEffect(() => {
     if (!open) return;
     setAiTypes(AI_DEFAULT); setAiCount(6); setOpenId(null);
+    setIncludeLessonActivities(false); setLessonActivityLimit(12);
     if (editTemplate) {
       setSteps((editTemplate.activity_data ?? []).map(slideToStep));
       setTitle(editTemplate.title); setSubject(editTemplate.subject || NONE);
@@ -95,6 +99,7 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
 
   const problems = useMemo(() => steps.map((s) => ({ s, p: stepProblem(s) })).filter((x) => x.p), [steps]);
   const launchPlan = useMemo(() => prepareSlidesForLiveLaunch(steps.map(stepToSlide)), [steps]);
+  const liveSummary = useMemo(() => studioSetLiveSummary(steps), [steps]);
 
   const generate = async () => {
     if (!bundle.state.ok) { toast.error(bundle.state.message ?? "Zdroje nejsou připravené."); return; }
@@ -182,12 +187,28 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
               ) : (
                 <>
                   {start === "lesson" && (
-                    <LessonSourcePicker onPick={(lesson) => {
-                      bundle.addLesson(lesson.title, () => [lesson.title, extractTextFromBlocks(lesson.blocks)].join("\n\n"));
-                      const taken = (lesson.blocks ?? []).flatMap(blockToSteps);
-                      if (taken.length) { addSteps(taken); toast.success(`Z lekce jsme převzali ${taken.length} hotových aktivit jako kroky.`); }
-                      if (!title) setTitle(lesson.title);
-                    }} />
+                    <>
+                      <div className="rounded-lg border border-border p-3 space-y-2">
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox checked={includeLessonActivities} onCheckedChange={(v) => setIncludeLessonActivities(!!v)} />
+                          Přidat i existující aktivity z lekce
+                        </label>
+                        {includeLessonActivities && (
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="lesson-activity-limit" className="text-xs">Nejvýše hotových aktivit</Label>
+                            <Input id="lesson-activity-limit" type="number" min={1} max={24} className="w-20" value={lessonActivityLimit}
+                              onChange={(e) => setLessonActivityLimit(Math.min(24, Math.max(1, Number(e.target.value) || 1)))} />
+                          </div>
+                        )}
+                        <p className="text-[11px] text-muted-foreground">Tyto aktivity se nepočítají do limitu AI kroků níže.</p>
+                      </div>
+                      <LessonSourcePicker onPick={(lesson) => {
+                        bundle.addLesson(lesson.title, () => [lesson.title, extractTextFromBlocks(lesson.blocks)].join("\n\n"));
+                        const taken = includeLessonActivities ? (lesson.blocks ?? []).flatMap(blockToSteps).slice(0, lessonActivityLimit) : [];
+                        if (taken.length) { addSteps(taken); toast.success(`Z lekce jsme převzali ${taken.length} hotových aktivit jako kroky.`); }
+                        if (!title) setTitle(lesson.title);
+                      }} />
+                    </>
                   )}
                   <SourceInput bundle={bundle} disabled={aiBusy} />
                   <fieldset className="space-y-2">
@@ -205,7 +226,7 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
                   </fieldset>
                   <div className="flex items-end gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="ai-count">Počet kroků (1–12)</Label>
+                      <Label htmlFor="ai-count">Počet AI kroků (1–12)</Label>
                       <Input id="ai-count" type="number" min={1} max={12} inputMode="numeric" className="w-24" value={aiCount} disabled={aiBusy}
                         onChange={(e) => setAiCount(Math.min(12, Math.max(1, Number(e.target.value) || 1)))} />
                     </div>
@@ -277,6 +298,11 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
                 </div>
               </section>
 
+              <div className="rounded-md bg-muted/40 p-3 text-sm" aria-live="polite">
+                <strong>{liveSummary.regularQuestions} běžných otázek + {liveSummary.soloRounds} samostatných kol</strong>
+                <span className="block text-xs text-muted-foreground">Odhad doby hry: {formatGameEstimate(liveSummary.estimatedSeconds)}{liveSummary.openEnded ? " + kroky bez limitu" : ""}</span>
+              </div>
+
               {steps.length === 0 && <p className="text-sm text-muted-foreground">Sada je zatím prázdná. Přidejte první krok.</p>}
               <ol className="space-y-2" aria-label="Kroky sady">
                 {steps.map((s, i) => (
@@ -316,7 +342,7 @@ export default function StudioSetBuilder({ open, onOpenChange, start, editTempla
 
           {phase === "pouzit" && (
             <div className="space-y-4">
-              <p className="text-sm">Sada „{title || "bez názvu"}“ má {steps.length} kroků. Živě se zahraje {steps.length - launchPlan.skipped.length} z nich.</p>
+              <p className="text-sm">Sada „{title || "bez názvu"}“: <strong>{liveSummary.regularQuestions} běžných otázek + {liveSummary.soloRounds} samostatných kol</strong>. Odhad: {formatGameEstimate(liveSummary.estimatedSeconds)}{liveSummary.openEnded ? " + kroky bez limitu" : ""}.</p>
               {launchPlan.skipped.length > 0 && (
                 <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
                   <p className="font-medium">Při živém spuštění se vynechá (typ zatím jde jen samostatně nebo k tisku):</p>
@@ -381,6 +407,8 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
   const problem = stepProblem(s);
   const [uploading, setUploading] = useState(false);
   const live = canGoLive(s.type);
+  const solo = supportsSoloRoundType(s.type) && s.settings.liveMode !== "expand";
+  const convertible = ["matching", "ordering", "fill_blanks", "fill_choice"].includes(s.type);
   const tl = s.settings.timeLimitSec;
   const timeMode = tl === null ? "default" : tl === 0 ? "none" : "custom";
   const setSettings = (p: Partial<ActivityStep["settings"]>) => onChange({ settings: { ...s.settings, ...p } });
@@ -436,10 +464,27 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
 
           <fieldset className="space-y-2 rounded-md border border-border p-2" aria-label="Nastavení kroku">
             <legend className="px-1 text-xs font-medium">Nastavení kroku</legend>
+            {solo && (
+              <div className="rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
+                <strong className="text-foreground">Samostatné kolo.</strong> Celá aktivita se odevzdá jako jedna odpověď; rychlost neboduje.
+              </div>
+            )}
+            {convertible && (
+              <div className="space-y-1">
+                <Label className="text-xs">Způsob živé hry</Label>
+                <Select value={solo ? "solo" : "expand"} onValueChange={(v) => setSettings({ liveMode: v === "solo" ? "solo" : "expand" })}>
+                  <SelectTrigger aria-label="Způsob živé hry"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solo">Hrát jako samostatné kolo</SelectItem>
+                    <SelectItem value="expand">Rozložit na otázky</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2 sm:grid-cols-3">
               <div className="space-y-1">
                 <Label className="text-xs">Čas na krok</Label>
-                <Select value={timeMode} disabled={s.type === "explain"} onValueChange={(v) => setSettings({ timeLimitSec: v === "default" ? null : v === "none" ? 0 : 30 })}>
+                <Select value={timeMode} disabled={s.type === "explain"} onValueChange={(v) => setSettings({ timeLimitSec: v === "default" ? null : v === "none" ? 0 : 30, timeAuto: false })}>
                   <SelectTrigger aria-label="Čas na krok"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="default">Výchozí čas hry</SelectItem>
@@ -450,7 +495,7 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
                 {s.type === "explain" && <p className="text-[11px] text-muted-foreground">Výklad nemá odpověď, čas se neměří.</p>}
                 {timeMode === "custom" && s.type !== "explain" && (
                   <Input type="number" min={STEP_TIME_MIN} max={STEP_TIME_MAX} inputMode="numeric" aria-label="Sekund (5–600)" value={tl ?? ""}
-                    onChange={(e) => setSettings({ timeLimitSec: Number(e.target.value) })} />
+                    onChange={(e) => setSettings({ timeLimitSec: Number(e.target.value), timeAuto: false })} />
                 )}
               </div>
               <div className="space-y-1">
@@ -470,6 +515,17 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
               </div>
             </div>
             {!live && <p className="text-[11px] text-muted-foreground">Čas a body se uplatní až v živé hře; tento typ se zatím hraje jen samostatně nebo tiskne.</p>}
+            {solo && (
+              <>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={s.settings.showSolution !== false} onCheckedChange={(v) => setSettings({ showSolution: !!v })} />
+                  Po skončení kola ukázat správné řešení
+                </label>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setSettings({ timeLimitSec: suggestedSoloRoundTimeSec(stepToSlide(s).activitySpec), timeAuto: true })}>
+                  Přednastavit čas podle počtu položek
+                </Button>
+              </>
+            )}
             <Textarea rows={2} placeholder="Vysvětlení (zobrazí se po odpovědi)" aria-label="Vysvětlení" value={s.explanation} onChange={(e) => onChange({ explanation: e.target.value })} />
             <div className="flex flex-wrap items-center gap-2">
               {s.imageUrl ? (
@@ -490,6 +546,13 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
       )}
     </li>
   );
+}
+
+function formatGameEstimate(seconds: number): string {
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest ? `${minutes} min ${rest} s` : `${minutes} min`;
 }
 
 function SimplePreview({ step: s }: { step: ActivityStep }) {

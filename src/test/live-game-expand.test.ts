@@ -34,6 +34,10 @@ describe("expandSlidesForLiveGame", () => {
     expect(once[0]).toBe(poll); expect(once[1]).toBe(bad);
     expect(expandSlidesForLiveGame(once)).toEqual(once);
   });
+  it("samostatné kolo se nerozloží; starý rozpad bez příznaku zůstává", () => {
+    const solo = sp({ activityType: "matching", soloRound: true, matching: { left: ["a", "b"], right: ["1", "2"] } });
+    expect(expandSlidesForLiveGame([solo])).toEqual([solo]);
+  });
   it("placeAnswer je deterministické a obsahuje správnou odpověď", () => {
     const a = placeAnswer("x", ["x", "y", "z"], 1);
     expect(a).toEqual(placeAnswer("x", ["x", "y", "z"], 1));

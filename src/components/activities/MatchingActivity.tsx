@@ -1,12 +1,12 @@
 import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { t } from "@/lib/t";
 import { shuffleNonIdentity } from "@/lib/shuffle";
 
 interface MatchingData { left: string[]; right: string[]; }
 
-const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: ActivityCompletion }) => {
+const MatchingActivity = ({ matching, onComplete, deferFeedback = false, onStateChange }: { matching: MatchingData; onComplete?: ActivityCompletion; deferFeedback?: boolean; onStateChange?: (state: any) => void }) => {
   const [selections, setSelections] = useState<Record<number, number | null>>({});
   const [checked, setChecked] = useState(false);
   const [reviewAnswers, setReviewAnswers] = useState<ActivityAnswer[]>([]);
@@ -14,6 +14,7 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
     setReviewAnswers(items ?? []);
     onComplete?.(score, maxScore, items);
   };
+  useEffect(() => { onStateChange?.({ selections }); }, [selections, onStateChange]);
 
   // Zamíchat pravou stranu při každém zobrazení aktivity (nikdy ne v pořadí zadání)
   const shuffledRight = useMemo(
@@ -100,7 +101,7 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
 
       {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
 
-      {allPaired && !checked && (
+      {allPaired && !checked && !deferFeedback && (
         <button
           onClick={handleCheck}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"

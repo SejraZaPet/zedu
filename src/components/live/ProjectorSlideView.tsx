@@ -8,6 +8,8 @@ import { McqAnswerDistribution, McqCountdown, McqResultsBoard } from "@/componen
 import { isLiveMcqSlide, isMcqRevealed } from "@/lib/live-mcq";
 import { isAwaitingStart } from "@/lib/live-timing";
 import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
+import SoloRoundProjector from "@/components/live/SoloRoundProjector";
+import { isSoloRoundSlide } from "@/lib/solo-round";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
@@ -200,7 +202,8 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const canvasSlide = useMemo(() => slideWithFallbackBlocks(currentSlide), [currentSlide]);
   // Obrázkový snímek (např. PNG z Canvy) bez bloků musí jít také přes SlideCanvas —
   // pozadí scény se kvůli ořezu nepřenáší, takže jinak by zůstala prázdná plocha.
-  const hasCanvasContent = !!(
+  const soloRound = isSoloRoundSlide(currentSlide);
+  const hasCanvasContent = !soloRound && !!(
     canvasSlide &&
     ((canvasSlide.blocks && canvasSlide.blocks.length > 0) ||
       canvasSlide.projector?.headline ||
@@ -265,6 +268,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
                 {awaitingStart ? (
                   <AwaitingStartNotice slide={currentSlide} variant="projector" />
+                ) : soloRound ? (
+                  <SoloRoundProjector
+                    session={session}
+                    currentSlide={currentSlide}
+                    currentIndex={currentIndex}
+                    players={players}
+                    responses={responses ?? []}
+                  />
                 ) : activityType === "wall" ? (
                   <WallProjectorView
                     sessionId={sessionId}

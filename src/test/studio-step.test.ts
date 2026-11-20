@@ -46,13 +46,14 @@ describe("Studio – adaptér krok ↔ snímek (všechny typy)", () => {
     expect(back.type).toBe(type);
     expect(back.title).toBe("Zadání kroku");
     // Výklad nemá odpověď: čas ani body se k němu neukládají (UI je nenabízí).
-    if (type !== "explain") expect(back.settings).toEqual({ timeLimitSec: 45, points: 2, individual: true });
+    if (type !== "explain") expect(back.settings).toMatchObject({ timeLimitSec: 45, points: 2, individual: true });
     expect(stepToSlide(back)).toEqual(slide);
   });
 
-  it("typy, které živě nejdou, se ukládají jako studio_step, ostatní jako běžné snímky", () => {
-    expect(stepToSlide(filled("sorting")).type).toBe("studio_step");
-    expect(stepToSlide(filled("crossword")).type).toBe("studio_step");
+  it("samostatné kolo i ostatní živé typy se ukládají jako běžné snímky", () => {
+    expect(stepToSlide(filled("sorting")).type).toBe("activity");
+    expect(stepToSlide(filled("sorting")).activitySpec.soloRound).toBe(true);
+    expect(stepToSlide(filled("crossword")).type).toBe("activity");
     expect(stepToSlide(filled("mcq")).type).toBe("activity");
     expect(stepToSlide(filled("explain")).type).toBe("explain");
     expect(stepToSlide(filled("exit")).activitySpec.activityType).toBe("wall");
@@ -143,16 +144,12 @@ describe("Studio – čas a body", () => {
   });
 });
 
-describe("Studio – živé spuštění vynechá kroky bez živého režimu", () => {
-  it("studio_step se vynechá a vypíše, převáděné typy zdědí body a jednotlivě, staré snímky beze změny", () => {
+describe("Studio – živé spuštění a starý rozpad", () => {
+  it("starý studio_step se vynechá a starý rozpad zdědí body a jednotlivě", () => {
     const legacy = { slideId: "old", type: "activity", activitySpec: { activityType: "mcq", question: "?", options: [{ text: "a", correct: true }, { text: "b", correct: false }], correctIndex: 0 } };
-    const slides = [
-      legacy,
-      stepToSlide(filled("sorting", { title: "Roztřiď" })),
-      stepToSlide(filled("matching", { settings: { timeLimitSec: 20, points: 2, individual: true } })),
-      stepToSlide(filled("wordcloud")),
-    ];
-    const { slides: out, skipped } = prepareSlidesForLiveLaunch(slides);
+    const skippedStep = { slideId: "skipped", type: "studio_step", studioStepType: "sorting", activitySpec: { activityType: "sorting", question: "Roztřiď" } };
+    const legacyMatching = stepToSlide(filled("matching", { settings: { timeLimitSec: 20, points: 2, individual: true, liveMode: "expand" } }));
+    const { slides: out, skipped } = prepareSlidesForLiveLaunch([legacy, skippedStep, legacyMatching, stepToSlide(filled("wordcloud"))]);
     expect(skipped).toEqual([{ title: "Roztřiď", label: "Třídění" }]);
     expect(out[0]).toBe(legacy);
     const mcqs = out.filter((s) => s.expandedFrom === "matching");
@@ -163,14 +160,12 @@ describe("Studio – živé spuštění vynechá kroky bez živého režimu", ()
       expect(m.gameSettings).toEqual({ teamMode: "none" });
     }
     expect(out.some((s) => s.activitySpec?.activityType === "wordcloud")).toBe(true);
-    expect(out.some((s) => s.type === "studio_step")).toBe(false);
   });
-  it("seznam typů, které se po etapě 1 živě vynechávají", () => {
-    expect(STEP_TYPES.filter((t) => t.live === "no" && !t.worksheetOnly).map((t) => t.id).sort()).toEqual(
-      ["crossword", "flashcards", "image_hotspot", "image_label", "memory_game", "reveal_cards", "sorting"]);
+  it("všechny typy se samostatným hráčem už jdou živě; osmisměrka zůstává v listu", () => {
+    expect(STEP_TYPES.filter((t) => t.live === "no" && !t.worksheetOnly && !t.solo).map((t) => t.id)).toEqual([]);
   });
-  it("štítky: třídění není Živě, mrak je Jen živě, osmisměrka Jen pracovní list", () => {
-    expect(stepBadges("sorting")).toEqual(["Samostatně", "Tisk"]);
+  it("štítky: třídění je Samostatné kolo, mrak Jen živě, osmisměrka Jen pracovní list", () => {
+    expect(stepBadges("sorting")).toEqual(["Samostatné kolo", "Samostatně", "Tisk"]);
     expect(stepBadges("wordcloud")).toEqual(["Jen živě"]);
     expect(stepBadges("word_search")).toEqual(["Jen pracovní list"]);
     expect(stepBadges("mcq")).toEqual(["Živě", "Samostatně", "Tisk"]);

@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Card { front: string; back: string; }
 
 interface Props {
   cards: Card[];
   onComplete?: () => void;
+  onStateChange?: (state: any) => void;
 }
 
-const FlashcardsActivity = ({ cards, onComplete }: Props) => {
+const FlashcardsActivity = ({ cards, onComplete, onStateChange }: Props) => {
   const [flipped, setFlipped] = useState<Record<number, boolean>>({});
   const [seen, setSeen] = useState<Set<number>>(new Set());
+  useEffect(() => { onStateChange?.({ seen: [...seen] }); }, [seen, onStateChange]);
 
   if (!cards?.length) return null;
 

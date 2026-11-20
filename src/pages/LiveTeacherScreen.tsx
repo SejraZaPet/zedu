@@ -50,6 +50,7 @@ import LessonPlanPacing from "@/components/live/LessonPlanPacing";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import ProjectorFontScaleControls from "@/components/live/ProjectorFontScaleControls";
 import { clampProjectorFontScale, loadProjectorFontScale, saveProjectorFontScale, settingsWithProjectorFontScale } from "@/lib/projector-font-scale";
+import { isSoloRoundSlide } from "@/lib/solo-round";
 
 interface SlideData {
   slideId: string;
@@ -69,7 +70,7 @@ const LiveTeacherScreen = () => {
   const navigate = useNavigate();
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
-  const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
+  const { startGame, nextQuestion, showResults, endGame } = useTeacherGameControls(sessionId);
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
@@ -156,6 +157,22 @@ const LiveTeacherScreen = () => {
     const id = setTimeout(() => void revealMcq(), Math.max(0, wait));
     return () => clearTimeout(id);
   }, [mcqActive, mcqRevealed, session?.question_started_at, settings?.timePerQuestion, currentSlide, revealMcq]);
+
+  // Samostatné kolo (mimo vlastní tempo Závodu): společný konec po všech nebo po čase.
+  const soloActive = isSoloRoundSlide(currentSlide) && session?.status === "playing" && !awaitingStart && settings?.gameMode !== "race";
+  const soloAnswered = responses.filter((r) => r.question_index === currentIndex).length;
+  useEffect(() => {
+    if (!soloActive || players.length === 0 || soloAnswered < players.length) return;
+    void showResults();
+  }, [soloActive, soloAnswered, players.length, showResults]);
+  useEffect(() => {
+    if (!soloActive || !session?.question_started_at) return;
+    const limit = liveQuestionTimeLimitMs(settings, currentSlide);
+    if (!limit) return;
+    const wait = serverTsToClientMs(session.question_started_at) + limit - Date.now();
+    const id = setTimeout(() => void showResults(), Math.max(0, wait));
+    return () => clearTimeout(id);
+  }, [soloActive, session?.question_started_at, settings?.timePerQuestion, currentSlide, showResults]);
 
   // ---- Ruční „Spustit“: odpovídání a odpočet začnou až teď ----
   const startActivity = useCallback(async () => {
@@ -1177,7 +1194,7 @@ const LiveTeacherScreen = () => {
             </div>
           )}
 
-          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType !== "teams" && (currentSlide as any).activitySpec?.activityType !== "differentiated" && (currentSlide as any).activitySpec?.activityType !== "escape" && (
+          {currentSlide.type === "activity" && !isSoloRoundSlide(currentSlide) && (currentSlide as any).activitySpec?.activityType !== "teams" && (currentSlide as any).activitySpec?.activityType !== "differentiated" && (currentSlide as any).activitySpec?.activityType !== "escape" && (
             <div className="mt-4 space-y-3">
               <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -1515,10 +1532,14 @@ const LiveTeacherScreen = () => {
                 <Users className="w-4 h-4" /> Upravit týmy
               </Button>
             )}
-            <Button onClick={handleNext}>
-              {currentIndex >= slides.length - 1 ? "Ukončit výuku" : "Další slide"}
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+            {isSoloRoundSlide(currentSlide) && session?.status === "playing" && !awaitingStart && settings?.gameMode !== "race" ? (
+              <Button onClick={() => void showResults()}>Ukončit kolo a ukázat výsledky</Button>
+            ) : (
+              <Button onClick={handleNext}>
+                {currentIndex >= slides.length - 1 ? "Ukončit výuku" : "Další slide"}
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
           </div>
         </div>
       )}

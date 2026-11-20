@@ -32,6 +32,8 @@ import { isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from 
 import { Lock, Pencil, Hand, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
 import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import SoloRoundActivityPlayer from "@/components/live/SoloRoundActivityPlayer";
+import { isSoloRoundSlide } from "@/lib/solo-round";
 
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 import { useAuth } from "@/contexts/AuthContext";
@@ -491,7 +493,18 @@ const StudentGamePlay = () => {
 
           {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (currentSlideData as any).activitySpec?.activityType !== "differentiated" && (currentSlideData as any).activitySpec?.activityType !== "escape" && (
             <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
-              {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
+              {isSoloRoundSlide(currentSlideData) ? (
+                <SoloRoundActivityPlayer
+                  key={`solo-${currentSlideData.slideId ?? qi}`}
+                  spec={currentSlideData.activitySpec}
+                  session={session}
+                  sessionId={sessionId || ""}
+                  joinToken={joinToken}
+                  playerId={playerId}
+                  questionIndex={qi}
+                  response={responses.find((r) => r.player_id === playerId && r.question_index === qi)}
+                />
+              ) : (currentSlideData as any).activitySpec?.activityType === "wall" ? (
                 liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
                   <div
                     className="fixed inset-0 flex flex-col"

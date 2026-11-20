@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -77,7 +77,7 @@ const SortableItem = ({
   );
 };
 
-const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: ActivityCompletion }) => {
+const OrderingActivity = ({ ordering, onComplete, deferFeedback = false, onStateChange }: { ordering: OrderingData; onComplete?: ActivityCompletion; deferFeedback?: boolean; onStateChange?: (state: any) => void }) => {
   const correctOrder: string[] = ordering?.items ?? [];
 
   // Create shuffled order once
@@ -93,6 +93,7 @@ const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; on
 
   const [items, setItems] = useState(initialOrder);
   const [checked, setChecked] = useState(false);
+  useEffect(() => { onStateChange?.({ order: items.map((item) => item.correctIndex) }); }, [items, onStateChange]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -148,7 +149,7 @@ const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; on
         </SortableContext>
       </DndContext>
 
-      {!checked && (
+      {!checked && !deferFeedback && (
         <button
           onClick={() => {
             setChecked(true);

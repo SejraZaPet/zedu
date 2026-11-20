@@ -1,7 +1,7 @@
 import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import { FillWordBank } from "./FillWordBank";
 import type { ActivityAnswer, ActivityCompletion } from "@/lib/activity-answers";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react";
@@ -26,6 +26,8 @@ interface Props {
   showWordBank?: boolean;
   distractors?: string[];
   onComplete?: ActivityCompletion;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
 const normalize = (s: string, caseSensitive: boolean, diacriticSensitive: boolean) => {
@@ -71,7 +73,7 @@ const tokensToSegments = (tokens: FillBlankToken[]): { segments: (string | numbe
 
 const EMPTY_WORDS: string[] = [];
 
-const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, showWordBank = true, distractors = EMPTY_WORDS, onComplete }: Props) => {
+const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, showWordBank = true, distractors = EMPTY_WORDS, onComplete, deferFeedback = false, onStateChange }: Props) => {
   const { segments, blanks } = useMemo(() => {
     // Prefer tokens format, fall back to legacy text
     if (tokens && tokens.length > 0) return tokensToSegments(tokens);
@@ -79,6 +81,7 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
   }, [text, tokens]);
 
   const [answers, setAnswers] = useState<string[]>(() => blanks.map(() => ""));
+  useEffect(() => { onStateChange?.({ answers }); }, [answers, onStateChange]);
   const words = useMemo(() => blanks.map(blank => blank.answer || blank.alternatives[0] || ""), [blanks]);
   const [bankRevision, setBankRevision] = useState(0);
   const [checked, setChecked] = useState(false);
@@ -196,7 +199,7 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
       {checked && reviewAnswers.length > 0 && <ActivityAnswerReview answers={reviewAnswers} />}
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-2 pt-2">
+      <div className={deferFeedback ? "hidden" : "flex flex-wrap gap-2 pt-2"}>
         {!checked && (
           <Button size="sm" onClick={() => {
             setChecked(true);

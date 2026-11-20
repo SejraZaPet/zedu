@@ -48,6 +48,8 @@ export function placeAnswer(correct: string, pool: string[], i: number): { answe
 export function expandSlide(s: any): any[] {
   const k = slideKind(s);
   const sp = s?.activitySpec || {};
+  // Nové samostatné kolo je jedna odpověď; staré snímky bez příznaku se rozloží jako dosud.
+  if (sp.soloRound === true) return [s];
   if (k === "true_false") {
     const st: any[] = sp?.trueFalse?.statements || [];
     const items = st

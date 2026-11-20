@@ -125,3 +125,16 @@ export function slidePointsFactor(slide: any): number {
   const p = slide?.activitySpec?.points;
   return p === 0 || p === 2 ? p : 1;
 }
+
+/** Samostatné kolo: podíl položek × body kroku, bez rychlosti, krádeže i postihu. */
+export function soloRoundPoints(
+  mode: unknown,
+  result: { correctCount: number; totalCount: number },
+  pointsFactor: unknown,
+): number {
+  const factor = pointsFactor === 0 || pointsFactor === 2 ? pointsFactor : 1;
+  if (factor === 0 || result.totalCount <= 0) return 0;
+  const ratio = Math.max(0, Math.min(1, result.correctCount / result.totalCount));
+  const base = mode === "race" ? 10 : mode === "steal" ? 100 : 1000;
+  return Math.round(base * ratio * factor);
+}

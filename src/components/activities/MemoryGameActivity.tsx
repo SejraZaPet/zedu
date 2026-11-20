@@ -10,6 +10,8 @@ interface MemoryPair {
 interface Props {
   pairs: MemoryPair[];
   onComplete?: (score: number, maxScore: number) => void;
+  deferFeedback?: boolean;
+  onStateChange?: (state: any) => void;
 }
 
 interface Card {
@@ -19,7 +21,7 @@ interface Card {
   side: "left" | "right";
 }
 
-const MemoryGameActivity = ({ pairs = [], onComplete }: Props) => {
+const MemoryGameActivity = ({ pairs = [], onComplete, deferFeedback = false, onStateChange }: Props) => {
   const cards = useMemo(() => {
     const all: Card[] = [];
     pairs.forEach((p, i) => {
@@ -37,6 +39,9 @@ const MemoryGameActivity = ({ pairs = [], onComplete }: Props) => {
 
   const [flipped, setFlipped] = useState<number[]>([]);
   const [matched, setMatched] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    onStateChange?.({ matchedPairs: [...new Set([...matched].map((id) => Math.floor(id / 2)))] });
+  }, [matched, onStateChange]);
   const [attempts, setAttempts] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -157,10 +162,10 @@ const MemoryGameActivity = ({ pairs = [], onComplete }: Props) => {
         </div>
       )}
 
-      <Button variant="outline" size="sm" onClick={reset}>
+      {!deferFeedback && <Button variant="outline" size="sm" onClick={reset}>
         <RotateCcw className="w-4 h-4 mr-1" />
         {finished ? "Hrát znovu" : "Začít znovu"}
-      </Button>
+      </Button>}
     </div>
   );
 };

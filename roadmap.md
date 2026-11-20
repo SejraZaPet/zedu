@@ -100,4 +100,12 @@
 - [x] Etapa 0: jednotný vstup zdrojů (text, soubory, galerie, foťák, odkaz, lekce), funkce fetch-source-url, průvodce aktivit bez tichého ořezu; „Vytvořit z lekce“ už opraveno dříve.
 - [x] Etapa 1: Aktivita z vlastního materiálu – AI návrh sady smíšených kroků, zaškrtnutí a úprava (čas, body, obrázek, vysvětlení, obsah), vložení až po potvrzení.
 - Neověřeno: živá AI, načítání skutečných webů, prohlížeč 390 px (přihlášení se přesměrovalo), telefony. Nenasazeno.
-- Etapa 2+ (zveřejnění žákům, samostatné kolo, menu Studio) – neimplementováno.
+- Etapa 2 (vložení sady do lekce a tisk) – neimplementováno; samostatná kola a menu Studio jsou v dalších etapách.
+
+## Studio – etapa 3: samostatná kola (schváleno)
+- [x] Opraven limit AI kroků a samostatná volba/limit hotových aktivit z lekce; etapa 2 neprovedena.
+- [x] Jednotný model samostatného kola, volba rozpadu pro staré sady, čas a souhrn sady.
+- [x] Telefonní hráč, projektor, průběh hotovo, řešení a hromadné výsledky.
+- [x] Serverové bodování podílu, týmy a bezpečné chování režimů Závod/Krádež.
+- [x] 128 logických/regresních + 4 komponentové testy, typy a build; celá sada 1345/1352 se 7 staršími nesouvisejícími chybami. Bez migrace a nasazení.
+- Neověřeno: ostrá serverová funkce, hra se dvěma telefony, skutečný projektor a zátěž. Stará sada „Hovězí maso“ zůstává při přímém spuštění historicky rozložená; nové kolo se u ní volí v sestavovači.
