@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award, Monitor, Trophy, ListChecks } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award, Monitor, Trophy, ListChecks, ChevronDown } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,6 +116,7 @@ const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [studentMoreOpen, setStudentMoreOpen] = useState(false);
   const { isLoggedIn, role: userRole, roles, signOut, user } = useAuth();
   const { status: leagueStatus } = useMyLeague(user?.id, userRole === "user");
   const studentExtraItems: TeacherExtraNavItem[] = showLeagueMenu(leagueStatus)
@@ -135,6 +136,23 @@ const SiteHeader = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setStudentMoreOpen(false);
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
+  }, [menuOpen]);
 
   const canAccessAdmin = userRole === "admin" || userRole === "teacher";
 
@@ -393,92 +411,114 @@ const SiteHeader = () => {
           onClick={() => setMenuOpen(!menuOpen)}
           className="md:hidden text-foreground p-2"
           aria-label="Menu"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-background border-t border-border animate-fade-in">
-          <nav className="flex flex-col px-6 py-4 gap-1">
-            {isLoggedIn && <DemoRoleSwitch className="mb-2 self-start" />}
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => { setMenuOpen(false); handleNavClick(item.href); }}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left ${
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-primary hover:bg-muted/50"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>
-                    {item.label}
-                    {item.subtitle && (
-                      <span className="block text-xs font-normal text-muted-foreground">
-                        {item.subtitle}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-            {(userRole === "teacher" || userRole === "lektor") && (
-              teacherExtraItems.map((item) => {
+        <div
+          id="mobile-menu"
+          className="md:hidden flex flex-col overflow-y-auto overscroll-contain bg-background border-t border-border animate-fade-in"
+          style={{ maxHeight: "calc(100dvh - 70px - var(--demo-banner-h, 0px))" }}
+        >
+          <nav aria-label="Mobilní navigace" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
+            <div className="flex flex-col gap-1">
+              {navItems.map((item) => {
                 const Icon = item.icon;
-                const active = location.pathname.startsWith(item.href);
+                const active = isActive(item.href);
                 return (
                   <button
-                    key={item.href}
-                    onClick={() => { setMenuOpen(false); navigate(item.href); }}
-                    className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                    key={item.label}
+                    onClick={() => { setMenuOpen(false); handleNavClick(item.href); }}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left ${
                       active
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:text-primary hover:bg-muted/50"
                     }`}
                   >
-                    <Icon size={16} />
-                    {item.label}
-                    {item.subtitle && <span className="text-xs text-muted-foreground">– {item.subtitle}</span>}
+                    <Icon className="w-5 h-5" />
+                    <span>
+                      {item.label}
+                      {item.subtitle && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {item.subtitle}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
-              })
-            )}
-            {userRole === "user" && studentExtraItems.length > 0 && (
-              studentExtraItems.map((item) => {
-                const Icon = item.icon;
-                const active = location.pathname.startsWith(item.href);
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => { setMenuOpen(false); navigate(item.href); }}
-                    className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-primary hover:bg-muted/50"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </button>
-                );
-              })
-            )}
-            {isLoggedIn && ACADEMY_BY_ROLE[userRole ?? ""] && (
-              <button
-                onClick={() => { setMenuOpen(false); navigate(ACADEMY_BY_ROLE[userRole ?? ""]); }}
-                className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left text-muted-foreground hover:text-primary hover:bg-muted/50"
-              >
-                <Award className="w-5 h-5" /> Bezli Akademie
-              </button>
-            )}
-            <div className="border-t border-border mt-2 pt-2">
-              {isLoggedIn ? (
+              })}
+              {(userRole === "teacher" || userRole === "lektor") && (
+                teacherExtraItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = location.pathname.startsWith(item.href);
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                      className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {item.label}
+                      {item.subtitle && <span className="text-xs text-muted-foreground">– {item.subtitle}</span>}
+                    </button>
+                  );
+                })
+              )}
+              {userRole === "user" && studentExtraItems.length > 0 && (
                 <>
+                  <button
+                    type="button"
+                    aria-expanded={studentMoreOpen}
+                    aria-controls="mobile-student-more"
+                    onClick={() => setStudentMoreOpen((open) => !open)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left text-muted-foreground hover:text-primary hover:bg-muted/50"
+                  >
+                    <Layers className="w-5 h-5" />
+                    Více
+                    <ChevronDown className={`ml-auto w-5 h-5 transition-transform ${studentMoreOpen ? "rotate-180" : ""}`} aria-hidden />
+                  </button>
+                  {studentMoreOpen && (
+                    <div id="mobile-student-more" className="flex flex-col gap-1">
+                      {studentExtraItems.map((item) => {
+                        const Icon = item.icon;
+                        const active = location.pathname.startsWith(item.href);
+                        return (
+                          <button
+                            key={item.href}
+                            onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                            className={`flex items-center gap-3 pl-8 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                              active
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                            }`}
+                          >
+                            <Icon size={16} />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+              {isLoggedIn && ACADEMY_BY_ROLE[userRole ?? ""] && (
+                <button
+                  onClick={() => { setMenuOpen(false); navigate(ACADEMY_BY_ROLE[userRole ?? ""]); }}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left text-muted-foreground hover:text-primary hover:bg-muted/50"
+                >
+                  <Award className="w-5 h-5" /> Bezli Akademie
+                </button>
+              )}
+              {isLoggedIn && (
+                <div className="border-t border-border mt-2 pt-2">
                   <button onClick={() => { setMenuOpen(false); navigate("/zpravy"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/zpravy" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
                     <MessagesSquare size={18} /> <span className="font-semibold text-foreground">Zprávy</span>
                     {unreadMessages > 0 && (
@@ -487,26 +527,38 @@ const SiteHeader = () => {
                       </span>
                     )}
                   </button>
-                  <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
-                    <User size={18} /> Profil
-                  </button>
                   {canAccessAdmin && (
                     <button onClick={() => { setMenuOpen(false); navigate("/admin"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/admin" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
                       <Settings size={18} /> Administrace
                     </button>
                   )}
-                  <RoleSwitchMenu variant="mobile" onDone={() => setMenuOpen(false)} />
-                  <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left w-full">
-                    <LogOut size={18} /> Odhlásit
-                  </button>
-                </>
-              ) : (
-                <Button variant="hero" size="default" onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="mt-2 w-full justify-center">
-                  <LogIn size={16} /> Přihlásit se
-                </Button>
+                </div>
               )}
             </div>
           </nav>
+          <div
+            role="group"
+            aria-label="Účet"
+            className="sticky bottom-0 z-10 shrink-0 border-t border-border bg-background px-6 pt-3"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            {isLoggedIn ? (
+              <>
+                <DemoRoleSwitch className="mb-2 w-full justify-center" />
+                <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                  <User size={18} /> Profil
+                </button>
+                <RoleSwitchMenu variant="mobile" onDone={() => setMenuOpen(false)} />
+                <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left w-full">
+                  <LogOut size={18} /> Odhlásit
+                </button>
+              </>
+            ) : (
+              <Button variant="hero" size="default" onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="w-full justify-center">
+                <LogIn size={16} /> Přihlásit se
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </header>
