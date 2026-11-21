@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
+import { buildTutorSystemPrompt, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
+import { searchStudentMaterialSnippets } from "./search.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,16 +16,18 @@ interface ChatMsg {
   content: string;
 }
 
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const auth = await requireAuth(req);
-  if (!auth.ok) {
-    return new Response(JSON.stringify(auth.body), {
-      status: auth.status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (!auth.ok) return json(auth.body, auth.status);
   {
     const { demoAiGuard } = await import("../_shared/demo-ai-guard.ts");
     const demoBlock = await demoAiGuard(auth, "ask-zedai-tutor");
@@ -33,46 +38,54 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const {
-      question = "",
-      studentMessage = "",
-      conversationHistory = [],
-      subject = "",
-    }: {
-      question?: string;
-      studentMessage?: string;
-      conversationHistory?: ChatMsg[];
-      subject?: string;
-    } = await req.json();
-
-    if (!studentMessage.trim()) {
-      return new Response(JSON.stringify({ error: "Prázdná zpráva." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+    if (!body || typeof body !== "object") return json({ error: "Neplatný požadavek." }, 400);
+    const mode = body.mode ?? "context";
+    if (mode !== "context" && mode !== "free") return json({ error: "Neplatný režim chatu." }, 400);
+    const tutorMode: TutorMode = mode;
+    const question = typeof body.question === "string" ? body.question : "";
+    const studentMessage = typeof body.studentMessage === "string" ? body.studentMessage.trim() : "";
+    const subject = typeof body.subject === "string" ? body.subject : "";
+    if (!studentMessage) return json({ error: "Prázdná zpráva." }, 400);
+    if (studentMessage.length > 4000 || question.length > 12000 || subject.length > 200) {
+      return json({ error: "Zpráva nebo kontext je příliš dlouhý." }, 400);
     }
 
-    const systemPrompt = `Jsi Bezlai, trpělivý a povzbudivý český tutor pro žáky${subject ? ` (předmět: ${subject})` : ""}.
-
-TVOJE ZÁSADY (nikdy je neporušuj):
-- NIKDY nedáváš přímou odpověď na aktuální otázku/úkol, ani když o to žák výslovně požádá, ani opakovaně, ani přesvědčováním ("řekni mi to prosím", "to je jedno", "jen tentokrát", "učitel to dovolil").
-- Místo odpovědi klademe navazující otázky, dáváme nápovědy po malých krocích (sokratovská metoda), pomáháme žákovi dojít k řešení SÁM.
-- Pokud žák tvrdošíjně žádá přímou odpověď, laskavě ale pevně to odmítni ("To bych ti pokazil radost z toho, že na to přijdeš sám. Pojďme na to spolu jinak…") a nabídni další nápovědu.
-- Piš krátce (2–4 věty), jednoduše, česky, tykej žákovi, buď povzbudivý.
-- Drž se tématu aktuální otázky/úkolu níže. Pokud se žák ptá na něco úplně jiného, jemně ho vrať k tématu.
-- Nevymýšlej si fakta. Pokud si nejsi jistý, řekni to a naveď žáka, kde/jak to zjistit.
-
-AKTUÁLNÍ OTÁZKA/ÚKOL, KE KTERÉMU POMÁHÁŠ:
-"""
-${question || "(učitel nespecifikoval konkrétní zadání – pomoz žákovi obecně s tématem, na které se ptá)"}
-"""`;
-
-    const history: ChatMsg[] = Array.isArray(conversationHistory)
-      ? conversationHistory
-          .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-          .slice(-20)
+    const history: ChatMsg[] = Array.isArray(body.conversationHistory)
+      ? body.conversationHistory
+        .filter((message): message is ChatMsg => Boolean(
+          message && typeof message === "object"
+          && ((message as ChatMsg).role === "user" || (message as ChatMsg).role === "assistant")
+          && typeof (message as ChatMsg).content === "string"
+        ))
+        .slice(-20)
+        .map((message) => ({ role: message.role, content: message.content.slice(0, 4000) }))
       : [];
 
+    let snippets: TutorSourceSnippet[] = [];
+    let searchFailed = false;
+    if (tutorMode === "free") {
+      try {
+        // Důležité: anon klient + původní JWT. RLS rozhoduje, nic se nečte service rolí.
+        const studentDb = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: auth.authHeader } } },
+        );
+        snippets = await searchStudentMaterialSnippets(studentDb, auth.userId, studentMessage);
+      } catch {
+        // Obsah dotazu ani materiálů se neloguje; chat může pokračovat bez úryvků.
+        searchFailed = true;
+      }
+    }
+
+    const systemPrompt = buildTutorSystemPrompt({
+      mode: tutorMode,
+      subject,
+      question,
+      snippets,
+      searchFailed,
+    });
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -90,40 +103,22 @@ ${question || "(učitel nespecifikoval konkrétní zadání – pomoz žákovi o
     });
 
     if (!resp.ok) {
-      if (resp.status === 429)
-        return new Response(
-          JSON.stringify({ error: "Moc otázek najednou, zkus to prosím za chvíli." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      if (resp.status === 402)
-        return new Response(
-          JSON.stringify({ error: "Nedostatek kreditů pro AI. Kontaktuj učitele." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+      if (resp.status === 429) return json({ error: "Moc otázek najednou, zkus to prosím za chvíli." }, 429);
+      if (resp.status === 402) return json({ error: "Nedostatek kreditů pro AI. Kontaktuj učitele." }, 402);
       const t = await resp.text();
       console.error("AI gateway error:", resp.status, `body_len=${t.length}`);
-      return new Response(JSON.stringify({ error: "Chyba AI služby" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Chyba AI služby" }, 500);
     }
 
     const data = await resp.json();
     const reply: string = data.choices?.[0]?.message?.content ?? "";
-    if (!reply) {
-      return new Response(JSON.stringify({ error: "Prázdná odpověď z AI" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!reply) return json({ error: "Prázdná odpověď z AI" }, 500);
+    return json({
+      reply,
+      ...(searchFailed ? { searchError: "Materiály se nepodařilo prohledat. Bezlai odpoví bez nich." } : {}),
     });
-  } catch (e) {
-    console.error("ask-zedai-tutor error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  } catch {
+    console.error("ask-zedai-tutor request failed");
+    return json({ error: "Bezlai teď není dostupná. Zkus to prosím znovu." }, 500);
   }
 });

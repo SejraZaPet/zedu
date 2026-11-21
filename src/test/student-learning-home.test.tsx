@@ -73,7 +73,7 @@ describe("Učím se – režimy podle záměru", () => {
     expect(screen.getByText("Série: 4 dny")).toBeInTheDocument();
     expect(screen.getByText("120 XP")).toBeInTheDocument();
     expect(screen.getByText("1 zvládnuté téma")).toBeInTheDocument();
-    for (const title of ["Chci si to zapamatovat", "Vyzkoušej se z toho", "Blíží se test", "Můj materiál", "Shrnutí", "Cesta po tématech", "Zeptej se Zedíka", "Triky na učení"]) {
+    for (const title of ["Chci si to zapamatovat", "Vyzkoušej se z toho", "Blíží se test", "Můj materiál", "Shrnutí", "Cesta po tématech", "Zeptej se Bezlai", "Triky na učení"]) {
       expect(screen.getByRole("button", { name: new RegExp(title) })).toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "Blíží se test: Test za 3 dny" })).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("Učím se – režimy podle záměru", () => {
     renderHome();
     expect(await screen.findByText("Zvládnuto")).toBeInTheDocument();
     expect(screen.getByText("Právě teď", { selector: ".text-xs" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Zeptej se Zedíka: Nasměruje tě k odpovědi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zeptej se Bezlai: Nasměruje tě k odpovědi" }));
     await waitFor(() => expect(screen.getByText("chat-open")).toBeInTheDocument());
   });
 

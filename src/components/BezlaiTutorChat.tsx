@@ -11,7 +11,11 @@ interface ChatMsg {
   content: string;
 }
 
+export type BezlaiTutorMode = "context" | "free";
+
 interface BezlaiTutorChatProps {
+  /** Kontext = zadání bez přímé odpovědi; free = otevřená otázka nad materiály žáka. */
+  mode?: BezlaiTutorMode;
   /** Aktuální otázka / zadání / nadpis lekce – dá se AI jako kontext. */
   question: string;
   subject?: string;
@@ -29,14 +33,16 @@ interface BezlaiTutorChatProps {
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
 const AI_DISCLOSURE =
   "Ahoj, jsem Bezlai, umělá inteligence. Nejsem člověk – dávám ti nápovědy, abys na odpověď přišel/přišla sám/sama.";
-const INITIAL_GREETING = "Čeho se zadání týká, čemu nerozumíš?";
+const FREE_AI_DISCLOSURE =
+  "Ahoj, jsem Bezlai, umělá inteligence. Nejsem člověk – pomůžu ti vysvětlit učivo a ptát se, abys mu porozuměl/a.";
 
-const initialMessages = (): ChatMsg[] => [
-  { role: "assistant", content: AI_DISCLOSURE },
-  { role: "assistant", content: INITIAL_GREETING },
+const initialMessages = (mode: BezlaiTutorMode): ChatMsg[] => [
+  { role: "assistant", content: mode === "free" ? FREE_AI_DISCLOSURE : AI_DISCLOSURE },
+  { role: "assistant", content: mode === "free" ? "S čím ti pomůžu?" : "Čeho se zadání týká, čemu nerozumíš?" },
 ];
 
 export default function BezlaiTutorChat({
+  mode = "context",
   question,
   subject,
   contextKey,
@@ -51,16 +57,16 @@ export default function BezlaiTutorChat({
     setOpenInner(v);
     onOpenChange?.(v);
   };
-  const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMsg[]>(() => initialMessages(mode));
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reset conversation when context changes (e.g. student moves to next question).
   useEffect(() => {
-    setMessages(initialMessages());
+    setMessages(initialMessages(mode));
     setInput("");
-  }, [contextKey]);
+  }, [contextKey, mode]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -78,6 +84,7 @@ export default function BezlaiTutorChat({
     try {
       const { data, error } = await supabase.functions.invoke("ask-zedai-tutor", {
         body: {
+          mode,
           question,
           studentMessage: text,
           // Neposílej úvodní odhalení AI ani pozdrav do historie.
@@ -91,7 +98,12 @@ export default function BezlaiTutorChat({
       if (errMsg) {
         setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${errMsg}` }]);
       } else if (reply) {
-        setMessages((m) => [...m, { role: "assistant", content: reply }]);
+        const searchError = (data as any)?.searchError as string | undefined;
+        setMessages((m) => [
+          ...m,
+          ...(searchError ? [{ role: "assistant" as const, content: `⚠️ ${searchError}` }] : []),
+          { role: "assistant", content: reply },
+        ]);
       } else {
         setMessages((m) => [...m, { role: "assistant", content: "⚠️ Nedostal jsem odpověď. Zkus to prosím znovu." }]);
       }
@@ -130,7 +142,7 @@ export default function BezlaiTutorChat({
               Bezlai – tvůj tutor
             </SheetTitle>
             <p className="text-xs text-muted-foreground text-left">
-              Neřeknu ti přímo odpověď, ale nasměruju tě k ní. 🧭
+              {mode === "free" ? "Hledám v tvých materiálech a pomůžu ti porozumět. 🧭" : "Neřeknu ti přímo odpověď, ale nasměruju tě k ní. 🧭"}
             </p>
           </SheetHeader>
 
@@ -175,7 +187,7 @@ export default function BezlaiTutorChat({
                   send();
                 }
               }}
-              placeholder="Napiš, čemu nerozumíš…"
+              placeholder={mode === "free" ? "Na co se chceš zeptat?" : "Napiš, čemu nerozumíš…"}
               rows={2}
               className="resize-none flex-1"
               disabled={loading}

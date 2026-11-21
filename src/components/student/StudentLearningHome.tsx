@@ -38,7 +38,7 @@ const MODES: Array<{ id: ModeId; title: string; detail: string; icon: typeof Bra
   { id: "material", title: "Můj materiál", detail: "Vlastní text nebo soubor", icon: FileUp, tone: "textbooks" },
   { id: "summary", title: "Shrnutí", detail: "To nejdůležitější z lekce", icon: ListChecks, tone: "portfolio" },
   { id: "path", title: "Cesta po tématech", detail: "Podívej se, co už umíš", icon: Route, tone: "notebook" },
-  { id: "chat", title: "Zeptej se Zedíka", detail: "Nasměruje tě k odpovědi", icon: MessageCircleQuestion, tone: "studio" },
+  { id: "chat", title: "Zeptej se Bezlai", detail: "Nasměruje tě k odpovědi", icon: MessageCircleQuestion, tone: "studio" },
   { id: "tricks", title: "Triky na učení", detail: "Techniky lidsky vysvětlené", icon: Brain, tone: "subjects" },
 ];
 
@@ -328,8 +328,8 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
         onError={(message) => toast({ title: "Studijní pomůcka se nepodařila", description: message, variant: "destructive" })}
       />
       <BezlaiTutorChat
-        question={overview?.lastLesson ? `Chci se učit z lekce ${overview.lastLesson.title}.` : "Chci se naučit nové učivo."}
-        subject={activeSubject ?? undefined}
+        mode="free"
+        question=""
         open={chatOpen}
         onOpenChange={setChatOpen}
         hideTrigger

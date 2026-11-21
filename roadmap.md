@@ -232,6 +232,11 @@
 - [x] Test: existující lesson_id/settings.lessons filtrované přes dostupné žákovské lekce; 10/15/20 minut a nejslabší lekce, jinak původní 5minutový fallback. Bez testu text „Žádný test na obzoru“.
 - [x] 45 testů, typy/build a živá kontrola mobilu 390 px: 5 předmětů, uložení/reload, fokus, Ostatní se 7 lekcemi a 3 vyhledané shody, bez přetečení a chyb stránky. Ostré spuštění procvičování/AI neověřeno; bez DB/RLS/SQL a nasazení.
 
+## Bezlai tutor – volný režim a RAG nad materiály žáka
+- [ ] Přejmenovat dlaždici na „Zeptej se Bezlai“ a oddělit výchozí kontextový režim od volného (`mode`), včetně úvodu a promptů; AI odhalení zůstane.
+- [ ] Ve volném režimu prohledat pouze zdroje čitelné JWT žáka, bez diakritiky, max 5 × 800 znaků, s názvy zdrojů, prázdným stavem a čitelnou chybou; demo limity beze změny.
+- [ ] Testy promptů, normalizace, RLS/token scopu, chyb a stávajících kontextových volání; roadmapa, bez SQL/nasazení.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
