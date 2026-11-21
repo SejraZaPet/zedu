@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AccessibilitySettingsSync } from "@/hooks/useAccessibilitySettings";
+import { MoodSync } from "@/hooks/useMood";
 import Index from "./pages/Index";
 import SchoolEntry from "./pages/SchoolEntry";
 
@@ -122,6 +123,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AccessibilitySettingsSync />
+          <MoodSync />
           <ViewAsBanner />
           <PreviewStudentBanner />
           <DemoBanner />

@@ -185,6 +185,12 @@
 - [x] 41 cílených testů, typy, Deno kontrola a build prošly; oba panely i body při 390 px s maketou AI, nula automatických zápisů a přetečení. Bez DB a nasazení.
 - Neověřeno živé AI volání a ostrá funkce před nasazením; skutečné odevzdání ani notifikace nebyly změněny.
 
+## Barevné nálady – etapy 0 a 1
+- [x] Tokeny Bezli/Minimal/Natural, synchronní start a localStorage s resetem při odhlášení či změně uživatele; bez DB.
+- [x] Sekce Vzhled ve společném profilu včetně dema, tři přístupné náhledy a okamžité přepnutí.
+- [x] 48 testů, typy a build; kontrast všech dlaždic, nové texty AA, stavové/herní tokeny beze změny. Bezli zachovává dnešní baseline. Živě 390 px: klávesnice, reload, reset a nulový horizontální posun.
+- Neověřeno na skutečných účtech všech rolí a v demu; sdílí stejnou profilovou kartu. Bez dalších nálad, tmavého režimu, SQL a nasazení.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

@@ -195,7 +195,179 @@
     --font-heading: 'Baloo 2', Lato, system-ui, sans-serif;
     --font-body: 'Lato', system-ui, sans-serif;
   }
+
+  /* Etapa 0 + 1: jen světlá značková vrstva. Stavové tokeny zůstávají v :root. */
+  html[data-mood="minimal"] {
+    --background: 60 14% 97%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 12%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 0 0% 45%;
+    --primary-pastel: 0 0% 92%;
+    --primary-subtle: 0 0% 97%;
+    --primary-dark: 0 0% 8%;
+    --secondary: 0 0% 28%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 0 0% 40%;
+    --secondary-alt: 0 0% 35%;
+    --secondary-pastel: 0 0% 90%;
+    --secondary-dark: 0 0% 20%;
+    --muted: 60 5% 93%;
+    --muted-foreground: 0 0% 32%;
+    --accent: 0 0% 24%;
+    --accent-foreground: 0 0% 100%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 0 0% 12%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 0 0% 12%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 60 5% 93%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 82%;
+    --sidebar-ring: 0 0% 12%;
+    --brand-gradient-from: 0 0% 12%;
+    --brand-gradient-to: 0 0% 29%;
+    --surface: 0 0% 100%;
+    --surface-hover: 60 5% 95%;
+    --dashboard-tile-count-foreground: 0 0% 7%;
+    --dashboard-tile-learn-from: 0 0% 18%;
+    --dashboard-tile-learn-to: 0 0% 32%;
+    --dashboard-tile-subjects-from: 0 0% 25%;
+    --dashboard-tile-subjects-to: 0 0% 38%;
+    --dashboard-tile-textbooks-from: 210 3% 22%;
+    --dashboard-tile-textbooks-to: 210 3% 36%;
+    --dashboard-tile-assignments-from: 0 0% 16%;
+    --dashboard-tile-assignments-to: 0 0% 30%;
+    --dashboard-tile-notebook-from: 220 3% 25%;
+    --dashboard-tile-notebook-to: 220 3% 40%;
+    --dashboard-tile-portfolio-from: 0 0% 23%;
+    --dashboard-tile-portfolio-to: 0 0% 37%;
+    --dashboard-tile-schedule-from: 210 2% 20%;
+    --dashboard-tile-schedule-to: 210 2% 34%;
+    --dashboard-tile-studio-from: 0 0% 12%;
+    --dashboard-tile-studio-to: 0 0% 26%;
+    --dashboard-tile-review-from: 0 0% 26%;
+    --dashboard-tile-review-to: 0 0% 40%;
+    --dashboard-tile-teaching-from: 210 4% 18%;
+    --dashboard-tile-teaching-to: 210 4% 32%;
+    --dashboard-tile-preparation-from: 0 0% 20%;
+    --dashboard-tile-preparation-to: 0 0% 34%;
+    --dashboard-tile-classes-from: 0 0% 24%;
+    --dashboard-tile-classes-to: 0 0% 38%;
+    --dashboard-today-current-from: 0 0% 14%;
+    --dashboard-today-current-to: 0 0% 28%;
+    --learning-exam-from: 0 0% 30%;
+    --learning-exam-to: 0 0% 42%;
+  }
+
+  html[data-mood="natural"] {
+    --background: 40 43% 94%;
+    --foreground: 120 8% 12%;
+    --card: 40 33% 98%;
+    --card-foreground: 120 8% 12%;
+    --popover: 40 33% 98%;
+    --popover-foreground: 120 8% 12%;
+    --primary: 132 20% 31%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 132 15% 45%;
+    --primary-pastel: 80 22% 88%;
+    --primary-subtle: 60 25% 95%;
+    --primary-dark: 132 24% 22%;
+    --secondary: 27 34% 31%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 27 30% 42%;
+    --secondary-alt: 75 25% 35%;
+    --secondary-pastel: 35 30% 88%;
+    --secondary-dark: 25 35% 22%;
+    --muted: 40 24% 89%;
+    --muted-foreground: 60 8% 28%;
+    --accent: 27 34% 31%;
+    --accent-foreground: 0 0% 100%;
+    --border: 38 18% 78%;
+    --input: 38 18% 78%;
+    --ring: 132 20% 31%;
+    --sidebar-background: 40 33% 98%;
+    --sidebar-foreground: 120 8% 12%;
+    --sidebar-primary: 132 20% 31%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 24% 89%;
+    --sidebar-accent-foreground: 120 8% 12%;
+    --sidebar-border: 38 18% 78%;
+    --sidebar-ring: 132 20% 31%;
+    --brand-gradient-from: 132 20% 31%;
+    --brand-gradient-to: 27 34% 31%;
+    --surface: 40 33% 98%;
+    --surface-hover: 40 30% 93%;
+    --dashboard-tile-count-foreground: 120 8% 12%;
+    --dashboard-tile-learn-from: 132 24% 22%;
+    --dashboard-tile-learn-to: 132 20% 31%;
+    --dashboard-tile-subjects-from: 75 30% 25%;
+    --dashboard-tile-subjects-to: 75 28% 35%;
+    --dashboard-tile-textbooks-from: 100 25% 24%;
+    --dashboard-tile-textbooks-to: 100 22% 34%;
+    --dashboard-tile-assignments-from: 27 32% 25%;
+    --dashboard-tile-assignments-to: 27 30% 35%;
+    --dashboard-tile-notebook-from: 48 30% 25%;
+    --dashboard-tile-notebook-to: 48 28% 34%;
+    --dashboard-tile-portfolio-from: 150 20% 24%;
+    --dashboard-tile-portfolio-to: 150 18% 32%;
+    --dashboard-tile-schedule-from: 14 45% 27%;
+    --dashboard-tile-schedule-to: 14 42% 34%;
+    --dashboard-tile-studio-from: 132 24% 22%;
+    --dashboard-tile-studio-to: 27 34% 31%;
+    --dashboard-tile-review-from: 27 35% 22%;
+    --dashboard-tile-review-to: 14 42% 32%;
+    --dashboard-tile-teaching-from: 100 28% 22%;
+    --dashboard-tile-teaching-to: 132 20% 31%;
+    --dashboard-tile-preparation-from: 75 32% 22%;
+    --dashboard-tile-preparation-to: 48 30% 32%;
+    --dashboard-tile-classes-from: 14 45% 25%;
+    --dashboard-tile-classes-to: 27 34% 33%;
+    --dashboard-today-current-from: 132 24% 22%;
+    --dashboard-today-current-to: 75 30% 30%;
+    --learning-exam-from: 27 35% 25%;
+    --learning-exam-to: 14 42% 34%;
+  }
 }
+
+/* Stabilní miniatury všech tří voleb, nezávislé na právě aktivní náladě.
+   Záměrně mimo @layer, aby dynamické varianty neodstranil Tailwind. */
+.mood-preview {
+    background: hsl(var(--mood-preview-background));
+  }
+  .mood-preview__tile {
+    background-image: linear-gradient(140deg, hsl(var(--mood-preview-from)), hsl(var(--mood-preview-to)));
+  }
+  .mood-preview__tile--secondary {
+    background-image: linear-gradient(140deg, hsl(var(--mood-preview-primary)), hsl(var(--mood-preview-to)));
+  }
+  .mood-preview__line {
+    background: hsl(var(--dashboard-tile-foreground));
+  }
+  .mood-preview--bezli {
+    --mood-preview-background: 225 33% 97%;
+    --mood-preview-primary: 185 83% 33%;
+    --mood-preview-from: 271.49 50.75% 39.02%;
+    --mood-preview-to: 185 53.33% 35.29%;
+  }
+  .mood-preview--minimal {
+    --mood-preview-background: 60 14% 97%;
+    --mood-preview-primary: 0 0% 12%;
+    --mood-preview-from: 0 0% 18%;
+    --mood-preview-to: 0 0% 38%;
+  }
+  .mood-preview--natural {
+    --mood-preview-background: 40 43% 94%;
+    --mood-preview-primary: 132 20% 31%;
+    --mood-preview-from: 75 30% 25%;
+    --mood-preview-to: 14 42% 34%;
+  }
 
 @layer base {
   * {

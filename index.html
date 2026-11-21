@@ -20,6 +20,16 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0F172A" />
+    <script>
+      (() => {
+        let mood = "bezli";
+        try {
+          const saved = localStorage.getItem("Bezli:mood");
+          if (saved === "minimal" || saved === "natural") mood = saved;
+        } catch {}
+        document.documentElement.dataset.mood = mood;
+      })();
+    </script>
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Bezli" />

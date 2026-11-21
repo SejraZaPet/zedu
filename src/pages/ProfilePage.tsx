@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 import { useAccessibilitySettings } from "@/hooks/useAccessibilitySettings";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
+import MoodCard from "@/components/profile/MoodCard";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -420,22 +421,25 @@ const ProfilePage = () => {
 
   if (demoPair) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              Demo
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">V demu nelze měnit.</p>
-            <p>E-mail, heslo, školu, roli ani další nastavení účtu v demu upravit nejde.</p>
-            <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
-              <ArrowLeft className="w-4 h-4" /> Zpět
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-2xl space-y-4">
+          <MoodCard />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Demo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Ostatní nastavení v demu nelze měnit.</p>
+              <p>E-mail, heslo, školu, roli ani další nastavení účtu v demu upravit nejde. Nálada se uloží jen v tomto prohlížeči.</p>
+              <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Zpět
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -930,6 +934,8 @@ const ProfilePage = () => {
         )}
 
         <PushNotificationsCard />
+
+        <MoodCard />
 
         <AccessibilityCard />
 
