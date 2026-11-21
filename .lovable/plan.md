@@ -1,106 +1,77 @@
-# Ukázkový úkol v demu: označit `is_demo_seed = true` (návrh SQL ke schválení)
+# Věrnější import PowerPointu do prezentací – analýza a návrh
 
-Nic není aplikováno. Dnes v databázi není žádný ukázkový úkol (ty dřívější byly smazány) a žádný úkol nemá `is_demo_seed = true`.
+Jen návrh. Nic se nemění, nenasazuje, bez změn databáze.
 
-## Co se změní
-1. `demo_seed_pair`: INSERT do `assignments` dostane `is_demo_seed = true`. Pokusy (`assignment_attempts`) ani členství nemají sloupec `is_demo_seed`, ty zůstanou beze změny.
-2. Ochrana proti duplicitám: zámek na demo pár + kontrola, zda učitel páru už ukázkový úkol má (pak vrátí jeho ID a nic nevloží). Pojistkou je částečný unikátní index – jeden ukázkový úkol na učitele.
-3. **Nutná doprovodná změna `demo_purge_pair`:** úklid dnes záměrně maže jen řádky s `NOT is_demo_seed`. Bez úpravy by se ukázkový úkol a jeho 8 pokusů po konci dema **nesmazaly** (zůstaly by v databázi). Přidáme výslovné smazání ukázkových úkolů patřících učiteli páru (pokusy se smažou kaskádou). Sdílený ukázkový obsah (pracovní listy, učebnice) patří sdíleným účtům, ne páru, takže zůstane.
+## 1. Jak je dnes slide modelovaný
+- Slide je volné JSON v `teacher_presentations`: `type`, `projector {headline, body, fontScale}`, `device {instructions}`, `blocks[]`, `layout`, `heroImage`, `themeId`, `teacherNotes`.
+- **Pozadí už existuje:** `backgroundOverride` = obrázek / barva / přechod `{from, to, direction}` (jen 2 barvy). Vykresluje se centrovaně „contain" na plátně 1600×900.
+- **Absolutní pozice už existuje:** každý blok může mít `frame {x, y, w, h}` v % plátna a `zIndex`. Bloky s rámem vystoupí z toku. Bez rámu platí vertikální tok podle `layout`.
+- **Bloky:** nadpis, odstavec, odrážky, obrázek, `shape` (výplň, obrys, tloušťka), `card_grid`, `callout`, skupina aj. Text má `color`, `fontSize` (pt), `fontFamily`, `bold`, `italic`, `align`, `lineHeight`, `gradient`; boxy umí výplň i přechod.
+- **Jeden vykreslovač `SlideCanvas`** pro editor, promítání, učitelský náhled i telefon žáka. Náhledy a PDF používají `SlideBody` nad stejnými daty, takže editor a promítání vypadají stejně.
+- **Dnešní import:** první text je nadpis, ostatní pole se stanou odstavci nebo odrážkami. Pozadí, formát, tvary, obrázky, pozice a poznámky se zahazují.
 
-## Dopady (prohledána všechna použití `is_demo_seed`)
-- **Kód aplikace:** žádný filtr úkolů podle `is_demo_seed` neexistuje (použití jen u učebnic, lekcí, listů, prezentací, tříd, exportu a „má vlastní obsah“). Ukázkový úkol se tedy **dál zobrazuje** v seznamech, počtech, výsledcích, Vyhodnocení, Ke kontrole i u demo žáka. Hodnocení pokusů funguje dál (zapisuje se do pokusů, ne do úkolu). Pokud se má úkol v seznamu vizuálně odlišit (např. štítek „Ukázkový“) nebo vynechat z počtů, je to samostatná malá úprava kódu – ke schválení.
-- **Demo export a „první vlastní obsah“ (e-mail kontakt):** úkoly nezahrnují, beze změny.
-- **Viditelnost:** beze změny – čtení řídí `demo_iso` podle vlastníka a třídy, ne podle příznaku.
-- **Změna chování (pozor):** RESTRICTIVE pravidla `demo_guard_update` / `demo_guard_delete` na `assignments` povolují demo učiteli úpravu a mazání jen u `is_demo_seed = false`. Po změně demo učitel **ukázkový úkol nemůže upravit, archivovat ani smazat** (hodnotit pokusy může). To odpovídá ostatnímu ukázkovému obsahu, ale je potřeba, aby to Tyna potvrdila.
-- **Úklid / cron:** po úpravě `demo_purge_pair` se smaže stejně jako dnes. Notifikace spolužáků (sdílených účtů) úklid nemaže ani dnes – beze změny.
-- **Ostrý (ne-demo) obsah:** nedotčen; index a příznak se týkají jen řádků s `is_demo_seed = true`.
+Závěr: model už umí téměř vše, co Tyna chce. Hlavní práce je v importu, ne v modelu.
 
-## Navrhované SQL (neaplikovat bez schválení)
-```sql
--- 1) Pojistka: nejvýše jeden ukázkový úkol na učitele (dnes 0 řádků, bezpečné)
-CREATE UNIQUE INDEX IF NOT EXISTS assignments_one_demo_seed_per_teacher
-  ON public.assignments (teacher_id) WHERE is_demo_seed;
+## 2. Co lze přenést
+| PPTX prvek | Bez změny modelu? | Reálnost | Riziko |
+|---|---|---|---|
+| Pozadí: plná barva | Ano (`backgroundOverride.color`) | Vysoká | Nízké |
+| Pozadí: obrázek | Ano (`backgroundOverride.image`) | Vysoká | Střední: uložení souboru, „contain" vs. „cover" |
+| Pozadí: přechod 2 barvy | Ano | Vysoká | Nízké |
+| Pozadí: přechod 3+ barev | Ne, model má jen od–do | Střední | Nízké: zatím aproximace první/poslední barvou, později rozšíření o `stops` |
+| Pozice a velikost textových polí | Ano (`frame` + `zIndex`) | Vysoká | Střední: přepočet EMU → %, dědění z rozvržení a předlohy |
+| Barva, velikost, tučnost, kurzíva, zarovnání | Ano, na úrovni bloku | Vysoká | Střední: barvy z motivu (`schemeClr`) je třeba dohledat v theme1.xml |
+| Formát po jednotlivých slovech (smíšené barvy v odstavci) | Ne, styl platí pro celý blok | Nízká | Bere se převažující styl, případně omezené HTML |
+| VELKÁ PÍSMENA (`cap="all"`) | Ne, chybí vlastnost | Vysoká | Nízké: převést text na velká písmena |
+| Obdélník / zaoblená karta | Ano (`shape` + `frame`); zaoblení ověřit | Vysoká | Střední: poloměr rohů, obrys |
+| Karta s textem (tvar + text v jednom) | Ano, jako 2 bloky: tvar pod textem | Vysoká | Nízké |
+| Pilulka (plně zaoblený obdélník) | Ano, jako `shape` s maximálním zaoblením | Vysoká | Nízké |
+| Obrázky | Ano (`image` + `frame`) | Vysoká | Střední: Storage, velikost, formáty EMF/WMF/TIFF |
+| Ořez obrázku (`srcRect`) | Ne | Nízká | Bez ořezu, upozornit |
+| Poznámky řečníka | Ano (`teacherNotes`, případně `device.instructions`) | Vysoká | Nízké |
+| Skupiny tvarů | Ano, rozbalit na jednotlivé prvky | Střední | Střední: přepočet souřadnic skupiny |
+| SmartArt, grafy, tabulky, video | Částečně | Nízká | SmartArt jen texty, graf obrázkem jen pokud je v souboru náhled |
+| Animace a přechody mezi slidy | Ne | – | Ignorovat a upozornit |
+| Nedostupná písma | Náhrada | – | Mapovat na blízké dostupné písmo (bezpatkové/patkové) |
 
--- 2) demo_seed_pair: příznak + ochrana proti duplicitám
-CREATE OR REPLACE FUNCTION public.demo_seed_pair(_pair_id uuid)
- RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
-AS $function$
-DECLARE
-  p record; ws_id uuid; a_id uuid; mates uuid[]; i int; ans jsonb; wrong text[]; auto int; open_pts int;
-  open_txt text[] := ARRAY[
-    'Ovesná kaše s ovocem a jogurtem a k tomu čaj. Má sacharidy na energii, bílkoviny z jogurtu a vitamíny z ovoce.',
-    'Celozrnný chleba se sýrem a zeleninou. Je tam pečivo, mléčný výrobek i zelenina.',
-    'Müsli s mlékem a jablko, protože to zasytí a dodá energii na celé dopoledne.',
-    'Rohlík s nutelou.',
-    'Vajíčko, chleba a rajče – mám tam bílkoviny i zeleninu.',
-    'Nesnídám.',
-    'Jogurt s vločkami a banán.',
-    'Toust se šunkou.'];
-  wrongs text[][] := ARRAY[
-    ARRAY['','','',''], ARRAY['dv-6','','',''], ARRAY['dv-4','dv-6','',''], ARRAY['dv-3','dv-8','',''],
-    ARRAY['dv-2','dv-6','',''], ARRAY['dv-1','dv-4','dv-6','dv-8'], ARRAY['dv-3','dv-7','',''], ARRAY['dv-4','dv-6','dv-8','']];
-  open_grade int[] := ARRAY[3,2,2,NULL,1,NULL,NULL,1];
-  fb text[] := ARRAY['Výborně, Terezo! Snídaně je pestrá a skvěle zdůvodněná.', 'Moc pěkné, Jakube. Pozor jen na pitný režim – je to víc než půl litru.', NULL, NULL,
-    'Dobrá práce, Natálie. Zkus příště doplnit, proč je snídaně vyvážená.', NULL, NULL, NULL];
-BEGIN
-  SELECT * INTO p FROM public.demo_pairs WHERE id = _pair_id;
-  IF p IS NULL THEN RAISE EXCEPTION 'pair_not_found'; END IF;
-  -- NOVÉ: souběžná volání pro stejný pár se seřadí; existující ukázkový úkol se jen vrátí
-  PERFORM pg_advisory_xact_lock(hashtext('demo_seed_pair:' || _pair_id::text));
-  SELECT id INTO a_id FROM public.assignments
-    WHERE teacher_id = p.teacher_user_id AND is_demo_seed LIMIT 1;
-  IF a_id IS NOT NULL THEN RETURN a_id; END IF;
+## 3. Etapy
+1. **Pozadí a styl textu.** Pozadí (barva, přechod, obrázek ze slidu, rozvržení nebo předlohy), barvy z motivu, velikost, tučnost, velká písmena, zarovnání. Každé textové pole dostane `frame` podle PPTX pozice. Slide nastaví `layout` na volné rozmístění, aby nic nezůstalo v toku. Motiv Bezli se vypne pomocí `backgroundOverride`.
+2. **Tvary.** Obdélníky, zaoblené karty a pilulky jako `shape` s `frame` a `zIndex` podle pořadí v PPTX. Rozbalí se skupiny. Ověřit, nebo minimálně doplnit vlastnost zaoblení rohů.
+3. **Obrázky.** Z `ppt/media` přes vztahy (`.rels`) se nahrají do `lesson-images` stávající cestou `presentations/<user>/…` (stejně jako u pozadí). Limit 10 MB na soubor a celkový limit na import. Povolené jsou jen PNG, JPG, GIF a WebP, kontrolované podle obsahu souboru, ne podle přípony. SVG ne (bezpečnost). EMF/WMF se přeskočí s upozorněním. Obrázek přes celý slide se uloží jako pozadí, ostatní jako bloky `image`. Velké fotky se před nahráním zmenší.
+4. **Poznámky.** `notesSlideN.xml` se uloží do `teacherNotes`. `device.instructions` zůstane prázdné, aby se poznámky učitele neukázaly žákům.
+5. **Volitelně:** přechod se 3+ barvami (`stops`), ořez obrázků, formát po slovech.
 
-  PERFORM public.demo_fill_game_templates(_pair_id);
-  SELECT array_agg(d.user_id ORDER BY pr.email) INTO mates
-    FROM public.demo_shared_users d JOIN public.profiles pr ON pr.id = d.user_id WHERE d.kind = 'classmate';
-  SELECT id INTO ws_id FROM public.worksheets WHERE is_demo_seed AND title = 'Výživa – opakování (digitální)' ORDER BY created_at LIMIT 1;
-  IF ws_id IS NULL OR mates IS NULL THEN RETURN NULL; END IF;
+**Stejný vzhled všude:** všechno jde jen přes existující pole (`frame`, `backgroundOverride`, styl bloku), takže editor, promítání, telefon i PDF použijí stejný `SlideCanvas`/`SlideBody`. Nic se nevykresluje zvlášť pro import. Ověřit snímky obrazovky editoru a promítání na stejném slidu.
 
-  INSERT INTO public.class_members (class_id, user_id) SELECT p.group_id, unnest(mates) ON CONFLICT DO NOTHING;
+**Export:** PDF zachová vše, protože fotografuje vykreslený slide. Export do PPTX (`ExportPanel`/SlideSpec) dnes bere jen nadpis, text a poznámky, ne bloky, pozice ani pozadí. Věrný zpětný export je samostatný projekt; tento import ho nezhorší.
 
-  INSERT INTO public.assignments (teacher_id, title, description, class_id, worksheet_id, status, deadline, max_attempts, settings, activity_data, is_demo_seed)
-  VALUES (p.teacher_user_id, 'Ukázkový úkol: Výživa – opakování', 'Ukázkový úkol pro demo režim. Vyplň digitální pracovní list.',
-          p.group_id, ws_id, 'published', now() + interval '14 days', 1, '{}'::jsonb, '[]'::jsonb, true)
-  RETURNING id INTO a_id;
+Na konci importu se ukáže souhrn: co se přeneslo a co ne (animace, SmartArt, nepodporované obrázky, nahrazená písma).
 
-  FOR i IN 1 .. LEAST(8, array_length(mates,1)) LOOP
-    wrong := wrongs[i:i][1:4];
-    ans := jsonb_build_object(
-      'dv-1', CASE WHEN 'dv-1' = ANY(wrong) THEN 'B' ELSE 'A' END,
-      'dv-2', CASE WHEN 'dv-2' = ANY(wrong) THEN 'B' ELSE 'C' END,
-      'dv-3', CASE WHEN 'dv-3' = ANY(wrong) THEN 'C' ELSE 'B' END,
-      'dv-4', CASE WHEN 'dv-4' = ANY(wrong) THEN 'A' ELSE 'D' END,
-      'dv-5', 'true',
-      'dv-6', CASE WHEN 'dv-6' = ANY(wrong) THEN 'true' ELSE 'false' END,
-      'dv-7', CASE WHEN 'dv-7' = ANY(wrong) THEN 'false' ELSE 'true' END,
-      'dv-8', CASE WHEN 'dv-8' = ANY(wrong) THEN '["Bílkoviny","Sacharidy","Tuky"]'::jsonb ELSE '["Sacharidy","Bílkoviny","Tuky"]'::jsonb END,
-      'dv-9', open_txt[i]);
-    auto := 10 - (SELECT count(*) FROM unnest(wrong) w WHERE w <> '' AND w <> 'dv-8')::int
-               - CASE WHEN 'dv-8' = ANY(wrong) THEN 3 ELSE 0 END;
-    open_pts := COALESCE(open_grade[i], 0);
-    INSERT INTO public.assignment_attempts (assignment_id, student_id, attempt_number, status, answers, score, max_score,
-      started_at, submitted_at, last_saved_at, progress, teacher_feedback_text, teacher_feedback_at, teacher_feedback_by)
-    VALUES (a_id, mates[i], 1, 'submitted', ans, auto + open_pts, 13,
-      now() - interval '1 day' - (i || ' minutes')::interval, now() - interval '1 day' + (i || ' minutes')::interval, now() - interval '1 day',
-      jsonb_build_object('completed', '["dv-1","dv-2","dv-3","dv-4","dv-5","dv-6","dv-7","dv-8","dv-9"]'::jsonb, 'currentIndex', 8),
-      fb[i], CASE WHEN fb[i] IS NULL THEN NULL ELSE now() END, CASE WHEN fb[i] IS NULL THEN NULL ELSE p.teacher_user_id END);
-  END LOOP;
-  RETURN a_id;
-END $function$;
-```
+## 4. Rozsah a nejistoty
+- Etapa 1: asi 1,5–2 dny. Etapa 2: asi 1 den. Etapa 3: asi 1,5 dne. Etapa 4: půl dne. Testy průběžně. Celkem zhruba 5 dní.
+- **Nejistoty:**
+  - dědění z rozvržení a předlohy;
+  - barvy motivu včetně odstínů (`lumMod`);
+  - automatické zmenšení textu (`normAutofit`), kdy se texty mohou přelévat;
+  - rozdíly v řádkování písem;
+  - „contain" u pozadí nechá okraje, pokud poměr stran PPTX není 16:9 (4:3 deky);
+  - velikost importu a čas nahrávání;
+  - kvóta úložiště.
+- **Demo:** nahrávání obrázků platí jako běžné nahrávání učitele. Demo ochrany se nemění. Ověřit, že demo zápis do `lesson-images` je povolen stejně jako dnes u pozadí.
+- **Databáze a oprávnění:** beze změn (jen JSON slidu a stávající úložiště).
 
-Změna v `demo_purge_pair` (jediný přidaný blok, celé tělo funkce jinak beze změny; vloží se hned za smazání `demo_contacts`):
-```sql
-  -- NOVÉ: ukázkový úkol páru (is_demo_seed) patří jen tomuto páru – smazat i s pokusy (kaskáda)
-  DELETE FROM public.assignments WHERE teacher_id = ANY(ids) AND is_demo_seed;
-  GET DIAGNOSTICS n = ROW_COUNT; total := total || jsonb_build_object('demo_seed_assignments', n);
-```
-Před aplikací vložím do migrace celý text `CREATE OR REPLACE FUNCTION public.demo_purge_pair` s tímto blokem.
+## 5. Testovací deka (20 slidů) – co má import umět
+- Přesně 20 slidů ve stejném pořadí.
+- **Pozadí každého slidu:** fialový přechod 5D3D7F → 7A4BB0 → 4FB3BE, uložený v PPTX jako obrázek. Přenese se jako obrázek pozadí bez okrajů (deka 16:9) a nahraje se jen jednou, i když ho používají všechny slidy.
+- **Titulní slide:** obrázek přes celý slide se stane pozadím a nadpis zůstane čitelně nad ním.
+- **Nadpisy:** bílé, velkými písmeny (i když je velikost písmen nastavená jen formátem), tučné, ve správné velikosti a pozici.
+- **Krémové zaoblené karty:** tvar se stejnou barvou, zaoblením a pozicí, text karty nad ním v původní barvě a velikosti.
+- **Tyrkysové pilulky:** plně zaoblené, s textem uvnitř a správným pořadím vrstev.
+- **Poznámky řečníka** jsou v poznámkách učitele, ne u žáka.
+- **Editor, promítání, telefon a PDF** vypadají stejně a slide jde dál upravovat.
+- **Kontroly:**
+  - automatický test se vzorovým PPTX (počty prvků, barvy, rámy s tolerancí 1 %);
+  - snímky obrazovky editoru a promítání u slidů 1, 2 a 20;
+  - souhrn importu bez chyb.
 
-## Otázky pro Tynu
-1. Souhlasí, že demo učitel ukázkový úkol nebude moci upravit, archivovat ani smazat (hodnocení pokusů zůstane)?
-2. Má se ukázkový úkol v seznamech vizuálně označit / vynechat z počtů? (malá úprava kódu, samostatně)
-
-## Odhad
-Migrace + kontrola na novém demu (založení, duplicitní volání, úklid) asi 1–2 hodiny. Nic se nenasazuje.
+Pro testy je potřeba Tynin skutečný soubor, nebo jeho zjednodušená kopie bez osobních údajů.
