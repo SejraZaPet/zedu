@@ -114,3 +114,11 @@
 - [x] Sdílené rozpoznání přesných dvou možností; Pravda modrá, Nepravda červená, ostatní MCQ a data beze změny.
 - [x] Projektor, telefon, učitel, výsledky a stará cesta /hra; text a tvary zachovat.
 - [x] 9 rozšířených testů + 46 regresí, typy a build. Bez DB a nasazení; reálný projektor a telefon vizuálně neověřeny.
+
+## Demo kontakt – D−0, pražská půlnoc a závěrečný e-mail
+- [x] Ověřena jednorázová nepovinná nabídka až po prvním vlastním obsahu; ruční otevření zůstává dostupné.
+- [x] Texty D−0 a „dnes o půlnoci“; souhlas v1 zůstal doslovně beze změny.
+- [x] Připraven závěrečný e-mail pouze pro budoucí souhlas v2, po úklidu, jediný pokus a výmaz kontaktu i starých demo logů.
+- [x] Přesné SQL v `supabase/proposals/demo_d0_final_notice.sql` a cron po nasazení v `demo_d0_cron_after_deploy.sql`; NEAPLIKOVÁNO.
+- [x] 28 demo testů, typy, edge překlad a automatický build; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů, změn dat a nasazení.
+- Čeká na schválení: SQL a nové znění souhlasu v2. Neověřeno: skutečné odeslání, doručení, cron a úklid nad schválenou databázovou změnou.

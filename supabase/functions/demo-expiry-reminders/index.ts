@@ -1,19 +1,19 @@
-// Denní připomínky D−3 / D−1 před smazáním dema. Spouští pg_cron s X-Cron-Secret (jako demo-cleanup).
-// Nejvýš demo_config.reminder_max_per_run e-mailů za běh, D−1 přednost; co selže, zkusí se další den.
+// Připomínky D−3 / D−0 před smazáním dema. Spouští pg_cron s X-Cron-Secret (jako demo-cleanup).
+// Nejvýš demo_config.reminder_max_per_run e-mailů za běh, D−0 přednost; co selže, zkusí další běh v platném dni.
 // email_log: jen typ, stav a příjemce – žádný obsah.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { adminClient } from "../_shared/demo.ts";
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 import { sendWithRetry, SEND_INTERVAL_MS } from "../_shared/email-delivery.ts";
 import {
-  buildDemoReminderEmail, DEMO_BATCH_SIZE, DEMO_BATCH_THRESHOLD, DEMO_REMINDER_EMAIL_TYPE, DEMO_REMINDER_FROM,
+  buildDemoReminderEmail, DEMO_BATCH_SIZE, DEMO_BATCH_THRESHOLD, DEMO_FINAL_CLAIM_TTL_MS, DEMO_REMINDER_EMAIL_TYPE, DEMO_REMINDER_FROM,
   DEMO_REMINDER_REPLY_TO, randomToken, sha256Hex,
 } from "../_shared/demo-contact.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-type Claim = { pair_id: string; email: string; kind: "1d" | "3d"; deletes_at: string };
+type Claim = { pair_id: string; email: string; kind: "0d" | "1d" | "3d"; deletes_at: string };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -26,6 +26,10 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key) return json({ error: "RESEND_API_KEY missing" }, 503);
   const db = adminClient();
+  // Nedokončený závěrečný pokus se neopakuje; kontakt se smaže i bez dalšího úklidu.
+  await db.from("demo_contacts").delete()
+    .not("final_email_claimed_at", "is", null)
+    .lt("final_email_claimed_at", new Date(Date.now() - DEMO_FINAL_CLAIM_TTL_MS).toISOString());
 
   // Uchování: řádky demo připomínek starší než 30 dní.
   await db.from("email_log").delete().eq("email_type", DEMO_REMINDER_EMAIL_TYPE)
@@ -68,8 +72,10 @@ Deno.serve(async (req) => {
     recipient: c.email, subject: DEMO_REMINDER_EMAIL_TYPE, email_type: DEMO_REMINDER_EMAIL_TYPE,
     status: ok ? "sent" : "failed", error_message: ok ? null : `HTTP ${status}`, from_address: DEMO_REMINDER_FROM, metadata: { kind: c.kind },
   });
-  // Po selhání D−1 zůstane D−3 označené (D−1 má přednost, D−3 by už nedávalo smysl).
-  const release = (c: Claim) => db.rpc("demo_release_reminder", { _pair_id: c.pair_id, _kind: c.kind, _had_3d: c.kind === "1d" });
+  // Po selhání D−0 zůstane D−3 označené (D−0 má přednost, D−3 by už nedávalo smysl).
+  const release = (c: Claim) => db.rpc("demo_release_reminder", {
+    _pair_id: c.pair_id, _kind: c.kind, _had_3d: c.kind === "0d" || c.kind === "1d",
+  });
 
   let sent = 0, failed = 0;
   const useBatch = prepared.length > DEMO_BATCH_THRESHOLD;

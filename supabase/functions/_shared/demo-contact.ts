@@ -9,6 +9,9 @@ export const DEMO_APP_URL = "https://www.bezli.cz";
 export const DEMO_REMINDER_FROM = "Bezli <noreply@bezli.cz>";
 export const DEMO_REMINDER_REPLY_TO = "info@bezli.cz";
 export const DEMO_REMINDER_EMAIL_TYPE = "demo_reminder";
+/** Závěrečná zpráva je povolena až pro budoucí, zatím neschválené znění souhlasu. */
+export const DEMO_FINAL_NOTICE_CONSENT_VERSION = "2026-11-21.v2";
+export const DEMO_FINAL_CLAIM_TTL_MS = 60 * 60 * 1000;
 /** Od kolika připomínek v jednom běhu se použije dávkové API (max 100 na požadavek). */
 export const DEMO_BATCH_THRESHOLD = 20;
 export const DEMO_BATCH_SIZE = 100;
@@ -43,11 +46,26 @@ export function formatPragueDay(iso: string): string {
     .format(new Date(iso));
 }
 
+/** deletes_at je 00:00 v Praze v D+1; poslední den dema D je o hodinu dříve (bezpečné i při změně času). */
+export function formatDemoLastDay(deletesAt: string): string {
+  return formatPragueDay(new Date(Date.parse(deletesAt) - 60 * 60 * 1000).toISOString());
+}
+
+export function isDemoFinalNoticeAllowed(consentVersion: string | null | undefined): boolean {
+  return consentVersion === DEMO_FINAL_NOTICE_CONSENT_VERSION;
+}
+
+export function isDemoFinalClaimStale(claimedAt: string, now = Date.now()): boolean {
+  const claimed = Date.parse(claimedAt);
+  return Number.isFinite(claimed) && now - claimed >= DEMO_FINAL_CLAIM_TTL_MS;
+}
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export function buildDemoReminderEmail(o: { kind: "1d" | "3d"; deletesAt: string; unsubscribeUrl: string }) {
-  const when = o.kind === "1d" ? "zítra" : "za 3 dny";
-  const date = formatPragueDay(o.deletesAt);
+export function buildDemoReminderEmail(o: { kind: "0d" | "1d" | "3d"; deletesAt: string; unsubscribeUrl: string }) {
+  // 1d je pouze přechodná podpora starých rezervací; nové SQL už vybírá výhradně 0d.
+  const when = o.kind === "0d" ? "dnes o půlnoci" : o.kind === "1d" ? "zítra" : "za 3 dny";
+  const date = o.kind === "1d" ? formatPragueDay(o.deletesAt) : formatDemoLastDay(o.deletesAt);
   const subject = `Váš ukázkový účet Bezli se smaže ${when}`;
   const lines = [
     `Dobrý den, váš ukázkový účet Bezli se ${when} (${date}) smaže i s vytvořenou prací.`,
@@ -64,10 +82,18 @@ ${lines.map((l) => `<p>${esc(l)}</p>`).join("\n")}
   return { subject, text, html };
 }
 
+export function buildDemoFinalEmail() {
+  const subject = "Vaše ukázková data Bezli byla smazána";
+  const message = "Vaše ukázková data i e-mail byly z Bezli smazány.";
+  const text = `Dobrý den,\n\n${message}`;
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1A1F2C;line-height:1.5"><p>Dobrý den,</p><p>${esc(message)}</p></div>`;
+  return { subject, text, html };
+}
+
 /** Text odpočtu v demo pruhu (vykání, české tvary). */
 export function demoCountdownText(daysLeft: number, day: string | null): string {
   const d = day ? ` (${day})` : "";
-  if (daysLeft <= 0) return `Vaše práce se smaže dnes${d}.`;
+  if (daysLeft <= 0) return `Vaše práce se smaže dnes o půlnoci${d}.`;
   if (daysLeft === 1) return `Vaše práce se smaže zítra${d}.`;
   const unit = daysLeft <= 4 ? "dny" : "dní";
   return `Vaše práce se smaže za ${daysLeft} ${unit}${d}.`;

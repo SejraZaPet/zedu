@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useDemoPair } from "@/lib/demo";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  DEMO_SAVE_OFFERED_KEY, demoCountdownText, demoExtendedText, extendDemoOnce, hasOwnDemoContent, showCountdown, useDemoStatus,
+  DEMO_SAVE_OFFERED_KEY, demoCountdownText, demoExtendedText, extendDemoOnce, formatDemoLastDay, hasOwnDemoContent, showCountdown, useDemoStatus,
 } from "@/lib/demo-contact-client";
 import DemoSaveWorkDialog from "./DemoSaveWorkDialog";
 
@@ -69,9 +69,7 @@ const DemoBanner = () => {
     finally { setExtendBusy(false); }
   };
   const countdown = showCountdown(status?.daysLeft);
-  const deleteDay = status?.deletesAt
-    ? new Intl.DateTimeFormat("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric" }).format(new Date(status.deletesAt))
-    : null;
+  const deleteDay = status?.deletesAt ? formatDemoLastDay(status.deletesAt).replace(/\.$/, "") : null;
 
   const copy = async () => {
     try {

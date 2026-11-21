@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_CONSENT_VERSION } from "../../supabase/functions/_shared/demo-contact";
 
-export { DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION, showCountdown, normalizeDemoEmail, demoCountdownText, demoExtendedText } from "../../supabase/functions/_shared/demo-contact";
+export { DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION, showCountdown, normalizeDemoEmail, demoCountdownText, demoExtendedText, formatDemoLastDay } from "../../supabase/functions/_shared/demo-contact";
 
 export const DEMO_SAVE_OFFERED_KEY = "Bezli:demo-save-offered";
 
