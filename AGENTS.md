@@ -36,12 +36,12 @@
 - Lesson text cleanup only in `_shared/lesson-text.ts`; subject news via `subject-news.ts`.
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
-- Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
+- Demo seed textbook details: lessons by textbook ID, preview-only, no shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
 - Merge dashboard order via teacher-dashboard-order to preserve positions.
-- Teacher dashboard tiles use TeacherDashboardTile and owner-scoped HEAD counts from teacher-dashboard-counts; published status excludes archived/scheduled assignments, and profile is rendered last without changing stored tile order.
+- Teacher dashboard tiles: TeacherDashboardTile + owner-scoped HEAD counts (teacher-dashboard-counts); published excludes archived/scheduled; profile last, stored order unchanged.
 
 - Schedule exceptions: owner-written, Prague time, merged at display (`schedule-exception-store.ts`); students/parents read only via SECURITY DEFINER `student_schedule_changes` (no owner/notes), timetables never rewritten.
 
@@ -76,4 +76,4 @@
 - Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
 - Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
 - List filters: shared FilterBar+useStoredFilters; logic per page, data/access unchanged.
-- Presentation activity slides keep `activitySpec` as the single source; an activity block only mirrors it via `presentation-activity.ts`, and launches go through `preparePresentationForLive`, so editor, projector and live game never diverge.
+- Presentation activity: `activitySpec` is the source, blocks mirror it (`presentation-activity.ts`); launch via `preparePresentationForLive`, so editor and game match.
