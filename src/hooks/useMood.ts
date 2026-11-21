@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-export const MOODS = ["bezli", "minimal", "natural"] as const;
+export const MOODS = ["bezli", "minimal", "natural", "cute", "ocean", "plum", "sunny", "calm"] as const;
 export type Mood = (typeof MOODS)[number];
 export const MOOD_STORAGE_KEY = "Bezli:mood";
 export const MOOD_OWNER_STORAGE_KEY = "Bezli:mood-owner";
@@ -38,15 +38,16 @@ function applyToDocument(mood: Mood) {
   if (typeof document !== "undefined") document.documentElement.dataset.mood = mood;
 }
 
-function storeMood(mood: Mood, ownerId: string | null) {
-  if (typeof window === "undefined") return;
+export function storeMood(mood: Mood, ownerId: string | null, storage?: StorageLike | null) {
+  if (typeof window === "undefined" && !storage) return;
   try {
+    const target = storage ?? window.localStorage;
     if (ownerId) {
-      window.localStorage.setItem(MOOD_STORAGE_KEY, mood);
-      window.localStorage.setItem(MOOD_OWNER_STORAGE_KEY, ownerId);
+      target.setItem(MOOD_STORAGE_KEY, mood);
+      target.setItem(MOOD_OWNER_STORAGE_KEY, ownerId);
     } else {
-      window.localStorage.removeItem(MOOD_STORAGE_KEY);
-      window.localStorage.removeItem(MOOD_OWNER_STORAGE_KEY);
+      target.removeItem(MOOD_STORAGE_KEY);
+      target.removeItem(MOOD_OWNER_STORAGE_KEY);
     }
   } catch {
     // Nálada funguje i bez dostupného localStorage, ale jen do konce relace.

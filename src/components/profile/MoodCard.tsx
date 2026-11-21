@@ -7,6 +7,11 @@ const MOOD_LABELS: Record<Mood, { name: string; description: string }> = {
   bezli: { name: "Bezli", description: "Původní tyrkysová a fialová." },
   minimal: { name: "Minimal mood", description: "Čistá bílá, grafit a šedá." },
   natural: { name: "Natural mood", description: "Krémová, šalvěj a přírodní tóny." },
+  cute: { name: "Cute mood", description: "Roztomilá" },
+  ocean: { name: "Ocean mood", description: "Mořská" },
+  plum: { name: "Plum mood", description: "Švestková" },
+  sunny: { name: "Sunny mood", description: "Slunečná" },
+  calm: { name: "Calm mood", description: "Čitelná" },
 };
 
 export default function MoodCard() {
@@ -25,7 +30,7 @@ export default function MoodCard() {
           aria-label="Barevná nálada"
           value={mood}
           onValueChange={(value) => setMood(value as Mood)}
-          className="grid gap-3 sm:grid-cols-3"
+          className="grid grid-cols-2 gap-3 md:grid-cols-4"
         >
           {MOODS.map((option) => (
             <Label

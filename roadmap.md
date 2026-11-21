@@ -191,6 +191,11 @@
 - [x] 48 testů, typy a build; kontrast všech dlaždic, nové texty AA, stavové/herní tokeny beze změny. Bezli zachovává dnešní baseline. Živě 390 px: klávesnice, reload, reset a nulový horizontální posun.
 - Neověřeno na skutečných účtech všech rolí a v demu; sdílí stejnou profilovou kartu. Bez dalších nálad, tmavého režimu, SQL a nasazení.
 
+## Barevné nálady – doplnění pěti palet
+- [x] Přidat Cute, Ocean, Plum, Sunny a Calm do tokenů, náhledů, profilu a synchronního localStorage; neplatná hodnota = Bezli.
+- [x] Ověřit kontrast všech osmi nálad, neměnnost stavových/herních barev, výběr/uložení a mobilní klávesnicové ovládání; bez DB a nasazení.
+- 11 cílených testů prošlo; živě všech 8 voleb mezerníkem, uložení/reload, neplatná hodnota = Bezli, 2 sloupce při 390 px a 4 na desktopu, bez posunu a chyb stránky.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

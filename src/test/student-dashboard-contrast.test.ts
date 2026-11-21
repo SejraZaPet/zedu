@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync("src/index.css", "utf8");
-const MOODS = ["bezli", "minimal", "natural"] as const;
+const css = `${readFileSync("src/index.css", "utf8")}\n${readFileSync("src/mood-palettes.css", "utf8")}`;
+const MOODS = ["bezli", "minimal", "natural", "cute", "ocean", "plum", "sunny", "calm"] as const;
 const TILE_TONES = [
   "learn", "subjects", "textbooks", "assignments", "notebook", "portfolio",
   "schedule", "studio", "review", "teaching", "preparation", "classes",
@@ -11,7 +11,7 @@ const TILE_TONES = [
 function moodCss(mood: (typeof MOODS)[number]): string {
   // Bezli používá :root a pozdější sdílené tokeny učení; vždy první deklaraci tokenu.
   if (mood === "bezli") return css;
-  const match = css.match(new RegExp(`html\\[data-mood="${mood}"\\]\\s*\\{([\\s\\S]*?)\\n  \\}`));
+  const match = css.match(new RegExp(`html\\[data-mood="${mood}"\\]\\s*\\{([\\s\\S]*?)\\n\\s*\\}`));
   expect(match, mood).not.toBeNull();
   return match![1];
 }
@@ -42,33 +42,43 @@ function ratio(a: [number, number, number], b: [number, number, number]): number
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-describe("Sdílené dlaždice – kontrast ve všech náladách", () => {
-  it("nové nálady drží bílý text aspoň 4,6:1 a zachované Bezli původních 4,5:1", () => {
+function hueDistance(a: number, b: number): number {
+  const distance = Math.abs(a - b) % 360;
+  return Math.min(distance, 360 - distance);
+}
+
+describe("Sdílené dlaždice – kontrast ve všech osmi náladách", () => {
+  it("každá nálada drží kontrast textu na všech dvojicích dlažnic", () => {
     for (const mood of MOODS) {
       const block = moodCss(mood);
+      const foreground = /^\s*--dashboard-tile-foreground\s*:/m.test(block)
+        ? hsl(block, "dashboard-tile-foreground")
+        : hsl(moodCss("bezli"), "dashboard-tile-foreground");
+      expect(foreground).toEqual(mood === "cute" ? hsl(block, "foreground") : [0, 0, 100]);
       const tokens = TILE_TONES.flatMap((tone) => [
         `dashboard-tile-${tone}-from`, `dashboard-tile-${tone}-to`,
       ]);
       tokens.push("dashboard-today-current-from", "dashboard-today-current-to", "learning-exam-from", "learning-exam-to");
       for (const token of tokens) {
-        // Bezli je chráněný dnešní základ (původní test 4,5:1); nové nálady mají přísnější 4,6:1.
+        // Bezli je chráněný původní základ; ostatní nálady mají přísnějších 4,6:1.
         const minimum = mood === "bezli" ? 4.5 : 4.6;
-        expect(ratio([0, 0, 100], hsl(block, token)), `${mood}: ${token}`).toBeGreaterThanOrEqual(minimum);
+        expect(ratio(foreground, hsl(block, token)), `${mood}: ${token}`).toBeGreaterThanOrEqual(minimum);
       }
     }
   });
 
-  it("nové nálady drží texty aspoň 4,5:1 a Bezli zachovává dnešní základ", () => {
+  it("všech osm nálad drží texty a značkový text na primární barvě aspoň 4,5:1", () => {
     for (const mood of MOODS) {
       const block = moodCss(mood);
       for (const [text, background] of [
         ["foreground", "background"],
         ["card-foreground", "card"],
         ["muted-foreground", "muted"],
+        ["primary-foreground", "primary"],
       ]) {
-        // Dnešní Bezli muted text (4,25:1) se v etapě 0 nesmí změnit; nové palety splňují AA.
-        if (mood === "bezli" && text === "muted-foreground") {
-          expect(hsl(block, text)).toEqual([220, 13, 46]);
+        // Dnešní Bezli muted text (4,25:1) zůstává záměrně beze změny.
+        if (mood === "bezli" && (text === "muted-foreground" || background === "primary")) {
+          expect(hsl(block, text)).toEqual(text === "muted-foreground" ? [220, 13, 46] : [0, 0, 100]);
           continue;
         }
         expect(ratio(hsl(block, text), hsl(block, background)), `${mood}: ${text}/${background}`).toBeGreaterThanOrEqual(4.5);
@@ -76,7 +86,7 @@ describe("Sdílené dlaždice – kontrast ve všech náladách", () => {
     }
   });
 
-  it("Minimal a Natural nepřepisují stavové ani herní barvy", () => {
+  it("žádná nálada nepřepisuje stavové ani herní barvy", () => {
     const root = moodCss("bezli");
     const stateTokens = [
       "activity-correct", "destructive", "destructive-foreground", "warning", "warning-foreground",
@@ -84,7 +94,7 @@ describe("Sdílené dlaždice – kontrast ve všech náladách", () => {
       "answer-orange", "answer-teal", "answer-pink",
     ];
     for (const token of stateTokens) expect(hsl(root, token)).toBeDefined();
-    for (const mood of ["minimal", "natural"] as const) {
+    for (const mood of MOODS.filter((value) => value !== "bezli")) {
       const block = moodCss(mood);
       for (const token of stateTokens) {
         expect(new RegExp(`--${token}\\s*:`).test(block), `${mood} nesmí přepsat --${token}`).toBe(false);
@@ -92,8 +102,8 @@ describe("Sdílené dlaždice – kontrast ve všech náladách", () => {
     }
   });
 
-  it("nemění sdílené brand tokeny používané herními motivy", () => {
-    for (const mood of ["minimal", "natural"] as const) {
+  it("žádná nálada nemění sdílené brand tokeny používané herními motivy", () => {
+    for (const mood of MOODS.filter((value) => value !== "bezli")) {
       const block = moodCss(mood);
       for (const token of ["brand-purple", "brand-lavender", "brand-periwinkle", "brand-blue", "brand-turquoise"]) {
         expect(new RegExp(`--${token}\\s*:`).test(block), `${mood} nesmí přepsat --${token}`).toBe(false);
@@ -101,10 +111,16 @@ describe("Sdílené dlaždice – kontrast ve všech náladách", () => {
     }
   });
 
-  it("Natural primární je tmavá šalvěj výrazně odlišná od barvy úspěchu", () => {
-    const primary = hsl(moodCss("natural"), "primary");
-    const success = hsl(moodCss("bezli"), "activity-correct");
-    expect(Math.abs(primary[0] - success[0])).toBeGreaterThanOrEqual(20);
-    expect(luminance(...primary)).toBeLessThan(luminance(...success));
+  it("primární barvy jsou výrazně odlišné od úspěchu i chyby", () => {
+    const root = moodCss("bezli");
+    const success = hsl(root, "activity-correct");
+    const error = hsl(root, "destructive");
+    for (const mood of MOODS.filter((value) => value !== "bezli" && value !== "minimal")) {
+      const primary = hsl(moodCss(mood), "primary");
+      expect(hueDistance(primary[0], success[0]), `${mood}: primární/úspěch`).toBeGreaterThanOrEqual(10);
+      expect(hueDistance(primary[0], error[0]), `${mood}: primární/chyba`).toBeGreaterThanOrEqual(10);
+    }
+    const naturalPrimary = hsl(moodCss("natural"), "primary");
+    expect(luminance(...naturalPrimary)).toBeLessThan(luminance(...success));
   });
 });

@@ -25,7 +25,7 @@
         let mood = "bezli";
         try {
           const saved = localStorage.getItem("Bezli:mood");
-          if (saved === "minimal" || saved === "natural") mood = saved;
+          if (["minimal", "natural", "cute", "ocean", "plum", "sunny", "calm"].includes(saved)) mood = saved;
         } catch {}
         document.documentElement.dataset.mood = mood;
       })();

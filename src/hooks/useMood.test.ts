@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { moodForUser, normalizeMood, readStoredMood } from "./useMood";
+import { MOODS, moodForUser, normalizeMood, readStoredMood, storeMood } from "./useMood";
 
 const storage = (mood: string | null, owner: string | null) => ({
   getItem: (key: string) => key.endsWith(":mood") ? mood : owner,
@@ -9,11 +9,27 @@ const storage = (mood: string | null, owner: string | null) => ({
 });
 
 describe("Nálady v prohlížeči", () => {
-  it("akceptuje jen Bezli, Minimal a Natural", () => {
-    expect(normalizeMood("minimal")).toBe("minimal");
-    expect(normalizeMood("natural")).toBe("natural");
-    expect(normalizeMood("ocean")).toBe("bezli");
+  it("akceptuje všech osm nálad v odsouhlaseném pořadí a neplatnou hodnotu vrátí na Bezli", () => {
+    const moods = ["bezli", "minimal", "natural", "cute", "ocean", "plum", "sunny", "calm"] as const;
+    expect(moods.map(normalizeMood)).toEqual(moods);
+    for (const mood of moods) {
+      expect(readStoredMood(storage(mood, "user-a"))).toEqual({ mood, ownerId: "user-a" });
+    }
+    expect(normalizeMood("unknown")).toBe("bezli");
     expect(normalizeMood(null)).toBe("bezli");
+  });
+
+  it("uloží a znovu načte každou z osmi voleb", () => {
+    for (const mood of MOODS) {
+      const values = new Map<string, string>();
+      const memoryStorage = {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => { values.set(key, value); },
+        removeItem: (key: string) => { values.delete(key); },
+      };
+      storeMood(mood, "user-a", memoryStorage);
+      expect(readStoredMood(memoryStorage)).toEqual({ mood, ownerId: "user-a" });
+    }
   });
 
   it("stejnému uživateli po obnovení stránky ponechá náladu", () => {
@@ -43,6 +59,6 @@ describe("Nálady v prohlížeči", () => {
     expect(apply).toBeGreaterThan(-1);
     expect(module).toBeGreaterThan(apply);
     expect(html).toContain('localStorage.getItem("Bezli:mood")');
-    expect(html).toContain('saved === "minimal" || saved === "natural"');
+    expect(html).toContain('["minimal", "natural", "cute", "ocean", "plum", "sunny", "calm"].includes(saved)');
   });
 });

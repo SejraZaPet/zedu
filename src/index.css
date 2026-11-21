@@ -57,6 +57,7 @@
 @import '@fontsource/lora/700.css';
 @import '@fontsource/merriweather/400.css';
 @import '@fontsource/merriweather/700.css';
+@import './mood-palettes.css';
 
 @tailwind base;
 @tailwind components;
@@ -348,7 +349,7 @@
     background-image: linear-gradient(140deg, hsl(var(--mood-preview-primary)), hsl(var(--mood-preview-to)));
   }
   .mood-preview__line {
-    background: hsl(var(--dashboard-tile-foreground));
+    background: hsl(var(--mood-preview-foreground, var(--dashboard-tile-foreground)));
   }
   .mood-preview--bezli {
     --mood-preview-background: 225 33% 97%;
