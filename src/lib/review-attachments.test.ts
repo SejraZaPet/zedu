@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { attachmentsForSubmission } from "./review-attachments";
 
-const f = (id: string, student_id: string) => ({ id, student_id, file_name: id, file_path: `a/${student_id}/${id}`, file_size: 1 });
+const f = (id: string, student_id: string) => ({ id, assignment_id: "a1", student_id, file_name: id, file_path: `a/${student_id}/${id}`, file_size: 1 });
 
 describe("attachmentsForSubmission", () => {
   const all = [f("1", "s1"), f("2", "s2"), f("3", "s1")];

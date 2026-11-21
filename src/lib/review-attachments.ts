@@ -1,5 +1,6 @@
 export interface ReviewAttachment {
   id: string;
+  assignment_id: string;
   student_id: string;
   file_name: string;
   file_path: string;

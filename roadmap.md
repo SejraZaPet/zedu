@@ -175,6 +175,10 @@
 - [x] 62 testů, typy a build; živě 1360/390 px, kvíz, chat, techniky, skutečná data, bez přetečení a chyb. Bez DB, SQL, edge funkcí a nasazení.
 - XP odměny misí nejsou přidány: dokončené procvičování dnes XP nepřipisuje a bezpečná serverová odměna by vyžadovala samostatnou změnu. Živé AI volání nebylo spuštěno; kartičky/shrnutí ověřují komponentové testy, chat bylo ověřeno pouze otevření.
 
+## Ke kontrole – dávkové načtení příloh a poznámky
+- [x] Přílohy všech zobrazených úkolů se načítají jedním dotazem; panel dostává poznámku i soubory všech členů skupinového odevzdání.
+- [x] 18 cílených testů, typy a build prošly; živá obrazovka při 390 px ukázala přílohu i poznámku bez vodorovného posunu a chyb stránky. Bez SQL, změn oprávnění a nasazení.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

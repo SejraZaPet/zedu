@@ -46,6 +46,7 @@ export interface ReviewAttempt {
   submitted_at: string | null;
   attempt_number: number;
   group_id?: string | null;
+  submission_note?: string | null;
   answers?: unknown;
   progress?: unknown;
   teacher_feedback_text?: string | null;

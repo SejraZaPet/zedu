@@ -28,6 +28,7 @@ import { SearchField } from "@/components/ui/search-field";
 import ReviewSubmissionAttachments from "@/components/assignments/ReviewSubmissionAttachments";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
 import { submittableOnly } from "@/lib/assignment-kind";
+import { attachmentsForSubmission, type ReviewAttachment } from "@/lib/review-attachments";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -70,6 +71,8 @@ export default function TeacherReviewQueue() {
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [assignments, setAssignments] = useState<ReviewAssignment[]>([]);
   const [targetNames, setTargetNames] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<Record<string, ReviewAttachment[]>>({});
+  const [submissionGroupMembers, setSubmissionGroupMembers] = useState<Record<string, string[]>>({});
   const [assignmentFilter, setAssignmentFilter] = useState(ALL);
   const [targetFilter, setTargetFilter] = useState(ALL);
   const [stateFilter, setStateFilter] = useState<ReviewStateFilter>("pending");
@@ -102,6 +105,8 @@ export default function TeacherReviewQueue() {
       const asgIds = tasks.map((a) => a.id);
       if (asgIds.length === 0) {
         setRows([]);
+        setAttachments({});
+        setSubmissionGroupMembers({});
         setLoading(false);
         return;
       }
@@ -128,13 +133,26 @@ export default function TeacherReviewQueue() {
       }
       setTargetNames(names);
 
-      const { data: at, error: atErr } = await supabase
-        .from("assignment_attempts")
-        .select("id, assignment_id, student_id, status, score, max_score, submitted_at, attempt_number, group_id, answers, progress, teacher_feedback_text, teacher_feedback_emoji")
-        .in("assignment_id", asgIds)
-        .eq("status", "submitted");
-      if (atErr) throw atErr;
-      const attempts = (at ?? []) as unknown as ReviewAttempt[];
+      const [attemptsResult, attachmentsResult] = await Promise.all([
+        supabase
+          .from("assignment_attempts")
+          .select("id, assignment_id, student_id, status, score, max_score, submitted_at, attempt_number, group_id, submission_note, answers, progress, teacher_feedback_text, teacher_feedback_emoji")
+          .in("assignment_id", asgIds)
+          .eq("status", "submitted"),
+        supabase
+          .from("assignment_attachments" as any)
+          .select("id, assignment_id, student_id, file_name, file_path, file_size, uploaded_at")
+          .in("assignment_id", asgIds)
+          .order("uploaded_at", { ascending: true }),
+      ]);
+      if (attemptsResult.error) throw attemptsResult.error;
+      if (attachmentsResult.error) throw attachmentsResult.error;
+      const attempts = (attemptsResult.data ?? []) as unknown as ReviewAttempt[];
+      const attachmentsByAssignment: Record<string, ReviewAttachment[]> = {};
+      for (const file of (attachmentsResult.data ?? []) as unknown as ReviewAttachment[]) {
+        (attachmentsByAssignment[file.assignment_id] ??= []).push(file);
+      }
+      setAttachments(attachmentsByAssignment);
 
       const studentIds = [...new Set(attempts.map((a) => a.student_id))];
       const profiles: Record<string, { first_name: string; last_name: string }> = {};
@@ -147,6 +165,20 @@ export default function TeacherReviewQueue() {
           profiles[p.id] = { first_name: p.first_name || "", last_name: p.last_name || "" };
         }
       }
+
+      const submissionGroupIds = [...new Set(attempts.map((a) => a.group_id).filter(Boolean))] as string[];
+      const nextSubmissionGroupMembers: Record<string, string[]> = {};
+      if (submissionGroupIds.length > 0) {
+        const { data: members, error: membersError } = await supabase
+          .from("assignment_group_members")
+          .select("group_id, student_id")
+          .in("group_id", submissionGroupIds);
+        if (membersError) throw membersError;
+        for (const member of (members ?? []) as any[]) {
+          (nextSubmissionGroupMembers[member.group_id] ??= []).push(member.student_id);
+        }
+      }
+      setSubmissionGroupMembers(nextSubmissionGroupMembers);
 
       // Specy listů pro detekci otevřených odpovědí.
       const wsIds = [...new Set(tasks.map((a) => a.worksheet_id).filter(Boolean))] as string[];
@@ -182,6 +214,14 @@ export default function TeacherReviewQueue() {
 
   const activeIndex = filtered.findIndex((r) => r.attemptId === activeId);
   const activeRow = activeIndex >= 0 ? filtered[activeIndex] : null;
+  const activeGroupId = activeRow?.attempt.group_id ?? null;
+  const activeAttachments = activeRow
+    ? attachmentsForSubmission(
+        attachments[activeRow.assignmentId] ?? [],
+        activeRow.studentId,
+        activeGroupId ? submissionGroupMembers[activeGroupId] ?? [] : [],
+      )
+    : [];
 
   const goTo = useCallback(
     (idx: number) => {
@@ -546,10 +586,8 @@ export default function TeacherReviewQueue() {
               </div>
 
               <ReviewSubmissionAttachments
-                assignmentId={activeRow.assignmentId}
-                studentId={activeRow.attempt.student_id}
-                attemptId={activeRow.attemptId}
-                groupId={(activeRow.attempt as any).group_id ?? null}
+                files={activeAttachments}
+                note={activeRow.attempt.submission_note}
               />
 
               {activeRow.worksheetId ? (
