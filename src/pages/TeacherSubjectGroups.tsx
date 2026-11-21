@@ -2,7 +2,6 @@ import { SearchField, SearchEmpty } from "@/components/ui/search-field";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { selectFound } from "@/lib/picker-search";
 import { matchesSearch } from "@/lib/picker-search";
-import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -448,7 +447,7 @@ const TeacherSubjectGroups = () => {
 
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">Skupiny předmětu <BetaBadge context="Skupiny předmětu" /></h1>
+            <h1 className="text-3xl font-bold flex items-center gap-2">Skupiny předmětu</h1>
             <p className="text-muted-foreground mt-1">
               Skupiny jsou nezávislé na třídách — do jedné skupiny můžete zařadit žáky z různých tříd i ročníků.
             </p>

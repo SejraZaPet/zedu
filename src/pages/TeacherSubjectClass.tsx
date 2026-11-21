@@ -10,7 +10,6 @@ import ClassWall from "@/components/class-wall/ClassWall";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
-import { BetaBadge } from "@/components/common/BetaBadge";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams , useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -1363,7 +1362,6 @@ export default function TeacherSubjectClass() {
             <div className="flex-1 min-w-0">
               <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex items-center gap-2">
                 Výuka
-                <BetaBadge context="Výuka (předmět + třída/skupina)" />
               </p>
               <h1 className="font-heading text-2xl md:text-3xl font-bold truncate">
                 {subjectLabel}

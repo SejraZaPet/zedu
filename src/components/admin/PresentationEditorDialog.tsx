@@ -1777,7 +1777,6 @@ export const PresentationEditorDialog = ({
                   <div className="space-y-3 p-3">
                     <div className="flex items-center gap-2">
                       <Label className="text-xs">Aktivity</Label>
-                      <BetaBadge context="Editor prezentace – sekce Aktivity" />
                     </div>
                     {/* ČÁST 4a – jediné místo, odkud se aktivity vkládají */}
                     <div>
