@@ -687,6 +687,13 @@
       "when": 1795256508698,
       "tag": "0097_revoke_client_exec_sensitive_definers",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1795271838866,
+      "tag": "0098_increase_platform_banner_limits",
+      "breakpoints": true
     }
   ]
 }

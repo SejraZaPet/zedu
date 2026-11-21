@@ -95,7 +95,7 @@ export function filterDismissed<T extends { id: string }>(list: T[], now = Date.
 /** Převod chyb databáze na srozumitelnou hlášku. */
 export function bannerErrorMessage(err: { message?: string; code?: string } | null | undefined): string {
   const msg = err?.message ?? "";
-  if (/nejvýš 3 aktivní|smí správce|nelze přesunout|smí měnit jen/.test(msg)) return msg;
+  if (/nejvýš \d+ aktivní|smí správce|nelze přesunout|smí měnit jen/.test(msg)) return msg;
   if (err?.code === "42501" || /row-level security|permission denied/i.test(msg)) {
     return "Tuto změnu nemáte oprávnění provést.";
   }

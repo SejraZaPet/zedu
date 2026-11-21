@@ -196,6 +196,12 @@
 - [x] Ověřit kontrast všech osmi nálad, neměnnost stavových/herních barev, výběr/uložení a mobilní klávesnicové ovládání; bez DB a nasazení.
 - 11 cílených testů prošlo; živě všech 8 voleb mezerníkem, uložení/reload, neplatná hodnota = Bezli, 2 sloupce při 390 px a 4 na desktopu, bez posunu a chyb stránky.
 
+## Platformové bannery – limit 6 a načtení 9 (schváleno)
+- [x] Nová migrace 0098 mění pouze `tg_banners_guard` (3 platformové limity 6) a `get_my_banners` (`LIMIT 9`); školní limit 3 a ostatní těla beze změny.
+- [x] SELECT po aplikaci potvrdil nové hodnoty a zachované SECURITY DEFINER/STABLE/search_path; žádné změny tabulek, RLS, triggerů ani dat.
+- [x] Obecná chybová hláška, test 6 a ověření 9 bannerů v kolotoči při 390 px; bez nasazení.
+- 20 testů prošlo; živá maketa 9 bannerů má 9 teček a funkční devátou volbu, ovládání 344 px v panelu 358 px, bez vodorovného posunu a chyb stránky. Školní text limitu 3 zůstal beze změny.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

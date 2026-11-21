@@ -84,6 +84,15 @@ describe("karusel", () => {
     (window as any).matchMedia = mm;
     vi.useRealTimers();
   });
+  it("zobrazí všech devět bannerů a umožní vybrat devátou tečku", () => {
+    const banners = Array.from({ length: 9 }, (_, index) => mk(String(index + 1)));
+    render(<BannerCarousel banners={banners} />);
+    const dots = screen.getAllByRole("button", { name: /^Oznámení \d+$/ });
+    expect(dots).toHaveLength(9);
+    fireEvent.click(screen.getByRole("button", { name: "Oznámení 9" }));
+    expect(screen.getByRole("button", { name: "Oznámení 9" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("group", { name: "9 z 9" })).toBeInTheDocument();
+  });
   it("při úspoře dat nevykreslí video, jen poster", () => {
     (navigator as any).connection = { saveData: true };
     const { container } = render(<BannerCarousel banners={[mk("v", { media_type: "video", image_path: null, video_path: "platform/v.mp4", poster_path: "platform/p.jpg" })]} />);
@@ -135,6 +144,7 @@ describe("validace nahrání", () => {
   });
   it("hlášky triggeru a oprávnění česky", () => {
     expect(bannerErrorMessage({ message: "Škola může mít nejvýš 3 aktivní bannery" })).toBe("Škola může mít nejvýš 3 aktivní bannery");
+    expect(bannerErrorMessage({ message: "Žáci mohou mít nejvýš 6 aktivní platformové bannery" })).toBe("Žáci mohou mít nejvýš 6 aktivní platformové bannery");
     expect(bannerErrorMessage({ code: "42501", message: "new row violates row-level security policy" })).toBe("Tuto změnu nemáte oprávnění provést.");
   });
 });
