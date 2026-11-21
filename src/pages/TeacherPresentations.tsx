@@ -21,6 +21,9 @@ import PresentationEditorDialog from "@/components/admin/PresentationEditorDialo
 import { loadProjectorFontScale } from "@/lib/projector-font-scale";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { independentPresentationPayload } from "@/lib/presentation-copy";
+import { FilterBar } from "@/components/filters/FilterBar";
+import { useStoredFilters } from "@/hooks/useStoredFilters";
+import { filterPresentations, DEFAULT_PRESENTATION_FILTERS, NO_SUBJECT, type PresentationFilters } from "@/lib/presentation-filters";
 
 
 interface StandalonePresentation {
@@ -33,6 +36,7 @@ interface StandalonePresentation {
   created_at: string;
   updated_at: string;
   lessonTitle?: string | null;
+  subject?: string | null;
 }
 
 interface LessonOption {
@@ -63,6 +67,21 @@ const TeacherPresentations = () => {
   const [params, setParams] = useSearchParams();
 
   const [items, setItems] = useState<StandalonePresentation[]>([]);
+  const [filters, setFilters, clearFilters] = useStoredFilters<PresentationFilters & Record<string, string>>(
+    "bezli.filters.presentations", DEFAULT_PRESENTATION_FILTERS as any,
+    (k, v) => k === "source" ? ["all", "lesson", "own"].includes(v)
+      : k === "updated" ? ["all", "today", "7d", "30d", "older"].includes(v)
+      : k === "sort" ? ["updated", "title", "created"].includes(v) : true,
+  );
+  const setF = (k: keyof PresentationFilters) => (v: string) => setFilters((f) => ({ ...f, [k]: v }));
+  const subjectOptions = useMemo(
+    () => Array.from(new Set(items.map((i) => i.subject).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "cs")),
+    [items],
+  );
+  const effectiveFilters = useMemo(() => ({
+    ...filters, subject: filters.subject === "all" || filters.subject === NO_SUBJECT || subjectOptions.includes(filters.subject) ? filters.subject : "all",
+  }) as PresentationFilters, [filters, subjectOptions]);
+  const visible = useMemo(() => filterPresentations(items, effectiveFilters), [items, effectiveFilters]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -115,15 +134,27 @@ const TeacherPresentations = () => {
       ));
       if (lessonIds.length) {
         const [teacherLessons, globalLessons] = await Promise.all([
-          supabase.from("teacher_textbook_lessons").select("id, title").in("id", lessonIds),
+          supabase.from("teacher_textbook_lessons").select("id, title, textbook_id").in("id", lessonIds),
           supabase.from("textbook_lessons").select("id, title").in("id", lessonIds),
         ]);
         const byId = new Map<string, string>();
         [...((teacherLessons.data ?? []) as any[]), ...((globalLessons.data ?? []) as any[])]
           .forEach((l) => byId.set(l.id, l.title));
+        // Předmět jen přes učitelskou učebnici (jeden souhrnný dotaz).
+        const tbIds = Array.from(new Set(((teacherLessons.data ?? []) as any[]).map((l) => l.textbook_id).filter(Boolean)));
+        const subjectByTb = new Map<string, string>();
+        if (tbIds.length) {
+          const { data: tbs } = await supabase.from("teacher_textbooks").select("id, subject").in("id", tbIds);
+          ((tbs ?? []) as any[]).forEach((t) => t.subject && subjectByTb.set(t.id, t.subject));
+        }
+        const subjectByLesson = new Map<string, string>();
+        ((teacherLessons.data ?? []) as any[]).forEach((l) => {
+          const sub = subjectByTb.get(l.textbook_id); if (sub) subjectByLesson.set(l.id, sub);
+        });
         rows.forEach((r) => {
           const id = r.lesson_id ?? r.source_lesson_id ?? null;
           r.lessonTitle = id ? byId.get(id) ?? null : null;
+          r.subject = id ? subjectByLesson.get(id) ?? null : null;
         });
       }
       setItems(rows);
@@ -418,8 +449,29 @@ const TeacherPresentations = () => {
             </Button>
           </div>
         ) : (
+          <>
+          <FilterBar
+            search={filters.q} onSearch={setF("q")} searchLabel="Hledat prezentaci"
+            shown={visible.length} total={items.length} onClear={clearFilters}
+            filters={[
+              { id: "subject", label: "Předmět", value: effectiveFilters.subject, defaultValue: "all", onChange: setF("subject"),
+                options: [{ value: "all", label: "Všechny předměty" }, ...subjectOptions.map((s) => ({ value: s, label: s })), { value: NO_SUBJECT, label: "Bez předmětu" }] },
+              { id: "source", label: "Zdroj", value: filters.source, defaultValue: "all", onChange: setF("source"),
+                options: [{ value: "all", label: "Všechny zdroje" }, { value: "lesson", label: "Z lekce" }, { value: "own", label: "Vlastní" }] },
+              { id: "updated", label: "Upraveno", value: filters.updated, defaultValue: "all", onChange: setF("updated"),
+                options: [{ value: "all", label: "Kdykoli" }, { value: "today", label: "Dnes" }, { value: "7d", label: "Posledních 7 dní" }, { value: "30d", label: "Posledních 30 dní" }, { value: "older", label: "Starší" }] },
+              { id: "sort", label: "Řazení", value: filters.sort, defaultValue: "updated", onChange: setF("sort"), chip: false,
+                options: [{ value: "updated", label: "Naposledy upravené" }, { value: "created", label: "Nejnovější" }, { value: "title", label: "Název A–Z" }] },
+            ]}
+          />
+          {visible.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border py-12 text-center" role="status">
+              <p className="mb-3 text-muted-foreground">Filtrům nic neodpovídá.</p>
+              <Button variant="outline" onClick={clearFilters}>Vymazat filtry</Button>
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((p) => (
+            {visible.map((p) => (
               <Card key={p.id} className="flex flex-col">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-start gap-2 text-base">
@@ -491,6 +543,8 @@ const TeacherPresentations = () => {
               </Card>
             ))}
           </div>
+          )}
+          </>
         )}
       </main>
       <SiteFooter />

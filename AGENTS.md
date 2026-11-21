@@ -75,3 +75,4 @@
 - License inquiries: inserted only by `send-license-inquiry` before e-mail; admin-only read, trigger locks personal/consent fields.
 - Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
 - Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
+- List filter bars use shared `components/filters/FilterBar` + `useStoredFilters` (localStorage, invalid values reset); filtering logic stays per page in pure libs, so access and data never change.
