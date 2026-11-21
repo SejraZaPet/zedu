@@ -4,6 +4,7 @@ import {
   adminClient, countRecent, DEMO_EMAIL_DOMAIN, DEMO_SCHOOL_NAME, generateReturnCode,
   ipHash, issueSession, randomToken, recordEvent,
 } from "../_shared/demo.ts";
+import { DEMO_CREATION_DEFAULTS, resolveDemoEventOverride } from "../_shared/demo-event-overrides.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -14,9 +15,6 @@ const cleanTag = (v: unknown): string | null => {
   return s || null;
 };
 
-// Vyšší hodinový limit platí jen pro přesně uvedené štítky po cleanTag.
-const HIGH_CAPACITY_EVENT_TAGS: ReadonlySet<string> = new Set(["dalkove-ucitele"]);
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Metoda není povolena." }, 405);
@@ -24,15 +22,22 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const role = body?.role === "student" ? "student" : "teacher";
   const eventTag = cleanTag(body?.event_tag);
-  const hourlyLimit = eventTag && HIGH_CAPACITY_EVENT_TAGS.has(eventTag) ? 80 : 20;
 
   const db = adminClient();
   const hash = await ipHash(req);
+  let override = null;
+  if (eventTag) {
+    // Service-only RPC; klient posílá jen štítek, nikdy výši limitů.
+    const { data, error } = await db.rpc("get_demo_event_override", { _tag: eventTag });
+    if (!error) override = resolveDemoEventOverride(eventTag, Array.isArray(data) ? data[0] : data);
+  }
+  const hourlyLimit = override?.create_per_ip_hour ?? DEMO_CREATION_DEFAULTS.perIpHour;
+  const dailyLimit = override?.create_global_day ?? DEMO_CREATION_DEFAULTS.globalDay;
 
   if ((await countRecent(db, "create", 60 * 60 * 1000, hash)) >= hourlyLimit) {
     return json({ error: "Z tohoto připojení už vzniklo hodně dem. Zkuste to prosím za hodinu." }, 429);
   }
-  if ((await countRecent(db, "create", 24 * 60 * 60 * 1000)) >= 500) {
+  if ((await countRecent(db, "create", 24 * 60 * 60 * 1000)) >= dailyLimit) {
     return json({ error: "Dnešní kapacita dem je vyčerpaná. Zkuste to prosím zítra." }, 429);
   }
   await recordEvent(db, "create", hash);
