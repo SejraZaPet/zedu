@@ -122,3 +122,11 @@
 - [x] Přesné SQL v `supabase/proposals/demo_d0_final_notice.sql` a cron po nasazení v `demo_d0_cron_after_deploy.sql`; NEAPLIKOVÁNO.
 - [x] 28 demo testů, typy, edge překlad a automatický build; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů, změn dat a nasazení.
 - Čeká na schválení: SQL a nové znění souhlasu v2. Neověřeno: skutečné odeslání, doručení, cron a úklid nad schválenou databázovou změnou.
+
+## Demo – plán ochrany a limitů
+- [x] Plán uložen (`.lovable/plan.md`); nic neimplementováno.
+
+## Demo pruh – sbalení a čipy limitů
+- [x] Sbalení na 5px proužek + záložka „Demo", paměť v localStorage, vynucené rozbalení ≤ 3 dny / vyčerpaný limit / po prodloužení; skryto při tisku.
+- [x] Čipy z `get_my_demo_limits()`, hláška po 429 z jakékoli AI funkce (centrální sledování jen u dema).
+- Čeká na schválení: SQL `supabase/proposals/demo_my_limits_rpc.sql` (bez něj se čipy nezobrazí, hláška po 429 funguje).
