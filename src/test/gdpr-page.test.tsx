@@ -46,11 +46,18 @@ describe("stránka /gdpr", () => {
 
   it("obsahuje datum aktualizace, klikací odkazy a žádnou pracovní hlášku", async () => {
     const { container } = await open();
-    expect(container.textContent).toContain("Poslední aktualizace: 19. listopadu 2026");
+    expect(container.textContent).toContain("Poslední aktualizace: 21. listopadu 2026");
     expect(container.querySelector('a[href="/podminky"]')).not.toBeNull();
     expect(container.querySelector('a[href="mailto:info@bezli.cz"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Tento dokument je připravován");
     expect(container.textContent).not.toContain("po právní konzultaci");
+  });
+
+  it("demo výmaz popisuje závěrečnou zprávu a výjimku starých souhlasů", async () => {
+    const { container } = await open();
+    const text = container.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("Poté e-mail smažeme. Při odvolání souhlasu jej smažeme bez dalších zpráv.");
+    expect(text).toContain("U starších souhlasů, které závěrečnou zprávu nezahrnovaly, e-mail smažeme se smazáním dema a závěrečnou zprávu neposíláme.");
   });
 
   it("neobsahuje staré odrážkové seznamy údajů", async () => {

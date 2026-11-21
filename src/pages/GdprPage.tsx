@@ -21,7 +21,7 @@ const GdprPage = () => {
         <h1 className="font-heading text-3xl font-bold mb-6">Zásady ochrany osobních údajů</h1>
 
         <section className="space-y-4 text-foreground">
-          <p>Poslední aktualizace: 19. listopadu 2026</p>
+          <p>Poslední aktualizace: 21. listopadu 2026</p>
 
           <h2 className="font-heading text-xl font-semibold mt-6">1. Kdo údaje zpracovává</h2>
           <p>
@@ -63,6 +63,12 @@ const GdprPage = () => {
             dobu potřebnou k zabezpečení a ladění služby. Údaje, které musíme uchovávat ze zákona (například účetní
             doklady), uchováváme po dobu stanovenou zákonem. Konkrétní lhůty jsou uvedeny ve smlouvě a v obchodních
             podmínkách.
+          </p>
+          <p>
+            E-mail zadaný v demu použijeme podle souhlasu k připomenutí smazání ukázkového účtu, převodu práce a
+            jedné závěrečné zprávě o smazání údajů. Poté e-mail smažeme. Při odvolání souhlasu jej smažeme bez
+            dalších zpráv. U starších souhlasů, které závěrečnou zprávu nezahrnovaly, e-mail smažeme se smazáním
+            dema a závěrečnou zprávu neposíláme.
           </p>
 
           <h2 className="font-heading text-xl font-semibold mt-6">6. Vaše práva</h2>

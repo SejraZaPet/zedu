@@ -43,7 +43,7 @@ const DemoSaveWorkDialog = ({ open, onOpenChange, status, onChanged }: Props) =>
     if (!normalizeDemoEmail(email)) return setMsg("Zadejte prosím platný e-mail.");
     if (!consent) return setMsg("Bez souhlasu e-mail uložit nemůžeme.");
     setBusy(true);
-    try { await saveDemoContact(email); setEmail(""); setConsent(false); setMsg("E-mail jsme uložili. Před smazáním vám pošleme připomínku."); onChanged(); }
+    try { await saveDemoContact(email); setEmail(""); setConsent(false); setMsg("E-mail jsme uložili. Před smazáním vám pošleme připomínku a po něm jednu závěrečnou zprávu; poté e-mail smažeme."); onChanged(); }
     catch (e) { setMsg((e as Error).message); }
     finally { setBusy(false); }
   };

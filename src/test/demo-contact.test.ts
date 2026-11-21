@@ -1,18 +1,19 @@
 import { describe, it, expect } from "vitest";
 import {
   buildDemoFinalEmail, buildDemoReminderEmail, DEMO_CONSENT_TEXT, DEMO_CONSENT_VERSION,
-  DEMO_FINAL_NOTICE_CONSENT_VERSION, demoCountdownText, demoExtendedText, formatDemoLastDay,
+  DEMO_FINAL_NOTICE_CONSENT_VERSION, DEMO_LEGACY_CONSENT_VERSION, demoCountdownText, demoExtendedText, formatDemoLastDay,
   isDemoFinalClaimStale, isDemoFinalNoticeAllowed, normalizeDemoEmail, sha256Hex, showCountdown,
 } from "../../supabase/functions/_shared/demo-contact";
 import { DEMO_EXPORT_MAX_ITEMS, exportLimitMessage, onlyOwnRows, uniqueName } from "@/lib/demo-export";
 
 describe("demo kontakt", () => {
-  it("souhlas v1 zůstává beze změny a závěrečnou zprávu nepovoluje", () => {
-    expect(DEMO_CONSENT_VERSION).toBe("2026-11-19.v1");
-    expect(DEMO_CONSENT_TEXT).toBe("Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu a k převodu mé práce do ostrého účtu. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat; e-mail smažeme nejpozději se smazáním dema.");
-    expect(isDemoFinalNoticeAllowed(DEMO_CONSENT_VERSION)).toBe(false);
-    expect(isDemoFinalNoticeAllowed("2026-11-21.v2")).toBe(true);
-    expect(DEMO_FINAL_NOTICE_CONSENT_VERSION).toBe("2026-11-21.v2");
+  it("nový souhlas v2 má schválené doslovné znění; v1 závěrečnou zprávu nepovoluje", () => {
+    expect(DEMO_CONSENT_VERSION).toBe("2026-11-21.v2");
+    expect(DEMO_CONSENT_TEXT).toBe("Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu, k převodu mé práce do ostrého účtu a k jedné závěrečné zprávě, že údaje byly smazány. Poté e-mail smažeme. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat.");
+    expect(DEMO_LEGACY_CONSENT_VERSION).toBe("2026-11-19.v1");
+    expect(isDemoFinalNoticeAllowed(DEMO_LEGACY_CONSENT_VERSION)).toBe(false);
+    expect(isDemoFinalNoticeAllowed(DEMO_CONSENT_VERSION)).toBe(true);
+    expect(DEMO_FINAL_NOTICE_CONSENT_VERSION).toBe(DEMO_CONSENT_VERSION);
   });
   it("odmítne neplatný a vymyšlený demo e-mail", () => {
     expect(normalizeDemoEmail("x")).toBeNull();
@@ -26,11 +27,20 @@ describe("demo kontakt", () => {
     expect(showCountdown(null)).toBe(false);
   });
   it("připomínka D−0 říká dnes o půlnoci a obsahuje odhlášení", () => {
-    const e = buildDemoReminderEmail({ kind: "0d", deletesAt: "2026-11-27T23:00:00Z", unsubscribeUrl: "https://x/u?t=abc" });
+    const e = buildDemoReminderEmail({ kind: "0d", deletesAt: "2026-11-27T23:00:00Z", unsubscribeUrl: "https://x/u?t=abc", consentVersion: DEMO_CONSENT_VERSION });
     expect(e.subject).toBe("Váš ukázkový účet Bezli se smaže dnes o půlnoci");
     expect(e.text).toContain("dnes o půlnoci (27. 11. 2026)");
     expect(e.text).toContain("https://x/u?t=abc");
     expect(e.html).toContain("27. 11. 2026");
+  });
+  it("připomínka v2 slibuje závěrečnou zprávu a následný výmaz, v1 nikoli", () => {
+    const input = { kind: "0d" as const, deletesAt: "2026-11-27T23:00:00Z", unsubscribeUrl: "u" };
+    const v2 = buildDemoReminderEmail({ ...input, consentVersion: DEMO_CONSENT_VERSION });
+    const v1 = buildDemoReminderEmail({ ...input, consentVersion: DEMO_LEGACY_CONSENT_VERSION });
+    expect(v2.text).toContain("Poté vám pošleme jednu závěrečnou zprávu o smazání údajů a smažeme i e-mail.");
+    expect(v2.html).toContain("Poté ho smažeme.");
+    expect(v1.text).toContain("3) Nedělat nic – účet i e-mail smažeme.");
+    expect(v1.text).not.toContain("závěrečnou zprávu");
   });
   it("připomínka D−3 říká za 3 dny", () => {
     expect(buildDemoReminderEmail({ kind: "3d", deletesAt: "2026-11-27T23:00:00Z", unsubscribeUrl: "u" }).subject).toContain("za 3 dny");

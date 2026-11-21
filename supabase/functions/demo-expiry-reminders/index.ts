@@ -49,11 +49,11 @@ Deno.serve(async (req) => {
   for (const c of list) {
     const token = randomToken();
     const hash = await sha256Hex(token);
-    const { data: row } = await db.from("demo_contacts").select("unsubscribe_token_hashes").eq("pair_id", c.pair_id).maybeSingle();
+    const { data: row } = await db.from("demo_contacts").select("unsubscribe_token_hashes,consent_version").eq("pair_id", c.pair_id).maybeSingle();
     const hashes = [...(((row as any)?.unsubscribe_token_hashes ?? []) as string[]), hash].slice(-4);
     await db.from("demo_contacts").update({ unsubscribe_token_hashes: hashes }).eq("pair_id", c.pair_id);
     const url = `${fnBase}?t=${token}`;
-    const e = buildDemoReminderEmail({ kind: c.kind, deletesAt: c.deletes_at, unsubscribeUrl: url });
+    const e = buildDemoReminderEmail({ kind: c.kind, deletesAt: c.deletes_at, unsubscribeUrl: url, consentVersion: (row as any)?.consent_version });
     prepared.push({ c, payload: {
       from: DEMO_REMINDER_FROM, to: [c.email], reply_to: DEMO_REMINDER_REPLY_TO, subject: e.subject, html: e.html, text: e.text,
       headers: { "List-Unsubscribe": `<${url}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },

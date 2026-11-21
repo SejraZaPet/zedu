@@ -117,11 +117,12 @@
 
 ## Demo kontakt – D−0, pražská půlnoc a závěrečný e-mail
 - [x] Ověřena jednorázová nepovinná nabídka až po prvním vlastním obsahu; ruční otevření zůstává dostupné.
-- [x] Texty D−0 a „dnes o půlnoci“; souhlas v1 zůstal doslovně beze změny.
-- [x] Připraven závěrečný e-mail pouze pro budoucí souhlas v2, po úklidu, jediný pokus a výmaz kontaktu i starých demo logů.
+- [x] Texty D−0 a „dnes o půlnoci“; schválený souhlas v2 pro nové kontakty, uložené v1 beze změny a bez závěrečné zprávy.
+- [x] Připraven závěrečný e-mail pouze pro souhlas v2, po úklidu, jediný pokus a výmaz kontaktu i starých demo logů.
 - [x] Přesné SQL v `supabase/proposals/demo_d0_final_notice.sql` a cron po nasazení v `demo_d0_cron_after_deploy.sql`; NEAPLIKOVÁNO.
-- [x] 28 demo testů, typy, edge překlad a automatický build; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů, změn dat a nasazení.
-- Čeká na schválení: SQL a nové znění souhlasu v2. Neověřeno: skutečné odeslání, doručení, cron a úklid nad schválenou databázovou změnou.
+- [x] 37 cílených testů, typy, edge překlad a automatický build; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů, změn dat a nasazení.
+- [x] Schválené znění v2, rozlišení připomínek v1/v2, dialog a zásady; SQL stále NEAPLIKOVÁNO.
+- Čeká na schválení: pouze SQL. Neověřeno: skutečné odeslání, doručení, cron a úklid nad schválenou databázovou změnou.
 
 ## Demo – plán ochrany a limitů
 - [x] Plán uložen (`.lovable/plan.md`); nic neimplementováno.

@@ -1,16 +1,17 @@
 // Demo kontakt: znění souhlasu, validace e-mailu a texty připomínek (čisté funkce, testované).
 // Sdílí klient (dialog) i serverové funkce, aby se znění nikdy nerozešlo.
 
-export const DEMO_CONSENT_VERSION = "2026-11-19.v1";
+export const DEMO_CONSENT_VERSION = "2026-11-21.v2";
+export const DEMO_LEGACY_CONSENT_VERSION = "2026-11-19.v1";
 export const DEMO_CONSENT_TEXT =
-  "Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu a k převodu mé práce do ostrého účtu. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat; e-mail smažeme nejpozději se smazáním dema.";
+  "Souhlasím, aby Bezli použilo můj e-mail jen k připomenutí smazání ukázkového účtu, k převodu mé práce do ostrého účtu a k jedné závěrečné zprávě, že údaje byly smazány. Poté e-mail smažeme. Žádné novinky ani reklamu. Souhlas mohu kdykoli odvolat.";
 
 export const DEMO_APP_URL = "https://www.bezli.cz";
 export const DEMO_REMINDER_FROM = "Bezli <noreply@bezli.cz>";
 export const DEMO_REMINDER_REPLY_TO = "info@bezli.cz";
 export const DEMO_REMINDER_EMAIL_TYPE = "demo_reminder";
-/** Závěrečná zpráva je povolena až pro budoucí, zatím neschválené znění souhlasu. */
-export const DEMO_FINAL_NOTICE_CONSENT_VERSION = "2026-11-21.v2";
+/** Závěrečná zpráva patří jen souhlasu v2; historické v1 kontakty ji nikdy nedostanou. */
+export const DEMO_FINAL_NOTICE_CONSENT_VERSION = DEMO_CONSENT_VERSION;
 export const DEMO_FINAL_CLAIM_TTL_MS = 60 * 60 * 1000;
 /** Od kolika připomínek v jednom běhu se použije dávkové API (max 100 na požadavek). */
 export const DEMO_BATCH_THRESHOLD = 20;
@@ -62,23 +63,29 @@ export function isDemoFinalClaimStale(claimedAt: string, now = Date.now()): bool
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export function buildDemoReminderEmail(o: { kind: "0d" | "1d" | "3d"; deletesAt: string; unsubscribeUrl: string }) {
+export function buildDemoReminderEmail(o: { kind: "0d" | "1d" | "3d"; deletesAt: string; unsubscribeUrl: string; consentVersion?: string }) {
   // 1d je pouze přechodná podpora starých rezervací; nové SQL už vybírá výhradně 0d.
   const when = o.kind === "0d" ? "dnes o půlnoci" : o.kind === "1d" ? "zítra" : "za 3 dny";
   const date = o.kind === "1d" ? formatPragueDay(o.deletesAt) : formatDemoLastDay(o.deletesAt);
   const subject = `Váš ukázkový účet Bezli se smaže ${when}`;
+  const finalNotice = isDemoFinalNoticeAllowed(o.consentVersion);
   const lines = [
     `Dobrý den, váš ukázkový účet Bezli se ${when} (${date}) smaže i s vytvořenou prací.`,
     "Máte tři možnosti:",
     `1) Převést práci do ostrého účtu – napište nám přes ${DEMO_APP_URL}/licence a domluvíme převod.`,
     `2) Stáhnout ji – přihlaste se na ${DEMO_APP_URL}/demo svým návratovým kódem a v horním pruhu zvolte „Stáhnout moji práci“.`,
-    "3) Nedělat nic – účet i e-mail smažeme.",
+    finalNotice
+      ? "3) Nedělat nic – účet smažeme. Poté vám pošleme jednu závěrečnou zprávu o smazání údajů a smažeme i e-mail."
+      : "3) Nedělat nic – účet i e-mail smažeme.",
     "Stačí se do dema znovu přihlásit a smazání se posune o 14 dní.",
   ];
+  const footer = finalNotice
+    ? "E-mail použijeme jen k připomenutí smazání dema, převodu práce a jedné závěrečné zprávě. Poté ho smažeme."
+    : "E-mail jste nám dali jen pro připomínky dema.";
   const text = `${lines.join("\n\n")}\n\nOdhlásit připomínky a smazat e-mail: ${o.unsubscribeUrl}`;
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1A1F2C;line-height:1.5">
 ${lines.map((l) => `<p>${esc(l)}</p>`).join("\n")}
-<p style="font-size:12px;color:#64748B">E-mail jste nám dali jen pro připomínky dema. <a href="${esc(o.unsubscribeUrl)}">Odhlásit a smazat e-mail</a></p></div>`;
+<p style="font-size:12px;color:#64748B">${footer} <a href="${esc(o.unsubscribeUrl)}">Odhlásit a smazat e-mail</a></p></div>`;
   return { subject, text, html };
 }
 
