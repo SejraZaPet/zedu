@@ -1,75 +1,43 @@
-# Demo: ochrana proti zneužití, limity obsahu a režim „samostatný učitel zdarma"
+# Bezpečnostní nálezy – analýza a návrh oprav (nic neprovedeno)
 
-Pouze plán. Bez kódu, migrací a nasazení. Každá DB změna níže čeká na výslovné „schvaluji".
+Zdroj: nejnovější kontrola databáze z 21. 11. 2026 09:33 UTC. Pokročilá kontrola („Advanced checks“) neběžela, takže kód funkcí a stránek tentokrát nikdo neprověřil – stav proto nelze označit za čistý.
 
-## 0. Současný stav (ověřeno v kódu a čtecími dotazy)
+## 1. Kritický nález
 
-- `create-demo-session`: limit **20 dem/h na hash IP**, **80/h** jen pro štítek přesně `dalkove-ucitele` (`HIGH_CAPACITY_EVENT_TAGS`), globálně **500/den**. Události v `demo_rate_events` (kind `create`, `ip_hash`). Každé kliknutí vždy zakládá novou dvojici učitel+žák, třídu a seed (`demo_seed_pair`).
-- `ipHash`: SHA-256(`DEMO_IP_SALT` | IP); holá IP se neukládá. Hash se ukládá i do `demo_pairs.ip_hash`.
-- Prohlížeč: `localStorage["Bezli:demo-return-code"]` drží návratový kód; `demo-restore` umí návrat. **Při novém kliknutí na „Vyzkoušet zdarma" se ale kód nekontroluje** – vznikne nové demo.
-- `demo_config` (jeden řádek): `ai_per_account=5`, `ai_daily_global=150`, `upload_max_bytes=2 MB`, `upload_max_files=20`, `inactive_days=14`, `cleanup_batch=50`, `reminder_max_per_run=60`.
-- AI: `demo-ai-guard.ts` → `demo_ai_reserve` (per účet + globálně za den). Nic per zařízení/IP.
-- Úložiště: `demo_storage_upload_ok` – přípony png/jpg/webp/pdf/docx/pptx/xlsx/csv, bez videa/audia, max 2 MB, max 20 souborů.
-- `demo_guard_*` (RESTRICTIVE): blokují hlavně úpravy/mazání sdíleného seed obsahu (učebnice, lekce, listy, hry, prezentace, třídy, role, bannery, výjimky rozvrhu, žádosti o školu, preview studenti) a INSERT u `teacher_game_templates` (triggery s limity – bude ověřeno v kroku implementace). Trigger `demo_guard_profile` na `profiles`.
-- **Nejsou** dnes limity: počet vlastních lekcí/listů/prezentací/úkolů, počet hráčů v živé hře, zprávy, tisk/export.
-- `demo_contacts`: e-mail v čitelné podobě (nutné pro připomínky), mazání po úklidu (viz commit `b9dfb374`, SQL čeká na schválení).
+**Funkce `verify_pin_login` (přihlášení žáka PINem)**
+- Co to je: funkce dostane uživatelské jméno a čtyřmístný PIN a při shodě vrátí e-mail a ID účtu. Smí ji volat kdokoli, i bez přihlášení.
+- Riziko: PIN má jen 10 000 možností. Útočník zná nebo uhodne jméno žáka a funkci volá přímo, mimo náš přihlašovací formulář a jeho omezení pokusů. Rychle tak PIN uhodne a dozví se e-mail žáka. Také z odpovědí pozná, která jména existují. Jde o skutečný únik údajů žáků. Plný přístup do účtu tím ale nezíská, protože heslo funkce nevrací.
+- Ověřeno: aplikace funkci volá jen ze serverové funkce `verify-pin`, a to se servisním oprávněním.
+- Oprava (SQL):
+  `REVOKE EXECUTE ON FUNCTION public.verify_pin_login(text,text) FROM PUBLIC, anon, authenticated;`
+- Dopad: žádný. Přihlášení PINem jde dál přes `verify-pin`. Demo, Studio ani vyhodnocení funkci nepoužívají. Zvlášť ještě ověřím, jestli `verify-pin` omezuje počet pokusů (`login_attempts`), a pokud ne, navrhnu limit.
 
-## 1. Ochrana proti opakovanému zakládání dema
+Skener jako závažný („error“) označil ještě **`creator_payout_target`**. Každý přihlášený uživatel se přes ni dozví, jestli výplatu konkrétního tvůrce dostává on sám, nebo jeho škola, a ID školy. Jde o drobný únik obchodní informace. Funkce se používá jen uvnitř databáze při výpočtu podílů. Oprava: `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated;`. BezliMarket by to nerozbilo, protože interní výpočty běží s právy vlastníka. Tento postup ještě ověřím před provedením.
 
-| Opatření | Co chrání | Co nechrání | GDPR | Velikost |
-|---|---|---|---|---|
-| A. **Návrat místo nového dema** – pokud prohlížeč má platný návratový kód, „Vyzkoušet zdarma" nabídne „Pokračovat v mém demu" (výchozí) a malý odkaz „Začít nové demo" | běžný opakovaný klik, omylem vytvořená dema, šetří kapacitu | anonymní okno, smazání úložiště, jiný prohlížeč | nic nového (kód už se ukládá) | **S**, jen frontend |
-| B. **Denní/týdenní strop na hash IP**: např. 40/den a 100/týden, pro povolené akce (allowlist + datum platnosti) 150/den | skripty a „sériové" zakladatele z jedné sítě | mobilní data / VPN (mění IP) | jen hash IP, už se ukládá; mazat `demo_rate_events` po 30 dnech | **S** (kód v edge funkci, bez DB) |
-| C. **Hash e-mailu** u zadaného kontaktu (`sha256(salt|lower(email))`) uložený odděleně v nové tabulce s TTL 90 dní; při zadání stejného e-mailu nabídnout „Pro tento e-mail už demo existuje – pokračovat / převést do ostrého účtu" | návrat k vlastnímu demu, upozornění opakovaného zneužití | lidi, kteří e-mail nezadají (je nepovinný) – slabá ochrana | nový osobní údaj (pseudonym); nutná zmínka v souhlasu v2 a lhůta; doporučuji **odložit** | **M**, DB změna |
-| D. **AI per hash IP za den** (např. 30) vedle 5 na účet | obejití AI limitu založením nových dem | VPN | hash IP do `demo_ai_usage` | **S–M**, DB změna funkce `demo_ai_reserve` |
-| E. Otisk zařízení (fingerprint) | – | – | vysoké riziko (cookie lišta, ePrivacy) | **nedoporučuji** |
+## 2. Varování
 
-Pozor na 28. 11.: 50 lidí na jedné IP. S `?akce=dalkove-ucitele` je limit 80/h – vyhoví. **Bez štítku** (lidé napíšou jen adresu) narazí po 20. Doporučení: na přednášce používat odkaz/QR se štítkem a do zavedení B nic nezpřísňovat. AI: 150/den globálně může při 50 lidech × 5 = 250 **vyčerpat** – doporučuji dočasně zvýšit `ai_daily_global` (jednořádkový UPDATE, ke schválení).
+**a) `demo_reset_seed()`** (v původní úrovni závažný, nyní varování)
+- Funkce obnovuje ukázkový obsah dema podle uložené zálohy a staví si přitom databázové příkazy z uložených dat. Volat ji může každý přihlášený, ale uvnitř hned odmítne každého, kdo není admin.
+- Reálné riziko je dnes nízké: běžný ani demo uživatel ji nespustí. Zbývá teoretické riziko, kdyby někdo podvrhl data v tabulce zálohy (ta je jen pro servis).
+- Oprava: `REVOKE EXECUTE ON FUNCTION public.demo_reset_seed() FROM PUBLIC, anon, authenticated;`
+- Dopad: aplikace ji z prohlížeče nevolá, demo dál funguje. Ruční obnovu pak půjde spustit jen ze serveru nebo údržbou.
 
-Co dělat s e-mailem, který už demo měl: nové demo nezakazovat (nepovinný e-mail by se obcházel), ale nabídnout návrat/převod. Tvrdý zákaz jen po zavedení C a schválení textu.
+**b) Další varování** (skupina „funkce vrací data z chráněných tabulek“ a „každý přihlášený čte celou tabulku“):
+- `teacher_display_names`, `search_teacher_directory`, `find_student_by_code`: vracejí jména a kontakty z profilů. Jde o záměrný adresář učitelů a dohledání žáka podle kódu. Před rozhodnutím ověřím, jestli nevracejí e-mail víc lidem, než je potřeba.
+- `school_license_usage_all`, `demo_visible_user_ids`: ověřím, jestli uvnitř kontrolují roli nebo demo pár.
+- Tabulky `marketplace_settings`, `learning_methods`, `study_methods`, `avatar_item_base_variants` čte každý přihlášený. Jde o veřejné katalogy a nastavení bez osobních údajů, takže je to nejspíš záměr.
 
-## 2. Omezení obsahu a funkcí v demu
+Které dva nálezy stránka Security počítá jako „2 warnings“, z dat přesně nevyčtu. Nejpravděpodobněji jsou to `demo_reset_seed` a jeden z adresářových nálezů.
 
-| Oblast | Dnes | Návrh |
-|---|---|---|
-| Vlastní lekce / listy / prezentace / hry | hry mají insert guard, ostatní bez stropu | strop 20 každého typu (triggery přes `demo_config`) – **M**, DB |
-| Soubory | 2 MB, 20 ks | ponechat |
-| AI | 5 na účet, 150/den | ponechat 5; + per IP (1D) |
-| Tisk / PDF export | bez omezení | ponechat plně (hlavní ukázka hodnoty), přidat vodoznak „Ukázka Bezli" – **S**, frontend |
-| Živá hra | bez stropu hráčů | max 40 hráčů na hru v demu (kontrola v join funkci) – **S–M**, edge funkce |
-| Zprávy | v rámci dvojice | ponechat jen uvnitř demo dvojice (izolace už je); externí příjemci zavřít (ověřit v implementaci) |
-| Hodnocení, úkoly, třída | ukázková třída | ponechat plně – ukazuje hodnotu |
-| Pozvánky žáků, kódy tříd, rodiče, e-maily | e-maily vypnuté | zavřít připojování reálných žáků do demo třídy (ověřit `find_student_by_code`/kódy) – **M** |
-| Doba života | 14 dní nečinnosti + D−0 | ponechat |
+**Informativní** (nízké riziko, záměrné): veřejné učebnice (`get_public_textbook_*`), ověření certifikátů, `get_my_banners`, `get_my_demo_contact_status`, `get_activity_responses` (u živé hry, kontrola join tokenu), `subject_dependency_counts`, `get_public_content_usage_counts` a výpis souborů ve veřejných úložištích `lesson-images`, `avatar-assets` a `school-logos`. V nich mohou být obrázky z lekcí, ale ne práce žáků.
 
-Hodnoty se nastavují v `demo_config` (DB, jeden řádek) a allowlist akcí v `create-demo-session/index.ts`.
+## 3. Ignorovaný nález
+Výsledek kontroly ignorovaný nález ani důvod ignorování neobsahuje, takže ho z dostupných dat neumím přesně určit. Nebudu hádat. V prvním kroku ho dohledám v historii projektu a porovnám s dnešním stavem. Pokud se k ignorování váže důvod, který už neplatí, navrhnu ho obnovit (obnovit ho může jen Kristýna na stránce Security).
 
-## 3. Režim „samostatný učitel zdarma s limity"
+## Postup po schválení
+1. Jedna migrace se třemi příkazy REVOKE (`verify_pin_login`, `creator_payout_target`, `demo_reset_seed`). Žádné jiné změny.
+2. Ověřit čtením, že přihlášení PINem, BezliMarket a demo fungují, a spustit cílené testy.
+3. Zvlášť ověřit limit pokusů ve `verify-pin` a funkce z bodu 2b, bez úprav.
+4. Spustit novou kontrolu. Nic nenasazovat.
 
-- **Zdarma**: Studio (aktivity, hry, listy, prezentace), živá hra s PINem pro žáky bez účtu, vlastní knihovna, tisk.
-- **Limity (návrh)**: 50 uložených materiálů, 20 AI generování/měsíc, 200 MB úložiště, 40 hráčů na hru.
-- **Jen školní licence**: třídy, žákovské účty, úkoly, hodnocení, zprávy, rodiče, rozvrh, učebnice školy.
-- **Technicky nejmenší řešení**: sloupec `profiles.account_tier` (`school` výchozí, `free_teacher`) + tabulka `tier_limits` (klíč úrovně → limity), funkce `tier_reserve(user, kind)` volaná ze stejných míst jako `demo_ai_reserve`; školní účty mají `school` → žádné limity, chování beze změny. UI: skrytí školních sekcí podle úrovně.
-- **Přechod z dema**: existující tok převodu práce (`demo_contacts`) rozšířit o „Pokračovat zdarma jako samostatný učitel" → registrace s `account_tier=free_teacher` a převodem obsahu.
-- Velikost: **L** (DB, RLS pro třídy/úkoly podle úrovně, registrace, převod, testy). Po přednášce.
-
-## Doporučené pořadí
-
-Před 28. 11. (bez DB, kromě jednoho UPDATE):
-1. 1A návrat do vlastního dema (S).
-2. Ověřit QR/odkaz se štítkem `dalkove-ucitele`; případně dočasné okno platnosti štítku (S).
-3. Ke schválení: `UPDATE demo_config SET ai_daily_global = 400;` na dobu akce (S).
-4. Vodoznak u tisku dema (S) – volitelně.
-
-Po přednášce: 1B, 1D, 2 (stropy obsahu, hráčů), pak 1C a 3.
-
-## Rizika
-- Zpřísnění IP limitů může zablokovat školní sítě (NAT) – proto výjimky akcí a měkké hlášky s odkazem „Vytvořit účet".
-- Hash e-mailu = osobní údaj; vyžaduje schválený text souhlasu.
-- Triggery stropů nesmí zasáhnout ostré účty – jen přes `is_demo_user()` / úroveň.
-
-## Testy (při implementaci)
-Návrat místo nového dema; limity IP s výjimkou akce (50 na jedné IP projde); AI per IP; stropy obsahu jen pro demo; školní účet bez limitů.
-
-## Neověřitelné bez živého testu
-Skutečná IP sítě na přednášce, chování Safari s mazáním úložiště, zátěž 50 současných dem.
+Žádná z navržených oprav nemění demo izolaci, Studio, živé hry ani vyhodnocení.
