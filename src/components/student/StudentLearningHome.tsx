@@ -22,7 +22,7 @@ type ModeId = "cards" | "quiz" | "exam" | "material" | "summary" | "path" | "cha
 
 const MODES: Array<{ id: ModeId; title: string; detail: string; icon: typeof Brain; tone: string }> = [
   { id: "cards", title: "Chci si to zapamatovat", detail: "Kartičky", icon: Layers, tone: "learn" },
-  { id: "quiz", title: "Zkus se z toho", detail: "Rychlý kvíz", icon: Gamepad2, tone: "assignments" },
+  { id: "quiz", title: "Vyzkoušej se z toho", detail: "Rychlý kvíz", icon: Gamepad2, tone: "assignments" },
   { id: "exam", title: "Blíží se test", detail: "Příprava na test", icon: Flag, tone: "exam" },
   { id: "material", title: "Můj materiál", detail: "Vlastní text nebo soubor", icon: FileUp, tone: "textbooks" },
   { id: "summary", title: "Shrnutí", detail: "To nejdůležitější z lekce", icon: ListChecks, tone: "portfolio" },
@@ -80,6 +80,10 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
 
   const activeTopics = overview?.topics.filter((topic) => topic.subject === overview.activeSubject) ?? [];
   const progress = overview ? Math.min(100, (overview.todaySessions / overview.dailyGoal) * 100) : 0;
+  const recentLessonIds = (overview?.topics ?? [])
+    .filter((topic) => topic.lastPracticedAt)
+    .sort((a, b) => (b.lastPracticedAt ?? "").localeCompare(a.lastPracticedAt ?? ""))
+    .map((topic) => topic.id);
 
   return (
     <div className="mb-10 space-y-8">
@@ -190,6 +194,7 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
         onOpenChange={(open) => { if (!open) setStudyAction(null); }}
         lessonGroups={overview?.lessonGroups ?? []}
         initialLessonId={overview?.lastLesson?.id ?? null}
+        recentLessonIds={recentLessonIds}
         onError={(message) => toast({ title: "Studijní pomůcka se nepodařila", description: message, variant: "destructive" })}
       />
       <BezlaiTutorChat

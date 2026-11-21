@@ -202,6 +202,11 @@
 - [x] Obecná chybová hláška, test 6 a ověření 9 bannerů v kolotoči při 390 px; bez nasazení.
 - 20 testů prošlo; živá maketa 9 bannerů má 9 teček a funkční devátou volbu, ovládání 344 px v panelu 358 px, bez vodorovného posunu a chyb stránky. Školní text limitu 3 zůstal beze změny.
 
+## Učím se – název kvízu a vyhledávání lekcí
+- [x] Přejmenovat „Zkus se z toho“ na „Vyzkoušej se z toho“ v dlaždici/aria i testech; Rychlý kvíz zůstává.
+- [x] Sdílený combobox pro kartičky a shrnutí: hledání bez diakritiky v názvu/předmětu/učebnici, naposledy procvičované lekce první, prázdný stav, klávesnice a mobil 390 px; bez DB/RLS a nasazení.
+- 9 testů prošlo; živě 22 lekcí, hledání 3 shody, přesný prázdný stav, šipky/Enter/Escape, výběr a maketované kartičky, min. dotykový cíl 50 px a nulový horizontální posun. Skutečná mobilní klávesnice ani ostré AI nebyly spuštěny.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

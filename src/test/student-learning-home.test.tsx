@@ -55,7 +55,7 @@ describe("Učím se – režimy podle záměru", () => {
     expect(screen.getByText("Série: 4 dny")).toBeInTheDocument();
     expect(screen.getByText("120 XP")).toBeInTheDocument();
     expect(screen.getByText("1 zvládnuté téma")).toBeInTheDocument();
-    for (const title of ["Chci si to zapamatovat", "Zkus se z toho", "Blíží se test", "Můj materiál", "Shrnutí", "Cesta po tématech", "Zeptej se Zedíka", "Triky na učení"]) {
+    for (const title of ["Chci si to zapamatovat", "Vyzkoušej se z toho", "Blíží se test", "Můj materiál", "Shrnutí", "Cesta po tématech", "Zeptej se Zedíka", "Triky na učení"]) {
       expect(screen.getByRole("button", { name: new RegExp(title) })).toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "Blíží se test: Test za 3 dny" })).toBeInTheDocument();
@@ -64,7 +64,7 @@ describe("Učím se – režimy podle záměru", () => {
 
   it("rychlý kvíz použije oblíbenou metodu, poslední lekci a pět minut", async () => {
     renderHome();
-    fireEvent.click(await screen.findByRole("button", { name: "Zkus se z toho: Rychlý kvíz" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Vyzkoušej se z toho: Rychlý kvíz" }));
     expect(mocks.onPractice).toHaveBeenCalledWith({ id: "m2", slug: "akrostika" }, "l2", 5);
   });
 

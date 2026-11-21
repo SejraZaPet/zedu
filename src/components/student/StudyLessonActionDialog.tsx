@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Layers, ListChecks, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
 import { Button } from "@/components/ui/button";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import type { PracticeLessonGroup } from "@/lib/student-practice-lessons";
@@ -15,10 +15,11 @@ interface StudyLessonActionDialogProps {
   onOpenChange: (open: boolean) => void;
   lessonGroups: PracticeLessonGroup[];
   initialLessonId: string | null;
+  recentLessonIds?: string[];
   onError: (message: string) => void;
 }
 
-export default function StudyLessonActionDialog({ action, onOpenChange, lessonGroups, initialLessonId, onError }: StudyLessonActionDialogProps) {
+export default function StudyLessonActionDialog({ action, onOpenChange, lessonGroups, initialLessonId, recentLessonIds = [], onError }: StudyLessonActionDialogProps) {
   const [lessonId, setLessonId] = useState(initialLessonId ?? "");
   const [busy, setBusy] = useState(false);
   const [cards, setCards] = useState<StudyCard[]>([]);
@@ -81,19 +82,13 @@ export default function StudyLessonActionDialog({ action, onOpenChange, lessonGr
 
         {!hasResult ? (
           <div className="space-y-3">
-            <Select value={lessonId} onValueChange={setLessonId} disabled={busy || lessonGroups.length === 0}>
-              <SelectTrigger aria-label="Lekce pro studijní pomůcku" className="min-h-11">
-                <SelectValue placeholder={lessonGroups.length ? "Vyber lekci" : "Zatím nemáš dostupnou lekci"} />
-              </SelectTrigger>
-              <SelectContent>
-                {lessonGroups.map((group) => (
-                  <SelectGroup key={group.subject}>
-                    <SelectLabel>{group.subject}</SelectLabel>
-                    {group.lessons.map((lesson) => <SelectItem key={lesson.id} value={lesson.id}>{lesson.title}</SelectItem>)}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+            <LessonSearchCombobox
+              groups={lessonGroups}
+              recentLessonIds={recentLessonIds}
+              value={lessonId}
+              onValueChange={setLessonId}
+              disabled={busy || lessonGroups.length === 0}
+            />
             {lessonGroups.length === 0 && <p className="text-sm text-muted-foreground">Jakmile ti učitel zveřejní lekci, bude dostupná tady.</p>}
           </div>
         ) : action === "cards" ? (
