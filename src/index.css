@@ -544,6 +544,7 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
 .dashboard-compact-grid,
 .teacher-dashboard-wide-grid {
   display: grid;
+  grid-auto-rows: 1fr;
   gap: 12px;
 }
 .dashboard-main-grid {
@@ -579,7 +580,7 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   justify-content: flex-start;
   gap: 12px;
   width: 100%;
-  height: auto;
+  height: 100%;
   min-width: 0;
   min-height: 128px;
   padding: 16px 14px;
