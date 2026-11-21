@@ -65,6 +65,20 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
     expect(onChangeBlock).not.toHaveBeenCalled();
   });
 
+  it("zamčený blok lze vybrat, ale tažením se nezmění", () => {
+    const onChangeBlock = vi.fn();
+    const locked = { ...textBlock("locked"), locked: true } as Block;
+    const { container } = render(
+      <SlideBody slide={{ projector: { headline: "H" }, blocks: [locked] }} editable onChangeBlock={onChangeBlock} />,
+    );
+    const el = container.querySelector("[data-slide-block-id='locked']") as HTMLElement;
+    const root = container.querySelector("[data-slide-root='true']") as HTMLElement;
+    fireEvent(el, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
+    fireEvent(root, new MouseEvent("pointermove", { clientX: 300, clientY: 240 } as any));
+    fireEvent(root, new MouseEvent("pointerup", {} as any));
+    expect(onChangeBlock).not.toHaveBeenCalled();
+  });
+
   it("klik na tlačítko uvnitř bloku tažení nespustí", () => {
     const onChangeBlock = vi.fn();
     const bullet = { id: "b1", type: "bullet_list", visible: true, props: { items: ["a", "b"] } } as Block;

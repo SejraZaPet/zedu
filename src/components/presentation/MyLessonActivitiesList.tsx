@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Puzzle, Sparkles } from "lucide-react";
+import { Loader2, Puzzle, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { activityTypeLabel } from "@/lib/presentation-activity";
 import { collectActivityBlocks, collectStudioActivities, type StudioActivity } from "@/lib/presentation-activity-sources";
 import { fetchGameTemplates } from "@/lib/game-templates";
@@ -28,6 +29,7 @@ export const MyLessonActivitiesList = ({
   onPickStudio?: (item: StudioActivity) => void;
 }) => {
   const [tab, setTab] = useState<"lessons" | "studio">("lessons");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [items, setItems] = useState<MyActivityItem[]>([]);
@@ -88,15 +90,25 @@ export const MyLessonActivitiesList = ({
       className="flex w-full items-start gap-1.5 rounded-md border border-border bg-background px-2 py-1.5 text-left transition-colors hover:border-deck-teal hover:bg-deck-cream"
     >
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-deck-violet" />
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-[11px] font-medium text-foreground">{title}</span>
         <span className="block truncate text-[10px] text-muted-foreground">{sub}</span>
       </span>
+      <span className="shrink-0 rounded-md bg-deck-soft px-2 py-1 text-[10px] font-semibold text-deck-violet">Vložit</span>
     </button>
   );
 
+  const normalizedQuery = query.trim().toLocaleLowerCase("cs");
+  const matches = (...values: string[]) => !normalizedQuery || values.join(" ").toLocaleLowerCase("cs").includes(normalizedQuery);
+  const visibleItems = items.filter((item) => matches(item.title, item.lessonTitle, activityTypeLabel(item.activityType)));
+  const visibleStudio = studio?.filter((item) => matches(item.title, item.templateTitle, activityTypeLabel(item.activityType)));
+
   return (
-    <div className="space-y-1.5 font-deck-body">
+    <div className="space-y-3 font-deck-body">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-deck-muted" />
+        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Hledat název, lekci nebo typ…" aria-label="Hledat aktivity" className="border-deck-line pl-8" />
+      </div>
       {onPickStudio && (
         <div role="tablist" aria-label="Zdroj aktivit" className="grid grid-cols-2 gap-1 rounded-lg bg-deck-cream p-1">
           {([["lessons", "Z lekcí"], ["studio", "Ze Studia"]] as const).map(([v, l]) => (
@@ -117,11 +129,11 @@ export const MyLessonActivitiesList = ({
       {tab === "lessons" ? (
         <>
           {error && <p className="px-1 py-2 text-xs text-destructive">Aktivity se nepodařilo načíst.</p>}
-          {!error && !loading && items.length === 0 && !hasMore && (
-            <p className="px-1 py-2 text-xs text-muted-foreground">Ve svých lekcích zatím nemáte žádné aktivity.</p>
+          {!error && !loading && visibleItems.length === 0 && !hasMore && (
+            <p className="px-1 py-2 text-xs text-muted-foreground">{items.length ? "Hledání neodpovídá žádná aktivita." : "Ve svých lekcích zatím nemáte žádné aktivity."}</p>
           )}
           <div className="space-y-1">
-            {items.map((item) => row(item.key, item.title, `${activityTypeLabel(item.activityType)} · ${item.lessonTitle}`, () => onPick(item)))}
+            {visibleItems.map((item) => row(item.key, item.title, `${activityTypeLabel(item.activityType)} · ${item.lessonTitle}`, () => onPick(item)))}
           </div>
           {loading ? (
             <p className="flex items-center gap-2 px-1 py-2 text-xs text-muted-foreground">
@@ -139,11 +151,11 @@ export const MyLessonActivitiesList = ({
         <p className="flex items-center gap-2 px-1 py-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Načítání Studia…
         </p>
-      ) : studio.length === 0 ? (
-        <p className="px-1 py-2 text-xs text-muted-foreground">Ve Studiu zatím nemáte žádnou sadu s aktivitou.</p>
+      ) : !visibleStudio?.length ? (
+        <p className="px-1 py-2 text-xs text-muted-foreground">{studio.length ? "Hledání neodpovídá žádná aktivita." : "Ve Studiu zatím nemáte žádnou sadu s aktivitou."}</p>
       ) : (
         <div className="space-y-1">
-          {studio.map((s) => row(s.key, s.title, `${activityTypeLabel(s.activityType)} · ${s.templateTitle}`, () => onPickStudio?.(s), Sparkles))}
+          {visibleStudio.map((s) => row(s.key, s.title, `${activityTypeLabel(s.activityType)} · ${s.templateTitle}`, () => onPickStudio?.(s), Sparkles))}
         </div>
       )}
     </div>

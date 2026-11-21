@@ -316,3 +316,12 @@
 - [ ] Etapy 2–5 čekají na zadání
 - [x] Čitelnost karty aktivity na tmavých slidech, barvy aktivity s kontrolou kontrastu, editor prázdného kvízu/ankety, pravý panel vlastností, hlášky co chybí
 - [ ] Jednotný editor aktivit – plán v .lovable/plan/jednotny-editor-aktivit-2026-11-21.md, čeká na schválení
+
+## Etapa 2 – editor prezentací jako Canva
+- [x] Rozdělit editor na menší moduly bez odebrání funkcí.
+- [x] Horní lišta, čtyři záložky levého panelu a dostupné šablony.
+- [x] Plátno s kontextovými akcemi, pravý panel vlastností a pás miniatur.
+- [x] Dotykové ovládání a zmenšená okna.
+- [x] Testy rozvržení a regresní testy editoru.
+- [x] Proklikat hlavní tok v náhledu, zkontrolovat sestavení a commitnout.
+- Ověřeno: 76 testů, typy a build; desktop 1440×900, tablet 1024 px včetně dnd a mobil 390 px. Vlastní [TEST] prezentace smazány; bez DB/RLS a nasazení.

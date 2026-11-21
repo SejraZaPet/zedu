@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, FileDown, Monitor, X } from "lucide-react";
+import { AlertTriangle, FileDown, Monitor, Sparkles, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +28,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  */
 export default function ActivitySettingsPanel({
   spec, onSpecChange, settings, autoFocus, onPrint, printing, onLaunch, onClose,
+  teacherNotes = "", onTeacherNotesChange,
 }: {
   spec: any;
   onSpecChange: (patch: Record<string, unknown>) => void;
@@ -36,14 +38,23 @@ export default function ActivitySettingsPanel({
   printing?: boolean;
   onLaunch: () => void;
   onClose: () => void;
+  teacherNotes?: string;
+  onTeacherNotesChange?: (notes: string) => void;
 }) {
   const at = String(spec?.activityType ?? "");
   const missing = activityMissing(spec);
   return (
-    <aside aria-label="Vlastnosti aktivity" className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-l border-border bg-background p-3 font-deck-body xl:w-[340px]">
+    <aside aria-label="Vlastnosti aktivity" className="deck-properties-panel" data-testid="activity-properties">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet">Aktivita · {activityTypeLabel(at)}</h2>
+        <div>
+          <p className="text-[11px] text-deck-muted">Vlastnosti</p>
+          <h2 className="font-deck-heading text-lg uppercase tracking-wide text-deck-violet">Aktivita · {activityTypeLabel(at)}</h2>
+        </div>
         <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Skrýt panel aktivity" onClick={onClose}><X className="h-4 w-4" /></Button>
+      </div>
+      <div className="mt-3 flex items-start gap-2 rounded-xl bg-deck-soft p-3 text-xs text-deck-violet-deep">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+        <span><strong>Aktivita z editoru</strong><br />Obsah i nastavení upravíte přímo zde. Před spuštěním prosím zkontrolujte.</span>
       </div>
       {missing.length > 0 && (
         <p role="status" className="mt-2 flex gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-foreground">
@@ -78,13 +89,27 @@ export default function ActivitySettingsPanel({
         <ActivityColorsEditor value={spec?.colors} onChange={(colors) => onSpecChange({ colors })} />
       </Section>
 
-      <Section title="Použití">
+      <Section title="Digi i offline">
         <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs" onClick={onPrint} disabled={printing}>
           <FileDown className="h-3.5 w-3.5" /> Vytisknout jako list (PDF tohoto slidu)
         </Button>
         <Button size="sm" className="w-full gap-1.5 text-xs" onClick={onLaunch}>
           <Monitor className="h-3.5 w-3.5" /> Pustit jako živou hru
         </Button>
+      </Section>
+
+      <Section title="Poznámky řečníka">
+        <div className="rounded-xl bg-deck-notes p-3">
+          <p className="mb-2 text-[11px] text-deck-muted">Vidíte je jen vy, žáci je neuvidí.</p>
+          <Textarea
+            aria-label="Poznámky řečníka k aktivitě"
+            rows={4}
+            value={teacherNotes}
+            onChange={(event) => onTeacherNotesChange?.(event.target.value)}
+            placeholder="Poznámka k této aktivitě…"
+            className="border-deck-line bg-transparent text-xs"
+          />
+        </div>
       </Section>
     </aside>
   );

@@ -147,7 +147,7 @@ export const SlideFloatingFormatToolbar = ({
   }, [JSON.stringify(props)]);
 
 
-  if (!block || (!staticBar && !pos)) return null;
+  if (!block || (!staticBar && !pos) || (block as any).locked) return null;
 
   const barClass = staticBar
     ? "flex max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-border bg-popover px-1.5 py-1 shadow-sm"

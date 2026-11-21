@@ -9,10 +9,11 @@ import { Square } from "lucide-react";
 
 interface Props {
   onPick: (props: { shapeKind: ShapeKind; fillColor: string; strokeColor: string; strokeWidth: number }) => void;
+  trigger?: React.ReactNode;
 }
 
 /** Rychlé vložení tvaru na slide s volbou typu a barev. */
-const ShapePickerPopover = ({ onPick }: Props) => {
+const ShapePickerPopover = ({ onPick, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [shapeKind, setShapeKind] = useState<ShapeKind>("rectangle");
   const [fillColor, setFillColor] = useState("#6EC6D9");
@@ -23,9 +24,11 @@ const ShapePickerPopover = ({ onPick }: Props) => {
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" className="h-8 gap-1">
-          <Square className="h-3.5 w-3.5" /> Tvar
-        </Button>
+        {trigger ?? (
+          <Button size="sm" variant="outline" className="h-8 gap-1">
+            <Square className="h-3.5 w-3.5" /> Tvar
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="start"

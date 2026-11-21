@@ -1366,7 +1366,7 @@ function FreeFrameBlock({
   const startDrag =
     (handle: FrameHandle, threshold = 0, onActivate?: () => void) =>
     (e: React.PointerEvent) => {
-      if (!editable || !onChangeFrame) return;
+      if (!editable || !onChangeFrame || (block as any).locked) return;
       if (threshold === 0) e.preventDefault();
       e.stopPropagation();
       onSelect?.({ additive: e.shiftKey && handle === "move" });
@@ -1456,6 +1456,11 @@ function FreeFrameBlock({
 
   const startBodyDrag = (e: React.PointerEvent) => {
     if (!editable) return;
+    if ((block as any).locked) {
+      e.stopPropagation();
+      onSelect?.();
+      return;
+    }
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
     if (target.closest(BODY_DRAG_BAILOUT)) {
@@ -1480,7 +1485,7 @@ function FreeFrameBlock({
 
   /** Tažení za horní úchyt otáčí blok kolem jeho středu. */
   const startRotate = (e: React.PointerEvent) => {
-    if (!editable || !onChangeRotation) return;
+    if (!editable || !onChangeRotation || (block as any).locked) return;
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -1528,7 +1533,7 @@ function FreeFrameBlock({
   };
 
   const nudge = (e: React.KeyboardEvent) => {
-    if (!onChangeFrame) return;
+    if (!onChangeFrame || (block as any).locked) return;
     const step = e.shiftKey ? 5 : 1;
     const map: Record<string, [number, number]> = {
       ArrowLeft: [-step, 0],
@@ -1582,6 +1587,7 @@ function FreeFrameBlock({
         zIndex,
         transform: rotation ? `rotate(${rotation}deg)` : undefined,
         transformOrigin: "center center",
+        opacity: Math.max(0.1, Math.min(1, Number((block.props as any)?.opacity ?? 100) / 100)),
       }}
       onPointerDown={editable ? startBodyDrag : undefined}
     >
@@ -1979,6 +1985,10 @@ export function SlideBody({
    */
   const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
     e.stopPropagation();
+    if ((b as any).locked) {
+      onSelectBlock?.(b.id);
+      return;
+    }
     if (!editable || !onChangeBlock) return;
     if (e.button !== 0) return;
     const targetEl = e.target as HTMLElement | null;
@@ -2084,7 +2094,7 @@ export function SlideBody({
         {editable ? (
           <EditableBlock
             block={b}
-            editable
+            editable={!(b as any).locked}
             asCard={asCard}
             onChange={(patch) => onChangeBlock?.(b.id, patch)}
           />
@@ -2096,14 +2106,14 @@ export function SlideBody({
       </BlockShell>
     );
 
-    if (!editable) return <div key={b.id} className={contrastClass} style={manualHeight ? { minHeight: manualHeight } : undefined}>{shell}</div>;
+    if (!editable) return <div key={b.id} className={contrastClass} style={{ ...(manualHeight ? { minHeight: manualHeight } : {}), opacity: Math.max(0.1, Math.min(1, Number((b.props as any)?.opacity ?? 100) / 100)) }}>{shell}</div>;
 
     return (
       <div
         key={b.id}
         className={`touch-none cursor-move ${contrastClass}`}
         data-no-pan="true"
-        style={manualHeight ? { minHeight: manualHeight } : undefined}
+        style={{ ...(manualHeight ? { minHeight: manualHeight } : {}), opacity: Math.max(0.1, Math.min(1, Number((b.props as any)?.opacity ?? 100) / 100)) }}
         onPointerDown={startPromoteDrag(b)}
       >
         {shell}
@@ -2339,7 +2349,7 @@ export function SlideBody({
               {editable ? (
                 <EditableBlock
                   block={block}
-                  editable
+                  editable={!(block as any).locked}
                   framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />

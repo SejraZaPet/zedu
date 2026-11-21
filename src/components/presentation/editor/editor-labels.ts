@@ -1,0 +1,16 @@
+export const BLOCK_TYPE_LABELS: Record<string, string> = {
+  heading: "Nadpis",
+  paragraph: "Text",
+  bullet_list: "Odrážky",
+  image: "Obrázek",
+  table: "Tabulka",
+  chart: "Graf",
+  formula: "Rovnice",
+  video: "Video",
+  audio: "Zvuk",
+  quote: "Citace",
+  callout: "Box",
+  shape: "Tvar",
+  activity: "Aktivita",
+  group: "Skupina",
+};

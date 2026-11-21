@@ -1,5 +1,5 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
-import { memo, useCallback, useState, useEffect, useMemo, useRef } from "react";
+import { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,11 +41,7 @@ import {
 
 import { Switch } from "@/components/ui/switch";
 import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
-import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
-import StartFromTemplateDialog from "@/components/admin/StartFromTemplateDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
-import { SlideBody } from "@/components/admin/SlideCanvas";
-import { STAGE_W, STAGE_H } from "@/components/admin/SlideCanvas";
 import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides, themeStageStyle } from "@/lib/presentation-themes";
 import { LayoutTemplate, Shapes, Pencil, Eraser } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -62,7 +58,7 @@ import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
 import * as LucideIcons from "lucide-react";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
-import { applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
+import { activityTypeLabel, applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
 import { buildPresetIntoSlide, canHostActivity } from "@/lib/presentation-activity-insert";
 import { cloneStudioSlide } from "@/lib/presentation-activity-sources";
 import {
@@ -78,7 +74,7 @@ import { markSlideEditedByTeacher, restoreSlideFromLesson } from "@/lib/presenta
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
-  Lock, LockOpen, RotateCcw,
+  Lock, LockOpen, RotateCcw, CheckCheck, ArrowLeftRight, Grid3X3,
 } from "lucide-react";
 
 
@@ -87,6 +83,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { persistSlideImageUrl } from "@/lib/slide-image-persist";
+import PresentationTopBar from "@/components/presentation/editor/PresentationTopBar";
+import PresentationLeftPanel, { type EditorLeftTab } from "@/components/presentation/editor/PresentationLeftPanel";
+import PresentationThumbnails from "@/components/presentation/editor/PresentationThumbnails";
+import SelectionPropertiesPanel from "@/components/presentation/editor/SelectionPropertiesPanel";
+import { PRESENTATION_THEMES } from "@/lib/presentation-themes";
+import { PRESENTATION_TEMPLATES } from "@/lib/presentation-templates";
+import { Settings2 as PropertiesIcon } from "lucide-react";
 
 export interface PresentationLessonRef {
   id?: string;
@@ -129,9 +132,9 @@ const InsertTile = ({
   <button
     type="button"
     onClick={onClick}
-    className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-1.5 py-2 text-[11px] text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/60 hover:text-foreground"
+    className="deck-insert-tile"
   >
-    <Icon className="h-4 w-4" />
+    <Icon className="h-5 w-5" />
     <span className="leading-tight text-center">{label}</span>
   </button>
 );
@@ -161,72 +164,6 @@ const blockLabel = (block: Block, index: number) => {
 
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-interface SlideThumbnailProps {
-  slide: any;
-  index: number;
-  themeId: string;
-  active: boolean;
-  dragging: boolean;
-  onSelect: (index: number) => void;
-  onMove: (from: number, to: number) => void;
-  onDragStateChange: (index: number | null) => void;
-}
-
-/** Těžký obsah náhledu se překreslí jen při změně daného slidu, ne při psaní do jiného. */
-const SlideThumbnail = memo(function SlideThumbnail({
-  slide, index, themeId, active, dragging, onSelect, onMove, onDragStateChange,
-}: SlideThumbnailProps) {
-  return (
-    <div
-      draggable
-      onDragStart={(e) => {
-        onDragStateChange(index);
-        e.dataTransfer.setData("text/x-bezli-slide-index", String(index));
-        e.dataTransfer.effectAllowed = "move";
-      }}
-      onDragEnd={() => onDragStateChange(null)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        const from = Number(e.dataTransfer.getData("text/x-bezli-slide-index"));
-        if (Number.isInteger(from)) onMove(from, index);
-      }}
-      className={`relative flex-shrink-0 ${dragging ? "opacity-50" : ""}`}
-    >
-      <button
-        onClick={() => onSelect(index)}
-        title={slide.projector?.headline || `Slide ${index + 1}`}
-        className={`relative aspect-video w-20 flex-shrink-0 cursor-grab overflow-hidden rounded-md border-2 transition-colors xl:w-28 ${
-          active ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
-        }`}
-        style={themeStageStyle(getPresentationTheme(themeId))}
-      >
-        <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
-          <div
-            className="absolute left-0 top-0 origin-top-left"
-            style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
-          >
-            <SlideBody slide={slide} themeId={themeId} />
-          </div>
-        </div>
-        <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
-          {index + 1}
-        </span>
-        {slide?.type === "activity" ? (
-          <span className="absolute left-0.5 top-0.5 rounded-full bg-deck-teal px-1.5 text-[8px] font-bold uppercase tracking-wide text-deck-violet-deep">
-            Aktivita
-          </span>
-        ) : null}
-        {slide?.lockedFromLesson ? (
-          <span className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground" title="Uzamčený snímek – neaktualizuje se z lekce">
-            <Lock className="h-3 w-3" />
-          </span>
-        ) : null}
-      </button>
-    </div>
-  );
-});
-
 export const PresentationEditorDialog = ({
   presentationLesson, source, pendingSlides, generatedSlides = [], setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
@@ -244,6 +181,7 @@ export const PresentationEditorDialog = ({
   const [confirmClose, setConfirmClose] = useState<null | { after?: () => void }>(null);
   useEffect(() => {
     if (!openKey) { baselineRef.current = null; return; }
+    setSavedOnce(false);
     const normalized = normalizePresentationSlides(pendingSlides);
     if (normalized !== pendingSlides) setPendingSlides(normalized);
     baselineRef.current = JSON.stringify(normalized);
@@ -289,12 +227,7 @@ export const PresentationEditorDialog = ({
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   /** Kam se vloží nový snímek z „Přidat snímek“ (null = na konec). */
   const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
-  /** Index snímku, který se právě přetahuje v pruhu náhledů. */
-  const [dragSlideIndex, setDragSlideIndex] = useState<number | null>(null);
-  const [dropSlideIndex, setDropSlideIndex] = useState<number | null>(null);
-
   const history = useValueHistory(pendingSlides, setPendingSlides);
-  const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
@@ -305,9 +238,13 @@ export const PresentationEditorDialog = ({
   const [copiedStyle, setCopiedStyle] = useState<Record<string, unknown> | null>(null);
 
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
-  const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
-  const [teacherNotesOpen, setTeacherNotesOpen] = useState(false);
+  const [sidebarSection, setSidebarSection] = useState<EditorLeftTab>("elements");
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [propertiesOpen, setPropertiesOpen] = useState(true);
+  const [activityCreatorOpen, setActivityCreatorOpen] = useState(true);
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
@@ -414,8 +351,10 @@ export const PresentationEditorDialog = ({
     !(pendingSlides[0]?.blocks || []).length &&
     !String(pendingSlides[0]?.projector?.body || "").trim();
 
+  // Nová prezentace už neblokuje práci modálním oknem. Šablony jsou stále
+  // dostupné jako čtvrtá záložka levého panelu.
   useEffect(() => {
-    if (presentationLesson && isEmptyNewPresentation) setTemplateOpen(true);
+    if (presentationLesson && isEmptyNewPresentation) setSidebarSection("templates");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presentationLesson?.title]);
 
@@ -442,9 +381,8 @@ export const PresentationEditorDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
 
-  // Při přepnutí snímku sbal prázdné pole poznámek a schovej plovoucí lištu
+  // Při přepnutí snímku schovej plovoucí lištu.
   useEffect(() => {
-    setTeacherNotesOpen(false);
     setSelectedBlockId(null);
   }, [editingSlideIndex]);
 
@@ -457,6 +395,7 @@ export const PresentationEditorDialog = ({
         canvasWrapRef.current?.contains(target) ||
         target.closest("[data-slide-toolbar='true']") ||
         target.closest("[data-slide-sidebar='true']") ||
+        target.closest(".deck-properties-panel") ||
         target.closest("[data-radix-popper-content-wrapper]")
       ) {
         return;
@@ -496,14 +435,21 @@ export const PresentationEditorDialog = ({
 
   const moveBlock = (id: string, dir: "up" | "down") => {
     const i = blocks.findIndex((b) => b.id === id);
-    if (i < 0) return;
+    if (i < 0 || (blocks[i] as any).locked) return;
     const j = dir === "up" ? i - 1 : i + 1;
     if (j < 0 || j >= blocks.length) return;
     const next = [...blocks];
     [next[i], next[j]] = [next[j], next[i]];
     setBlocks(next, true);
   };
-  const deleteBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id), true, [id]);
+  const deleteBlock = (id: string) => {
+    const target = blocks.find((block) => block.id === id);
+    if ((target as any)?.locked) {
+      toast({ title: "Prvek je zamčený", description: "Nejprve ho odemkněte v panelu Vlastnosti." });
+      return;
+    }
+    setBlocks(blocks.filter((b) => b.id !== id), true, [id]);
+  };
   /**
    * Úprava jednoho bloku. Pracuje funkčně nad `pendingSlides`, takže dvě
    * změny ve stejném ticku (např. commit textu při blur + povýšení do frame)
@@ -515,6 +461,7 @@ export const PresentationEditorDialog = ({
       if (!slide) return prev;
       const nextBlocks = ((slide.blocks || []) as Block[]).map((b) => {
         if (b.id !== id) return b;
+        if ((b as any).locked && (typeof patch === "function" || Object.keys(patch).some((key) => key !== "locked"))) return b;
         const next = typeof patch === "function" ? patch(b) : { ...b, ...patch };
         // Ručně upravený blok se při přegenerování z lekce nepřepíše.
         return { ...next, editedByTeacher: true } as Block;
@@ -612,6 +559,7 @@ export const PresentationEditorDialog = ({
     // Klik na už vybraný prvek uvnitř většího výběru výběr nezruší.
     if (id && selectedBlockIds.length > 1 && selectedBlockIds.includes(id)) return;
     setSelectedBlockId(id);
+    if (id) setPropertiesOpen(true);
   };
 
   /* ── FÁZE 2 + 3 – zarovnání, rozmístění a skupiny ────────────────── */
@@ -619,7 +567,7 @@ export const PresentationEditorDialog = ({
   /** Rámce vybraných volně umístěných prvků (v pořadí výběru). */
   const selectedFramed = selectedBlockIds
     .map((id) => blocks.find((b) => b.id === id))
-    .filter((b): b is Block => !!b && !!getBlockFrame(b));
+    .filter((b): b is Block => !!b && !!getBlockFrame(b) && !(b as any).locked);
 
   const alignSelectedToStage = (mode: AlignMode) => {
     const target = selectedFramed[0];
@@ -678,9 +626,13 @@ export const PresentationEditorDialog = ({
   /** Smaže všechny vybrané prvky. */
   const deleteSelection = () => {
     if (!selectedBlockIds.length) return;
-    const ids = new Set(selectedBlockIds);
+    const ids = new Set(selectedBlockIds.filter((id) => !(blocks.find((block) => block.id === id) as any)?.locked));
+    if (!ids.size) {
+      toast({ title: "Prvky jsou zamčené", description: "Nejprve je odemkněte v panelu Vlastnosti." });
+      return;
+    }
     setBlocks(blocks.filter((b) => !ids.has(b.id)), true, [...ids]);
-    setSelectedBlockIds([]);
+    setSelectedBlockIds((prev) => prev.filter((id) => !ids.has(id)));
   };
 
   /**
@@ -759,11 +711,6 @@ export const PresentationEditorDialog = ({
     setSelectedBlockId(null);
   }, [setEditingSlideIndex]);
 
-  const setSlideDragState = useCallback((index: number | null) => {
-    setDragSlideIndex(index);
-    if (index === null) setDropSlideIndex(null);
-  }, []);
-
   /** Vložení snímků na konkrétní pozici (index = kam se vloží první z nich). */
   const insertSlidesAt = (index: number, newSlides: any[]) => {
     if (!newSlides.length) return;
@@ -785,6 +732,7 @@ export const PresentationEditorDialog = ({
   /** Po vložení aktivity se rovnou otevře její editor (pravý panel) s kurzorem v otázce. */
   const openActivityEditor = (slide: any, index: number) => {
     setActivityPanelOpen(true);
+    setPropertiesOpen(true);
     setFocusActivityFor(slide?.slideId ?? index);
   };
 
@@ -913,6 +861,44 @@ export const PresentationEditorDialog = ({
     toast({ title: "Aktivita ze Studia vložena", description: `„${label}" byla přidána jako nový slide.` });
   };
 
+  const handleSave = async () => {
+    if (!onSave || saving) return;
+    setSaving(true);
+    try {
+      await onSave(pendingSlides);
+      baselineRef.current = JSON.stringify(pendingSlides);
+      setSavedOnce(true);
+      setConfirmClose(null);
+      const missing = presentationMissingReport(pendingSlides);
+      toast(missing.length
+        ? { title: "Uloženo – aktivity nejsou hotové", description: `${missing.slice(0, 3).join("; ")}${missing.length > 3 ? " …" : ""}.` }
+        : { title: "Prezentace uložena", description: "Všechny změny jsou uložené." });
+    } catch (e: any) {
+      toast({ title: "Uložení se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const duplicateCurrentSlide = () => {
+    const src = pendingSlides[editingSlideIndex];
+    if (!src) return;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.slideId = crypto.randomUUID();
+    if (Array.isArray(copy.blocks)) copy.blocks = copy.blocks.map((b: any) => ({ ...b, id: crypto.randomUUID() }));
+    const updated = [...pendingSlides];
+    updated.splice(editingSlideIndex + 1, 0, copy);
+    setPendingSlides(updated);
+    setEditingSlideIndex(editingSlideIndex + 1);
+  };
+
+  const deleteCurrentSlide = () => {
+    if (pendingSlides.length <= 1) return;
+    const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
+    setPendingSlides(updated);
+    setEditingSlideIndex(Math.min(editingSlideIndex, updated.length - 1));
+  };
+
   const aiActivityButton = (
     <div className="rounded-lg border border-dashed border-primary/50 bg-primary/5 p-2">
       <Button
@@ -933,1084 +919,266 @@ export const PresentationEditorDialog = ({
     </div>
   );
 
-  const RAIL_ITEMS = [
-    { id: "insert" as const, icon: Plus, label: "Vložit" },
-    { id: "slide" as const, icon: Settings, label: "Slide" },
-    { id: "activities" as const, icon: Puzzle, label: "Aktivity" },
-  ];
-
-
-
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) requestClose(); }}>
-        <DialogContent className="flex h-[93vh] max-w-[1500px] flex-col gap-0 overflow-hidden p-0">
-          {/* 1. HORNÍ PANEL – jeden řádek: vlevo vzhled slidu, vpravo akce s dokumentem */}
-          <DialogHeader className="shrink-0 space-y-0 border-b border-border bg-muted/60 px-4 py-2 backdrop-blur-sm">
-            <DialogTitle className="sr-only">
-              Editor prezentace – {presentationLesson?.title}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Úprava slidů prezentace: vzhled, obsah a spuštění živé prezentace.
-            </DialogDescription>
+        <DialogContent className="deck-editor-shell flex h-[100dvh] w-[100vw] max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0">
+          <DialogTitle className="sr-only">Editor prezentace – {presentationLesson?.title}</DialogTitle>
+          <DialogDescription className="sr-only">Úprava slidů prezentace: vzhled, obsah a spuštění živé prezentace.</DialogDescription>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* ČÁST 2 – zpět na lekci / na seznam samostatných prezentací */}
-              {lessonBackUrl && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 max-w-[220px] gap-1.5 text-xs"
-                  onClick={() => requestClose(() => navigate(lessonBackUrl))}
-                  title={isStandalone ? "Zpět na prezentace" : `Zpět na lekci ${presentationLesson?.title ?? ""}`}
-                >
-                  <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">
-                    {isStandalone
-                      ? "Zpět na prezentace"
-                      : `Zpět na lekci${presentationLesson?.title ? `: ${presentationLesson.title}` : ""}`}
-                  </span>
-                </Button>
-              )}
-
-
-              {/* Skupina „vzhled slidu“ */}
-
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-background/70 px-2 py-1">
-                <Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}>
-                  <SelectTrigger className="h-8 w-[124px] text-xs" title="Přechod mezi slidy">
-                    <SelectValue placeholder="Přechod" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SLIDE_TRANSITIONS.map((t) => (
-                      <SelectItem key={t.value} value={t.value} title={t.hint}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center gap-1.5">
-                  <Label className="whitespace-nowrap text-xs text-muted-foreground">Písmo</Label>
-                  <input
-                    type="range"
-                    min={0.7}
-                    max={1.6}
-                    step={0.05}
-                    value={(currentSlide?.projector?.fontScale as number) || 1}
-                    onChange={(e) => updateProjector({ fontScale: parseFloat(e.target.value) })}
-                    className="w-20 accent-primary"
-                    aria-label="Velikost písma slidu"
-                  />
-                  <span className="w-9 tabular-nums text-xs text-muted-foreground">
-                    {Math.round(((currentSlide?.projector?.fontScale as number) || 1) * 100)}%
-                  </span>
-                </div>
-
-                <ThemeGalleryPopover themeId={themeId} onChange={setThemeId} />
-
-                <button
-                  type="button"
-                  onClick={() => setDarkPreview((v) => !v)}
-                  className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {darkPreview ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-                  {darkPreview ? "Světlý" : "Tmavý"}
-                </button>
-
-                {linkedToLesson && currentSlide?.editedByTeacher && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <Pencil className="h-3 w-3" /> ručně upraveno
-                  </Badge>
-                )}
-
-                {linkedToLesson && currentSlide?.lockedFromLesson ? (
-                  <button
-                    type="button"
-                    disabled={generatedSlides.length === 0}
-                    onClick={() => {
-                      const restored = restoreSlideFromLesson(generatedSlides, pendingSlides, editingSlideIndex);
-                      if (!restored) {
-                        toast({ title: "Snímek v lekci neexistuje", description: "Obnovení proto není dostupné.", variant: "destructive" });
-                        return;
-                      }
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = restored;
-                      setPendingSlides(updated);
-                      toast({ title: "Snímek obnoven z učebnice" });
-                    }}
-                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                    title="Vrátí obsah i vzhled tohoto snímku do čerstvě vygenerované podoby"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Obnovit z učebnice
-                  </button>
-                ) : linkedToLesson ? (
-                  <button
-                    type="button"
-                    onClick={() => updateSlide({ lockedFromLesson: true }, { markEdited: false })}
-                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    title="Uzamknout snímek, aby ho změny v lekci nepřepsaly"
-                  >
-                    <LockOpen className="h-3.5 w-3.5" /> Neaktualizovat z lekce
-                  </button>
-                ) : null}
-
-                {linkedToLesson && pendingSlides.some((s: any) => s?.lockedFromLesson) && (
-                  <button
-                    type="button"
-                    onClick={() => setPendingSlides((prev) => prev.map((s: any) => (
-                      s?.lockedFromLesson ? { ...s, lockedFromLesson: false, editedByTeacher: false } : s
-                    )))}
-                    className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    title="Odemknout všechny snímky, aby se při dalším otevření znovu aktualizovaly z lekce"
-                  >
-                    <LockOpen className="h-3.5 w-3.5" /> Odemknout vše
-                  </button>
-                )}
-              </div>
-
-
-              <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="hidden text-xs lg:inline-flex">
-                {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
-              </Badge>
-
-              {/* Skupina „akce s dokumentem“ */}
-              <div className="ml-auto flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={handleExportPdf} disabled={exportingPdf}>
-                  {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                  PDF
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8" onClick={() => requestClose()}>Zrušit</Button>
-                {onSave && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 gap-1.5"
-                    onClick={async () => {
-                      await onSave(pendingSlides);
-                      baselineRef.current = JSON.stringify(pendingSlides);
-                      setConfirmClose(null);
-                      const missing = presentationMissingReport(pendingSlides);
-                      toast(missing.length
-                        ? { title: "Uloženo – aktivity nejsou hotové", description: `${missing.slice(0, 3).join("; ")}${missing.length > 3 ? " …" : ""}.` }
-                        : { title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
-                    }}
-                  >
-                    <Save className="h-4 w-4" /> Uložit
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => launchWithCheck()}
-                  className="h-8 gap-1.5 border-0 bg-gradient-brand text-white hover:opacity-90"
-                >
-                  <Monitor className="h-4 w-4" /> Spustit prezentaci
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {/* 2. NÁHLEDY SLIDŮ – kompaktní vodorovný pruh */}
-          <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background/60 px-4 py-2">
-            <div className="flex flex-1 items-stretch gap-1 overflow-x-auto pb-1">
-              {pendingSlides.map((slide, i) => (
-                <div key={slide?.slideId || i} className="flex flex-shrink-0 items-stretch gap-1">
-                  {/* Vložit nový snímek PŘED tento (funguje i před prvním) */}
-                  <button
-                    type="button"
-                    title={`Vložit nový snímek před snímek ${i + 1}`}
-                    aria-label={`Vložit nový snímek před snímek ${i + 1}`}
-                    onClick={() => openAddSlideAt(i)}
-                    onDragOver={(e) => { e.preventDefault(); setDropSlideIndex(i); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (dragSlideIndex !== null) moveSlide(dragSlideIndex, dragSlideIndex < i ? i - 1 : i);
-                      setDragSlideIndex(null);
-                      setDropSlideIndex(null);
-                    }}
-                    className={`group flex w-4 shrink-0 items-center justify-center rounded transition-colors ${
-                      dropSlideIndex === i ? "bg-primary/70" : "hover:bg-primary/20"
-                    }`}
-                  >
-                    <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
-                  </button>
-                  {slide?.sectionTitle ? (
-                    <div className="flex flex-col items-center justify-center border-l-2 border-primary pl-1.5">
-                      <span className="max-w-[70px] text-[9px] font-semibold uppercase leading-tight tracking-wide text-primary">
-                        {slide.sectionTitle}
-                      </span>
-                    </div>
-                  ) : null}
-                  <div className="relative flex-shrink-0">
-                    <SlideThumbnail
-                      slide={slide}
-                      index={i}
-                      themeId={themeId}
-                      active={i === editingSlideIndex}
-                      dragging={dragSlideIndex === i}
-                      onSelect={selectSlide}
-                      onMove={moveSlide}
-                      onDragStateChange={setSlideDragState}
-                    />
-                    {/* Šipky pro přesun (záloha k drag & drop) */}
-                    {pendingSlides.length > 1 && (
-                      <div className="absolute right-0.5 top-0.5 flex gap-0.5">
-                        <button
-                          type="button"
-                          disabled={i === 0}
-                          title="Posunout snímek doleva"
-                          aria-label="Posunout snímek doleva"
-                          onClick={(e) => { e.stopPropagation(); moveSlide(i, i - 1); }}
-                          className="rounded bg-background/85 p-0.5 text-foreground disabled:opacity-30 hover:bg-background"
-                        >
-                          <ChevronLeft className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={i === pendingSlides.length - 1}
-                          title="Posunout snímek doprava"
-                          aria-label="Posunout snímek doprava"
-                          onClick={(e) => { e.stopPropagation(); moveSlide(i, i + 1); }}
-                          className="rounded bg-background/85 p-0.5 text-foreground disabled:opacity-30 hover:bg-background"
-                        >
-                          <ChevronRight className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {/* Vložit na konec / přetáhnout na konec */}
-              <button
-                type="button"
-                title="Vložit nový snímek na konec"
-                aria-label="Vložit nový snímek na konec"
-                onClick={() => openAddSlideAt(pendingSlides.length)}
-                onDragOver={(e) => { e.preventDefault(); setDropSlideIndex(pendingSlides.length); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (dragSlideIndex !== null) moveSlide(dragSlideIndex, pendingSlides.length - 1);
-                  setDragSlideIndex(null);
-                  setDropSlideIndex(null);
-                }}
-                className={`group flex w-5 shrink-0 items-center justify-center rounded transition-colors ${
-                  dropSlideIndex === pendingSlides.length ? "bg-primary/70" : "hover:bg-primary/20"
-                }`}
-              >
-                <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
-              </button>
-            </div>
-
-
-            <div className="flex shrink-0 items-center gap-1 border-l border-border pl-2">
-              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => openAddSlideAt(editingSlideIndex + 1)}>
-                <Plus className="h-3.5 w-3.5" /> Slide
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 text-xs"
-                title="Vložit nový snímek na začátek prezentace"
-                onClick={() => openAddSlideAt(0)}
-              >
-                <Plus className="h-3.5 w-3.5" /> Na začátek
-              </Button>
-
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                title="Duplikovat slide"
-                onClick={() => {
-                  const src = pendingSlides[editingSlideIndex];
-                  if (!src) return;
-                  const copy = JSON.parse(JSON.stringify(src));
-                  copy.slideId = crypto.randomUUID();
-                  if (Array.isArray(copy.blocks)) {
-                    copy.blocks = copy.blocks.map((b: any) => ({ ...b, id: crypto.randomUUID() }));
-                  }
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, copy);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-
-              {/* ČÁST 1 – vložení zkopírovaného bloku na aktuální slide */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1 px-2 text-xs"
-                title={copiedBlock ? "Vložit kopii zkopírovaného bloku" : "Nejdřív zkopírujte blok tlačítkem Kopírovat v liště nad slidem"}
-                disabled={!copiedBlock}
-                onClick={pasteBlock}
-              >
-                <ClipboardPaste className="h-3.5 w-3.5" /> Vložit kopii
-              </Button>
-
-              {/* ČÁST 2 – vložení zkopírovaného stylu na vybraný blok */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1 px-2 text-xs"
-                title={
-                  !copiedStyle
-                    ? "Nejdřív zkopírujte styl štětcem v liště nad slidem"
-                    : !selectedBlockId
-                      ? "Vyberte blok, na který se styl použije"
-                      : "Použít zkopírovaný styl na vybraný blok"
-                }
-                disabled={!copiedStyle || !selectedBlockId}
-                onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}
-              >
-                <Paintbrush className="h-3.5 w-3.5" /> Vložit styl
-              </Button>
-
-              {pendingSlides.length > 1 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0 text-destructive"
-                  title="Smazat slide"
-                  onClick={() => {
-                    const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
-                    setPendingSlides(updated);
-                    setEditingSlideIndex(Math.min(editingSlideIndex, updated.length - 1));
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          </div>
+          <PresentationTopBar
+            title={presentationLesson?.title || "Prezentace"}
+            linkedLessonTitle={linkedToLesson ? presentationLesson?.title : null}
+            dirty={isDirty || (!hasSavedPresentation && !savedOnce)}
+            saving={saving}
+            exporting={exportingPdf}
+            canSave={!!onSave}
+            onBack={lessonBackUrl ? () => requestClose(() => navigate(lessonBackUrl)) : () => requestClose()}
+            onImport={() => { setImportPptxOpen(true); toast({ title: "Import PowerPointu", description: "PPTX můžete vložit nyní. Věrný import PDF připravujeme v etapě 4." }); }}
+            onExport={handleExportPdf}
+            onAssign={() => toast({ title: "Zadání žákům připravujeme", description: "Prezentaci zatím můžete spustit živě nebo exportovat do PDF." })}
+            onSave={() => void handleSave()}
+            onLaunch={launchWithCheck}
+          />
 
           {currentSlide && (
-            <div className="flex min-h-0 flex-1">
-              {/* 3. LEVÝ POSTRANNÍ PANEL */}
-              <aside data-slide-sidebar="true" className="flex shrink-0 border-r border-border bg-muted/20">
-                {/* Úzký sloupec ikon (Canva style) */}
-                <div className="flex w-16 shrink-0 flex-col gap-1 border-r border-border py-2">
-                  {RAIL_ITEMS.map((item) => {
-                    const active = sidebarSection === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setSidebarSection(item.id)}
-                        aria-pressed={active}
-                        className={`mx-1 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium transition-colors ${
-                          active ? "bg-accent/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                        }`}
-                      >
-                        <item.icon className={`h-5 w-5 ${active ? "text-primary" : ""}`} />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Rozbalovací panel vybrané sekce */}
-                <div className="flex min-h-0 w-[200px] flex-col overflow-y-auto xl:w-[240px]">
-                  {sidebarSection === "insert" && (
-                  <div className="p-2">
-
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <InsertTile icon={HeadingIcon} label="Nadpis" onClick={() => addBlock("heading")} />
-                      <InsertTile icon={Type} label="Text" onClick={() => addBlock("paragraph")} />
-                      <InsertTile icon={List} label="Odrážky" onClick={() => addBlock("bullet_list")} />
-                      <InsertTile icon={StickyNote} label="Box" onClick={() => addBlock("callout")} />
-                      <InsertTile icon={QuoteIcon} label="Citace" onClick={() => addBlock("quote")} />
-                      <InsertTile icon={TableIcon} label="Tabulka" onClick={() => addBlock("table")} />
-                      <InsertTile icon={BarChart3} label="Graf" onClick={() => addBlock("chart")} />
-                      <InsertTile icon={Sigma} label="Rovnice" onClick={() => addBlock("formula")} />
-                      <InsertTile icon={VideoIcon} label="Video" onClick={() => addBlock("video")} />
-                      <InsertTile icon={Music} label="Zvuk" onClick={() => addBlock("audio")} />
-
-                      <MediaPickerDialog
-                        imageOnly
-                        onPickMany={async (picked) => {
-                          const targetSlideId = currentSlide?.slideId;
-                          const added: Block[] = [];
-                          for (const { url, item } of picked) {
-                            const finalUrl = await persistSlideImageUrl(url, item, user?.id);
-                            const newBlock = createDefaultBlock("image");
-                            newBlock.props = { ...newBlock.props, url: finalUrl };
-                            added.push(newBlock);
-                          }
-                          const latest = pendingSlidesRef.current;
-                          const index = latest.findIndex((slide) => slide.slideId === targetSlideId);
-                          if (index < 0) throw new Error("Snímek již není dostupný.");
-                          const slide = latest[index];
-                          const next = [...latest];
-                          next[index] = markSlideEditedByTeacher({ ...slide, blocks: [...(slide.blocks || []), ...added], structureEditedByTeacher: true }, linkedToLesson);
-                          setPendingSlides(next);
-                        }}
-                        onPick={(url, item) => {
-                          void insertPersistentImage(url, item, (finalUrl) => {
-                            const newBlock = createDefaultBlock("image");
-                            newBlock.props = { ...newBlock.props, url: finalUrl };
-                            setBlocks([...blocks, newBlock]);
-                          });
-                        }}
-                        trigger={
-                          <button
-                            type="button"
-                            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-1.5 py-2 text-[11px] text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/60 hover:text-foreground"
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                            <span className="leading-tight">Obrázek</span>
-                          </button>
-                        }
-                      />
-
-                      <IconPickerDialog
-                        themeId={themeId}
-                        onPick={({ name, color }) => {
-                          const newBlock = createDefaultBlock("image");
-                          newBlock.props = { ...newBlock.props, url: "", icon: name, iconColor: color, width: "medium" };
-                          setBlocks([...blocks, newBlock]);
-                        }}
-                        trigger={
-                          <button
-                            type="button"
-                            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-1.5 py-2 text-[11px] text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/60 hover:text-foreground"
-                          >
-                            <Shapes className="h-4 w-4" />
-                            <span className="leading-tight">Ikona</span>
-                          </button>
-                        }
-                      />
-                    </div>
-
-                    <div className="mt-3 space-y-2 border-t border-border pt-3">
-                      <ShapePickerPopover
-                        onPick={(props) => {
-                          const newBlock = createDefaultBlock("shape");
-                          newBlock.props = { ...newBlock.props, ...props };
-                          // Tvary vkládáme přímo do volné vrstvy, ať jdou hned posouvat a resizovat.
-                          (newBlock as any).frame = { x: 20, y: 20, w: 60, h: 40 };
-                          setBlocks([...blocks, newBlock]);
-                        }}
-                      />
-                      <AiBlockTextButton
-                        block={selectedBlock}
-                        headline={currentSlide.projector?.headline || ""}
-                        lessonTitle={presentationLesson?.title || ""}
-                        onAccept={(text) => {
-                          if (!selectedBlockId) return;
-                          updateBlock(selectedBlockId, (b: Block) => ({
-                            ...b,
-                            props: { ...b.props, text: b.type === "heading" ? text : `<p>${text}</p>` },
-                          }));
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full justify-start gap-1.5 text-xs"
-                        onClick={() => setTemplateOpen(true)}
-                      >
-                        <LayoutTemplate className="h-3.5 w-3.5" /> Začít od šablony
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full justify-start gap-1.5 text-xs"
-                        onClick={() => setImportPptxOpen(true)}
-                      >
-                        <FileUp className="h-3.5 w-3.5" /> Importovat prezentaci (.pptx)
-                      </Button>
-                    </div>
-                  </div>
-                  )}
-
-                  {/* ---- Sekce Slide ---- */}
-                  {sidebarSection === "slide" && (
-                  <div className="space-y-4 p-3">
-
-                    <div>
-                      <Label className="text-xs">Rozvržení</Label>
-                      <Select
-                        value={(currentSlide.layout as SlideLayout) || "full"}
-                        onValueChange={(v) => updateSlide({ layout: v as SlideLayout })}
-                      >
-                        <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {SLIDE_LAYOUTS.map((l) => (
-                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Volné umístění bloků (opt-in) */}
-                    {blocks.length > 0 && (
-                      <div className="space-y-2 rounded-lg border border-border p-2">
-                        <Label className="flex items-center gap-1.5 text-xs">
-                          <Move className="h-3.5 w-3.5" /> Volné umístění bloků
-                        </Label>
-                        <p className="text-[11px] text-muted-foreground">
-                          Blok můžete přetáhnout myší přímo na slidu — tím se automaticky vyjme
-                          z lineárního rozvržení. Vypnutím přepínače ho vrátíte zpět do flow.
-                        </p>
-                        <div className="space-y-1.5">
-                          {blocks.map((b, i) => {
-                            const free = !!getBlockFrame(b);
-                            return (
-                              <div
-                                key={b.id}
-                                className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 ${
-                                  selectedBlockId === b.id ? "border-primary bg-primary/5" : "border-border"
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedBlockId(b.id)}
-                                  className="min-w-0 flex-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
-                                  title={blockLabel(b, i)}
-                                >
-                                  {blockLabel(b, i)}
-                                </button>
-                                <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                                  {free ? "Vrátit do flow" : "Volné umístění"}
-                                </span>
-                                <Switch
-                                  checked={free}
-                                  aria-label={
-                                    free
-                                      ? `Vrátit blok ${i + 1} do flow`
-                                      : `Volné umístění bloku ${i + 1}`
-                                  }
-                                  onCheckedChange={(v) => {
-                                    setSelectedBlockId(b.id);
-                                    updateBlock(b.id, (prev: Block) => {
-                                      if (v) return { ...prev, frame: { ...DEFAULT_BLOCK_FRAME } };
-                                      const { frame, ...rest } = prev as any;
-                                      return rest as Block;
-                                    });
-                                  }}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                      </div>
-                    )}
-
-
-
-                    {/* Zóny přiblížení */}
-                    {isZoomableSlide(currentSlide) && (
-                      <Collapsible className="rounded-lg border border-border">
-                        <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/40">
-                          <span className="flex items-center gap-1.5">
-                            <ZoomIn className="h-3.5 w-3.5" />
-                            Zóny přiblížení ({(currentSlide.zoomZones || []).length})
-                          </span>
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="px-2 pb-2">
-                          <ZoomZonesEditor
-                            slide={currentSlide}
-                            darkMode={darkPreview}
-                            onChange={(zones: ZoomZone[]) => updateSlide({ zoomZones: zones })}
-                          />
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
-
-                    {/* Pozadí slidu */}
-                    <div className="space-y-2">
-                      <Label className="text-xs">Pozadí tohoto slidu</Label>
-                      <button
-                        type="button"
-                        onClick={() => updateSlide({ backgroundOverride: null })}
-                        className={`w-full rounded-lg border-2 px-2 py-1 text-xs font-medium transition-colors ${
-                          !(currentSlide as any).backgroundOverride
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border text-muted-foreground hover:bg-muted/50"
-                        }`}
-                      >
-                        Podle tématu prezentace
-                      </button>
-                      <p className="text-[11px] text-muted-foreground">Plná barva</p>
-                      <ColorPicker
-                        value={(currentSlide as any).backgroundOverride?.color || null}
-                        onChange={(v) =>
-                          updateSlide({ backgroundOverride: v ? { color: v } : null })
-                        }
-                        swatches={SLIDE_BACKGROUND_COLORS}
-                      />
-                      <p className="text-[11px] text-muted-foreground">Barevný přechod</p>
-                      <GradientPicker
-                        value={(currentSlide as any).backgroundOverride?.gradient || null}
-                        onChange={(v) =>
-                          updateSlide({
-                            backgroundOverride: v
-                              ? { gradient: v }
-                              : (currentSlide as any).backgroundOverride?.gradient
-                                ? null
-                                : (currentSlide as any).backgroundOverride || null,
-                          })
-                        }
-                      />
-
-
-                      <div className="grid grid-cols-1 gap-1.5">
+            <div className="deck-editor-workspace">
+              <PresentationLeftPanel active={sidebarSection} onChange={setSidebarSection} open={leftPanelOpen} onToggle={() => setLeftPanelOpen((v) => !v)}>
+                {sidebarSection === "elements" && (
+                  <div className="space-y-5">
+                    <section>
+                      <h2 className="mb-3 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Přidat prvek</h2>
+                      <div className="grid grid-cols-3 gap-2">
+                        <InsertTile icon={HeadingIcon} label="Nadpis" onClick={() => addBlock("heading")} />
+                        <InsertTile icon={Type} label="Text" onClick={() => addBlock("paragraph")} />
+                        <InsertTile icon={List} label="Odrážky" onClick={() => addBlock("bullet_list")} />
                         <MediaPickerDialog
                           imageOnly
-                          onPick={(url, item) => {
-                            void insertPersistentImage(url, item, (finalUrl) =>
-                              updateSlide({ backgroundOverride: { image: finalUrl } }),
-                            );
+                          onPickMany={async (picked) => {
+                            const targetSlideId = currentSlide?.slideId;
+                            const added: Block[] = [];
+                            for (const { url, item } of picked) {
+                              const finalUrl = await persistSlideImageUrl(url, item, user?.id);
+                              const newBlock = createDefaultBlock("image");
+                              newBlock.props = { ...newBlock.props, url: finalUrl };
+                              added.push(newBlock);
+                            }
+                            const latest = pendingSlidesRef.current;
+                            const index = latest.findIndex((slide) => slide.slideId === targetSlideId);
+                            if (index < 0) throw new Error("Snímek již není dostupný.");
+                            const slide = latest[index];
+                            const next = [...latest];
+                            next[index] = markSlideEditedByTeacher({ ...slide, blocks: [...(slide.blocks || []), ...added], structureEditedByTeacher: true }, linkedToLesson);
+                            setPendingSlides(next);
                           }}
-                          trigger={
-                            <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
-                              <ImageIcon className="h-3.5 w-3.5" /> Obrázek pozadí
-                            </Button>
-                          }
+                          onPick={(url, item) => {
+                            void insertPersistentImage(url, item, (finalUrl) => {
+                              const newBlock = createDefaultBlock("image");
+                              newBlock.props = { ...newBlock.props, url: finalUrl };
+                              setBlocks([...blocks, newBlock]);
+                            });
+                          }}
+                          trigger={<button type="button" className="deck-insert-tile"><ImageIcon className="h-5 w-5" /><span>Obrázek</span></button>}
                         />
-                        <GameBackgroundPickerDialog
-                          onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
-                          trigger={
-                            <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
-                              <Gamepad2 className="h-3.5 w-3.5" /> Vybrat z herních pozadí
-                            </Button>
-                          }
+                        <ShapePickerPopover
+                          onPick={(props) => {
+                            const newBlock = createDefaultBlock("shape");
+                            newBlock.props = { ...newBlock.props, ...props };
+                            (newBlock as any).frame = { x: 20, y: 20, w: 60, h: 40 };
+                            setBlocks([...blocks, newBlock]);
+                          }}
+                          trigger={<button type="button" className="deck-insert-tile"><Shapes className="h-5 w-5" /><span>Tvar</span></button>}
                         />
-                        <div className="flex justify-end">
-                          <BetaBadge context="Editor prezentace – herní pozadí" />
-                        </div>
+                        <InsertTile icon={TableIcon} label="Tabulka" onClick={() => addBlock("table")} />
+                        <InsertTile icon={BarChart3} label="Graf" onClick={() => addBlock("chart")} />
+                        <InsertTile icon={VideoIcon} label="Video" onClick={() => addBlock("video")} />
+                        <IconPickerDialog
+                          themeId={themeId}
+                          onPick={({ name, color }) => {
+                            const newBlock = createDefaultBlock("image");
+                            newBlock.props = { ...newBlock.props, url: "", icon: name, iconColor: color, width: "medium" };
+                            setBlocks([...blocks, newBlock]);
+                          }}
+                          trigger={<button type="button" className="deck-insert-tile"><Puzzle className="h-5 w-5" /><span>Ikona</span></button>}
+                        />
                       </div>
+                    </section>
 
-                      {(currentSlide as any).backgroundOverride?.image && (
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={(currentSlide as any).backgroundOverride.image}
-                            alt="Náhled pozadí slidu"
-                            className="h-7 w-12 rounded border border-border object-cover"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => updateSlide({ backgroundOverride: null })}
-                          >
-                            Odebrat
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Název sekce */}
-                    <div>
-                      <Label className="flex items-center gap-1.5 text-xs">
-                        <Bookmark className="h-3.5 w-3.5" /> Název sekce (nepovinné)
-                      </Label>
-                      <Input
-                        className="mt-1 h-8 text-xs"
-                        value={(currentSlide as any).sectionTitle || ""}
-                        onChange={(e) => updateSlide({ sectionTitle: e.target.value || undefined })}
-                        placeholder="Např. Opakování"
-                      />
-                    </div>
-
-                    {/* Instrukce pro žáka */}
-                    <div>
-                      <Label className="text-xs">Instrukce pro žáka</Label>
-                      <Input
-                        className="mt-1 h-8 text-xs"
-                        value={currentSlide.device?.instructions || ""}
-                        onChange={(e) => updateSlide({ device: { ...currentSlide.device, instructions: e.target.value } })}
-                      />
-                    </div>
-
-                    {/* B3 – dogenerovat aktivitu z textového slidu (též v sekci Aktivity) */}
-                    {/* AI aktivita je v levém railu v záložce Aktivity. */}
-
-
-                    {/* Nastavení aktivity je v pravém panelu „Vlastnosti aktivity“. */}
-                    {isActivitySlide && !activityPanelOpen && (
-                      <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setActivityPanelOpen(true)}>Otevřít vlastnosti aktivity</Button>
-                    )}
-
-                    {/* Vzhled aktivity na snímku */}
-                    {selectedBlock?.type === "activity" && (
-                      <ActivityAppearanceControls
-                        value={(selectedBlock.props as any)?.slideAppearance}
-                        onChange={(next) =>
-                          updateBlock(selectedBlock.id, (b: Block) => ({
-                            ...b,
-                            props: { ...b.props, slideAppearance: next },
-                          }))
-                        }
-                      />
-                    )}
-
-                    {/* Obrázek ve volném rámci – přizpůsobení plochy */}
-                    {selectedBlock?.type === "image" && !!getBlockFrame(selectedBlock) && (
-                      <div className="space-y-2 rounded-lg border border-border p-2">
-                        <Label className="flex items-center gap-1.5 text-xs">
-                          <ImageIcon className="h-3.5 w-3.5" /> Obrázek v rámci
-                        </Label>
-                        <p className="text-[11px] text-muted-foreground">
-                          Velikost se mění tažením za úchyty rámce. Zvolte, jak obrázek plochu vyplní.
-                        </p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {([
-                            { value: "contain", label: "Přizpůsobit" },
-                            { value: "cover", label: "Oříznout" },
-                          ] as const).map((o) => {
-                            const active =
-                              ((selectedBlock.props as any)?.objectFit || "contain") === o.value;
-                            return (
-                              <Button
-                                key={o.value}
-                                type="button"
-                                size="sm"
-                                variant={active ? "default" : "outline"}
-                                aria-pressed={active}
-                                className="h-7 text-xs"
-                                onClick={() =>
-                                  updateBlock(selectedBlock.id, (b: Block) => ({
-                                    ...b,
-                                    props: { ...b.props, objectFit: o.value },
-                                  }))
-                                }
-                              >
-                                {o.label}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Strukturální editor bloků – jen jako záloha pod „Více možností“ */}
                     <Collapsible>
-                      <CollapsibleTrigger className="flex w-full items-center justify-between rounded px-1 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground">
-                        <span className="flex items-center gap-1">
-                          <Settings2 className="h-3 w-3" /> Více možností
-                        </span>
-                        <ChevronDown className="h-3 w-3" />
+                      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-deck-line px-3 py-2 text-xs font-semibold text-deck-violet-deep">
+                        Další prvky a akce <ChevronDown className="h-4 w-4" />
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-1 max-h-[40vh] overflow-y-auto rounded-lg border border-border bg-muted/20 p-2">
-                          <p className="mb-2 text-[11px] text-muted-foreground">
-                            Formátování řešte lištou nad plátnem. Zde jsou pokročilé strukturální
-                            úpravy vybraného bloku.
-                          </p>
-                          {selectedBlock ? (
-                            <SingleBlockEditor
-                              block={selectedBlock}
-                              onChange={(props) =>
-                                updateBlock(selectedBlock.id, (b: Block) => ({ ...b, props }))
-                              }
-                            />
-                          ) : (
-                            <p className="py-3 text-center text-xs text-muted-foreground">
-                              Vyberte blok na plátně pro pokročilé úpravy.
-                            </p>
-                          )}
+                      <CollapsibleContent className="space-y-2 pt-2">
+                        <div className="grid grid-cols-4 gap-1.5">
+                          <InsertTile icon={StickyNote} label="Box" onClick={() => addBlock("callout")} />
+                          <InsertTile icon={QuoteIcon} label="Citace" onClick={() => addBlock("quote")} />
+                          <InsertTile icon={Sigma} label="Rovnice" onClick={() => addBlock("formula")} />
+                          <InsertTile icon={Music} label="Zvuk" onClick={() => addBlock("audio")} />
                         </div>
+                        <AiBlockTextButton
+                          block={selectedBlock}
+                          headline={currentSlide.projector?.headline || ""}
+                          lessonTitle={presentationLesson?.title || ""}
+                          onAccept={(text) => {
+                            if (!selectedBlockId) return;
+                            updateBlock(selectedBlockId, (b: Block) => ({ ...b, props: { ...b.props, text: b.type === "heading" ? text : `<p>${text}</p>` } }));
+                          }}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button variant="outline" size="sm" disabled={!copiedBlock} onClick={pasteBlock}><ClipboardPaste className="mr-1 h-3.5 w-3.5" />Vložit kopii</Button>
+                          <Button variant="outline" size="sm" disabled={!copiedStyle || !selectedBlockId} onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}><Paintbrush className="mr-1 h-3.5 w-3.5" />Vložit styl</Button>
+                          <Button variant="outline" size="sm" onClick={() => openAddSlideAt(0)}><Plus className="mr-1 h-3.5 w-3.5" />Slide na začátek</Button>
+                          <Button variant="outline" size="sm" onClick={duplicateCurrentSlide}><Copy className="mr-1 h-3.5 w-3.5" />Duplikovat slide</Button>
+                        </div>
+                        {pendingSlides.length > 1 && <Button variant="outline" size="sm" className="w-full text-destructive" onClick={deleteCurrentSlide}><Trash2 className="mr-1 h-3.5 w-3.5" />Smazat aktuální slide</Button>}
                       </CollapsibleContent>
-
                     </Collapsible>
 
-                    {/* Poznámky pro učitele */}
-                    <div className="space-y-2 border-t border-border pt-3">
-                      <Label className="flex items-center gap-1.5 text-xs">
-                        <StickyNote className="h-3.5 w-3.5" /> Poznámky pro učitele
-                        <span className="font-normal text-muted-foreground">— vidí jen ty, žáci ne</span>
-                      </Label>
-                      {teacherNotesOpen || (currentSlide as any).teacherNotes ? (
-                        <Textarea
-                          rows={4}
-                          className="text-xs"
-                          value={(currentSlide as any).teacherNotes || ""}
-                          onChange={(e) => updateSlide({ teacherNotes: e.target.value })}
-                          placeholder="Poznámka k tomuto slidu..."
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Žádné poznámky</span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => setTeacherNotesOpen(true)}
-                          >
-                            Přidat
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* ---- Sekce Aktivity ---- */}
-                  {sidebarSection === "activities" && (
-                  <div className="space-y-3 p-3">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Aktivity</Label>
-                    </div>
-                    {/* ČÁST 4a – jediné místo, odkud se aktivity vkládají */}
-                    <div>
-                      <Label className="text-xs">Přidat aktivitu</Label>
-                      <div role="radiogroup" aria-label="Kam vložit aktivitu" className="mb-1.5 grid grid-cols-2 gap-1 rounded-lg bg-deck-cream p-1 font-deck-body">
-                        {([["slide", "Do tohoto slidu"], ["new", "Jako nový slide"]] as const).map(([v, l]) => (
-                          <button
-                            key={v}
-                            type="button"
-                            role="radio"
-                            aria-checked={activityTarget === v}
-                            onClick={() => setActivityTarget(v)}
-                            className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${activityTarget === v ? "bg-deck-violet text-primary-foreground" : "text-deck-violet-deep hover:bg-background"}`}
-                          >
-                            {l}
+                    <section className="space-y-3 border-t border-deck-line pt-4">
+                      <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Pozadí a motiv</h2>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PRESENTATION_THEMES.map((item) => (
+                          <button key={item.id} type="button" onClick={() => setThemeId(item.id)} aria-label={`Použít motiv ${item.name}`} aria-pressed={themeId === item.id} className={`overflow-hidden rounded-lg border-2 ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}>
+                            <span className="flex h-12 items-end p-1.5 text-[9px] font-semibold text-deck-on-violet" style={{ background: item.backgroundStyle }}>{item.name}</span>
                           </button>
                         ))}
                       </div>
-                      <p className="mb-1.5 text-[11px] text-muted-foreground">
-                        {activityTarget === "slide"
-                          ? "Aktivita se vloží do aktuálního prázdného slidu (nadpis a pozadí zůstanou). Má-li slide jiný obsah, vznikne nový slide."
-                          : "Vloží nový slide s aktivitou za aktuální slide."}
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="flex flex-wrap gap-2" aria-label="Barva pozadí slidu">
+                        {SLIDE_BACKGROUND_COLORS.map((color) => <button key={color} type="button" aria-label={`Pozadí ${color}`} onClick={() => updateSlide({ backgroundOverride: { color } })} className="h-8 w-8 rounded-full border border-deck-line" style={{ backgroundColor: color }} />)}
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {sidebarSection === "activities" && (
+                  <div className="space-y-4">
+                    <Button className="h-11 w-full rounded-xl bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={() => setActivityCreatorOpen((v) => !v)} aria-expanded={activityCreatorOpen}>
+                      <Plus className="mr-2 h-5 w-5" /> Vytvořit novou aktivitu
+                    </Button>
+                    <div role="radiogroup" aria-label="Kam vložit aktivitu" className="grid grid-cols-2 gap-1 rounded-lg bg-deck-soft p-1">
+                      {([["slide", "Do tohoto slidu"], ["new", "Jako nový slide"]] as const).map(([value, label]) => (
+                        <button key={value} type="button" role="radio" aria-checked={activityTarget === value} onClick={() => setActivityTarget(value)} className={`rounded-md px-2 py-2 text-[11px] font-semibold ${activityTarget === value ? "bg-deck-violet text-deck-on-violet" : "text-deck-violet-deep"}`}>{label}</button>
+                      ))}
+                    </div>
+                    {activityCreatorOpen && (
+                      <div className="grid grid-cols-2 gap-2" aria-label="Všechny typy aktivit">
                         {ACTIVITY_PRESETS.map((preset) => {
                           const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => insertActivityPreset(preset)}
-                              title={preset.hint}
-                              className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-2 text-left transition-colors hover:border-primary hover:bg-primary/5"
-                            >
-                              <Icon className="h-4 w-4 text-primary" />
-                              <span className="text-[11px] font-medium leading-tight">{preset.label}</span>
-                            </button>
-                          );
+                          return <button key={preset.id} type="button" onClick={() => insertActivityPreset(preset)} title={preset.hint} className="flex min-h-[70px] flex-col items-start gap-1 rounded-xl border border-deck-line bg-deck-panel p-2.5 text-left hover:border-deck-violet hover:bg-deck-soft"><Icon className="h-4 w-4 text-deck-violet" /><span className="text-[11px] font-semibold leading-tight">{preset.label}</span></button>;
                         })}
-                        <button
-                          type="button"
-                          onClick={generateActivityFromSlide}
-                          disabled={generatingActivity || currentSlide?.type === "activity"}
-                          title="Bezlai vytvoří aktivitu z obsahu tohoto slidu"
-                          className="flex flex-col items-start gap-1 rounded-lg border border-dashed border-primary/60 bg-primary/5 p-2 text-left transition-colors hover:bg-primary/10 disabled:opacity-50"
-                        >
-                          {generatingActivity
-                            ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            : <Wand2 className="h-4 w-4 text-primary" />}
-                          <span className="text-[11px] font-medium leading-tight">AI aktivita</span>
-                        </button>
                       </div>
-                    </div>
-
-                    <div>
-
-                      <Label className="text-xs">Z mých lekcí</Label>
-                      <p className="mb-1.5 text-[11px] text-muted-foreground">
-                        Aktivity z vašich lekcí (i vnořené ve sloupcích a skupinách) a ze Studia.
-                      </p>
-                      <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} onPickStudio={(item) => insertStudioSlide(item.slide, item.title)} />
-                    </div>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full gap-1.5 text-xs"
-                      onClick={() => window.open("/ucitel/navrh-podle-metody", "_blank", "noopener")}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" /> Návrh podle metody
-                    </Button>
-                    <p className="text-[11px] text-muted-foreground">
-                      Otevře se v nové záložce, rozdělaná prezentace zůstane zachovaná.
-                    </p>
-
-                    {/* AI aktivita je nově kartou v sekci „Přidat aktivitu“ výše. */}
-                  </div>
-                  )}
-                </div>
-
-              </aside>
-
-              {/* 5. CENTRÁLNÍ PLÁTNO */}
-              <div
-                ref={canvasWrapRef}
-                className={`relative flex min-h-0 flex-1 flex-col bg-muted/30 p-4 xl:p-6 ${
-                  zoom === "fit" ? "overflow-hidden" : "overflow-auto"
-                }`}
-              >
-                <div className="absolute left-3 top-3 z-20 flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history.undo()}
-                    disabled={!history.canUndo}
-                    title="Zpět (Ctrl/Cmd+Z)"
-                    aria-label="Zpět"
-                  >
-                    <Undo2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history.redo()}
-                    disabled={!history.canRedo}
-                    title="Vpřed (Ctrl/Cmd+Shift+Z)"
-                    aria-label="Vpřed"
-                  >
-                    <Redo2 className="h-3.5 w-3.5" />
-                  </Button>
-
-                  <div className="mx-1 h-6 w-px bg-border" />
-
-                  <Button
-                    size="sm"
-                    variant={drawMode ? "default" : "outline"}
-                    className={`h-8 gap-1 px-2 text-xs ${drawMode ? "" : "bg-background/90"}`}
-                    onClick={() => {
-                      setDrawMode((v) => !v);
-                      setSelectedBlockId(null);
-                    }}
-                    title="Kreslení tužkou po slidu"
-                    aria-pressed={drawMode}
-                  >
-                    <Pencil className="h-3.5 w-3.5" /> Tužka
-                  </Button>
-
-                  {drawMode && (
-                    <>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button size="sm" variant="outline" className="h-8 gap-1 bg-background/90 px-2 text-xs" title="Barva tahu">
-                            <span
-                              className="inline-block h-3 w-3 rounded-full border border-border"
-                              style={{ background: drawColor }}
-                            />
-                            Barva
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2">
-                          <ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} />
-                        </PopoverContent>
-                      </Popover>
-
-                      <Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}>
-                        <SelectTrigger className="h-8 w-[76px] bg-background/90 text-xs" title="Šířka tahu">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 3, 5, 8].map((w) => (
-                            <SelectItem key={w} value={String(w)}>{w} px</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 gap-1 bg-background/90 px-2 text-xs"
-                        title="Smazat poslední tah"
-                        disabled={!((currentSlide as any)?.drawingStrokes || []).length}
-                        onClick={() =>
-                          updateSlide({
-                            drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1),
-                          })
-                        }
-                      >
-                        <Eraser className="h-3.5 w-3.5" /> Guma
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2 text-xs text-destructive bg-background/90"
-                        title="Smazat všechny tahy tohoto slidu"
-                        disabled={!((currentSlide as any)?.drawingStrokes || []).length}
-                        onClick={() => updateSlide({ drawingStrokes: [] })}
-                      >
-                        Vymazat vše
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                <div
-                  className={`mx-auto flex w-full flex-col pt-4 ${
-                    zoom === "fit" ? "h-full min-h-0 max-w-full items-center justify-center" : "w-max items-center"
-                  }`}
-                >
-
-                  {/* FORMÁTOVACÍ LIŠTA – vždy nad plátnem slidu (pevný slot, bez skákání layoutu) */}
-                  <div className="mb-2 flex min-h-[42px] w-full shrink-0 items-center justify-center">
-                    {selectedBlock ? (
-                      <SlideFloatingFormatToolbar
-                        staticBar
-                        containerRef={canvasWrapRef}
-                        block={selectedBlock}
-                        positionKey={`${editingSlideIndex}-${blocks.length}`}
-                        framed={!!getBlockFrame(selectedBlock)}
-                        onChangeProps={(props) => {
-                          if (!selectedBlockId) return;
-                          updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
-                        }}
-                        onChangeLayer={(action) => {
-                          if (!selectedBlockId) return;
-                          const framed = blocks.filter((b: Block) => !!getBlockFrame(b));
-                          const idx = framed.findIndex((b: Block) => b.id === selectedBlockId);
-                          const maxZ = framed.reduce(
-                            (m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0),
-                            0,
-                          );
-                          updateBlock(selectedBlockId, (b: Block) => {
-                            const current = typeof b.zIndex === "number" ? b.zIndex : idx + 1;
-                            const next =
-                              action === "front" ? maxZ + 1
-                              : action === "forward" ? current + 1
-                              : action === "backward" ? Math.max(1, current - 1)
-                              : 0;
-                            return { ...b, zIndex: next };
-                          });
-                        }}
-                        onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
-                        onCopyBlock={copyBlock}
-                        onCopyStyle={copyStyle}
-                        styleCopied={!!copiedStyle}
-                        selectedCount={selectedBlockIds.length}
-                        onAlign={alignSelectedToStage}
-                        onFillStage={fillStageWithSelected}
-                        onAlignGroup={alignSelectionTogether}
-                        onDistribute={distributeSelection}
-                        onGroup={groupSelection}
-                        onUngroup={ungroupSelection}
-                        onDelete={() => {
-                          if (selectedBlockIds.length > 1) {
-                            deleteSelection();
-                            return;
-                          }
-                          if (!selectedBlockId) return;
-                          deleteBlock(selectedBlockId);
-                          setSelectedBlockId(null);
-                        }}
-                      />
-
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground">
-                        Klikněte na blok pro editaci — formátovací lišta se zobrazí zde nad slidem.
-                        Shift+klik vybere víc prvků, tažením po prázdné ploše je vyberete rámečkem.
-                      </p>
                     )}
+                    <section className="space-y-2 border-t border-deck-line pt-4">
+                      <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Oblíbené typy</h2>
+                      {[
+                        ["mcq", "Kvíz", "Otázka s výběrem odpovědi", HelpCircle],
+                        ["true_false", "Pravda / nepravda", "Rychlé posouzení tvrzení", CheckCheck],
+                        ["wall", "Zeď a slovní mrak", "Společné odpovědi celé třídy", MessageSquare],
+                        ["matching", "Dvojice a třídění", "Spojování pojmů a kategorií", ArrowLeftRight],
+                        ["crossword", "Křížovka a pexeso", "Procvičení pojmů hravou formou", Grid3X3],
+                        ["escape", "Úniková hra", "Série hádanek a zámků", KeyRound],
+                      ].map(([presetId, label, description, Icon]: any) => {
+                        const preset = ACTIVITY_PRESETS.find((item) => item.id === presetId);
+                        return preset && <button key={presetId} type="button" onClick={() => insertActivityPreset(preset)} className="flex w-full items-center gap-3 rounded-xl border border-deck-line p-3 text-left hover:border-deck-teal hover:bg-deck-cream"><Icon className="h-5 w-5 shrink-0 text-deck-violet" /><span><span className="block text-xs font-semibold">{label}</span><span className="block text-[11px] text-deck-muted">{description}</span></span></button>;
+                      })}
+                    </section>
+                    <Button variant="outline" className="w-full" onClick={() => window.open("/ucitel/studio", "_blank", "noopener")}><ExternalLink className="mr-2 h-4 w-4" />Všechny typy ze Studia</Button>
+                    {aiActivityButton}
                   </div>
-                  <div
-                    className={`flex w-full items-center justify-center ${
-                      zoom === "fit" ? "min-h-0 flex-1" : ""
-                    }`}
-                  >
+                )}
+
+                {sidebarSection === "lesson" && (
+                  <div className="space-y-3">
+                    <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Vložit z vlastního obsahu</h2>
+                    <p className="text-xs text-deck-muted">Vyhledejte aktivitu ze svých lekcí nebo sad ze Studia a vložte ji do prezentace.</p>
+                    <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} onPickStudio={(item) => insertStudioSlide(item.slide, item.title)} />
+                  </div>
+                )}
+
+                {sidebarSection === "templates" && (
+                  <div className="space-y-5">
+                    <section>
+                      <h2 className="mb-1 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Šablony prezentace</h2>
+                      <p className="mb-3 text-xs text-deck-muted">Vyberte strukturu. Aktuální slidy nahradí až váš výběr šablony.</p>
+                      <div className="space-y-3">
+                        {PRESENTATION_TEMPLATES.map((template) => (
+                          <button key={template.id} type="button" className="deck-template-card w-full" onClick={() => { setPendingSlides(applyThemeToSlides(template.build(), themeId)); setEditingSlideIndex(0); setSelectedBlockId(null); }}>
+                            <span className="flex h-20 flex-col justify-between p-3" style={themeStageStyle(theme)}><span className="font-deck-heading text-lg text-deck-on-violet">{template.name}</span><span className="h-2 w-16 rounded-full bg-deck-teal" /></span>
+                            <span className="block p-3"><span className="block text-xs font-semibold text-deck-ink">{template.name}</span><span className="mt-1 block text-[11px] text-deck-muted">{template.description}</span></span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                    <section className="border-t border-deck-line pt-4">
+                      <h2 className="mb-3 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Motivy</h2>
+                      <div className="grid grid-cols-2 gap-2">{PRESENTATION_THEMES.map((item) => <button key={item.id} type="button" onClick={() => setThemeId(item.id)} className={`rounded-lg border-2 p-1 text-left text-[11px] ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}><span className="mb-1 block h-12 rounded" style={{ background: item.backgroundStyle }} /><span className="px-1">{item.name}</span></button>)}</div>
+                    </section>
+                  </div>
+                )}
+              </PresentationLeftPanel>
+
+              <main className="deck-center">
+                <div className="deck-canvas-toolbar" data-slide-toolbar="true">
+                  <div className="deck-floating-bar">
+                    {selectedBlock ? (
+                      <>
+                        <span className="shrink-0 whitespace-nowrap px-1 text-[11px] font-semibold text-deck-violet-deep">{selectedBlock.type === "activity" ? `Aktivita · ${activityTypeLabel((currentSlide as any).activitySpec?.activityType)}` : blockLabel(selectedBlock, blocks.indexOf(selectedBlock)).replace(/^\d+\.\s*/, "")}</span>
+                        <SlideFloatingFormatToolbar
+                          staticBar
+                          containerRef={canvasWrapRef}
+                          block={selectedBlock}
+                          positionKey={`${editingSlideIndex}-${blocks.length}`}
+                          framed={!!getBlockFrame(selectedBlock)}
+                          onChangeProps={(props) => selectedBlockId && updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }))}
+                          onChangeLayer={(action) => {
+                            if (!selectedBlockId) return;
+                            const framed = blocks.filter((b: Block) => !!getBlockFrame(b));
+                            const idx = framed.findIndex((b: Block) => b.id === selectedBlockId);
+                            const maxZ = framed.reduce((m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0), 0);
+                            updateBlock(selectedBlockId, (b: Block) => {
+                              const current = typeof b.zIndex === "number" ? b.zIndex : idx + 1;
+                              const next = action === "front" ? maxZ + 1 : action === "forward" ? current + 1 : action === "backward" ? Math.max(1, current - 1) : 0;
+                              return { ...b, zIndex: next };
+                            });
+                          }}
+                          onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
+                          onCopyBlock={copyBlock}
+                          onCopyStyle={copyStyle}
+                          styleCopied={!!copiedStyle}
+                          selectedCount={selectedBlockIds.length}
+                          onAlign={alignSelectedToStage}
+                          onFillStage={fillStageWithSelected}
+                          onAlignGroup={alignSelectionTogether}
+                          onDistribute={distributeSelection}
+                          onGroup={groupSelection}
+                          onUngroup={ungroupSelection}
+                          onDelete={() => { if (selectedBlockIds.length > 1) deleteSelection(); else if (selectedBlockId) { deleteBlock(selectedBlockId); setSelectedBlockId(null); } }}
+                        />
+                      </>
+                    ) : <p className="px-2 text-[11px] text-deck-muted">Vyberte prvek na plátně. Shift+klik vybere více prvků.</p>}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1 rounded-xl border border-deck-line bg-deck-panel p-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => history.undo()} disabled={!history.canUndo} aria-label="Zpět" title="Zpět (Ctrl/Cmd+Z)"><Undo2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => history.redo()} disabled={!history.canRedo} aria-label="Znovu" title="Znovu (Ctrl/Cmd+Shift+Z)"><Redo2 className="h-4 w-4" /></Button>
+                    <span className="h-6 w-px bg-deck-line" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => stepZoom(-25)} aria-label="Oddálit"><ZoomOut className="h-4 w-4" /></Button>
+                    <button type="button" className="min-w-[48px] text-xs font-semibold tabular-nums text-deck-muted" onClick={() => { setZoom("fit"); setPan({ x: 0, y: 0 }); }} title="Přizpůsobit oknu">{zoom === "fit" ? "100 %" : `${zoom} %`}</button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => stepZoom(25)} aria-label="Přiblížit"><ZoomIn className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-y border-deck-line/70 bg-deck-panel/50 px-3 py-1">
+                  <Button variant={drawMode ? "default" : "ghost"} size="sm" className="h-8" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-pressed={drawMode}><Pencil className="mr-1 h-3.5 w-3.5" />Tužka</Button>
+                  {drawMode && <>
+                    <Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="h-8"><span className="mr-2 h-3 w-3 rounded-full border border-deck-line" style={{ background: drawColor }} />Barva</Button></PopoverTrigger><PopoverContent className="w-auto p-2"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /></PopoverContent></Popover>
+                    <Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger className="h-8 w-[76px]"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select>
+                    <Button variant="ghost" size="sm" className="h-8" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-1 h-3.5 w-3.5" />Guma</Button>
+                    <Button variant="ghost" size="sm" className="h-8 text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button>
+                  </>}
+                  <Button variant="ghost" size="sm" className="ml-auto h-8" onClick={() => setDarkPreview((v) => !v)}>{darkPreview ? <Sun className="mr-1 h-3.5 w-3.5" /> : <Moon className="mr-1 h-3.5 w-3.5" />}{darkPreview ? "Světlý náhled" : "Tmavý náhled"}</Button>
+                </div>
+
+                <div ref={canvasWrapRef} className={`relative flex min-h-0 flex-1 items-center justify-center p-5 ${zoom === "fit" ? "overflow-hidden" : "overflow-auto"}`}>
                   <SlideCanvas
                     slide={currentSlide}
                     themeId={themeId}
@@ -2025,74 +1193,21 @@ export const PresentationEditorDialog = ({
                     selectedBlockIds={selectedBlockIds}
                     onSelectBlock={handleSelectBlock}
                     onSelectBlocks={setSelectedBlockIds}
-
                     drawMode={drawMode}
                     drawColor={drawColor}
                     drawWidth={drawWidth}
-                    onAddStroke={(stroke: DrawingStroke) =>
-                      updateSlide({
-                        drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke],
-                      })
-                    }
+                    onAddStroke={(stroke: DrawingStroke) => updateSlide({ drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke] })}
                     zoom={1}
                     absoluteScale={zoom === "fit" ? null : zoom / 100}
                     pan={pan}
                     onZoomChange={(z) => setZoom(Math.round(z * 100))}
                     onPanChange={setPan}
                   />
-
-                  </div>
                 </div>
+              </main>
 
-                {/* Zoom lišta — Canva styl, spodní střed plátna */}
-                <div className="pointer-events-none sticky bottom-0 z-20 flex justify-center pt-2">
-                  <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-background/95 px-2 py-1 shadow-md">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Oddálit"
-                      aria-label="Oddálit"
-                      onClick={() => stepZoom(-25)}
-                    >
-                      <ZoomOut className="h-3.5 w-3.5" />
-                    </Button>
-                    <input
-                      type="range"
-                      min={25}
-                      max={500}
-                      step={5}
-                      value={zoomPct}
-                      onChange={(e) => setZoom(Number(e.target.value))}
-                      className="h-1.5 w-[180px] cursor-pointer accent-primary"
-                      aria-label="Zoom plátna"
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Přiblížit"
-                      aria-label="Přiblížit"
-                      onClick={() => stepZoom(25)}
-                    >
-                      <ZoomIn className="h-3.5 w-3.5" />
-                    </Button>
-                    <span className="min-w-[86px] text-center text-[11px] tabular-nums text-muted-foreground">
-                      {zoom === "fit" ? "Přizpůsobit" : `${zoom}%`}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant={zoom === "fit" ? "default" : "outline"}
-                      className="h-7 px-2 text-[11px]"
-                      onClick={() => { setZoom("fit"); setPan({ x: 0, y: 0 }); }}
-                      title="Přizpůsobit oknu"
-                    >
-                      Přizpůsobit
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              {isActivitySlide && activityPanelOpen && (
+              {!propertiesOpen && <div className="deck-properties-reopen"><Button variant="outline" size="icon" onClick={() => setPropertiesOpen(true)} aria-label="Otevřít vlastnosti"><PropertiesIcon className="h-4 w-4" /></Button></div>}
+              {propertiesOpen && isActivitySlide && activityPanelOpen && (!selectedBlock || selectedBlock.type === "activity") ? (
                 <ActivitySettingsPanel
                   key={(currentSlide as any).slideId ?? editingSlideIndex}
                   spec={(currentSlide as any).activitySpec}
@@ -2100,248 +1215,63 @@ export const PresentationEditorDialog = ({
                   autoFocus={focusActivityFor === ((currentSlide as any).slideId ?? editingSlideIndex)}
                   printing={exportingPdf}
                   onPrint={handlePrintActivity}
-                  onLaunch={() => launchWithCheck()}
-                  onClose={() => setActivityPanelOpen(false)}
+                  onLaunch={launchWithCheck}
+                  onClose={() => setPropertiesOpen(false)}
+                  teacherNotes={(currentSlide as any).teacherNotes || ""}
+                  onTeacherNotesChange={(teacherNotes) => updateSlide({ teacherNotes })}
                   settings={
                     <div className="space-y-3">
-                        <div>
-                          <Label className="text-xs">Typ aktivity</Label>
-                          <Select
-                            value={(currentSlide as any).activitySpec?.activityType || "true_false"}
-                            onValueChange={(v) => {
-                              const prev = (currentSlide as any).activitySpec || {};
-                              const becomesQuiz = (v === "quiz" || v === "mcq") && prev.timeLimitSec === undefined;
-                              const needsOptions = (v === "mcq" || v === "poll") && !(Array.isArray(prev.options) && prev.options.length);
-                              updateSlide({ activitySpec: { ...prev, activityType: v, ...(becomesQuiz ? { timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC } : {}), ...(needsOptions ? { options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }], ...(v === "mcq" ? { correctIndex: 0 } : {}) } : {}) } });
-                            }}
-                          >
-                            <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
-                              <SelectItem value="mcq">Kvíz – jedna otázka</SelectItem>
-                              <SelectItem value="quiz">Kvíz – více otázek</SelectItem>
-                              <SelectItem value="wordcloud">Slovní mrak</SelectItem>
-                              <SelectItem value="poll">Anketa</SelectItem>
-                              <SelectItem value="wall">Zeď odpovědí</SelectItem>
-                              <SelectItem value="flashcards">Kartičky (Flashcards)</SelectItem>
-                              <SelectItem value="matching">Párování / Spojování dvojic</SelectItem>
-                              <SelectItem value="ordering">Seřazení kroků</SelectItem>
-                              <SelectItem value="sorting">Třídění do skupin</SelectItem>
-                              <SelectItem value="fill_blanks">Doplňovačka</SelectItem>
-                              <SelectItem value="fill_choice">Doplňovačka s výběrem</SelectItem>
-                              <SelectItem value="image_label">Obrázek s popisem</SelectItem>
-                              <SelectItem value="image_hotspot">Obrázek – aktivní body</SelectItem>
-                              <SelectItem value="reveal_cards">Odhalovací karty</SelectItem>
-                              <SelectItem value="memory_game">Pexeso</SelectItem>
-                              <SelectItem value="crossword">Křížovka</SelectItem>
-                              <SelectItem value="open">Otevřená odpověď</SelectItem>
-                              <SelectItem value="summary">Shrnutí lekce</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs">Herní režim tohoto slidu</Label>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => updateSlide({ gameSettings: undefined })}
-                              className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                !(currentSlide as any).gameSettings
-                                  ? "border-primary bg-primary/10 text-foreground"
-                                  : "border-border text-muted-foreground hover:bg-muted/50"
-                              }`}
-                            >
-                              Jako celá prezentace
-                            </button>
-                            {SLIDE_GAME_MODES.map((m) => {
-                              const active = (currentSlide as any).gameSettings?.mode === m.id;
-                              return (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  onClick={() => updateSlide({
-                                    gameSettings: {
-                                      mode: m.id,
-                                      teamMode: (currentSlide as any).gameSettings?.teamMode ?? "none",
-                                    },
-                                  })}
-                                  title={m.hint}
-                                  className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                    active
-                                      ? "border-primary bg-primary/10 text-foreground"
-                                      : "border-border text-muted-foreground hover:bg-muted/50"
-                                  }`}
-                                >
-                                  {m.emoji} {m.name}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {(currentSlide as any).gameSettings && (
-                            <Select
-                              value={(currentSlide as any).gameSettings?.teamMode || "none"}
-                              onValueChange={(v) => updateSlide({
-                                gameSettings: { ...(currentSlide as any).gameSettings, teamMode: v },
-                              })}
-                            >
-                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">Bez týmů</SelectItem>
-                                <SelectItem value="random">Náhodné týmy</SelectItem>
-                                <SelectItem value="manual">Ruční týmy</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-
-                        {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && (
-                          <div className="border-t border-border pt-3">
-                            <TimeLimitPicker
-                              value={(currentSlide as any).activitySpec?.timeLimitSec}
-                              onChange={(next) => {
-                                const spec = { ...(currentSlide as any).activitySpec };
-                                if (next === undefined) delete spec.timeLimitSec;
-                                else spec.timeLimitSec = next;
-                                updateSlide({ activitySpec: spec });
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {(currentSlide as any).activitySpec?.activityType === "wall" && (
-                          <div className="space-y-2 border-t border-border pt-3">
-                            <Label className="text-xs">Otázka pro žáky</Label>
-                            <Textarea
-                              rows={2}
-                              className="text-xs"
-                              value={(currentSlide as any).activitySpec?.question || ""}
-                              onChange={(e) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, question: e.target.value } })}
-                              placeholder="Napište otázku pro žáky..."
-                            />
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={(currentSlide as any).activitySpec?.anonymous === true}
-                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, anonymous: !!v } })}
-                                id="slide-wall-anonymous"
-                              />
-                              <Label htmlFor="slide-wall-anonymous" className="cursor-pointer text-xs">Anonymní odpovědi</Label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={(currentSlide as any).activitySpec?.allowMultiple === true}
-                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, allowMultiple: !!v } })}
-                                id="slide-wall-multiple"
-                              />
-                              <Label htmlFor="slide-wall-multiple" className="cursor-pointer text-xs">Povolit více odpovědí</Label>
-                            </div>
-                          </div>
-                        )}
-
-                        <LiveActivitySpecEditor
-                          spec={(currentSlide as any).activitySpec}
-                          onChange={(patch) =>
-                            updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })
-                          }
-                        />
-                      </div>
+                      <div><Label className="text-xs">Typ aktivity</Label><Select value={(currentSlide as any).activitySpec?.activityType || "true_false"} onValueChange={(v) => { const prev = (currentSlide as any).activitySpec || {}; const becomesQuiz = (v === "quiz" || v === "mcq") && prev.timeLimitSec === undefined; const needsOptions = (v === "mcq" || v === "poll") && !(Array.isArray(prev.options) && prev.options.length); updateSlide({ activitySpec: { ...prev, activityType: v, ...(becomesQuiz ? { timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC } : {}), ...(needsOptions ? { options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }], ...(v === "mcq" ? { correctIndex: 0 } : {}) } : {}) } }); }}><SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="true_false">Pravda / Nepravda</SelectItem><SelectItem value="mcq">Kvíz – jedna otázka</SelectItem><SelectItem value="quiz">Kvíz – více otázek</SelectItem><SelectItem value="wordcloud">Slovní mrak</SelectItem><SelectItem value="poll">Anketa</SelectItem><SelectItem value="wall">Zeď odpovědí</SelectItem><SelectItem value="flashcards">Kartičky</SelectItem><SelectItem value="matching">Párování dvojic</SelectItem><SelectItem value="ordering">Seřazení kroků</SelectItem><SelectItem value="sorting">Třídění do skupin</SelectItem><SelectItem value="fill_blanks">Doplňovačka</SelectItem><SelectItem value="fill_choice">Doplňovačka s výběrem</SelectItem><SelectItem value="image_label">Obrázek s popisem</SelectItem><SelectItem value="image_hotspot">Obrázek – aktivní body</SelectItem><SelectItem value="reveal_cards">Odhalovací karty</SelectItem><SelectItem value="memory_game">Pexeso</SelectItem><SelectItem value="crossword">Křížovka</SelectItem><SelectItem value="open">Otevřená odpověď</SelectItem><SelectItem value="summary">Shrnutí lekce</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><Label className="text-xs">Herní režim tohoto slidu</Label><div className="grid grid-cols-2 gap-1.5"><button type="button" onClick={() => updateSlide({ gameSettings: undefined })} className={`rounded-lg border-2 px-2 py-1.5 text-[11px] ${!(currentSlide as any).gameSettings ? "border-deck-violet bg-deck-soft" : "border-deck-line"}`}>Jako celá prezentace</button>{SLIDE_GAME_MODES.map((mode) => { const active = (currentSlide as any).gameSettings?.mode === mode.id; return <button key={mode.id} type="button" onClick={() => updateSlide({ gameSettings: { mode: mode.id, teamMode: (currentSlide as any).gameSettings?.teamMode ?? "none" } })} title={mode.hint} className={`rounded-lg border-2 px-2 py-1.5 text-[11px] ${active ? "border-deck-violet bg-deck-soft" : "border-deck-line"}`}>{mode.emoji} {mode.name}</button>; })}</div>{(currentSlide as any).gameSettings && <Select value={(currentSlide as any).gameSettings?.teamMode || "none"} onValueChange={(teamMode) => updateSlide({ gameSettings: { ...(currentSlide as any).gameSettings, teamMode } })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Žáci mohou hrát sami</SelectItem><SelectItem value="random">Náhodné týmy</SelectItem><SelectItem value="manual">Ruční týmy</SelectItem></SelectContent></Select>}</div>
+                      {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && <div className="border-t border-deck-line pt-3"><TimeLimitPicker value={(currentSlide as any).activitySpec?.timeLimitSec} onChange={(next) => { const spec = { ...(currentSlide as any).activitySpec }; if (next === undefined) delete spec.timeLimitSec; else spec.timeLimitSec = next; updateSlide({ activitySpec: spec }); }} /></div>}
+                      {(currentSlide as any).activitySpec?.activityType === "wall" && <div className="space-y-2 border-t border-deck-line pt-3"><Label className="text-xs">Otázka pro žáky</Label><Textarea rows={2} value={(currentSlide as any).activitySpec?.question || ""} onChange={(e) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, question: e.target.value } })} placeholder="Napište otázku pro žáky…" /><div className="flex items-center gap-2"><Checkbox checked={(currentSlide as any).activitySpec?.anonymous === true} onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, anonymous: !!v } })} id="slide-wall-anonymous" /><Label htmlFor="slide-wall-anonymous" className="text-xs">Anonymní odpovědi</Label></div><div className="flex items-center gap-2"><Checkbox checked={(currentSlide as any).activitySpec?.allowMultiple === true} onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, allowMultiple: !!v } })} id="slide-wall-multiple" /><Label htmlFor="slide-wall-multiple" className="text-xs">Povolit více odpovědí</Label></div></div>}
+                      <LiveActivitySpecEditor spec={(currentSlide as any).activitySpec} onChange={(patch) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })} />
+                    </div>
                   }
                 />
-              )}
+              ) : propertiesOpen ? (
+                <SelectionPropertiesPanel
+                  slide={currentSlide}
+                  block={selectedBlock}
+                  themeId={themeId}
+                  onThemeChange={setThemeId}
+                  onSlideChange={updateSlide}
+                  onBlockChange={updateBlock}
+                  onClose={() => setPropertiesOpen(false)}
+                >
+                  {!selectedBlock && <>
+                    <section className="space-y-3 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Přechod a písmo</h3><Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SLIDE_TRANSITIONS.map((item) => <SelectItem key={item.value} value={item.value} title={item.hint}>{item.label}</SelectItem>)}</SelectContent></Select><Label className="text-xs" htmlFor="slide-font-scale">Velikost písma slidu</Label><input id="slide-font-scale" type="range" min={0.7} max={1.6} step={0.05} value={(currentSlide?.projector?.fontScale as number) || 1} onChange={(e) => updateProjector({ fontScale: parseFloat(e.target.value) })} className="w-full accent-deck-violet" /></section>
+                    <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Obrázek pozadí</h3><MediaPickerDialog imageOnly onPick={(url, item) => { void insertPersistentImage(url, item, (finalUrl) => updateSlide({ backgroundOverride: { image: finalUrl } })); }} trigger={<Button variant="outline" size="sm" className="w-full"><ImageIcon className="mr-1 h-3.5 w-3.5" />Vybrat obrázek</Button>} /><GameBackgroundPickerDialog onPick={(url) => updateSlide({ backgroundOverride: { image: url } })} trigger={<Button variant="outline" size="sm" className="w-full"><Gamepad2 className="mr-1 h-3.5 w-3.5" />Herní pozadí</Button>} />{(currentSlide as any).backgroundOverride?.image && <Button variant="ghost" size="sm" onClick={() => updateSlide({ backgroundOverride: null })}>Odebrat obrázek pozadí</Button>}</section>
+                    {isZoomableSlide(currentSlide) && <Collapsible className="rounded-lg border border-deck-line"><CollapsibleTrigger className="flex w-full items-center justify-between p-2 text-xs"><span>Zóny přiblížení ({(currentSlide.zoomZones || []).length})</span><ChevronDown className="h-4 w-4" /></CollapsibleTrigger><CollapsibleContent className="p-2"><ZoomZonesEditor slide={currentSlide} darkMode={darkPreview} onChange={(zoomZones: ZoomZone[]) => updateSlide({ zoomZones })} /></CollapsibleContent></Collapsible>}
+                    {blocks.length > 0 && <Collapsible className="rounded-lg border border-deck-line"><CollapsibleTrigger className="flex w-full items-center justify-between p-2 text-xs"><span>Volné umístění prvků</span><ChevronDown className="h-4 w-4" /></CollapsibleTrigger><CollapsibleContent className="space-y-1 p-2">{blocks.map((block, index) => { const free = !!getBlockFrame(block); return <div key={block.id} className="flex items-center gap-2"><button type="button" className="min-w-0 flex-1 truncate text-left text-[11px]" onClick={() => setSelectedBlockId(block.id)}>{blockLabel(block, index)}</button><Switch checked={free} aria-label={`Volné umístění bloku ${index + 1}`} onCheckedChange={(value) => updateBlock(block.id, (previous: Block) => { if (value) return { ...previous, frame: { ...DEFAULT_BLOCK_FRAME } }; const { frame, ...rest } = previous as any; return rest as Block; })} /></div>; })}</CollapsibleContent></Collapsible>}
+                    {linkedToLesson && <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Propojení s lekcí</h3>{currentSlide?.lockedFromLesson ? <Button variant="outline" size="sm" disabled={!generatedSlides.length} onClick={() => { const restored = restoreSlideFromLesson(generatedSlides, pendingSlides, editingSlideIndex); if (!restored) { toast({ title: "Snímek v lekci neexistuje", variant: "destructive" }); return; } const updated = [...pendingSlides]; updated[editingSlideIndex] = restored; setPendingSlides(updated); }}><RotateCcw className="mr-1 h-3.5 w-3.5" />Obnovit z učebnice</Button> : <Button variant="outline" size="sm" onClick={() => updateSlide({ lockedFromLesson: true }, { markEdited: false })}><LockOpen className="mr-1 h-3.5 w-3.5" />Neaktualizovat z lekce</Button>}</section>}
+                  </>}
+                  {selectedBlock?.type === "activity" && <ActivityAppearanceControls value={(selectedBlock.props as any)?.slideAppearance} onChange={(slideAppearance) => updateBlock(selectedBlock.id, (b: Block) => ({ ...b, props: { ...b.props, slideAppearance } }))} />}
+                </SelectionPropertiesPanel>
+              ) : null}
             </div>
           )}
 
-          <ImportPptxToPresentationDialog
-            open={importPptxOpen}
-            onOpenChange={setImportPptxOpen}
-            themeId={themeId}
-            onImported={(slides) => {
-              const updated = [...pendingSlides, ...slides];
-              setPendingSlides(updated);
-              setEditingSlideIndex(pendingSlides.length);
-              setSelectedBlockId(null);
-            }}
-          />
+          <PresentationThumbnails slides={pendingSlides} activeIndex={editingSlideIndex} themeId={themeId} onSelect={selectSlide} onMove={moveSlide} onAdd={() => openAddSlideAt(editingSlideIndex + 1)} />
 
-          <StartFromTemplateDialog
-            open={templateOpen}
-            onOpenChange={setTemplateOpen}
-            onPick={(slides) => {
-              setPendingSlides(applyThemeToSlides(slides, themeId));
-              setEditingSlideIndex(0);
-            }}
-          />
-
-          <AddSlideSheet
-            open={addSlideOpen}
-            onOpenChange={setAddSlideOpen}
-            slides={pendingSlides}
-            layoutsOnly
-            showLibrary
-
-            onAddSlides={(newSlides) => {
-              insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides);
-              setInsertAtIndex(null);
-            }}
-
-          />
+          <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
+          <AddSlideSheet open={addSlideOpen} onOpenChange={setAddSlideOpen} slides={pendingSlides} layoutsOnly showLibrary onAddSlides={(newSlides) => { insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides); setInsertAtIndex(null); }} />
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!confirmClose} onOpenChange={(o) => { if (!o) setConfirmClose(null); }}>
+      <AlertDialog open={!!confirmClose} onOpenChange={(open) => { if (!open) setConfirmClose(null); }}>
         <AlertDialogContent className="font-deck-body">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-deck-heading uppercase tracking-wide text-deck-violet-deep">Neuložené změny</AlertDialogTitle>
-            <AlertDialogDescription>
-              V prezentaci máte změny, které ještě nejsou uložené. Když editor zavřete, ztratí se.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle className="font-deck-heading uppercase tracking-wide text-deck-violet-deep">Neuložené změny</AlertDialogTitle><AlertDialogDescription>V prezentaci máte změny, které ještě nejsou uložené. Když editor zavřete, ztratí se.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Pokračovat v úpravách</AlertDialogCancel>
-            {onSave && (
-              <AlertDialogAction
-                className="bg-deck-violet text-primary-foreground hover:bg-deck-violet-deep"
-                onClick={async () => {
-                  const after = confirmClose?.after;
-                  try {
-                    await onSave(pendingSlides);
-                    baselineRef.current = JSON.stringify(pendingSlides);
-                    setConfirmClose(null);
-                    onClose();
-                    after?.();
-                  } catch (e: any) {
-                    toast({ title: "Uložení se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
-                  }
-                }}
-              >
-                Uložit a zavřít
-              </AlertDialogAction>
-            )}
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { const after = confirmClose?.after; setConfirmClose(null); baselineRef.current = null; onClose(); after?.(); }}
-            >
-              Zavřít bez uložení
-            </AlertDialogAction>
+            {onSave && <AlertDialogAction className="bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={async () => { const after = confirmClose?.after; try { await onSave(pendingSlides); baselineRef.current = JSON.stringify(pendingSlides); setConfirmClose(null); onClose(); after?.(); } catch (e: any) { toast({ title: "Uložení se nepodařilo", description: e?.message ?? String(e), variant: "destructive" }); } }}>Uložit a zavřít</AlertDialogAction>}
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { const after = confirmClose?.after; setConfirmClose(null); baselineRef.current = null; onClose(); after?.(); }}>Zavřít bez uložení</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) onCloseExisting(); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Existující prezentace</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p>
-          <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
-            <Button variant="outline" className="w-full" onClick={onContinueExisting}>
-              Pokračovat v rozběhlé
-            </Button>
-            <Button className="w-full" onClick={onLaunchNew}>
-              Spustit novou
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        <DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Existující prezentace</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p><DialogFooter className="mt-4 flex-col gap-2 sm:flex-row"><Button variant="outline" className="w-full" onClick={onContinueExisting}>Pokračovat v rozběhlé</Button><Button className="w-full" onClick={onLaunchNew}>Spustit novou</Button></DialogFooter></DialogContent>
       </Dialog>
     </>
   );
