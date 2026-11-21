@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SearchField } from "@/components/ui/search-field";
+import ReviewSubmissionAttachments from "@/components/assignments/ReviewSubmissionAttachments";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
 import { submittableOnly } from "@/lib/assignment-kind";
 import { toast } from "@/hooks/use-toast";
@@ -543,6 +544,13 @@ export default function TeacherReviewQueue() {
                   </Button>
                 </div>
               </div>
+
+              <ReviewSubmissionAttachments
+                assignmentId={activeRow.assignmentId}
+                studentId={activeRow.attempt.student_id}
+                attemptId={activeRow.attemptId}
+                groupId={(activeRow.attempt as any).group_id ?? null}
+              />
 
               {activeRow.worksheetId ? (
                 <WorksheetAttemptGrading
