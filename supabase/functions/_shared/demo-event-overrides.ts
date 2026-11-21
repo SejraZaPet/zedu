@@ -21,19 +21,14 @@ const LIMIT_KEYS = [
   "materials_max", "live_players_max", "upload_max_files", "upload_max_bytes",
 ] as const;
 
-/** Přesná shoda štítku, platnost času a kladné limity; při pochybnosti se nepoužije výjimka. */
-export function resolveDemoEventOverride(
-  tag: string | null,
-  value: unknown,
-  now: Date = new Date(),
-): DemoEventOverride | null {
+function resolveAt(tag: string | null, value: unknown, at: Date): DemoEventOverride | null {
   if (!tag || !value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
   if (row.tag !== tag) return null;
   const from = Date.parse(String(row.active_from ?? ""));
   const until = Date.parse(String(row.active_until ?? ""));
   if (!Number.isFinite(from) || !Number.isFinite(until) || until <= from) return null;
-  if (now.getTime() < from || now.getTime() >= until) return null;
+  if (at.getTime() < from || at.getTime() >= until) return null;
   for (const key of LIMIT_KEYS) {
     if (!Number.isFinite(Number(row[key])) || Number(row[key]) <= 0) return null;
   }
@@ -43,4 +38,25 @@ export function resolveDemoEventOverride(
     active_until: String(row.active_until),
     ...Object.fromEntries(LIMIT_KEYS.map((key) => [key, Number(row[key])])),
   } as DemoEventOverride;
+}
+
+/** Jen zakládání nových dem: po skončení platnosti dostane nové demo běžné limity. */
+export function resolveDemoCreationOverride(
+  tag: string | null,
+  value: unknown,
+  now: Date = new Date(),
+): DemoEventOverride | null {
+  return resolveAt(tag, value, now);
+}
+
+/**
+ * Nárok již vytvořeného dema podle jeho created_at. Aktuální datum zde záměrně není:
+ * demo založené během akce má zvýšené limity po celý svůj život.
+ */
+export function resolveStoredDemoEventOverride(
+  tag: string | null,
+  value: unknown,
+  createdAt: Date,
+): DemoEventOverride | null {
+  return resolveAt(tag, value, createdAt);
 }

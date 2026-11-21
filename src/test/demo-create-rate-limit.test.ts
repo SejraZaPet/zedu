@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { transpileModule, ScriptTarget, ModuleKind } from "typescript";
-import { DEMO_CREATION_DEFAULTS, resolveDemoEventOverride } from "../../supabase/functions/_shared/demo-event-overrides";
+import { DEMO_CREATION_DEFAULTS, resolveDemoCreationOverride } from "../../supabase/functions/_shared/demo-event-overrides";
 
 const mocks = vi.hoisted(() => ({ countRecent: vi.fn(), recordEvent: vi.fn(), serve: vi.fn(), schoolLookup: vi.fn(), eventOverride: vi.fn() }));
 const dependencies = {
@@ -15,7 +15,7 @@ const dependencies = {
   ipHash: async () => "test-ip-hash",
   DEMO_EMAIL_DOMAIN: "unused", DEMO_SCHOOL_NAME: "unused",
   generateReturnCode: vi.fn(), issueSession: vi.fn(), randomToken: vi.fn(),
-  DEMO_CREATION_DEFAULTS, resolveDemoEventOverride,
+  DEMO_CREATION_DEFAULTS, resolveDemoCreationOverride,
 };
 // Compile the actual Deno handler, injecting only local stubs for its imports.
 // Avoid pulling Deno/npm: modules into the browser's TypeScript dependency graph.

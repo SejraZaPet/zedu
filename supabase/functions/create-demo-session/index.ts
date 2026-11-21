@@ -4,7 +4,7 @@ import {
   adminClient, countRecent, DEMO_EMAIL_DOMAIN, DEMO_SCHOOL_NAME, generateReturnCode,
   ipHash, issueSession, randomToken, recordEvent,
 } from "../_shared/demo.ts";
-import { DEMO_CREATION_DEFAULTS, resolveDemoEventOverride } from "../_shared/demo-event-overrides.ts";
+import { DEMO_CREATION_DEFAULTS, resolveDemoCreationOverride } from "../_shared/demo-event-overrides.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
   let override = null;
   if (eventTag) {
     // Service-only RPC; klient posílá jen štítek, nikdy výši limitů.
-    const { data, error } = await db.rpc("get_demo_event_override", { _tag: eventTag });
-    if (!error) override = resolveDemoEventOverride(eventTag, Array.isArray(data) ? data[0] : data);
+    const { data, error } = await db.rpc("get_demo_creation_override", { _tag: eventTag });
+    if (!error) override = resolveDemoCreationOverride(eventTag, Array.isArray(data) ? data[0] : data);
   }
   const hourlyLimit = override?.create_per_ip_hour ?? DEMO_CREATION_DEFAULTS.perIpHour;
   const dailyLimit = override?.create_global_day ?? DEMO_CREATION_DEFAULTS.globalDay;
