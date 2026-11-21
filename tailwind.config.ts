@@ -17,8 +17,16 @@ export default {
         sans: ["Lato", "system-ui", "sans-serif"],
         heading: ["Baloo 2", "Lato", "system-ui", "sans-serif"],
         body: ["Lato", "system-ui", "sans-serif"],
+        "deck-heading": ["Oswald", "Lato", "system-ui", "sans-serif"],
+        "deck-body": ["DM Sans", "Lato", "system-ui", "sans-serif"],
       },
       colors: {
+        deck: {
+          violet: "hsl(var(--deck-violet))",
+          "violet-deep": "hsl(var(--deck-violet-deep))",
+          teal: "hsl(var(--deck-teal))",
+          cream: "hsl(var(--deck-cream))",
+        },
         "activity-correct": "hsl(var(--activity-correct))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

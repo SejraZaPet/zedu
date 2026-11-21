@@ -20,6 +20,14 @@ export interface CoreQuestion { question: string; answers: string[]; correctInde
 /** Aktivita z lekce/průvodce → jednotné otázky (každá jedna správná odpověď). */
 export function activityToCoreQuestions(props: any): CoreQuestion[] {
   const at = String(props?.activityType ?? "");
+  if (at === "mcq") {
+    const raw = (Array.isArray(props?.options) ? props.options : []).map((o: any) => ({ text: clean(o?.text ?? o), ok: !!(o?.correct ?? o?.isCorrect) }));
+    const answers = raw.map((o: any) => o.text).filter(Boolean);
+    const byFlag = raw.findIndex((o: any) => o.ok);
+    const ci = typeof props?.correctIndex === "number" ? props.correctIndex : Math.max(0, byFlag);
+    const question = clean(props?.question || props?.title);
+    return question && answers.length >= 2 && ci >= 0 && ci < answers.length ? [{ question, answers, correctIndex: ci }] : [];
+  }
   if (at === "quiz") {
     return (props?.quiz?.questions ?? []).map((q: any) => {
       const raw = (Array.isArray(q?.answers) ? q.answers : []).filter((a: any) => clean(a?.text ?? a));

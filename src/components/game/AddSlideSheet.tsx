@@ -86,6 +86,8 @@ interface AddSlideSheetProps {
    * aktivity se vkládají výhradně ze záložky „Aktivity“ v levém railu.
    */
   layoutsOnly?: boolean;
+  /** I v režimu `layoutsOnly` nabídne „Vložit z knihovny her“ (editor prezentací). */
+  showLibrary?: boolean;
 
   /**
    * When provided, built slides are handed over instead of being written to a
@@ -216,6 +218,7 @@ export function AddSlideSheet({
   slides,
   onAddSlides,
   layoutsOnly = false,
+  showLibrary = false,
 }: AddSlideSheetProps) {
   const navigate = useNavigate();
   const [kind, setKind] = useState<AddKind>("menu");
@@ -721,6 +724,21 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+{layoutsOnly && showLibrary && (
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={openLibrary}
+              >
+                <Library className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Vložit z knihovny her</p>
+                  <p className="text-xs text-muted-foreground">
+                    Použij hotovou hru nebo aktivitu z „Moje hry"
+                  </p>
+                </div>
+              </Button>
+)}
 {!layoutsOnly && (<>
               <Button
                 variant="outline"

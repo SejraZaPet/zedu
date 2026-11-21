@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
+import { preparePresentationForLive, launchReportMessage } from "@/lib/presentation-live-launch";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
@@ -154,12 +154,14 @@ export function usePresentationLauncher() {
       const rawBlocks = lesson.blocks || [];
        const slides = prebuiltSlides || await buildSlidesForLesson(lesson);
       if (!session?.user) throw new Error("Není přihlášen");
+      const liveReport = preparePresentationForLive(slides);
+      if (liveReport.slides.length === 0) throw new Error("Prezentace nemá žádný slide, který jde promítnout.");
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase.from("game_sessions").insert({
         teacher_id: session.user.id,
         title: lesson.title,
         game_code: gameCode,
-        activity_data: expandSlidesForLiveGame(slides) as any,
+        activity_data: liveReport.slides as any,
         settings: { timePerQuestion: 30, activityStartMode: getActivityStartPref(), projectorFontScale: loadProjectorFontScale(), shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
@@ -176,7 +178,8 @@ export function usePresentationLauncher() {
            .eq("id", lesson.id);
        }
        await savePresentationRow(lesson, slides);
-      toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
+      const note = launchReportMessage(liveReport);
+      toast({ title: "Prezentace spuštěna", description: note ? `Kód: ${gameCode}. ${note}` : `Kód: ${gameCode}` });
       showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
     } catch (e: any) {
@@ -218,7 +221,7 @@ export function usePresentationLauncher() {
       teacher_id: session.user.id,
       title: data.lesson.title,
       game_code: gameCode,
-      activity_data: expandSlidesForLiveGame(data.slides) as any,
+      activity_data: preparePresentationForLive(data.slides).slides as any,
       settings: { timePerQuestion: 30, activityStartMode: getActivityStartPref(), projectorFontScale: loadProjectorFontScale(), shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
       status: "lobby",
       current_question_index: -1,

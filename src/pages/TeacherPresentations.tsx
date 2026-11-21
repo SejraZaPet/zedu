@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { expandSlidesForLiveGame } from "@/lib/live-game-expand";
+import { preparePresentationForLive, launchReportMessage } from "@/lib/presentation-live-launch";
+import { getActivityStartPref } from "@/lib/activity-start-pref";
+import { attachLessonRef, readLessonRef } from "@/lib/presentation-lesson-ref";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ownTextbooksOr } from "@/lib/demo-seed-textbooks";
@@ -15,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft, Copy,
+  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft, Copy, Play,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { loadProjectorFontScale } from "@/lib/projector-font-scale";
@@ -87,6 +89,8 @@ const TeacherPresentations = () => {
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [launchingId, setLaunchingId] = useState<string | null>(null);
+  const [linkedChoice, setLinkedChoice] = useState<StandalonePresentation | null>(null);
 
   // Editor
   const [editing, setEditing] = useState<StandalonePresentation | null>(null);
@@ -183,10 +187,8 @@ const TeacherPresentations = () => {
   const openEditor = (p: StandalonePresentation) => {
     // Propojená prezentace se needituje – snímky se tvoří z lekce.
     if (p.lesson_id || p.source_lesson_id) {
-      toast({
-        title: "Prezentace je propojená s lekcí",
-        description: "Obsah i vzhled upravíte v editoru lekce v učebnici.",
-      });
+      // Neodmítáme: nabídneme upravitelnou kopii s odkazem na lekci, nebo úpravu lekce.
+      setLinkedChoice(p);
       return;
     }
     setEditing(p);
@@ -195,7 +197,47 @@ const TeacherPresentations = () => {
   };
 
   /** Nová vlastní řádka se sloučeným obsahem; původní propojení zůstane nedotčené. */
-  const copyAsOwn = async (p: StandalonePresentation) => {
+  /** Čerstvé slidy z propojené lekce (vlastní i katalogové), čtení přes RLS učitele. */
+  const loadLinkedLesson = async (p: StandalonePresentation) => {
+    const lessonId = p.source_lesson_id ?? p.lesson_id;
+    if (!lessonId) throw new Error("Prezentace není propojená s lekcí.");
+    const teacherSource = !!p.lesson_id || p.source_lesson_type === "teacher";
+    const primaryTable = teacherSource ? "teacher_textbook_lessons" : "textbook_lessons";
+    const fallbackTable = teacherSource ? "textbook_lessons" : "teacher_textbook_lessons";
+    const selectLesson = "id, title, blocks, hero_image_url";
+    const primary = await supabase.from(primaryTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
+    if (primary.error) throw primary.error;
+    let lesson = primary.data as any;
+    if (!lesson) {
+      const fallback = await supabase.from(fallbackTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
+      if (fallback.error) throw fallback.error;
+      lesson = fallback.data;
+    }
+    if (!lesson) throw new Error("Zdrojovou lekci se nepodařilo načíst.");
+    const fresh = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
+    return { lesson, fresh };
+  };
+
+  /** Spuštění rovnou ze seznamu. Propojená prezentace se promítá z aktuální lekce (jako v učebnici). */
+  const launchFromList = async (p: StandalonePresentation) => {
+    setLaunchingId(p.id);
+    try {
+      if (p.lesson_id || p.source_lesson_id) {
+        const { fresh } = await loadLinkedLesson(p);
+        const { mergePresentationSlides } = await import("@/lib/presentation-merge");
+        await launchLive(mergePresentationSlides(fresh, p.slides), p.title);
+      } else {
+        if (!p.slides.length) throw new Error("Prezentace zatím nemá žádný slide. Otevřete editor a přidejte obsah.");
+        await launchLive(p.slides, p.title);
+      }
+    } catch (e: any) {
+      toast({ title: "Spuštění se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setLaunchingId(null);
+    }
+  };
+
+  const copyAsOwn = async (p: StandalonePresentation, withRef = false) => {
     const lessonId = p.source_lesson_id ?? p.lesson_id;
     if (!lessonId) return;
     setCopyingId(p.id);
@@ -203,22 +245,11 @@ const TeacherPresentations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nejste přihlášen(a).");
 
-      const teacherSource = !!p.lesson_id || p.source_lesson_type === "teacher";
-      const primaryTable = teacherSource ? "teacher_textbook_lessons" : "textbook_lessons";
-      const fallbackTable = teacherSource ? "textbook_lessons" : "teacher_textbook_lessons";
-      const selectLesson = "id, title, blocks, hero_image_url";
-      const primary = await supabase.from(primaryTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
-      if (primary.error) throw primary.error;
-      let lesson = primary.data as any;
-      if (!lesson) {
-        const fallback = await supabase.from(fallbackTable as any).select(selectLesson).eq("id", lessonId).maybeSingle();
-        if (fallback.error) throw fallback.error;
-        lesson = fallback.data;
-      }
-      if (!lesson) throw new Error("Zdrojovou lekci se nepodařilo načíst.");
-
-      const fresh = blocksToSlides(lesson.blocks || [], lesson.title, { heroImageUrl: lesson.hero_image_url });
-      const payload = independentPresentationPayload(user.id, p.title, fresh, p.slides);
+      const { lesson, fresh } = await loadLinkedLesson(p);
+      const base = independentPresentationPayload(user.id, p.title, fresh, p.slides);
+      const payload = withRef
+        ? { ...base, slides: attachLessonRef(base.slides, { id: lesson.id, title: lesson.title, source: p.lesson_id || p.source_lesson_type === "teacher" ? "teacher" : "catalog" }) }
+        : base;
       const { data, error } = await supabase
         .from("teacher_presentations" as any)
         .insert(payload as any)
@@ -236,7 +267,12 @@ const TeacherPresentations = () => {
         updated_at: (data as any).updated_at,
       };
       setItems((prev) => [created, ...prev]);
-      toast({ title: "Vlastní prezentace vytvořena", description: "Kopie už se nebude automaticky měnit podle učebnice." });
+      toast({
+        title: withRef ? "Kopie propojená s lekcí vytvořena" : "Vlastní prezentace vytvořena",
+        description: withRef
+          ? "Kopii můžete volně upravovat. Odkaz na lekci zůstává, obsah se už nepřegeneruje z učebnice."
+          : "Kopie už se nebude automaticky měnit podle učebnice.",
+      });
       openEditor(created);
     } catch (e: any) {
       toast({ title: "Kopii se nepodařilo vytvořit", description: e?.message ?? String(e), variant: "destructive" });
@@ -288,7 +324,10 @@ const TeacherPresentations = () => {
     toast({ title: "Prezentace smazána" });
   };
 
-  const saveSlides = async (id: string, slides: any[]) => {
+  const saveSlides = async (id: string, rawSlides: any[]) => {
+    // Odkaz na lekci (u kopie propojené s lekcí) se zachová, i když se smaže první slide.
+    const prevRef = readLessonRef(items.find((i) => i.id === id)?.slides);
+    const slides = prevRef ? attachLessonRef(rawSlides, readLessonRef(rawSlides) ?? prevRef) : rawSlides;
     const { error } = await supabase
       .from("teacher_presentations" as any)
       .update({ slides: slides as any, updated_at: new Date().toISOString() })
@@ -402,18 +441,21 @@ const TeacherPresentations = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Nejste přihlášen(a).");
+      const report = preparePresentationForLive(slides);
+      if (report.slides.length === 0) throw new Error("Prezentace nemá žádný slide, který jde promítnout.");
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase.from("game_sessions").insert({
         teacher_id: session.user.id,
         title,
         game_code: gameCode,
-        activity_data: expandSlidesForLiveGame(slides) as any,
-        settings: { timePerQuestion: 30, projectorFontScale: loadProjectorFontScale(), shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+        activity_data: report.slides as any,
+        settings: { timePerQuestion: 30, activityStartMode: getActivityStartPref(), projectorFontScale: loadProjectorFontScale(), shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
         status: "lobby",
         current_question_index: -1,
       }).select("id").single();
       if (error) throw error;
-      toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
+      const note = launchReportMessage(report);
+      toast({ title: "Prezentace spuštěna", description: note ? `Kód: ${gameCode}. ${note}` : `Kód: ${gameCode}` });
       navigate(`/live/ucitel/${(data as any).id}`);
     } catch (e: any) {
       toast({ title: "Spuštění se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
@@ -502,11 +544,37 @@ const TeacherPresentations = () => {
                     </div>
                   )}
 
+                  {!(p.lesson_id || p.source_lesson_id) && readLessonRef(p.slides) && (
+                    <Badge variant="outline" className="w-fit gap-1 border-deck-teal text-xs">
+                      <Link2 className="h-3 w-3" /> Odkaz na lekci: {readLessonRef(p.slides)!.title || "lekce"}
+                    </Badge>
+                  )}
+
                   <div className="mt-auto flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1 border-0 bg-deck-violet text-primary-foreground hover:bg-deck-violet-deep"
+                      disabled={launchingId === p.id}
+                      onClick={() => launchFromList(p)}
+                      title={(p.lesson_id || p.source_lesson_id) ? "Spustí promítání z aktuálního obsahu lekce" : "Spustí promítání a živou hru"}
+                    >
+                      {launchingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                      Spustit
+                    </Button>
                     {(p.lesson_id || p.source_lesson_id) ? (
                       <>
                         <Button
                           size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => setLinkedChoice(p)}
+                          title="Vyberte, jak chcete propojenou prezentaci upravit"
+                        >
+                          <Monitor className="h-3.5 w-3.5" /> Upravit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           className="gap-1"
                           onClick={() => navigate("/ucitel/ucebnice")}
                           title="Obsah a vzhled promítání upravíte přímo v lekci"
@@ -527,7 +595,7 @@ const TeacherPresentations = () => {
                       </>
                     ) : (
                       <>
-                        <Button size="sm" className="gap-1" onClick={() => openEditor(p)}>
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => openEditor(p)}>
                           <Monitor className="h-3.5 w-3.5" /> Otevřít editor
                         </Button>
                         <Button size="sm" variant="outline" className="gap-1" onClick={() => openLinkPicker(p)}>
@@ -548,6 +616,37 @@ const TeacherPresentations = () => {
         )}
       </main>
       <SiteFooter />
+
+
+      {/* Propojená prezentace – editor ji neodmítá, nabídne volbu */}
+      <Dialog open={!!linkedChoice} onOpenChange={(o) => { if (!o) setLinkedChoice(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Jak chcete prezentaci upravit?</DialogTitle>
+            <DialogDescription>
+              Prezentace propojená s lekcí se při promítání tvoří z aktuálního obsahu lekce. Vyberte, co chcete upravovat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Button
+              className="h-auto w-full flex-col items-start gap-0.5 border-0 bg-deck-violet py-3 text-left text-primary-foreground hover:bg-deck-violet-deep"
+              disabled={!!linkedChoice && copyingId === linkedChoice.id}
+              onClick={async () => { const p = linkedChoice; setLinkedChoice(null); if (p) await copyAsOwn(p, true); }}
+            >
+              <span className="font-semibold">Upravit kopii propojenou s lekcí</span>
+              <span className="text-xs font-normal opacity-90">Vlastní kopie s odkazem na lekci. Můžete ji volně upravovat, z učebnice se už nepřepíše.</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto w-full flex-col items-start gap-0.5 py-3 text-left"
+              onClick={() => { setLinkedChoice(null); navigate("/ucitel/ucebnice"); }}
+            >
+              <span className="font-semibold">Upravit lekci v učebnici</span>
+              <span className="text-xs font-normal text-muted-foreground">Změny se projeví v promítání lekce i v této propojené prezentaci.</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Nová prezentace */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

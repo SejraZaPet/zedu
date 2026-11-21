@@ -5,6 +5,7 @@ import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
+import ActivitySpecPreview from "@/components/presentation/ActivitySpecPreview";
 import SlideDrawingLayer, { type DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import { READABLE_SCALE_FLOOR } from "@/lib/blocks-to-slides";
 import { combinedProjectorFontScale } from "@/lib/projector-font-scale";
@@ -2172,7 +2173,9 @@ export function SlideBody({
       <>
         {headlineEl}
         <div data-slide-group="full" className={`w-full space-y-6 ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
-          {blocks.length === 0 && framedBlocks.length === 0 && editable && !hideEmptyEditorPlaceholders ? (
+          {blocks.length === 0 && framedBlocks.length === 0 && editable && slide?.type === "activity" && slide?.activitySpec ? (
+            <ActivitySpecPreview spec={slide.activitySpec} />
+          ) : blocks.length === 0 && framedBlocks.length === 0 && editable && !hideEmptyEditorPlaceholders ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.
             </div>

@@ -48,6 +48,7 @@ import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 import LiveDraftsPanel from "@/components/live/LiveDraftsPanel";
 import LessonPlanPacing from "@/components/live/LessonPlanPacing";
+import LiveSlideTopNav, { isTypingTarget, slideKeyDirection } from "@/components/live/LiveSlideTopNav";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import ProjectorFontScaleControls from "@/components/live/ProjectorFontScaleControls";
 import { clampProjectorFontScale, loadProjectorFontScale, saveProjectorFontScale, settingsWithProjectorFontScale } from "@/lib/projector-font-scale";
@@ -269,6 +270,28 @@ const LiveTeacherScreen = () => {
     onSwipeLeft: () => { if (currentIndex < slides.length - 1) handleNext(); },
     onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1)); },
   });
+
+  const goPrevSlide = useCallback(() => {
+    if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1));
+  }, [currentIndex, nextQuestion, slideResetPatch]);
+  const goNextSlide = useCallback(() => {
+    if (currentIndex < slides.length - 1) handleNext();
+  }, [currentIndex, slides.length, handleNext]);
+
+  // Klávesy: šipky a PageUp/PageDown (ovladače prezentací); při psaní do polí se ignorují.
+  useEffect(() => {
+    if (session?.status !== "playing") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || isTypingTarget(e.target)) return;
+      if (document.querySelector("[role='dialog']")) return;
+      const dir = slideKeyDirection(e.key);
+      if (!dir) return;
+      e.preventDefault();
+      if (dir > 0) goNextSlide(); else goPrevSlide();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session?.status, goNextSlide, goPrevSlide]);
 
   // Race mode auto-end: finish the session when either every player has crossed
   // the finish line or the countdown expires. Guarded so we only fire once.
@@ -593,7 +616,8 @@ const LiveTeacherScreen = () => {
     <>
     <RaisedHandsIndicator players={players as any} />
     <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-    <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6" {...swipeHandlers}>
+    <div className="min-h-screen bg-background p-6 pt-0 max-w-4xl mx-auto space-y-6" {...swipeHandlers}>
+      <LiveSlideTopNav index={currentIndex} total={slides.length} onPrev={goPrevSlide} onNext={goNextSlide} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
-import { memo, useCallback, useState, useEffect, useRef } from "react";
+import { memo, useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +59,14 @@ import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
 import * as LucideIcons from "lucide-react";
-import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
+import { activityBlockToSlide } from "@/lib/plan-to-slides";
+import { applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
+import { buildPresetIntoSlide, canHostActivity } from "@/lib/presentation-activity-insert";
+import { cloneStudioSlide } from "@/lib/presentation-activity-sources";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
@@ -203,6 +210,11 @@ const SlideThumbnail = memo(function SlideThumbnail({
         <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
           {index + 1}
         </span>
+        {slide?.type === "activity" ? (
+          <span className="absolute left-0.5 top-0.5 rounded-full bg-deck-teal px-1.5 text-[8px] font-bold uppercase tracking-wide text-deck-violet-deep">
+            Aktivita
+          </span>
+        ) : null}
         {slide?.lockedFromLesson ? (
           <span className="absolute bottom-0.5 right-0.5 rounded bg-background/85 p-0.5 text-foreground" title="Uzamčený snímek – neaktualizuje se z lekce">
             <Lock className="h-3 w-3" />
@@ -222,6 +234,33 @@ export const PresentationEditorDialog = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // ── Neuložené změny + líná normalizace aktivit při otevření (nic se neukládá) ──
+  const editorOpen = !!presentationLesson && pendingSlides.length > 0;
+  const openKey = editorOpen ? `${presentationLesson?.id ?? ""}` : "";
+  const baselineRef = useRef<string | null>(null);
+  const [confirmClose, setConfirmClose] = useState<null | { after?: () => void }>(null);
+  useEffect(() => {
+    if (!openKey) { baselineRef.current = null; return; }
+    const normalized = normalizePresentationSlides(pendingSlides);
+    if (normalized !== pendingSlides) setPendingSlides(normalized);
+    baselineRef.current = JSON.stringify(normalized);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+  const currentJson = useMemo(() => (editorOpen ? JSON.stringify(pendingSlides) : ""), [editorOpen, pendingSlides]);
+  const isDirty = editorOpen && baselineRef.current !== null && baselineRef.current !== currentJson;
+  useEffect(() => {
+    if (!isDirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
+  /** Zavření editoru: při neuložených změnách se nejdřív zeptá. */
+  const requestClose = (after?: () => void) => {
+    if (isDirty) { setConfirmClose({ after }); return; }
+    onClose();
+    after?.();
+  };
 
   /**
    * Obrázek z privátní knihovny učitele nejdřív zkopíruje do veřejného bucketu,
@@ -359,6 +398,7 @@ export const PresentationEditorDialog = ({
     if (!hasBlocks && bodyText.trim()) {
       const seeded = createDefaultBlock("paragraph");
       seeded.props = { ...seeded.props, text: bodyText };
+      const wasClean = baselineRef.current === JSON.stringify(pendingSlides);
       const updated = [...pendingSlides];
       updated[editingSlideIndex] = {
         ...currentSlide,
@@ -366,6 +406,8 @@ export const PresentationEditorDialog = ({
         projector: { ...currentSlide.projector, body: "" },
       };
       setPendingSlides(updated);
+      // Automatický převod textu na blok není změna učitele – nevaruje při zavření.
+      if (wasClean) baselineRef.current = JSON.stringify(updated);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
@@ -398,7 +440,8 @@ export const PresentationEditorDialog = ({
 
   const updateSlide = (patch: any, options: { markEdited?: boolean } = {}) => {
     const updated = [...pendingSlides];
-    const next = { ...updated[editingSlideIndex], ...patch };
+    // Blok aktivity na plátně a activitySpec (čte hra) se drží ve shodě.
+    const next = applySlidePatch(updated[editingSlideIndex], patch);
     updated[editingSlideIndex] = options.markEdited === false
       ? next
       : markSlideEditedByTeacher(next, linkedToLesson);
@@ -447,7 +490,7 @@ export const PresentationEditorDialog = ({
         return { ...next, editedByTeacher: true } as Block;
       });
       const updated = [...prev];
-      updated[editingSlideIndex] = markSlideEditedByTeacher({ ...slide, blocks: nextBlocks }, linkedToLesson);
+      updated[editingSlideIndex] = markSlideEditedByTeacher(syncSpecFromBlock({ ...slide, blocks: nextBlocks }), linkedToLesson);
       return updated;
     });
   };
@@ -710,13 +753,29 @@ export const PresentationEditorDialog = ({
 
 
   /** ČÁST 4a – vložení předpřipravené aktivity za aktuální slide. */
+  const [activityTarget, setActivityTarget] = useState<"slide" | "new">("slide");
   const insertActivityPreset = (preset: ActivityPreset) => {
+    const built = preset.build();
+    if (activityTarget === "slide" && currentSlide && canHostActivity(currentSlide)) {
+      // Aktivita jako prvek aktuálního slidu – texty a obrázky slidu zůstanou.
+      const updated = [...pendingSlides];
+      updated[editingSlideIndex] = markSlideEditedByTeacher(buildPresetIntoSlide(currentSlide, built), linkedToLesson);
+      setPendingSlides(updated);
+      setSelectedBlockId(null);
+      toast({ title: "Aktivita přidána", description: `„${preset.label}" je teď součástí tohoto slidu.` });
+      return;
+    }
     const updated = [...pendingSlides];
-    updated.splice(editingSlideIndex + 1, 0, preset.build());
+    updated.splice(editingSlideIndex + 1, 0, built);
     setPendingSlides(updated);
     setEditingSlideIndex(editingSlideIndex + 1);
     setSelectedBlockId(null);
-    toast({ title: "Aktivita přidána", description: `„${preset.label}" byla vložena jako nový slide.` });
+    toast({
+      title: "Aktivita přidána",
+      description: activityTarget === "slide"
+        ? `Slide už má obsah nebo aktivitu, „${preset.label}" je proto na novém slidu, aby se v promítání nic neztratilo.`
+        : `„${preset.label}" byla vložena jako nový slide.`,
+    });
   };
 
 
@@ -747,25 +806,19 @@ export const PresentationEditorDialog = ({
       const correctIndex = Number((data as any)?.correctIndex ?? 0);
       if (options.length < 2) throw new Error("AI nevrátila dost možností odpovědí.");
 
+      const built = buildAiActivitySpec(
+        String((currentSlide as any).planActivityKind ?? ""),
+        { question, options, correctIndex },
+        (currentSlide as any).activitySpec?.timeLimitSec ?? DEFAULT_NEW_QUIZ_TIME_SEC,
+      );
       updateSlide({
         type: "activity",
         projector: { ...currentSlide.projector, headline: question },
-        device: { ...currentSlide.device, instructions: "Vyberte správnou odpověď." },
-        activitySpec: {
-          activityType: mapPlanKindToActivityType((currentSlide as any).planActivityKind) === "quiz"
-            ? "quiz"
-            : mapPlanKindToActivityType((currentSlide as any).planActivityKind),
-          question,
-          options: options.map((text, i) => ({
-            text,
-            correct: i === correctIndex,
-            isCorrect: i === correctIndex,
-          })),
-          correctIndex,
-          timeLimitSec: (currentSlide as any).activitySpec?.timeLimitSec ?? DEFAULT_NEW_QUIZ_TIME_SEC,
-        },
+        device: { ...currentSlide.device, instructions: built.instructions },
+        activitySpec: built.spec,
         ai_generated: true,
       });
+      if (built.note) toast({ title: "Upozornění k aktivitě", description: built.note });
       toast({ title: "Aktivita vytvořena", description: "Zkontrolujte prosím obsah vygenerovaný AI." });
     } catch (e: any) {
       toast({
@@ -792,6 +845,15 @@ export const PresentationEditorDialog = ({
 
   /** ČÁST 3 – vložení vlastní aktivity z lekce přímo do editované prezentace. */
   const insertActivitySlide = (block: any, label: string) => {
+    if (activityTarget === "slide" && currentSlide && canHostActivity(currentSlide)) {
+      const updated = [...pendingSlides];
+      const asSlide = activityBlockToSlide(block);
+      updated[editingSlideIndex] = markSlideEditedByTeacher(buildPresetIntoSlide(currentSlide, asSlide, { withBlock: true }), linkedToLesson);
+      setPendingSlides(updated);
+      setSelectedBlockId(null);
+      toast({ title: "Aktivita vložena", description: `„${label}" je teď součástí tohoto slidu.` });
+      return;
+    }
     const slide = activityBlockToSlide(block);
     const updated = [...pendingSlides];
     updated.splice(editingSlideIndex + 1, 0, slide);
@@ -799,6 +861,16 @@ export const PresentationEditorDialog = ({
     setEditingSlideIndex(editingSlideIndex + 1);
     setSelectedBlockId(null);
     toast({ title: "Aktivita vložena", description: `„${label}" byla přidána jako nový slide.` });
+  };
+
+  /** Aktivita ze Studia – kopie slidu (originál ve Studiu se nemění), vždy jako nový slide. */
+  const insertStudioSlide = (slide: any, label: string) => {
+    const updated = [...pendingSlides];
+    updated.splice(editingSlideIndex + 1, 0, cloneStudioSlide(slide));
+    setPendingSlides(updated);
+    setEditingSlideIndex(editingSlideIndex + 1);
+    setSelectedBlockId(null);
+    toast({ title: "Aktivita ze Studia vložena", description: `„${label}" byla přidána jako nový slide.` });
   };
 
   const aiActivityButton = (
@@ -831,7 +903,7 @@ export const PresentationEditorDialog = ({
 
   return (
     <>
-      <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) requestClose(); }}>
         <DialogContent className="flex h-[93vh] max-w-[1500px] flex-col gap-0 overflow-hidden p-0">
           {/* 1. HORNÍ PANEL – jeden řádek: vlevo vzhled slidu, vpravo akce s dokumentem */}
           <DialogHeader className="shrink-0 space-y-0 border-b border-border bg-muted/60 px-4 py-2 backdrop-blur-sm">
@@ -849,7 +921,7 @@ export const PresentationEditorDialog = ({
                   variant="ghost"
                   size="sm"
                   className="h-8 max-w-[220px] gap-1.5 text-xs"
-                  onClick={() => { onClose(); navigate(lessonBackUrl); }}
+                  onClick={() => requestClose(() => navigate(lessonBackUrl))}
                   title={isStandalone ? "Zpět na prezentace" : `Zpět na lekci ${presentationLesson?.title ?? ""}`}
                 >
                   <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
@@ -966,7 +1038,7 @@ export const PresentationEditorDialog = ({
                   {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                   PDF
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8" onClick={onClose}>Zrušit</Button>
+                <Button size="sm" variant="ghost" className="h-8" onClick={() => requestClose()}>Zrušit</Button>
                 {onSave && (
                   <Button
                     size="sm"
@@ -974,6 +1046,8 @@ export const PresentationEditorDialog = ({
                     className="h-8 gap-1.5"
                     onClick={async () => {
                       await onSave(pendingSlides);
+                      baselineRef.current = JSON.stringify(pendingSlides);
+                      setConfirmClose(null);
                       toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
                     }}
                   >
@@ -1781,8 +1855,24 @@ export const PresentationEditorDialog = ({
                     {/* ČÁST 4a – jediné místo, odkud se aktivity vkládají */}
                     <div>
                       <Label className="text-xs">Přidat aktivitu</Label>
+                      <div role="radiogroup" aria-label="Kam vložit aktivitu" className="mb-1.5 grid grid-cols-2 gap-1 rounded-lg bg-deck-cream p-1 font-deck-body">
+                        {([["slide", "Do tohoto slidu"], ["new", "Jako nový slide"]] as const).map(([v, l]) => (
+                          <button
+                            key={v}
+                            type="button"
+                            role="radio"
+                            aria-checked={activityTarget === v}
+                            onClick={() => setActivityTarget(v)}
+                            className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${activityTarget === v ? "bg-deck-violet text-primary-foreground" : "text-deck-violet-deep hover:bg-background"}`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </div>
                       <p className="mb-1.5 text-[11px] text-muted-foreground">
-                        Vloží nový slide s aktivitou za aktuální slide.
+                        {activityTarget === "slide"
+                          ? "Aktivita se vloží do aktuálního prázdného slidu (nadpis a pozadí zůstanou). Má-li slide jiný obsah, vznikne nový slide."
+                          : "Vloží nový slide s aktivitou za aktuální slide."}
                       </p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {ACTIVITY_PRESETS.map((preset) => {
@@ -1819,9 +1909,9 @@ export const PresentationEditorDialog = ({
 
                       <Label className="text-xs">Z mých lekcí</Label>
                       <p className="mb-1.5 text-[11px] text-muted-foreground">
-                        Kliknutím vložíte aktivitu jako nový slide za aktuální.
+                        Aktivity z vašich lekcí (i vnořené ve sloupcích a skupinách) a ze Studia.
                       </p>
-                      <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} />
+                      <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} onPickStudio={(item) => insertStudioSlide(item.slide, item.title)} />
                     </div>
 
                     <Button
@@ -2127,6 +2217,7 @@ export const PresentationEditorDialog = ({
             onOpenChange={setAddSlideOpen}
             slides={pendingSlides}
             layoutsOnly
+            showLibrary
 
             onAddSlides={(newSlides) => {
               insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides);
@@ -2136,6 +2227,45 @@ export const PresentationEditorDialog = ({
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmClose} onOpenChange={(o) => { if (!o) setConfirmClose(null); }}>
+        <AlertDialogContent className="font-deck-body">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-deck-heading uppercase tracking-wide text-deck-violet-deep">Neuložené změny</AlertDialogTitle>
+            <AlertDialogDescription>
+              V prezentaci máte změny, které ještě nejsou uložené. Když editor zavřete, ztratí se.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Pokračovat v úpravách</AlertDialogCancel>
+            {onSave && (
+              <AlertDialogAction
+                className="bg-deck-violet text-primary-foreground hover:bg-deck-violet-deep"
+                onClick={async () => {
+                  const after = confirmClose?.after;
+                  try {
+                    await onSave(pendingSlides);
+                    baselineRef.current = JSON.stringify(pendingSlides);
+                    setConfirmClose(null);
+                    onClose();
+                    after?.();
+                  } catch (e: any) {
+                    toast({ title: "Uložení se nepodařilo", description: e?.message ?? String(e), variant: "destructive" });
+                  }
+                }}
+              >
+                Uložit a zavřít
+              </AlertDialogAction>
+            )}
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { const after = confirmClose?.after; setConfirmClose(null); baselineRef.current = null; onClose(); after?.(); }}
+            >
+              Zavřít bez uložení
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) onCloseExisting(); }}>
         <DialogContent className="max-w-sm">
