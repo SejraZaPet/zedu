@@ -29,6 +29,7 @@ import { StudentDashboardCompactTile, StudentDashboardTile } from "@/components/
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchStudentCourses } from "@/lib/student-courses";
 import { czechDays, loadStudentDashboardSummary, type StudentDashboardSummary } from "@/lib/student-dashboard-summary";
+import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
 
 interface Profile {
   first_name: string;
@@ -45,6 +46,7 @@ const StudentDashboard = () => {
   useEffect(() => { void ensureMyCourseNotebooks(); }, []);
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  useStudentPracticeLessons(user?.id);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [upcomingCount, setUpcomingCount] = useState<number | null>(null);

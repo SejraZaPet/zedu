@@ -21,6 +21,12 @@ export interface RawPracticeLesson {
   subject: string;
 }
 
+function throwOnQueryError(...results: Array<{ error?: unknown } | { data: unknown }>): void {
+  for (const result of results) {
+    if ("error" in result && result.error) throw result.error;
+  }
+}
+
 /** Jen publikované lekce, bez duplicit, seskupené Předmět → Lekce (abecedně). */
 export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonGroup[] {
   const seen = new Set<string>();
@@ -49,14 +55,33 @@ export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonG
  * a globální lekce přiřazené jeho třídě/skupině. Jen čtení – RLS rozhoduje.
  */
 export async function fetchStudentPracticeLessons(userId: string): Promise<PracticeLessonGroup[]> {
-  const [{ data: memberships }, { data: enrollData }, { data: groupMembers }] = await Promise.all([
+  const [membershipResult, enrollmentResult, groupResult] = await Promise.all([
     supabase.from("class_members").select("class_id").eq("user_id", userId),
     supabase.from("teacher_textbook_enrollments").select("textbook_id").eq("student_id", userId),
     supabase.from("subject_group_members").select("group_id").eq("student_id", userId),
   ]);
+  throwOnQueryError(membershipResult, enrollmentResult, groupResult);
+  const memberships = membershipResult.data;
+  const enrollData = enrollmentResult.data;
+  const groupMembers = groupResult.data;
   const classIds = ((memberships ?? []) as any[]).map((m) => m.class_id).filter(Boolean);
   const groupIds = ((groupMembers ?? []) as any[]).map((m) => m.group_id).filter(Boolean);
-  const links: StudentTextbookLink[] = await fetchStudentClassTextbookLinks(userId, classIds);
+
+  // Umístění lekcí nezávisí na odkazech učebnic, proto se načítají souběžně s nimi.
+  const targetFilters: string[] = [];
+  if (classIds.length) targetFilters.push(`class_id.in.(${classIds.join(",")})`);
+  if (groupIds.length) targetFilters.push(`subject_group_id.in.(${groupIds.join(",")})`);
+  const targetsPromise = targetFilters.length
+    ? Promise.all([
+      supabase.from("lesson_topic_assignments").select("lesson_id").eq("status", "published").or(targetFilters.join(",")),
+      supabase.from("lesson_placements").select("lesson_id").eq("status", "published").or(targetFilters.join(",")),
+    ])
+    : Promise.resolve([{ data: [] as any[] }, { data: [] as any[] }]);
+  const [links, [a, p]] = await Promise.all([
+    fetchStudentClassTextbookLinks(userId, classIds, true),
+    targetsPromise,
+  ]);
+  throwOnQueryError(a, p);
 
   const teacherSubjectByTb = new Map<string, string | null>();
   for (const l of links) {
@@ -67,22 +92,8 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
     if (e.textbook_id && !teacherSubjectByTb.has(e.textbook_id)) teacherSubjectByTb.set(e.textbook_id, null);
   }
 
-  // Globální lekce přiřazené třídě/skupině žáka + umístění lekcí
-  const targetFilters: string[] = [];
-  if (classIds.length) targetFilters.push(`class_id.in.(${classIds.join(",")})`);
-  if (groupIds.length) targetFilters.push(`subject_group_id.in.(${groupIds.join(",")})`);
-  let globalLessonIds: string[] = [];
-  let placedLessonIds: string[] = [];
-  if (targetFilters.length) {
-    const or = targetFilters.join(",");
-    const [a, p] = await Promise.all([
-      supabase.from("lesson_topic_assignments").select("lesson_id").eq("status", "published").or(or),
-      supabase.from("lesson_placements").select("lesson_id").eq("status", "published").or(or),
-    ]);
-    globalLessonIds = [...new Set(((a.data ?? []) as any[]).map((r) => r.lesson_id).filter(Boolean))];
-    placedLessonIds = [...new Set(((p.data ?? []) as any[]).map((r) => r.lesson_id).filter(Boolean))];
-  }
-
+  const globalLessonIds = [...new Set(((a.data ?? []) as any[]).map((r) => r.lesson_id).filter(Boolean))];
+  const placedLessonIds = [...new Set(((p.data ?? []) as any[]).map((r) => r.lesson_id).filter(Boolean))];
   const tbIds = [...teacherSubjectByTb.keys()];
   const [tbRes, tLessonsRes, placedTRes, gLessonsRes] = await Promise.all([
     tbIds.length
@@ -99,20 +110,24 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
+  throwOnQueryError(tbRes, tLessonsRes, placedTRes, gLessonsRes);
   const tbById = new Map<string, any>(((tbRes as any).data ?? []).map((t: any) => [t.id, t]));
-  // Doplnit učebnice z umístění, které nejsou v odkazech
   const placedT = ((placedTRes as any).data ?? []) as any[];
-  const missingTb = [...new Set(placedT.map((l) => l.textbook_id).filter((id) => id && !tbById.has(id)))];
-  if (missingTb.length) {
-    const { data } = await supabase.from("teacher_textbooks").select("id, title, subject_id").in("id", missingTb).is("deleted_at", null);
-    for (const t of (data ?? []) as any[]) tbById.set(t.id, t);
-  }
-
   const gLessons = ((gLessonsRes as any).data ?? []) as any[];
   const topicIds = [...new Set(gLessons.map((l) => l.topic_id).filter(Boolean))];
-  const topicsRes = topicIds.length
-    ? await supabase.from("textbook_topics").select("id, subject").in("id", topicIds)
-    : { data: [] as any[] };
+  const topicsPromise = topicIds.length
+    ? supabase.from("textbook_topics").select("id, subject").in("id", topicIds)
+    : Promise.resolve({ data: [] as any[] });
+
+  // Doplňování učebnic je podmíněné a běží souběžně s načtením témat.
+  const missingTb = [...new Set(placedT.map((l) => l.textbook_id).filter((id) => id && !tbById.has(id)))];
+  if (missingTb.length) {
+    const { data, error } = await supabase.from("teacher_textbooks").select("id, title, subject_id").in("id", missingTb).is("deleted_at", null);
+    throwOnQueryError({ error });
+    for (const t of (data ?? []) as any[]) tbById.set(t.id, t);
+  }
+  const topicsRes = await topicsPromise;
+  throwOnQueryError(topicsRes);
   const slugByTopic = new Map<string, string>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, t.subject]));
   const slugs = [...new Set([...slugByTopic.values()].filter(Boolean))];
 
@@ -124,6 +139,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
     subjectIds.length ? supabase.from("subjects").select("id, name").in("id", subjectIds) : Promise.resolve({ data: [] as any[] }),
     slugs.length ? supabase.from("textbook_subjects").select("slug, label").in("slug", slugs) : Promise.resolve({ data: [] as any[] }),
   ]);
+  throwOnQueryError(subjRes, tsRes);
   const subjectName = new Map<string, string>(((subjRes as any).data ?? []).map((s: any) => [s.id, s.name]));
   const labelBySlug = new Map<string, string>(((tsRes as any).data ?? []).map((s: any) => [s.slug, s.label]));
 

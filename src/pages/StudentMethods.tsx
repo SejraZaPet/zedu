@@ -20,8 +20,7 @@ import { PRACTICE_PHOTO_PRIVACY_NOTICE } from "@/lib/practice-photo";
 import { usePracticePhotos } from "@/lib/use-practice-photos";
 import { useDemoPair } from "@/lib/demo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
-import { SelectGroup, SelectLabel } from "@/components/ui/select";
-import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
+import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
 import { methodHumanInfo, methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import StudentLearningHome from "@/components/student/StudentLearningHome";
 import {
@@ -54,8 +53,6 @@ const StudentMethods = () => {
   const [detail, setDetail] = useState<Method | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
   const [practiceFor, setPracticeFor] = useState<Method | null>(null);
-  const [lessonGroups, setLessonGroups] = useState<PracticeLessonGroup[]>([]);
-  const [lessonsLoading, setLessonsLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<string>("none");
   const [duration, setDuration] = useState<string>("15");
   const [submitting, setSubmitting] = useState(false);
@@ -197,25 +194,6 @@ const StudentMethods = () => {
       setLoading(false);
     })();
   }, [toast]);
-
-  useEffect(() => {
-    if (!practiceFor) return;
-    let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      setLessonsLoading(true);
-      try {
-        const groups = await fetchStudentPracticeLessons(session.user.id);
-        if (!cancelled) setLessonGroups(groups);
-      } catch {
-        if (!cancelled) setLessonGroups([]);
-      } finally {
-        if (!cancelled) setLessonsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [practiceFor]);
 
   const openDetail = (m: Method) => {
     setDetail(m);
@@ -605,35 +583,16 @@ const StudentMethods = () => {
             )}
 
             {sourceKind === "lesson" && (
-            <div>
-              <Label>Lekce z učebnice (volitelné)</Label>
-              <Select value={selectedLesson} onValueChange={setSelectedLesson}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Vyber lekci" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Bez konkrétní lekce</SelectItem>
-                  {lessonGroups.map((g) => (
-                    <SelectGroup key={g.subject}>
-                      <SelectLabel>{g.subject}</SelectLabel>
-                      {g.lessons.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.title}
-                          {l.textbook && l.textbook !== g.subject ? ` — ${l.textbook}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-              {lessonsLoading ? (
-                <p className="text-xs text-muted-foreground mt-1">Načítám tvoje lekce…</p>
-              ) : lessonGroups.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce.
-                </p>
-              )}
-            </div>
+              <div>
+                <Label>Lekce z učebnice (volitelné)</Label>
+                <LessonSearchCombobox
+                  userId={userId}
+                  value={selectedLesson}
+                  onValueChange={setSelectedLesson}
+                  allowNone
+                  emptyMessage="Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce."
+                />
+              </div>
             )}
 
             <div>

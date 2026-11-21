@@ -11,6 +11,9 @@ vi.mock("@/lib/student-learning-overview", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/student-learning-overview")>()),
   loadStudentLearningOverview: vi.fn(async () => overview),
 }));
+vi.mock("@/hooks/useStudentPracticeLessons", () => ({
+  useStudentPracticeLessons: () => ({ data: lessonGroups, isPending: false, isError: false }),
+}));
 
 const lessonGroups = [{ subject: "Přírodopis", lessons: [
   { id: "l1", title: "Buňka", textbook: "Přírodopis", subject: "Přírodopis" },

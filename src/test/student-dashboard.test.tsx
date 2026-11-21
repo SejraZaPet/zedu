@@ -11,6 +11,9 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "test-student-id" }, loading: false }),
 }));
 vi.mock("@/lib/notebook", () => ({ ensureMyCourseNotebooks: mocks.ensureNotebooks }));
+vi.mock("@/hooks/useStudentPracticeLessons", () => ({
+  useStudentPracticeLessons: () => ({ data: [], isPending: false, isError: false }),
+}));
 vi.mock("@/lib/student-courses", () => ({
   fetchStudentCourses: async () => [{ audienceKind: "class", audienceName: "[TEST] 2. B", news: { total: 0 } }],
 }));

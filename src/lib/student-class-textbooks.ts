@@ -19,8 +19,15 @@ const asType = (raw: unknown): "teacher" | "global" =>
 export async function fetchStudentClassTextbookLinks(
   userId: string,
   classIds: string[],
+  throwOnError = false,
 ): Promise<StudentTextbookLink[]> {
   const links: StudentTextbookLink[] = [];
+  const checkErrors = (...results: Array<{ error?: unknown } | { data: unknown }>) => {
+    if (!throwOnError) return;
+    for (const result of results) {
+      if ("error" in result && result.error) throw result.error;
+    }
+  };
 
   const classScoped = classIds.length > 0;
 
@@ -59,6 +66,8 @@ export async function fetchStudentClassTextbookLinks(
       )
       .eq("student_id", userId),
   ]);
+
+  checkErrors(classRes, subjRes, subjTbRes, slotRes, groupRes);
 
   for (const row of ((classRes as any).data ?? []) as any[]) {
     if (!row.textbook_id) continue;
@@ -117,70 +126,79 @@ export async function fetchStudentClassTextbookLinks(
     });
   }
 
-  // Učebnice připojené ke skupině předmětu přes vazební tabulku
+  // Vazby skupin a cílená umístění lekcí jsou nezávislé, proto se načítají souběžně.
   const groupRows = ((groupRes as any).data ?? []) as any[];
   const groupIds = [...new Set(groupRows.map((r) => r.group_id).filter(Boolean))];
   const subjectIdByGroup = new Map<string, string | null>(
     groupRows.map((r) => [r.group_id, r.subject_groups?.subject_id ?? null]),
   );
-  if (groupIds.length > 0) {
-    const { data: sgt } = await supabase
+  const groupTextbooksPromise = groupIds.length > 0
+    ? supabase
       .from("subject_group_textbooks")
       .select("textbook_id, textbook_type, subject_group_id, subject_id")
-      .in("subject_group_id", groupIds);
-    for (const row of (sgt ?? []) as any[]) {
-      if (!row.textbook_id) continue;
-      links.push({
-        textbook_id: row.textbook_id,
-        textbook_type: asType(row.textbook_type),
-        class_id: null,
-        subject_id: row.subject_id ?? subjectIdByGroup.get(row.subject_group_id) ?? null,
-        source: "group",
-      });
-    }
-  }
+      .in("subject_group_id", groupIds)
+    : Promise.resolve({ data: [] as any[] });
 
   // Učebnice odvozené z umístění lekcí cílených na žákovu třídu nebo skupinu.
-  // Učitel může lekci publikovat i v učebnici, která není ke třídě/skupině
-  // přímo připojená — žák ji přesto musí vidět.
   const targetFilters: string[] = [];
   if (classIds.length > 0) targetFilters.push(`class_id.in.(${classIds.join(",")})`);
   if (groupIds.length > 0) targetFilters.push(`subject_group_id.in.(${groupIds.join(",")})`);
-
-  if (targetFilters.length > 0) {
-    const orFilter = targetFilters.join(",");
-    const [assignRes, placeRes] = await Promise.all([
+  const targetsPromise = targetFilters.length > 0
+    ? Promise.all([
       supabase
         .from("lesson_topic_assignments")
         .select("topic_id, class_id, subject_group_id")
         .eq("status", "published")
-        .or(orFilter),
+        .or(targetFilters.join(",")),
       supabase
         .from("lesson_placements")
         .select("lesson_id, class_id, subject_group_id")
         .eq("status", "published")
-        .or(orFilter),
-    ]);
+        .or(targetFilters.join(",")),
+    ])
+    : Promise.resolve([{ data: [] as any[] }, { data: [] as any[] }]);
+  const [groupTextbooksRes, [assignRes, placeRes]] = await Promise.all([groupTextbooksPromise, targetsPromise]);
+  checkErrors(groupTextbooksRes, assignRes, placeRes);
 
+  for (const row of ((groupTextbooksRes as any).data ?? []) as any[]) {
+    if (!row.textbook_id) continue;
+    links.push({
+      textbook_id: row.textbook_id,
+      textbook_type: asType(row.textbook_type),
+      class_id: null,
+      subject_id: row.subject_id ?? subjectIdByGroup.get(row.subject_group_id) ?? null,
+      source: "group",
+    });
+  }
+
+  if (targetFilters.length > 0) {
     const assignRows = ((assignRes as any).data ?? []) as any[];
     const placeRows = ((placeRes as any).data ?? []) as any[];
+
+    // Učitelské lekce se načítají souběžně s řetězcem globálních témat a předmětů.
+    const lessonIds = [...new Set(placeRows.map((r) => r.lesson_id).filter(Boolean))];
+    const teacherLessonsPromise = lessonIds.length > 0
+      ? supabase.from("teacher_textbook_lessons").select("id, textbook_id").in("id", lessonIds)
+      : Promise.resolve({ data: [] as any[] });
 
     // a) globální učebnice — téma → slug předmětu → textbook_subjects.id
     const topicIds = [...new Set(assignRows.map((r) => r.topic_id).filter(Boolean))];
     if (topicIds.length > 0) {
-      const { data: topics } = await supabase
+      const { data: topics, error: topicsError } = await supabase
         .from("textbook_topics")
         .select("id, subject")
         .in("id", topicIds);
+      checkErrors({ error: topicsError });
       const slugByTopic = new Map<string, string>(
         ((topics as any[]) ?? []).map((t) => [t.id, t.subject]),
       );
       const slugs = [...new Set([...slugByTopic.values()].filter(Boolean))];
       if (slugs.length > 0) {
-        const { data: subjectRows } = await supabase
+        const { data: subjectRows, error: subjectRowsError } = await supabase
           .from("textbook_subjects")
           .select("id, slug, label")
           .in("slug", slugs);
+        checkErrors({ error: subjectRowsError });
         const idBySlug = new Map<string, string>(
           ((subjectRows as any[]) ?? []).map((s) => [s.slug, s.id]),
         );
@@ -190,7 +208,8 @@ export async function fetchStudentClassTextbookLinks(
         const labels = [...new Set(((subjectRows as any[]) ?? []).map((s) => s.label).filter(Boolean))];
         const realSubjectBySlug = new Map<string, string>();
         if (labels.length > 0) {
-          const { data: canon } = await supabase.from("subjects").select("id, name").in("name", labels);
+          const { data: canon, error: canonError } = await supabase.from("subjects").select("id, name").in("name", labels);
+          checkErrors({ error: canonError });
           const idByName = new Map<string, string>(
             ((canon as any[]) ?? []).map((c) => [String(c.name).trim().toLowerCase(), c.id]),
           );
@@ -217,28 +236,24 @@ export async function fetchStudentClassTextbookLinks(
     }
 
     // b) učitelské učebnice — umístění lekce → teacher_textbook_lessons.textbook_id
-    const lessonIds = [...new Set(placeRows.map((r) => r.lesson_id).filter(Boolean))];
-    if (lessonIds.length > 0) {
-      const { data: tLessons } = await supabase
-        .from("teacher_textbook_lessons")
-        .select("id, textbook_id")
-        .in("id", lessonIds);
-      const tbByLesson = new Map<string, string>(
-        ((tLessons as any[]) ?? []).map((l) => [l.id, l.textbook_id]),
-      );
-      for (const row of placeRows) {
-        const textbookId = tbByLesson.get(row.lesson_id);
-        if (!textbookId) continue;
-        links.push({
-          textbook_id: textbookId,
-          textbook_type: "teacher",
-          class_id: row.class_id ?? null,
-          subject_id: row.subject_group_id
-            ? subjectIdByGroup.get(row.subject_group_id) ?? null
-            : null,
-          source: "placement",
-        });
-      }
+    const teacherLessonsResult = await teacherLessonsPromise;
+    checkErrors(teacherLessonsResult);
+    const tLessons = teacherLessonsResult.data;
+    const tbByLesson = new Map<string, string>(
+      ((tLessons as any[]) ?? []).map((l) => [l.id, l.textbook_id]),
+    );
+    for (const row of placeRows) {
+      const textbookId = tbByLesson.get(row.lesson_id);
+      if (!textbookId) continue;
+      links.push({
+        textbook_id: textbookId,
+        textbook_type: "teacher",
+        class_id: row.class_id ?? null,
+        subject_id: row.subject_group_id
+          ? subjectIdByGroup.get(row.subject_group_id) ?? null
+          : null,
+        source: "placement",
+      });
     }
   }
 

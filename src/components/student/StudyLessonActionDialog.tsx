@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
 import { Button } from "@/components/ui/button";
 import AiContentBadge from "@/components/ai/AiContentBadge";
-import type { PracticeLessonGroup } from "@/lib/student-practice-lessons";
 import type { StudyCard } from "@/lib/lesson-study";
 
 export type StudyLessonAction = "cards" | "summary";
@@ -13,13 +12,13 @@ export type StudyLessonAction = "cards" | "summary";
 interface StudyLessonActionDialogProps {
   action: StudyLessonAction | null;
   onOpenChange: (open: boolean) => void;
-  lessonGroups: PracticeLessonGroup[];
+  userId: string;
   initialLessonId: string | null;
   recentLessonIds?: string[];
   onError: (message: string) => void;
 }
 
-export default function StudyLessonActionDialog({ action, onOpenChange, lessonGroups, initialLessonId, recentLessonIds = [], onError }: StudyLessonActionDialogProps) {
+export default function StudyLessonActionDialog({ action, onOpenChange, userId, initialLessonId, recentLessonIds = [], onError }: StudyLessonActionDialogProps) {
   const [lessonId, setLessonId] = useState(initialLessonId ?? "");
   const [busy, setBusy] = useState(false);
   const [cards, setCards] = useState<StudyCard[]>([]);
@@ -83,13 +82,12 @@ export default function StudyLessonActionDialog({ action, onOpenChange, lessonGr
         {!hasResult ? (
           <div className="space-y-3">
             <LessonSearchCombobox
-              groups={lessonGroups}
+              userId={userId}
               recentLessonIds={recentLessonIds}
               value={lessonId}
               onValueChange={setLessonId}
-              disabled={busy || lessonGroups.length === 0}
+              disabled={busy}
             />
-            {lessonGroups.length === 0 && <p className="text-sm text-muted-foreground">Jakmile ti učitel zveřejní lekci, bude dostupná tady.</p>}
           </div>
         ) : action === "cards" ? (
           <div className="grid max-h-[55vh] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">

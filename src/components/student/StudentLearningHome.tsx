@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { loadStudentLearningOverview, examDayLabel, type StudentLearningOverview } from "@/lib/student-learning-overview";
+import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
 import { czechDays } from "@/lib/student-dashboard-summary";
 import { pickStudyMethod, type StudyMethodLite } from "@/lib/lesson-study";
 import StudyLessonActionDialog, { type StudyLessonAction } from "@/components/student/StudyLessonActionDialog";
@@ -43,16 +44,27 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
   const pathRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: cachedLessonGroups, isPending: lessonsPending, isError: lessonsError } = useStudentPracticeLessons(userId);
 
   useEffect(() => {
+    if (lessonsPending) {
+      setLoading(true);
+      return;
+    }
+    if (lessonsError) {
+      setOverview(null);
+      setLoading(false);
+      toast({ title: "Přehled učení se nepodařilo načíst", description: "Studijní techniky můžeš použít i bez něj.", variant: "destructive" });
+      return;
+    }
     let cancelled = false;
     setLoading(true);
-    void loadStudentLearningOverview(userId)
+    void loadStudentLearningOverview(userId, new Date(), cachedLessonGroups ?? [])
       .then((data) => { if (!cancelled) setOverview(data); })
       .catch(() => { if (!cancelled) toast({ title: "Přehled učení se nepodařilo načíst", description: "Studijní techniky můžeš použít i bez něj.", variant: "destructive" }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [userId, toast]);
+  }, [userId, cachedLessonGroups, lessonsPending, lessonsError, toast]);
 
   const scrollBehavior = (): ScrollBehavior => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 
@@ -192,7 +204,7 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
       <StudyLessonActionDialog
         action={studyAction}
         onOpenChange={(open) => { if (!open) setStudyAction(null); }}
-        lessonGroups={overview?.lessonGroups ?? []}
+        userId={userId}
         initialLessonId={overview?.lastLesson?.id ?? null}
         recentLessonIds={recentLessonIds}
         onError={(message) => toast({ title: "Studijní pomůcka se nepodařila", description: message, variant: "destructive" })}

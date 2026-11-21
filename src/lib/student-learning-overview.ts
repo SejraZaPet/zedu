@@ -188,11 +188,11 @@ export function buildLearningOverview(input: LearningOverviewInput): StudentLear
 }
 
 /** Jen existující vlastní čtení žáka; žádné zápisy, RPC ani nové datové zdroje. */
-export async function loadStudentLearningOverview(userId: string, now = new Date()): Promise<StudentLearningOverview> {
+export async function loadStudentLearningOverview(userId: string, now = new Date(), cachedLessonGroups?: PracticeLessonGroup[]): Promise<StudentLearningOverview> {
   const examEnd = new Date(now);
   examEnd.setDate(examEnd.getDate() + 14);
   const [lessonGroups, sessionsResult, masteryResult, xpResult, examsResult] = await Promise.all([
-    fetchStudentPracticeLessons(userId),
+    cachedLessonGroups === undefined ? fetchStudentPracticeLessons(userId) : Promise.resolve(cachedLessonGroups),
     supabase.from("student_practice_sessions")
       .select("lesson_id, created_at")
       .eq("student_id", userId)

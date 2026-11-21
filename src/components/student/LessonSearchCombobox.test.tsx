@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import LessonSearchCombobox, { orderedPracticeLessons } from "./LessonSearchCombobox";
 import type { PracticeLessonGroup } from "@/lib/student-practice-lessons";
 
@@ -15,10 +15,14 @@ const groups: PracticeLessonGroup[] = [{
   ],
 }];
 
+vi.mock("@/hooks/useStudentPracticeLessons", () => ({
+  useStudentPracticeLessons: () => ({ data: groups, isPending: false, isError: false, isFetching: false, refetch: vi.fn() }),
+}));
+
 function Host() {
   const [value, setValue] = useState("");
   return <>
-    <LessonSearchCombobox groups={groups} value={value} onValueChange={setValue} />
+    <LessonSearchCombobox userId="student-1" value={value} onValueChange={setValue} />
     <output aria-label="Vybrané ID">{value}</output>
   </>;
 }

@@ -36,6 +36,9 @@ vi.mock("react-router-dom", async (importOriginal) => ({
   useNavigate: () => mocks.navigate,
 }));
 vi.mock("@/lib/student-practice-lessons", () => ({ fetchStudentPracticeLessons: async () => [] }));
+vi.mock("@/hooks/useStudentPracticeLessons", () => ({
+  useStudentPracticeLessons: () => ({ data: [], isPending: false, isError: false, isFetching: false, refetch: vi.fn() }),
+}));
 vi.mock("@/lib/practice-method", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/practice-method")>()),
   savePracticeSource: mocks.saveSource,

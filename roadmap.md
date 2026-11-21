@@ -207,6 +207,12 @@
 - [x] Sdílený combobox pro kartičky a shrnutí: hledání bez diakritiky v názvu/předmětu/učebnici, naposledy procvičované lekce první, prázdný stav, klávesnice a mobil 390 px; bez DB/RLS a nasazení.
 - 9 testů prošlo; živě 22 lekcí, hledání 3 shody, přesný prázdný stav, šipky/Enter/Escape, výběr a maketované kartičky, min. dotykový cíl 50 px a nulový horizontální posun. Skutečná mobilní klávesnice ani ostré AI nebyly spuštěny.
 
+## Učím se – sdílená cache a rychlejší načtení lekcí
+- [x] Sdílený react-query hook s userId, staleTime 5 min a gcTime 30 min; prefetch v „Učím se“ i na žákovském přehledu, stejná data používá i tahák.
+- [x] Společný combobox i v „Procvičit metodou“, skeleton při prvním načtení, přesná chyba a funkční „Zkusit znovu“.
+- [x] Nezávislé dotazy a vazby skupin/umístění běží souběžně; doplňování učebnic jen při potřebě, stejné RLS/publikace/seskupení a 22 dostupných lekcí v preview.
+- [x] Test cache bez nových dotazů při druhém otevření, skeletonu a retry; typy a regrese. Preview před: 11 vln/22 dotazů a 1,48–1,50 s při každém otevření; po: 9 vln při prefetch, 0 dotazů a 0,46–0,68 s při otevření. Mobil 390 px bez horizontálního posunu, živá chyba i retry ověřeny; bez DB/SQL a nasazení.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
