@@ -9,7 +9,7 @@ export const DEMO_LIMIT_EVENT = "bezli:demo-limit-exhausted";
 export const DEMO_AI_EXHAUSTED_TEXT =
   "AI generování je vyčerpané. Tvoje práce zůstává uložená. Uložte si ji nebo si vytvořte účet.";
 /** Shodné se serverovou hláškou v _shared/demo-ai-guard.ts. */
-export const DEMO_AI_LIMIT_SERVER_MESSAGE = "Testovací účet má limit AI generování";
+export const DEMO_AI_LIMIT_SERVER_MESSAGE = "Demo má limit AI generování";
 
 export const remaining = (l: DemoLimit) => Math.max(0, l.limit - l.used);
 export const isExhausted = (l: DemoLimit) => remaining(l) <= 0;

@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   const db = adminClient();
   const { data: pair } = await db.from("demo_pairs").select("id")
     .or(`teacher_user_id.eq.${auth.userId},student_user_id.eq.${auth.userId}`).maybeSingle();
-  if (!pair) return json({ error: "Tato volba je jen pro ukázkový účet." }, 403);
+  if (!pair) return json({ error: "Tato volba je dostupná jen v demu." }, 403);
 
   if ((await countRecent(db, "save_contact", 60 * 60 * 1000, pair.id)) >= 5) {
     return json({ error: "Příliš mnoho pokusů. Zkuste to prosím za hodinu." }, 429);

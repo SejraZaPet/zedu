@@ -425,12 +425,12 @@ const ProfilePage = () => {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
-              Testovací účet
+              Demo
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">V testovacím účtu nelze měnit.</p>
-            <p>E-mail, heslo, školu, roli ani další nastavení účtu v testovacím režimu upravit nejde.</p>
+            <p className="font-medium text-foreground">V demu nelze měnit.</p>
+            <p>E-mail, heslo, školu, roli ani další nastavení účtu v demu upravit nejde.</p>
             <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
               <ArrowLeft className="w-4 h-4" /> Zpět
             </Button>

@@ -109,7 +109,7 @@ export async function buildDemoExportZip(uid: string, categories: DemoExportCate
     }
   }
   if (bytes > DEMO_EXPORT_MAX_BYTES) throw new DemoExportTooLarge("bytes");
-  zip.file("CTI-ME.txt", "Export vaší práce z ukázkového účtu Bezli.\n\nbezli-data.json – strojově čitelná data pro pozdější import.\nlisty-k-tisku – otevřete v prohlížeči a zvolte Tisk → Uložit jako PDF.\nsoubory – vaše nahrané obrázky a dokumenty.\n\nPrezentace do PDF nebo PowerPointu stáhnete přímo v editoru prezentace (Export).\nObsahuje jen vaši vlastní práci, žádná data žáků.\n");
+  zip.file("CTI-ME.txt", "Export vaší práce z dema Bezli.\n\nbezli-data.json – strojově čitelná data pro pozdější import.\nlisty-k-tisku – otevřete v prohlížeči a zvolte Tisk → Uložit jako PDF.\nsoubory – vaše nahrané obrázky a dokumenty.\n\nPrezentace do PDF nebo PowerPointu stáhnete přímo v editoru prezentace (Export).\nObsahuje jen vaši vlastní práci, žádná data žáků.\n");
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
 }
 

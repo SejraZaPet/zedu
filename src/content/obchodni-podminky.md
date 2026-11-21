@@ -20,7 +20,7 @@ Platné od **1. 9. 2026** · verze 1.0.
 | Obsah | Vše, co Uživatelé do Služby vloží nebo v ní vytvoří: texty, soubory, fotografie, lekce, pracovní listy, hry, odevzdané práce, zprávy. |
 | Licenční smlouva | Smlouva mezi Provozovatelem a Zákazníkem, kterou tvoří objednávka nebo nabídka, tyto Podmínky a ceník. |
 | Spotřebitel | Člověk, který mimo svou podnikatelskou činnost uzavírá smlouvu s Provozovatelem nebo s ním jinak jedná (§ 419 občanského zákoníku). |
-| Demo | Bezplatný ukázkový režim Služby na adrese bezli.cz/demo. |
+| Demo | Bezplatný režim Služby k vyzkoušení na adrese bezli.cz/demo. |
 
 ## 2. Popis Služby
 
@@ -93,7 +93,7 @@ Platné od **1. 9. 2026** · verze 1.0.
 
 ## 7. Demo a bezplatné užívání
 
-7.1 Demo je určeno k vyzkoušení Služby. Pracuje s testovacími účty a ukázkovým obsahem. V Demu je zakázáno vkládat osobní údaje žáků a jiných třetích osob.
+7.1 Demo je určeno k vyzkoušení Služby. Používá demo účty a ukázkový obsah. V Demu je zakázáno vkládat osobní údaje žáků a jiných třetích osob.
 
 7.2 Data v Demu se po 14 dnech bez aktivity automaticky mažou. Návštěvník může dobrovolně zadat e-mail (se souhlasem se zpracováním) a dostat připomínku před smazáním. Svůj obsah si může kdykoli stáhnout. Souhlas lze kdykoli odvolat a e-mail smazat.
 

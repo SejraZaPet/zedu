@@ -74,7 +74,7 @@ const DemoSaveWorkDialog = ({ open, onOpenChange, status, onChanged }: Props) =>
         <DialogHeader>
           <DialogTitle>Uložit moji práci</DialogTitle>
           <DialogDescription>
-            Ukázkový účet se po 14 dnech bez aktivity smaže. Můžete si nechat poslat připomínku nebo práci stáhnout.
+            Demo se po 14 dnech bez aktivity smaže. Můžete si nechat poslat připomínku nebo práci stáhnout.
           </DialogDescription>
         </DialogHeader>
 

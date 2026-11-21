@@ -67,10 +67,10 @@ export function buildDemoReminderEmail(o: { kind: "0d" | "1d" | "3d"; deletesAt:
   // 1d je pouze přechodná podpora starých rezervací; nové SQL už vybírá výhradně 0d.
   const when = o.kind === "0d" ? "dnes o půlnoci" : o.kind === "1d" ? "zítra" : "za 3 dny";
   const date = o.kind === "1d" ? formatPragueDay(o.deletesAt) : formatDemoLastDay(o.deletesAt);
-  const subject = `Váš ukázkový účet Bezli se smaže ${when}`;
+  const subject = `Vaše demo Bezli se smaže ${when}`;
   const finalNotice = isDemoFinalNoticeAllowed(o.consentVersion);
   const lines = [
-    `Dobrý den, váš ukázkový účet Bezli se ${when} (${date}) smaže i s vytvořenou prací.`,
+    `Dobrý den, vaše demo Bezli se ${when} (${date}) smaže i s vytvořenou prací.`,
     "Máte tři možnosti:",
     `1) Převést práci do ostrého účtu – napište nám přes ${DEMO_APP_URL}/licence a domluvíme převod.`,
     `2) Stáhnout ji – přihlaste se na ${DEMO_APP_URL}/demo svým návratovým kódem a v horním pruhu zvolte „Stáhnout moji práci“.`,
@@ -90,8 +90,8 @@ ${lines.map((l) => `<p>${esc(l)}</p>`).join("\n")}
 }
 
 export function buildDemoFinalEmail() {
-  const subject = "Vaše ukázková data Bezli byla smazána";
-  const message = "Vaše ukázková data i e-mail byly z Bezli smazány.";
+  const subject = "Vaše údaje z dema byla smazána";
+  const message = "Vaše údaje z dema i e-mail byly z Bezli smazány.";
   const text = `Dobrý den,\n\n${message}`;
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1A1F2C;line-height:1.5"><p>Dobrý den,</p><p>${esc(message)}</p></div>`;
   return { subject, text, html };

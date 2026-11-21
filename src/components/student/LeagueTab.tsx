@@ -56,7 +56,7 @@ export const LeagueTab = () => {
     return (
       <Card><CardContent className="py-10 text-center space-y-2">
         <Lock className="w-8 h-8 text-muted-foreground mx-auto" />
-        <p className="font-medium">{status === "demo" ? "V ukázkovém režimu se liga nehraje." : "Tvoje škola zatím Bezli ligu nezapnula."}</p>
+        <p className="font-medium">{status === "demo" ? "V demu se liga nehraje." : "Tvoje škola zatím Bezli ligu nezapnula."}</p>
         <p className="text-sm text-muted-foreground">Liga je týdenní soutěž žáků tvého ročníku. Zapíná ji vedení školy.</p>
       </CardContent></Card>
     );

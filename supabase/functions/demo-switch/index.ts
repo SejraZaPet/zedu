@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     .select("id, teacher_user_id, student_user_id")
     .or(`teacher_user_id.eq.${auth.userId},student_user_id.eq.${auth.userId}`)
     .maybeSingle();
-  if (!pair) return json({ error: "Přepínání je dostupné jen v testovacím režimu." }, 403);
+  if (!pair) return json({ error: "Přepínání je dostupné jen v demu." }, 403);
 
   const targetId = pair.teacher_user_id === auth.userId ? pair.student_user_id : pair.teacher_user_id;
   const role = pair.teacher_user_id === auth.userId ? "student" : "teacher";

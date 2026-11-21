@@ -65,7 +65,7 @@ const GdprPage = () => {
             podmínkách.
           </p>
           <p>
-            E-mail zadaný v demu použijeme podle souhlasu k připomenutí smazání ukázkového účtu, převodu práce a
+            E-mail zadaný v demu použijeme podle souhlasu k připomenutí smazání dema, převodu práce a
             jedné závěrečné zprávě o smazání údajů. Poté e-mail smažeme. Při odvolání souhlasu jej smažeme bez
             dalších zpráv. U starších souhlasů, které závěrečnou zprávu nezahrnovaly, e-mail smažeme se smazáním
             dema a závěrečnou zprávu neposíláme.

@@ -107,7 +107,7 @@ const DemoBanner = () => {
     <div
       ref={ref}
       role="region"
-      aria-label="Testovací účet"
+      aria-label="Demo"
       data-collapsed={collapsed ? "true" : "false"}
       className={`fixed top-0 inset-x-0 z-[60] bg-demo text-demo-foreground print:hidden ${collapsed ? "h-[5px]" : "shadow-md"}`}
     >
@@ -117,7 +117,7 @@ const DemoBanner = () => {
           onClick={() => setCollapsed(false)}
           aria-expanded={false}
           aria-controls="demo-banner-panel"
-          aria-label={`Zobrazit pruh testovacího účtu${typeof status?.daysLeft === "number" ? `, smazání za ${status.daysLeft} dní` : ""}`}
+          aria-label={`Zobrazit pruh dema${typeof status?.daysLeft === "number" ? `, smazání za ${status.daysLeft} dní` : ""}`}
           className="absolute top-[5px] left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-b-md bg-demo px-2.5 py-0.5 text-xs font-semibold text-demo-foreground shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         >
           Demo{typeof status?.daysLeft === "number" ? ` · ${status.daysLeft} d` : ""}
@@ -128,7 +128,7 @@ const DemoBanner = () => {
       <div className="container mx-auto px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <p className="flex items-center gap-2 font-semibold">
           <FlaskConical className="w-4 h-4 shrink-0" aria-hidden />
-          TESTOVACÍ ÚČET – nevkládejte osobní údaje. Data se po 14 dnech bez aktivity smažou.
+          DEMO – nevkládejte osobní údaje. Data se po 14 dnech bez aktivity smažou.
         </p>
         <div className="flex items-center gap-2">
           <span className="text-xs opacity-90">Zapiš si ho, s ním se vrátíš na jiném zařízení:</span>
@@ -166,7 +166,7 @@ const DemoBanner = () => {
             onClick={() => setCollapsed(true)}
             aria-expanded={true}
             aria-controls="demo-banner-panel"
-            aria-label="Skrýt pruh testovacího účtu"
+            aria-label="Skrýt pruh dema"
             className="h-7 px-2 text-demo-foreground hover:bg-demo-foreground/15 hover:text-demo-foreground focus-visible:ring-2 focus-visible:ring-demo-foreground"
           >
             <ChevronUp className="w-3.5 h-3.5 mr-1" aria-hidden />Skrýt

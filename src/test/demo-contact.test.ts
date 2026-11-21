@@ -28,7 +28,7 @@ describe("demo kontakt", () => {
   });
   it("připomínka D−0 říká dnes o půlnoci a obsahuje odhlášení", () => {
     const e = buildDemoReminderEmail({ kind: "0d", deletesAt: "2026-11-27T23:00:00Z", unsubscribeUrl: "https://x/u?t=abc", consentVersion: DEMO_CONSENT_VERSION });
-    expect(e.subject).toBe("Váš ukázkový účet Bezli se smaže dnes o půlnoci");
+    expect(e.subject).toBe("Vaše demo Bezli se smaže dnes o půlnoci");
     expect(e.text).toContain("dnes o půlnoci (27. 11. 2026)");
     expect(e.text).toContain("https://x/u?t=abc");
     expect(e.html).toContain("27. 11. 2026");
@@ -49,9 +49,10 @@ describe("demo kontakt", () => {
     expect(formatDemoLastDay("2026-12-06T23:00:00Z")).toBe("6. 12. 2026");
     expect(formatDemoLastDay("2026-06-07T22:00:00Z")).toBe("7. 6. 2026");
   });
-  it("závěrečný e-mail má přesnou zprávu a nedokončená rezervace zestárne do hodiny", () => {
+  it("závěrečný e-mail používá pojem demo a nedokončená rezervace zestárne do hodiny", () => {
     const e = buildDemoFinalEmail();
-    expect(e.text).toContain("Vaše ukázková data i e-mail byly z Bezli smazány.");
+    expect(e.subject).toBe("Vaše údaje z dema byla smazána");
+    expect(e.text).toContain("Vaše údaje z dema i e-mail byly z Bezli smazány.");
     expect(isDemoFinalClaimStale("2026-11-21T10:00:00Z", Date.parse("2026-11-21T10:59:59Z"))).toBe(false);
     expect(isDemoFinalClaimStale("2026-11-21T10:00:00Z", Date.parse("2026-11-21T11:00:00Z"))).toBe(true);
   });

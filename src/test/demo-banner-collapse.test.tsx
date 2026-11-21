@@ -34,30 +34,30 @@ beforeEach(() => {
 describe("demo pruh – sbalení a limity", () => {
   it("sbalí se, zapamatuje stav a znovu rozbalí s ARIA", () => {
     view();
-    const hide = screen.getByRole("button", { name: "Skrýt pruh testovacího účtu" });
+    const hide = screen.getByRole("button", { name: "Skrýt pruh dema" });
     expect(hide).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(hide);
     expect(window.localStorage.getItem(DEMO_BANNER_COLLAPSED_KEY)).toBe("1");
-    expect(screen.queryByText(/TESTOVACÍ ÚČET/)).not.toBeInTheDocument();
-    const show = screen.getByRole("button", { name: /Zobrazit pruh testovacího účtu/ });
+    expect(screen.queryByText(/DEMO/)).not.toBeInTheDocument();
+    const show = screen.getByRole("button", { name: /Zobrazit pruh dema/ });
     expect(show).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(show);
     expect(window.localStorage.getItem(DEMO_BANNER_COLLAPSED_KEY)).toBeNull();
-    expect(screen.getByText(/TESTOVACÍ ÚČET/)).toBeInTheDocument();
+    expect(screen.getByText(/DEMO/)).toBeInTheDocument();
   });
 
   it("uložený sbalený stav se po načtení obnoví", () => {
     window.localStorage.setItem(DEMO_BANNER_COLLAPSED_KEY, "1");
     view();
-    expect(screen.getByRole("region", { name: "Testovací účet" })).toHaveAttribute("data-collapsed", "true");
+    expect(screen.getByRole("region", { name: "Demo" })).toHaveAttribute("data-collapsed", "true");
   });
 
   it("při smazání za ≤ 3 dny je rozbalený a nejde skrýt", () => {
     window.localStorage.setItem(DEMO_BANNER_COLLAPSED_KEY, "1");
     mocks.status = status(3);
     view();
-    expect(screen.getByText(/TESTOVACÍ ÚČET/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Skrýt pruh testovacího účtu" })).not.toBeInTheDocument();
+    expect(screen.getByText(/DEMO/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Skrýt pruh dema" })).not.toBeInTheDocument();
     expect(mustStayExpanded(0, false)).toBe(true);
     expect(mustStayExpanded(4, false)).toBe(false);
   });
@@ -80,14 +80,14 @@ describe("demo pruh – sbalení a limity", () => {
     view();
     act(() => { window.dispatchEvent(new CustomEvent(DEMO_LIMIT_EVENT)); });
     expect(screen.getByRole("alert")).toHaveTextContent("Tvoje práce zůstává uložená");
-    expect(isDemoAiLimitBody(429, '{"error":"Testovací účet má limit AI generování. Pro plný přístup se zaregistrujte."}')).toBe(true);
-    expect(isDemoAiLimitBody(500, "Testovací účet má limit AI generování")).toBe(false);
+    expect(isDemoAiLimitBody(429, '{"error":"Demo má limit AI generování. Pro plný přístup se zaregistrujte."}')).toBe(true);
+    expect(isDemoAiLimitBody(500, "Demo má limit AI generování")).toBe(false);
   });
 
   it("sbalený pruh publikuje jen tenký proužek, hlavička se neodsouvá", () => {
     window.localStorage.setItem(DEMO_BANNER_COLLAPSED_KEY, "1");
     view();
-    const region = screen.getByRole("region", { name: "Testovací účet" });
+    const region = screen.getByRole("region", { name: "Demo" });
     expect(region.className).toContain("h-[5px]");
     expect(region.className).toContain("print:hidden");
   });

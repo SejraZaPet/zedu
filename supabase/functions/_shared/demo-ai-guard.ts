@@ -4,7 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 
 export const DEMO_AI_LIMIT_MESSAGE =
-  "Testovací účet má limit AI generování. Pro plný přístup se zaregistrujte.";
+  "Demo má limit AI generování. Pro plný přístup se zaregistrujte.";
 
 const headers = {
   "Access-Control-Allow-Origin": "*",

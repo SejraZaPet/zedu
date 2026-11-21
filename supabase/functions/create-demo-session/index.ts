@@ -30,16 +30,16 @@ Deno.serve(async (req) => {
   const hash = await ipHash(req);
 
   if ((await countRecent(db, "create", 60 * 60 * 1000, hash)) >= hourlyLimit) {
-    return json({ error: "Z tohoto připojení už vzniklo hodně testovacích účtů. Zkuste to prosím za hodinu." }, 429);
+    return json({ error: "Z tohoto připojení už vzniklo hodně dem. Zkuste to prosím za hodinu." }, 429);
   }
   if ((await countRecent(db, "create", 24 * 60 * 60 * 1000)) >= 500) {
-    return json({ error: "Dnešní kapacita testovacího režimu je vyčerpaná. Zkuste to prosím zítra." }, 429);
+    return json({ error: "Dnešní kapacita dem je vyčerpaná. Zkuste to prosím zítra." }, 429);
   }
   await recordEvent(db, "create", hash);
 
   const { data: school } = await db.from("schools").select("id, name")
     .eq("name", DEMO_SCHOOL_NAME).eq("is_demo", true).maybeSingle();
-  if (!school?.id) return json({ error: "Testovací režim teď není dostupný." }, 503);
+  if (!school?.id) return json({ error: "Demo teď není dostupné." }, 503);
 
   const created: string[] = [];
   try {
@@ -94,6 +94,6 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("create-demo-session failed", (e as Error).message);
     for (const id of created) await db.auth.admin.deleteUser(id).catch(() => {});
-    return json({ error: "Testovací účet se nepodařilo založit. Zkuste to prosím znovu." }, 500);
+    return json({ error: "Demo se nepodařilo založit. Zkuste to prosím znovu." }, 500);
   }
 });

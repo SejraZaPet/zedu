@@ -56,13 +56,13 @@ describe("hlavní CTA Vyzkoušet zdarma", () => {
   });
 
   it("při chybě zobrazí českou hlášku a nabídne vytvoření účtu", async () => {
-    startDemo.mockRejectedValueOnce(new Error("Dnešní kapacita testovacího režimu je vyčerpaná. Zkuste to prosím zítra."));
+    startDemo.mockRejectedValueOnce(new Error("Dnešní kapacita dem je vyčerpaná. Zkuste to prosím zítra."));
     renderHero();
 
     fireEvent.click(screen.getByRole("button", { name: "Vyzkoušet zdarma" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Dnešní kapacita testovacího režimu je vyčerpaná. Zkuste to prosím zítra.");
+    expect(alert).toHaveTextContent("Dnešní kapacita dem je vyčerpaná. Zkuste to prosím zítra.");
     expect(screen.getByRole("button", { name: "Vyzkoušet zdarma" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Vytvořit účet" }));
     expect(navigate).toHaveBeenCalledWith("/auth?role=teacher");

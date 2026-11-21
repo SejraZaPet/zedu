@@ -5,7 +5,7 @@ import { sha256Hex } from "../_shared/demo-contact.ts";
 
 const PAGE = `<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bezli – odhlášení</title></head>
 <body style="font-family:Arial,sans-serif;max-width:520px;margin:48px auto;padding:0 16px;color:#1A1F2C;line-height:1.5">
-<h1 style="font-size:22px">Hotovo</h1><p>Připomínky ukázkového účtu už vám neposíláme a váš e-mail jsme smazali.</p>
+<h1 style="font-size:22px">Hotovo</h1><p>Připomínky dema už vám neposíláme a váš e-mail jsme smazali.</p>
 <p><a href="https://www.bezli.cz">Zpět na Bezli</a></p></body></html>`;
 
 Deno.serve(async (req) => {

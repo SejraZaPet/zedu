@@ -21,7 +21,7 @@ const DemoPage = () => {
   const eventTag = params.get("akce");
 
   useEffect(() => {
-    document.title = "Vyzkoušej Bezli – testovací režim";
+    document.title = "Vyzkoušej Bezli – demo";
     try { setSavedCode(window.localStorage.getItem(DEMO_CODE_KEY)); } catch { /* ignore */ }
   }, []);
 
@@ -46,7 +46,7 @@ const DemoPage = () => {
           <img src={logo} alt="Bezli" className="h-10 w-auto mx-auto" />
           <h1 className="font-heading text-3xl font-bold">Vyzkoušej Bezli</h1>
           <p className="inline-flex items-center gap-2 rounded-full bg-demo/15 px-3 py-1 text-sm font-medium text-foreground">
-            <FlaskConical className="w-4 h-4" aria-hidden /> Testovací režim, bez registrace
+            <FlaskConical className="w-4 h-4" aria-hidden /> Demo, bez registrace
           </p>
         </div>
 
