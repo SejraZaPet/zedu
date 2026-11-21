@@ -232,6 +232,11 @@
 - [x] Test: existující lesson_id/settings.lessons filtrované přes dostupné žákovské lekce; 10/15/20 minut a nejslabší lekce, jinak původní 5minutový fallback. Bez testu text „Žádný test na obzoru“.
 - [x] 45 testů, typy/build a živá kontrola mobilu 390 px: 5 předmětů, uložení/reload, fokus, Ostatní se 7 lekcemi a 3 vyhledané shody, bez přetečení a chyb stránky. Ostré spuštění procvičování/AI neověřeno; bez DB/RLS/SQL a nasazení.
 
+## Učím se – fallback názvu předmětu ze slugu
+- [x] Chybějící label `textbook_subjects` nahrazuje pouze zobrazovací `practiceSubjectLabel`: 7 schválených českých názvů, katalogový label má přednost, neznámý slug se zpřehlední a „Ostatní“ je jen bez slugu. Bez zápisu do DB.
+- [x] 28 testů mapování, `groupPracticeLessons`, overview, cache i domovských režimů a typy prošly. Živé preview při 390 px ukazuje samostatnou Administrativu, Adresy - úvod i Archivace a skartace písemností; bez vodorovného posunu a chyb stránky.
+- Chybějící labely pro Tynu: `administrativa` → Administrativa; `informacni_a_komunikacni_technologie` → Informační a komunikační technologie; `maturitni_otazky` → Maturitní otázky; `ekonomika` → Ekonomika; `zaklady_prava` → Základy práva; `predmet_na_zkousku` → Předmět na zkoušku; `stolniceni` → Stolničení.
+
 ## Bezlai tutor – volný režim a RAG nad materiály žáka
 - [x] Přejmenovat dlaždici na „Zeptej se Bezlai“ a oddělit výchozí kontextový režim od volného (`mode`), včetně úvodu a promptů; AI odhalení zůstane.
 - [x] Ve volném režimu prohledat pouze zdroje čitelné JWT žáka, bez diakritiky, max 5 × 800 znaků, s názvy zdrojů, prázdným stavem a čitelnou chybou; demo limity beze změny.

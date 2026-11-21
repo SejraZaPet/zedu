@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
-import { groupPracticeLessons } from "@/lib/student-practice-lessons";
+import { groupPracticeLessons, practiceSubjectLabel } from "@/lib/student-practice-lessons";
 import { questionCountForDuration } from "@/lib/study-method-info";
 import { loadPracticeLesson, clampQuestionCount } from "../../supabase/functions/_shared/practice-lesson";
 
@@ -22,6 +22,31 @@ describe("Učím se – výběr lekcí", () => {
       { id: "g1", title: "Zlomky", status: "published", textbook: "Matematika", subject: "Matematika" },
     ]);
     expect(groups.map((g) => g.subject)).toEqual(["Fyzika", "Matematika", "Nauka o výživě"]);
+  });
+  it("chybějící label nahradí schváleným názvem ze slugu a Ostatní nechá jen bez slugu", () => {
+    const expected = {
+      administrativa: "Administrativa",
+      informacni_a_komunikacni_technologie: "Informační a komunikační technologie",
+      maturitni_otazky: "Maturitní otázky",
+      ekonomika: "Ekonomika",
+      zaklady_prava: "Základy práva",
+      predmet_na_zkousku: "Předmět na zkoušku",
+      stolniceni: "Stolničení",
+    };
+    for (const [slug, label] of Object.entries(expected)) {
+      expect(practiceSubjectLabel(slug)).toBe(label);
+    }
+    expect(practiceSubjectLabel("administrativa", "Katalogový název")).toBe("Katalogový název");
+    expect(practiceSubjectLabel("novy_obor_bez_diakritiky")).toBe("Novy obor bez diakritiky");
+    expect(practiceSubjectLabel(null)).toBe("Ostatní");
+    expect(practiceSubjectLabel("  ")).toBe("Ostatní");
+
+    const grouped = groupPracticeLessons([
+      { id: "a1", title: "Adresy – úvod", status: "published", textbook: "Administrativa", subject: practiceSubjectLabel("administrativa") },
+    ]);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0].subject).toBe("Administrativa");
+    expect(grouped[0].lessons[0].subject).toBe("Administrativa");
   });
   it("koncept se nenabídne a duplicity se sloučí", () => {
     const groups = groupPracticeLessons([

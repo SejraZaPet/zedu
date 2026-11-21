@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildLearningOverview, daysUntilLocalDay, examDayLabel, examPreparationMinutes, pickExamPreparationTopic, readStoredLearningSubject, resolveLearningSubject, storeLearningSubject } from "@/lib/student-learning-overview";
+import { groupPracticeLessons, practiceSubjectLabel } from "@/lib/student-practice-lessons";
 
 const groups = [{
   subject: "Přírodopis",
@@ -48,6 +49,16 @@ describe("Učím se – denní cíl a cesta", () => {
     expect(result.topics.map((topic) => [topic.id, topic.mastered, topic.id === result.currentTopicId])).toEqual([
       ["l1", true, false], ["l2", false, true], ["l3", false, false],
     ]);
+  });
+
+  it("cesta použije odvozenou Administrativu jako aktivní předmět místo Ostatních", () => {
+    const administrativa = groupPracticeLessons([
+      { id: "a1", title: "Adresy – úvod", status: "published", textbook: "Administrativa", subject: practiceSubjectLabel("administrativa") },
+    ]);
+    const result = buildLearningOverview({ lessonGroups: administrativa, sessions: [], mastery: [], now });
+    expect(result.activeSubject).toBe("Administrativa");
+    expect(result.topics[0].subject).toBe("Administrativa");
+    expect(result.lessonGroups.some((group) => group.subject === "Ostatní")).toBe(false);
   });
 
   it("bez lekce nabídne vlastní materiál místo vymyšleného kvízu", () => {

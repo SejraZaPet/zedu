@@ -28,6 +28,28 @@ export interface RawPracticeLesson {
   topicId?: string | null;
 }
 
+const TOPIC_SUBJECT_FALLBACKS: Record<string, string> = {
+  administrativa: "Administrativa",
+  informacni_a_komunikacni_technologie: "Informační a komunikační technologie",
+  maturitni_otazky: "Maturitní otázky",
+  ekonomika: "Ekonomika",
+  zaklady_prava: "Základy práva",
+  predmet_na_zkousku: "Předmět na zkoušku",
+  stolniceni: "Stolničení",
+};
+
+/** Pouze zobrazovací fallback; nic nedoplňuje do katalogu předmětů. */
+export function practiceSubjectLabel(slug: string | null | undefined, catalogLabel?: string | null): string {
+  const existing = catalogLabel?.trim();
+  if (existing) return existing;
+  const normalizedSlug = slug?.trim();
+  if (!normalizedSlug) return "Ostatní";
+  const known = TOPIC_SUBJECT_FALLBACKS[normalizedSlug];
+  if (known) return known;
+  const humanized = normalizedSlug.replace(/_+/g, " ").trim();
+  return humanized.charAt(0).toLocaleUpperCase("cs") + humanized.slice(1);
+}
+
 function throwOnQueryError(...results: Array<{ error?: unknown } | { data: unknown }>): void {
   for (const result of results) {
     if ("error" in result && result.error) throw result.error;
@@ -212,7 +234,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
   }
   for (const l of gLessons) {
     const slug = slugByTopic.get(l.topic_id);
-    const label = (slug && labelBySlug.get(slug)) || "";
+    const label = practiceSubjectLabel(slug, slug ? labelBySlug.get(slug) : null);
     rows.push({
       id: l.id,
       title: l.title,
