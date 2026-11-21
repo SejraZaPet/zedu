@@ -298,3 +298,7 @@
 - V budoucí migraci by vznikla append-only tabulka `teacher_student_evaluations`: `id`, `student_id`, `subject_id`, `scope_type` (class/group), `scope_id`, `author_id`, `kind` (conclusion/note), `text`, `source` (teacher/ai_draft/ai_edited), `data_snapshot`, `based_on_until`, `supersedes_id`, `created_at`. Oprava závěru = nový řádek s odkazem na předchozí verzi; učitelé nemají UPDATE ani DELETE. Poznámky učitele použijí `kind='note'` a vstoupí do dalšího AI konceptu jen po akci učitele.
 - RLS by povolilo SELECT/INSERT jen přes jednu SECURITY DEFINER funkci `can_access_student_evaluation(scope_type, scope_id, subject_id)`, nyní pouze učiteli vlastnícímu úkol pro daného žáka/předmět/rozsah; INSERT navíc `author_id=auth.uid()`. Žák, rodič a anon nemají politiku. GRANT jen authenticated/service_role, RESTRICTIVE demo guard/izolace; případné GDPR smazání jen adminem.
 - Budoucí třídní učitel/vedení se doplní jen do pomocné funkce (vedení např. read-only), bez přestavby tabulky a politik; případné skrytí poznámek by použilo `audience` s výchozím `subject_teacher`. Tento popis není migrace a nebyl proveden.
+
+## Pracovní list z vlastního materiálu (21. 11. 2026)
+- [x] Sdílený výběr „Z lekce / Vlastní materiál / Obojí“ (`LessonOrOwnSourcePicker`, `lesson-or-own-source.ts`) v editoru listu a v „Vytvořit z lekce“; materiál se neukládá, bez DB/RLS.
+- [ ] Uložení materiálu k listu pro AI opravu – čeká na rozhodnutí Tyny.

@@ -3,7 +3,8 @@ import {
   bundleState, checkAddBatch, kindForFile, moveSource, SOURCE_KIND_LABEL,
   type SourceAudience, type SourceItem, type SourceKind,
 } from "@/lib/source-bundle";
-import { extractFileSource, extractUrlSource } from "@/lib/source-extract";
+// Extrakce (PDF/Word čtečky) se načítá až při prvním zdroji – nezatěžuje otevření dialogů.
+const extractor = () => import("@/lib/source-extract");
 
 type Loader = () => Promise<{ text: string; origin?: string; note?: string }>;
 
@@ -51,7 +52,7 @@ export function useSourceBundle(audience: SourceAudience = "teacher", onReject?:
     if (err) { onReject?.(err); return false; }
     push(list.map((f, i) => {
       const kind = incoming[i].kind!;
-      return { kind, label: f.name || SOURCE_KIND_LABEL[kind], origin: f.name, load: async () => ({ text: await extractFileSource(f, kind) }) };
+      return { kind, label: f.name || SOURCE_KIND_LABEL[kind], origin: f.name, load: async () => ({ text: await (await extractor()).extractFileSource(f, kind) }) };
     }));
     return true;
   };
@@ -68,7 +69,7 @@ export function useSourceBundle(audience: SourceAudience = "teacher", onReject?:
   const addUrl = (url: string) => {
     const err = checkAddBatch(items, [{ kind: "url" }]);
     if (err) { onReject?.(err); return false; }
-    push([{ kind: "url", label: url.trim(), load: () => extractUrlSource(url.trim()) }]);
+    push([{ kind: "url", label: url.trim(), load: async () => (await extractor()).extractUrlSource(url.trim()) }]);
     return true;
   };
 

@@ -161,6 +161,10 @@ import LessonSectionsPanel, {
   type BuiltWorksheetItem,
 } from "@/components/worksheet/LessonSectionsPanel";
 import CreateFromLessonDialog from "@/components/activities/CreateFromLessonDialog";
+import LessonOrOwnSourcePicker from "@/components/sources/LessonOrOwnSourcePicker";
+import { useSourceBundle } from "@/lib/use-source-bundle";
+import { combineLessonAndOwn, usesLesson, type LessonOrOwnMode } from "@/lib/lesson-or-own-source";
+
 import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import MindMapFieldsEditor from "@/components/worksheet/MindMapFieldsEditor";
 import MethodStepsFieldsEditor from "@/components/worksheet/MethodStepsFieldsEditor";
@@ -211,6 +215,9 @@ import { renderWorksheetVariantHtml } from "@/lib/worksheet-print-renderer";
 import PublishWorksheetDialog from "@/components/worksheet/PublishWorksheetDialog";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 import QuestionBankPickerDialog, { type QuestionBankItem } from "@/components/worksheet/QuestionBankPickerDialog";
+
+/** Stejný strop, jaký bere generate-full-worksheet; nad ním se nic neořezává, jen varuje. */
+const WORKSHEET_AI_SOURCE_LIMIT = 30000;
 
 interface LinkedLessonRow {
   id: string; // worksheet_lessons.id
@@ -1369,6 +1376,9 @@ export default function WorksheetEditor() {
   const [aiCustomHint, setAiCustomHint] = useState<string>("");
   const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
   const [aiGenerating, setAiGenerating] = useState(false);
+  // Zdroj pro AI list: lekce / vlastní materiál / obojí. Vlastní materiál se nikam neukládá.
+  const [aiSourceMode, setAiSourceMode] = useState<LessonOrOwnMode>("lesson");
+  const aiOwnBundle = useSourceBundle("teacher", (m) => toast({ title: "Zdroj nelze přidat", description: m, variant: "destructive" }));
   /** Poměr poznámky / aktivity (jen v režimu „Výukový list – zápis a aktivity“). */
   const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
   /** Režim pro každou aktivitu z lekce: QR kód na aktivitu, nebo převod na blok listu. */
@@ -1749,10 +1759,16 @@ export default function WorksheetEditor() {
 
   const lessonBlocks = splitLessonContent(activeLessonContent);
 
+  function openAiGenerateDialog() {
+    const hasText = !!activeLessonContent && activeLessonContent.trim().length >= 20;
+    setAiSourceMode(hasText || topicParam ? "lesson" : "own");
+    setShowAiGenerateDialog(true);
+  }
+
   async function handleAiGenerateAll() {
     if (!spec) return;
-    const hasLessonText = !!activeLessonContent && activeLessonContent.trim().length >= 20;
-    if (!hasLessonText && !topicParam) {
+    const hasLessonText = usesLesson(aiSourceMode) && !!activeLessonContent && activeLessonContent.trim().length >= 20;
+    if (aiSourceMode === "lesson" && !hasLessonText && !topicParam) {
       toast({
         title: "Chybí obsah lekce",
         description: "Nejdřív přiřaďte lekci s textovým obsahem.",
@@ -1778,11 +1794,19 @@ export default function WorksheetEditor() {
         suggestionContext && hasLessonText
           ? `${suggestionContext}\n\n## Doplňující text lekce\n${lessonTextBase}`
           : lessonTextBase || suggestionContext;
+      const combinedSource = aiSourceMode === "lesson" ? null : combineLessonAndOwn({
+        mode: aiSourceMode, lessonText: hasLessonText ? lessonText : "", ownText: aiOwnBundle.state.text,
+        ownState: aiOwnBundle.state, limit: WORKSHEET_AI_SOURCE_LIMIT,
+      });
+      if (combinedSource && !combinedSource.ok) {
+        toast({ title: "Podklady nelze použít", description: combinedSource.message ?? "", variant: "destructive" });
+        return;
+      }
 
       // ── Kontext z lekce: tabulky 1:1, QR na aktivity, aktivity k převodu ──
       // Aktivity vnořené v kartách nemají vlastní odkaz → vždy se převádějí na úlohu.
       const { qr: qrActivities, convert: convertActivities } = splitLessonActivities(
-        activeLessonActivities,
+        hasLessonText ? activeLessonActivities : [],
         activityModes,
       );
 
@@ -1807,8 +1831,8 @@ export default function WorksheetEditor() {
 
       const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
-          lessonContent: lessonText,
-          tables: activeLessonTables.map((t) => ({ rows: t.rows, caption: t.caption })),
+          lessonContent: combinedSource ? combinedSource.text : lessonText,
+          tables: (hasLessonText ? activeLessonTables : []).map((t) => ({ rows: t.rows, caption: t.caption })),
           qrLinks,
           activityPlan: convertActivities.map((a) => ({
             title: a.title,
@@ -1816,7 +1840,7 @@ export default function WorksheetEditor() {
             detail: a.instructions,
           })),
           lessonTitle:
-            allLessons.find((l) => l.id === activeLessonId)?.title ??
+            (hasLessonText ? allLessons.find((l) => l.id === activeLessonId)?.title : undefined) ??
             topicParam ??
             spec.header.title,
           worksheetMode: aiKind,
@@ -1859,7 +1883,7 @@ export default function WorksheetEditor() {
         } as WorksheetItem;
       });
       // Obrazové položky bez adresy doplníme obrázky z lekce (stejné pořadí jako v lekci).
-      const newItems = fillLessonVisualImages(rawNewItems, activeLessonVisuals);
+      const newItems = hasLessonText ? fillLessonVisualImages(rawNewItems, activeLessonVisuals) : rawNewItems;
 
       // Aktivity označené „převést“ vložíme deterministicky – zadání 1:1 z lekce.
       const convertedItems: WorksheetItem[] = [];
@@ -2593,16 +2617,13 @@ export default function WorksheetEditor() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowAiGenerateDialog(true)}
-                      disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                      onClick={openAiGenerateDialog}
                     >
                       <Sparkles className="w-4 h-4 mr-1" /> AI vytvoří pracovní list
                     </Button>
                   </span>
                 </TooltipTrigger>
-                {(!activeLessonContent || activeLessonContent.trim().length < 20) && (
-                  <TooltipContent>Nejdřív přiřaďte lekci</TooltipContent>
-                )}
+                <TooltipContent>Z lekce nebo z vlastního materiálu</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <Button
@@ -2648,8 +2669,7 @@ export default function WorksheetEditor() {
                   <Printer className="w-4 h-4 mr-2" /> Tisk / PDF
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setShowAiGenerateDialog(true)}
-                  disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                  onClick={openAiGenerateDialog}
                 >
                   <Sparkles className="w-4 h-4 mr-2" /> AI pracovní list
                 </DropdownMenuItem>
@@ -3094,13 +3114,33 @@ export default function WorksheetEditor() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              AI vytvoří pracovní list z lekce
+              AI vytvoří pracovní list
             </DialogTitle>
             <DialogDescription>
-              AI analyzuje obsah lekce a navrhne kompletní pracovní list.
+              AI analyzuje obsah lekce nebo váš vlastní materiál a navrhne kompletní pracovní list.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 min-w-0">
+            <LessonOrOwnSourcePicker
+              idPrefix="ws-src"
+              mode={aiSourceMode}
+              onModeChange={setAiSourceMode}
+              bundle={aiOwnBundle}
+              disabled={aiGenerating}
+              combined={combineLessonAndOwn({
+                mode: aiSourceMode,
+                lessonText: activeLessonContent && activeLessonContent.trim().length >= 20 ? activeLessonContent : (topicParam ?? ""),
+                ownText: aiOwnBundle.state.text, ownState: aiOwnBundle.state, limit: WORKSHEET_AI_SOURCE_LIMIT,
+              })}
+              lessonSlot={
+                <p className="text-sm text-muted-foreground break-words">
+                  {activeLessonContent && activeLessonContent.trim().length >= 20
+                    ? <>Lekce: <span className="font-medium text-foreground">{allLessons.find((l) => l.id === activeLessonId)?.title ?? "přiřazená lekce"}</span></>
+                    : topicParam ? <>Téma: <span className="font-medium text-foreground">{topicParam}</span></>
+                    : "K listu není přiřazená lekce s textem. Přiřaďte ji v editoru, nebo zvolte Vlastní materiál."}
+                </p>
+              }
+            />
             <div className="space-y-1.5">
               <Label>Druh listu</Label>
               <Select value={aiKind} onValueChange={(v) => setAiKind(v as WorksheetKind)}>

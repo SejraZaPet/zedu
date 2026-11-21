@@ -52,6 +52,11 @@ describe("Vytvořit z lekce – lokální kontrola", () => {
     state.empty = true;
     const onUseText = vi.fn();
     render(<MemoryRouter><CreateFromLessonDialog open onOpenChange={vi.fn()} onInsert={vi.fn()} onUseText={onUseText} /></MemoryRouter>);
+    // Bez lekcí se rovnou nabídne vlastní materiál; lekce zůstává volbou.
+    expect(await screen.findByText(/Materiál z Teamsu nebo Classroomu/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Vlastní materiál" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Navrhnout" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("radio", { name: "Z lekce" }));
     expect(await screen.findByText(/Nejdřív vytvořte lekci v Učebnici/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Otevřít Učebnice" })).toHaveAttribute("href", "/ucitel/ucebnice");
     fireEvent.click(screen.getByRole("button", { name: "Vložit text nebo dokument" }));

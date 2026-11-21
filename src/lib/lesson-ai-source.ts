@@ -45,7 +45,7 @@ export async function makeLessonSource(lesson: OwnedAiLesson, sectionIds: string
   const textHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
   return { lessonId: lesson.id, lessonSource: lesson.source ?? "teacher_textbook_lessons", sectionIds: [...sectionIds], textHash, createdAt: new Date().toISOString() };
 }
-export function lessonAiDraft(type: LessonAiType, data: any, title: string, source: LessonAiSource): Block {
+export function lessonAiDraft(type: LessonAiType, data: any, title: string, source?: LessonAiSource): Block {
   let props: Record<string, any>;
   if (type === "mcq") {
     if (!Array.isArray(data?.questions) || !data.questions.length) throw new Error("AI nevrátila použitelné otázky.");
@@ -62,5 +62,5 @@ export function lessonAiDraft(type: LessonAiType, data: any, title: string, sour
   }
   props = normalizeAiProps(props);
   assertAiFillContent(type, props);
-  return { id: crypto.randomUUID(), type: "activity", visible: true, props: { ...props, title, activityType: type === "mcq" ? "quiz" : type, ai_generated: true, source } };
+  return { id: crypto.randomUUID(), type: "activity", visible: true, props: { ...props, title, activityType: type === "mcq" ? "quiz" : type, ai_generated: true, ...(source ? { source } : {}) } };
 }
