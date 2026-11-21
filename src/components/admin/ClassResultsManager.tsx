@@ -12,8 +12,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Search, ArrowLeft, Users, Activity, BookOpen, Clock, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { Search, ArrowLeft, Users, Activity, BookOpen, Clock, ChevronRight, ChevronDown, Check, ClipboardCheck } from "lucide-react";
 import { bestActivityResults } from "@/lib/best-results";
+import TeacherEvaluationPanel from "@/components/teacher/TeacherEvaluationPanel";
 
 interface ClassOverview {
   id: string;
@@ -72,6 +73,7 @@ const ClassResultsManager = () => {
   const [classes, setClasses] = useState<ClassOverview[]>([]);
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState<ClassOverview | null>(null);
+  const [evaluationStudent, setEvaluationStudent] = useState<StudentDetail | null>(null);
   const [students, setStudents] = useState<StudentDetail[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [lessonActs, setLessonActs] = useState<ActivityRow[]>([]);
@@ -575,6 +577,7 @@ const ClassResultsManager = () => {
                       <TableHead className="text-center">Aktivity</TableHead>
                       <TableHead className="text-center">Lekce</TableHead>
                       <TableHead>Poslední aktivita</TableHead>
+                      <TableHead><span className="sr-only">Akce</span></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -592,11 +595,16 @@ const ClassResultsManager = () => {
                         <TableCell className="text-center text-sm text-muted-foreground">{s.activity_count || "–"}</TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground">{s.lesson_count || "–"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(s.last_activity)}</TableCell>
+                        <TableCell>
+                          <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => setEvaluationStudent(s)}>
+                            <ClipboardCheck className="mr-1 h-4 w-4" aria-hidden />Vyhodnocení
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {students.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                           Žádní studenti v této třídě.
                         </TableCell>
                       </TableRow>
@@ -733,6 +741,20 @@ const ClassResultsManager = () => {
               </Tabs>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!evaluationStudent} onOpenChange={(open) => !open && setEvaluationStudent(null)}>
+        <DialogContent className="flex h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b border-border px-4 py-4 pr-12 sm:px-6">
+            <DialogTitle>Vyhodnocení – {evaluationStudent?.first_name} {evaluationStudent?.last_name}</DialogTitle>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+            {evaluationStudent && selectedClass && <TeacherEvaluationPanel
+              fixedStudentId={evaluationStudent.id}
+              fixedScope={selectedClass.kind === "group" ? `g:${selectedClass.id}` : `c:${selectedClass.id}`}
+            />}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

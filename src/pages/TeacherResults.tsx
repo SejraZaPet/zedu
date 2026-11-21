@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
+import TeacherEvaluationPanel from "@/components/teacher/TeacherEvaluationPanel";
 import AssignmentDetailDialog, { type AssignmentDetailAssignment } from "@/components/admin/AssignmentDetailDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -504,6 +505,8 @@ const TeacherResults = () => {
             />
           </CardContent>
         </Card>
+
+        <TeacherEvaluationPanel defaultScope={classFilter} defaultSubject={subjectFilter} />
 
         {loading ? (
           <p className="text-muted-foreground">Načítání…</p>

@@ -285,3 +285,16 @@
 - [x] 3) Bezlai v úkolu: lekce + max. 2 textové materiály (PDF/TXT/DOCX) tokenem žáka, úryvky 5×800, štítky zdrojů.
 - Ověřeno: testy, čtení tokenem učitele nad reálnými úkoly, mobil 390 px. Neověřeno: nasazené funkce a ostrá AI, čtení tokenem žáka (politika storage to povoluje přes `can_read_assignment_material`).
 - [ ] 4) Vlastní podklad v CreateFromLessonDialog – NEDĚLAT (rozhodnutí Tyny).
+
+## Interní Vyhodnocení žáka – schválené etapy 1 a 3
+- [x] Etapa 1: čisté `evaluation.ts` sdílí pravidla nejlepších pokusů/aktivit a silných/slabých stránek; úkoly, aktivity, procvičování i mastery po lekcích/tématech, úkoly bez lekce pod předmětem, trend, počty podkladů a šablonový souhrn bez AI.
+- [x] Panel jen ve `TeacherResults` a v detailu žáka ve `ClassResultsManager`; vlastní úkoly učitele a jejich příjemci, SearchableSelect, čtení přes stávající RLS. Žákovský ani rodičovský frontend se neměnil, export se nepřidal.
+- [x] Etapa 3: dočasné AI „Co opakovat“ s 3–5 povolenými tématy, důvodem a existujícím procvičováním; kopírování/zavření, štítek AI, žádné uložení. Server ověřuje vlastnictví úkolu a příjemce tokenem učitele, demoAiGuard a serverovou bílou listinu témat; do AI jdou jen „Žák A“, předmět a čísla.
+- [x] Nová data po datu návrhu ukážou „Data se změnila, navrhni znovu“ v rámci relace; nic se neukládá.
+- Ověřeno: 21 frontendových testů, 5 Deno testů promptu, typová kontrola edge funkce, automatické sestavení a mobil 390 px se skutečnými čtecími daty. Maketované AI volání mělo 5 číselných témat bez jména/e-mailu/třídy/odpovědí, zobrazilo 3 návrhy a odkazy; detail žáka se otevřel a Escape jej zavřel, vodorovné přetečení 0 px. Neověřeno: ostrá AI a nasazená edge funkce (nenasazeno).
+- Etapy 2 a 4 NEDĚLAT bez schválení SQL.
+
+### Etapy 2 a 4 – pouze popis SQL ke schválení, NEAPLIKOVÁNO
+- V budoucí migraci by vznikla append-only tabulka `teacher_student_evaluations`: `id`, `student_id`, `subject_id`, `scope_type` (class/group), `scope_id`, `author_id`, `kind` (conclusion/note), `text`, `source` (teacher/ai_draft/ai_edited), `data_snapshot`, `based_on_until`, `supersedes_id`, `created_at`. Oprava závěru = nový řádek s odkazem na předchozí verzi; učitelé nemají UPDATE ani DELETE. Poznámky učitele použijí `kind='note'` a vstoupí do dalšího AI konceptu jen po akci učitele.
+- RLS by povolilo SELECT/INSERT jen přes jednu SECURITY DEFINER funkci `can_access_student_evaluation(scope_type, scope_id, subject_id)`, nyní pouze učiteli vlastnícímu úkol pro daného žáka/předmět/rozsah; INSERT navíc `author_id=auth.uid()`. Žák, rodič a anon nemají politiku. GRANT jen authenticated/service_role, RESTRICTIVE demo guard/izolace; případné GDPR smazání jen adminem.
+- Budoucí třídní učitel/vedení se doplní jen do pomocné funkce (vedení např. read-only), bez přestavby tabulky a politik; případné skrytí poznámek by použilo `audience` s výchozím `subject_teacher`. Tento popis není migrace a nebyl proveden.
