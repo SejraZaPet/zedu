@@ -6,30 +6,29 @@ import { Button } from "@/components/ui/button";
 import {
   User,
   Book,
+  BarChart3,
   CalendarDays,
   ClipboardCheck,
+  Flame,
   FolderOpen,
   Gamepad2,
   GraduationCap,
   Library,
   NotebookText,
+  Sparkles,
   SquareCheckBig,
   Trophy,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
-import StudentProgressWidgets from "@/components/student/StudentProgressWidgets";
-import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
-import MyLeagueCard from "@/components/student/MyLeagueCard";
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
 import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
-import RecognitionWidget from "@/components/behavior/RecognitionWidget";
-import UpcomingExamsCard from "@/components/student/UpcomingExamsCard";
 import { StudentDashboardCompactTile, StudentDashboardTile } from "@/components/dashboard/StudentDashboardTile";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchStudentCourses } from "@/lib/student-courses";
+import { czechDays, loadStudentDashboardSummary, type StudentDashboardSummary } from "@/lib/student-dashboard-summary";
 
 interface Profile {
   first_name: string;
@@ -51,14 +50,24 @@ const StudentDashboard = () => {
   const [upcomingCount, setUpcomingCount] = useState<number | null>(null);
   const [assignmentsCount, setAssignmentsCount] = useState<number | null>(null);
   const [subjectNewsCount, setSubjectNewsCount] = useState<number | null>(null);
+  const [classLabel, setClassLabel] = useState("—");
+  const [summary, setSummary] = useState<StudentDashboardSummary | null>(null);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     // Jeden souhrnný výpočet přes všechny předměty (žádné dotazy po kartách).
     fetchStudentCourses(user.id)
-      .then((rows) => { if (!cancelled) setSubjectNewsCount(rows.reduce((sum, c) => sum + c.news.total, 0) || null); })
+      .then((rows) => {
+        if (cancelled) return;
+        setSubjectNewsCount(rows.reduce((sum, course) => sum + course.news.total, 0) || null);
+        const names = [...new Set(rows.filter((course) => course.audienceKind === "class").map((course) => course.audienceName))];
+        setClassLabel(names.length === 0 ? "—" : names.length === 1 ? names[0] : `${names[0]} +${names.length - 1} další`);
+      })
       .catch(() => { if (!cancelled) setSubjectNewsCount(null); });
+    loadStudentDashboardSummary(user.id)
+      .then((value) => { if (!cancelled) setSummary(value); })
+      .catch(() => { if (!cancelled) setSummary(null); });
     return () => { cancelled = true; };
   }, [user]);
 
@@ -182,15 +191,31 @@ const StudentDashboard = () => {
               Ahoj, {profile?.first_name || "studente"}! 👋
             </h1>
             <p className="text-muted-foreground mt-1">Studentský panel</p>
+            {summary && (
+              <div className="mt-3 flex flex-wrap gap-2" aria-label="Herní profil">
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+                  Série · {czechDays(summary.streakDays)}
+                </span>
+                <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
+                  Úroveň · {summary.level}
+                </span>
+              </div>
+            )}
           </div>
           {user && <BannersNewsButton />}
         </div>
 
         {user && <DashboardBanners />}
 
-        <div className="flex flex-col md:block" data-testid="student-dashboard-stack">
-          <div className="max-md:order-first" data-testid="student-today-slot">
-            <TodayWidget role="student" onOpenAssignmentsChange={setAssignmentsCount} />
+        <div data-testid="student-dashboard-stack">
+          <div data-testid="student-today-slot">
+            <TodayWidget
+              role="student"
+              onOpenAssignmentsChange={setAssignmentsCount}
+              onUpcomingExamsChange={setUpcomingCount}
+            />
           </div>
 
           <section className="dashboard-main-grid student-dashboard-main-grid" aria-label="Hlavní odkazy" data-testid="student-main-links">
@@ -201,79 +226,53 @@ const StudentDashboard = () => {
             {compactTiles.map((tile) => <StudentDashboardCompactTile key={tile.id} {...tile} />)}
           </section>
 
-          {user && <UpcomingExamsCard userId={user.id} onCountChange={setUpcomingCount} />}
-          {user && <MyLeagueCard />}
+          <div className="mb-6 grid gap-4 md:grid-cols-2" data-testid="student-profile-summary">
+            <section className="rounded-xl border border-border bg-card p-5" aria-labelledby="student-profile-heading">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand-sm">
+                  <User className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+                </div>
+                <h2 id="student-profile-heading" className="font-heading text-lg font-semibold">Můj profil</h2>
+              </div>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+                <dt className="text-muted-foreground">Jméno</dt>
+                <dd className="min-w-0 break-words text-right font-medium">{[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "—"}</dd>
+                <dt className="text-muted-foreground">Škola</dt>
+                <dd className="min-w-0 break-words text-right">{profile?.school || "—"}</dd>
+                <dt className="text-muted-foreground">Třída</dt>
+                <dd className="min-w-0 break-words text-right">{classLabel}</dd>
+                <dt className="text-muted-foreground">Kód žáka</dt>
+                <dd className="break-all text-right font-mono font-bold text-primary">{profile?.student_code || "—"}</dd>
+              </dl>
+              <Button onClick={() => navigate("/profil")} variant="outline" size="sm" className="mt-4 min-h-11 w-full">
+                Upravit profil
+              </Button>
+            </section>
 
-          {user && (
-            <PlayerProfileWidget
-              userId={user.id}
-              firstName={profile?.first_name}
-              lastName={profile?.last_name}
-            />
-          )}
-
-          {user && <StudentProgressWidgets userId={user.id} />}
-
-          {user && (
-            <div className="mb-6">
-              <RecognitionWidget studentId={user.id} />
-            </div>
-          )}
+            <section className="rounded-xl border border-border bg-card p-5" aria-labelledby="student-progress-heading">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand-sm">
+                  <Sparkles className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+                </div>
+                <h2 id="student-progress-heading" className="font-heading text-lg font-semibold">Můj pokrok</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+                <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Trophy className="h-4 w-4 text-primary" aria-hidden="true" />XP</div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums">{summary?.xp ?? "—"}</div>
+                </div>
+                <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Flame className="h-4 w-4 text-primary" aria-hidden="true" />Série</div>
+                  <div className="mt-1 text-lg font-bold">{summary ? czechDays(summary.streakDays) : "—"}</div>
+                </div>
+                <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><BarChart3 className="h-4 w-4 text-primary" aria-hidden="true" />Průměr · 30 dní</div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums">{summary?.monthAvgPct == null ? "—" : `${summary.monthAvgPct} %`}</div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
-
-        <section className="bg-card border border-border rounded-xl p-6" aria-labelledby="student-profile-heading">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" aria-hidden="true" />
-            </div>
-            <h2 id="student-profile-heading" className="font-heading text-lg font-semibold">Můj profil</h2>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex flex-wrap justify-between gap-x-4">
-              <span className="text-muted-foreground">Jméno</span>
-              <span className="min-w-0 break-words text-right">{profile?.first_name} {profile?.last_name}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-x-4">
-              <span className="text-muted-foreground">E-mail</span>
-              <span className="min-w-0 break-all text-right">{profile?.email}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-x-4">
-              <span className="text-muted-foreground">Škola</span>
-              <span className="min-w-0 break-words text-right">{profile?.school || "—"}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-x-4">
-              <span className="text-muted-foreground">Obor</span>
-              <span className="min-w-0 break-words text-right">{profile?.field_of_study || "—"}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-x-4">
-              <span className="text-muted-foreground">Ročník</span>
-              <span>{profile?.year ?? "—"}</span>
-            </div>
-            {profile?.username && (
-              <div className="flex flex-wrap items-center justify-between gap-x-4 py-2 border-b border-border">
-                <span className="text-sm text-muted-foreground">Uživatelské jméno</span>
-                <span className="text-sm font-mono font-medium break-all">{profile.username}</span>
-              </div>
-            )}
-            {profile?.student_code && (
-              <div className="flex flex-wrap items-center justify-between gap-x-4 py-2 border-b border-border">
-                <span className="text-sm text-muted-foreground">Kód žáka</span>
-                <span className="text-sm font-mono font-bold text-primary">{profile.student_code}</span>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-2">
-              Kód žáka předejte svému rodiči – zadá ho ve svém profilu pro sledování vašeho pokroku.
-            </p>
-          </div>
-          <Button
-            onClick={() => navigate("/profil")}
-            variant="outline"
-            size="sm"
-            className="mt-4 w-full min-h-11"
-          >
-            Upravit profil
-          </Button>
-        </section>
       </main>
       <SiteFooter />
     </div>

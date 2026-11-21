@@ -894,23 +894,24 @@ export default function StudentSubjectClass() {
               <ul className="space-y-2" data-testid={`kind-list-${kind}`}>
                 {items.map((a) => (
                   <li key={a.id}>
-                    <Card className="flex flex-wrap items-start justify-between gap-2 p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="break-words text-sm font-medium">{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5 text-primary" aria-label="Připnuto" />}{a.title}</p>
-                        {isWallPost(a.settings) && <Badge variant="secondary">Příspěvek</Badge>}
-                        {kind === "material" && materialContentLabel(a) && <p className="text-xs text-muted-foreground">{materialContentLabel(a)}</p>}
-                        {a.description && <p className="text-sm text-muted-foreground line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
-                        {a.created_at && <p className="text-xs text-muted-foreground">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
-                      </div>
-                      <Button size="sm" className="assignment-card-action min-h-11 sm:min-h-0 shrink-0" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>
-                    </Card>
+                    <AssignmentStatusCard
+                      status={assignmentStatus(a, attempts.filter((attempt) => attempt.assignment_id === a.id))}
+                      title={<span>{isPinned(a.settings) && <PinnedIcon className="mr-1 inline h-3.5 w-3.5" aria-label="Připnuto" />}{a.title}</span>}
+                      onOpen={() => navigate(`/student/ulohy/${a.id}`)}
+                      actions={<Button size="sm" className="assignment-card-action min-h-11 sm:min-h-0 shrink-0" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}
+                    >
+                      {isWallPost(a.settings) && <Badge variant="secondary">Příspěvek</Badge>}
+                      {kind === "material" && materialContentLabel(a) && <p className="text-xs">{materialContentLabel(a)}</p>}
+                      {a.description && <p className="text-sm line-clamp-2 break-words">{assignmentDescriptionToText(a.description)}</p>}
+                      {a.created_at && <p className="assignment-card-meta text-xs">{format(new Date(a.created_at), "d. M. yyyy", { locale: cs })}</p>}
+                    </AssignmentStatusCard>
                   </li>
                 ))}
               </ul>
             ) : (
               <AssignmentStatusGroups items={items} storageKey={`assignment-groups:student:${kind}:${classId || groupId}`}
                 statusOf={(a) => assignmentStatus(a, attempts.filter((t) => t.assignment_id === a.id))}
-                renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title}
+                renderItem={(a, status) => <AssignmentStatusCard status={status} title={a.title} onOpen={() => navigate(`/student/ulohy/${a.id}`)}
                   actions={<Button size="sm" className="assignment-card-action" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít <ExternalLink className="h-3 w-3" /></Button>}>
                   {a.description && <p className="text-sm line-clamp-2">{assignmentDescriptionToText(a.description)}</p>}
                   <CheatsheetAllowedBadge settings={a.settings} />

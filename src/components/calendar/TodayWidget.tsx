@@ -1,10 +1,9 @@
 import { assignmentStatus, type StatusAttempt } from "@/lib/assignment-status";
 import { assignmentKind, announcementVisible } from "@/lib/assignment-kind";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
-import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { CalendarDays, ClipboardList, ArrowRight, Plus, Book, Flag, GraduationCap, School, SquareCheckBig } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { CalendarDays, ClipboardList, ArrowRight, Plus, Book, Flag, GraduationCap, NotebookPen, School, SquareCheckBig } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import PlanForClassFields from "@/components/calendar/PlanForClassFields";
 import { buildPlanInsert, validatePlanForm, type PlanForm } from "@/lib/planned-assignment";
+import { loadNotebooks } from "@/lib/notebook";
 
 const CLASS_TARGET = "__class__";
 const emptyPlan = (): PlanForm => ({ target: "", subjectId: null, kind: "test", title: "", date: "", time: "08:00", note: "", lessons: [] });
@@ -42,6 +42,7 @@ const emptyPlan = (): PlanForm => ({ target: "", subjectId: null, kind: "test", 
 interface Props {
   role: "student" | "teacher";
   onOpenAssignmentsChange?: (count: number | null) => void;
+  onUpcomingExamsChange?: (count: number | null) => void;
 }
 
 interface UpcomingAssignment {
@@ -64,6 +65,16 @@ const relativeDeadline = (deadline: Date, now: Date): string => {
   return `v ${format(deadline, "EEEE", { locale: cs })}`;
 };
 
+const examRelativeLabel = (deadline: Date, now: Date): string => {
+  const days = differenceInCalendarDays(deadline, now);
+  if (days <= 0) return "dnes";
+  if (days === 1) return "zítra";
+  return `za ${days} ${days >= 2 && days <= 4 ? "dny" : "dní"}`;
+};
+
+const todayTasksLabel = (count: number): string =>
+  `${count} ${count === 1 ? "úkol" : count >= 2 && count <= 4 ? "úkoly" : "úkolů"} k odevzdání dnes`;
+
 const deadlineColorClass = (deadline: Date, now: Date): string => {
   const days = differenceInCalendarDays(deadline, now);
   if (days <= 0) return "text-destructive font-medium";
@@ -71,7 +82,7 @@ const deadlineColorClass = (deadline: Date, now: Date): string => {
   return "text-muted-foreground";
 };
 
-const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
+const TodayWidget = ({ role, onOpenAssignmentsChange, onUpcomingExamsChange }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,6 +92,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
   // Cíl kliknutí na dnešní hodinu: podle slotu víme předmět a třídu/skupinu.
   const [lessonTargets, setLessonTargets] = useState<Record<string, string>>({});
   const [upcomingAssignments, setUpcomingAssignments] = useState<UpcomingAssignment[]>([]);
+  const [hasNewNotebookEntry, setHasNewNotebookEntry] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [expander, setExpander] = useState<Expander>(() => () => []);
@@ -193,7 +205,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
       }
 
       const fromIso = new Date().toISOString();
-      const toIso = addDays(today, 7).toISOString();
+      const toIso = addDays(today, role === "student" ? 14 : 7).toISOString();
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -242,6 +254,25 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
         }));
       }
 
+      let newNotebookEntry = false;
+      if (role === "student" && user) {
+        try {
+          const notebooks = await loadNotebooks(user.id);
+          if (notebooks.length > 0) {
+            const { data: latestPages } = await supabase
+              .from("notebook_pages")
+              .select("updated_at")
+              .in("notebook_id", notebooks.map((notebook) => notebook.id))
+              .order("updated_at", { ascending: false })
+              .limit(1);
+            const latest = latestPages?.[0]?.updated_at;
+            newNotebookEntry = !!latest && isSameDay(new Date(latest), today);
+          }
+        } catch {
+          // Nepovinná pilulka se při nedostupných datech jednoduše nezobrazí.
+        }
+      }
+
       const assignments: UpcomingAssignment[] = visibleAssignmentRows.map(
         (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, exam_type: a.exam_type, settings: a.settings, attempts: a.attempts, kind: "assignment" as const }),
       );
@@ -262,6 +293,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
       setTodayLessons(lessons);
       setLessonTargets(targets);
       setUpcomingAssignments(combined);
+      setHasNewNotebookEntry(newNotebookEntry);
       setLoading(false);
     };
 
@@ -291,17 +323,25 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
 
   const visibleAssignments = role === "student" ? upcomingAssignments : upcomingAssignments.slice(0, 5);
   const hasMoreAssignments = upcomingAssignments.length > 5;
+  const openAssignments = upcomingAssignments.filter((item) =>
+    item.kind === "assignment" && assignmentStatus(item, item.attempts).group === "pending",
+  );
   const openAssignmentsCount = role === "student" && !loading
-    ? upcomingAssignments.filter((item) => {
-        if (item.kind !== "assignment") return false;
-        const group = assignmentStatus(item, item.attempts).group;
-        return group === "pending";
-      }).length
+    ? openAssignments.filter((item) => !item.deadline || new Date(item.deadline) <= addDays(now, 7)).length
     : null;
+  const todayOpenAssignments = openAssignments.filter((item) => item.deadline && isSameDay(new Date(item.deadline), now));
+  const upcomingExams = openAssignments.filter((item) =>
+    item.deadline && new Date(item.deadline) >= now && ["ustni", "pisemne", "digitalni"].includes(item.exam_type ?? ""),
+  );
+  const nearestExam = upcomingExams[0] ?? null;
 
   useEffect(() => {
     onOpenAssignmentsChange?.(openAssignmentsCount);
   }, [onOpenAssignmentsChange, openAssignmentsCount]);
+
+  useEffect(() => {
+    onUpcomingExamsChange?.(loading ? null : upcomingExams.length);
+  }, [onUpcomingExamsChange, upcomingExams.length, loading]);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 mb-8">
@@ -413,6 +453,29 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
           </ul>
         )}
 
+        {role === "student" && !loading && (todayOpenAssignments.length > 0 || nearestExam || hasNewNotebookEntry) && (
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Dnešní připomenutí" data-testid="today-highlights">
+            {todayOpenAssignments.length > 0 && (
+              <Link to="/student/ulohy" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <SquareCheckBig className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {todayTasksLabel(todayOpenAssignments.length)}
+              </Link>
+            )}
+            {nearestExam?.deadline && (
+              <Link to={`/student/ulohy/${nearestExam.id}`} className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Flag className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">Test: {nearestExam.title} · {examRelativeLabel(new Date(nearestExam.deadline), now)}</span>
+              </Link>
+            )}
+            {hasNewNotebookEntry && (
+              <Link to="/student/sesit" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <NotebookPen className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Nový zápis v sešitě
+              </Link>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 mt-3">
           {role === "student" && (
             <button
@@ -431,99 +494,72 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
         </div>
       </div>
 
-      {/* Sekce 2: Nejbližší úkoly */}
-      <div className="border-t border-border my-4 pt-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-white" />
+      {/* Učitel má nadále Nejbližší úkoly; žák má místo nich pilulky výše. */}
+      {role === "teacher" && (
+        <div className="border-t border-border my-4 pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
+                <ClipboardList className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
             </div>
-            <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                aria-label="Přidat úkol"
+                title="Přidat úkol sobě, kolegovi nebo naplánovat test třídě"
+                className="w-9 h-9 rounded-xl bg-gradient-brand-sm flex items-center justify-center text-white shadow-sm hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{role === "student" ? "podle stavu" : "následujících 7 dní"}</span>
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              aria-label="Přidat úkol"
-              title={role === "teacher" ? "Přidat úkol sobě, kolegovi nebo naplánovat test třídě" : "Přidat úkol"}
-              className="w-9 h-9 rounded-xl bg-gradient-brand-sm flex items-center justify-center text-white shadow-sm hover:opacity-90 transition-opacity"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
 
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-        ) : visibleAssignments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {role === "student"
-              ? "V příštích 7 dnech tě nečekají žádné úkoly."
-              : "V příštích 7 dnech nemáš žádné termíny zadaných úkolů."}
-          </p>
-        ) : role === "student" ? (
-          <div className="space-y-3">
-            <AssignmentStatusGroups items={visibleAssignments.filter((a) => a.kind === "assignment")}
-              storageKey="assignment-groups:student:dashboard" statusOf={(a) => assignmentStatus(a, a.attempts)}
-              renderItem={(a, status) => {
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          ) : visibleAssignments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">V příštích 7 dnech nemáš žádné termíny zadaných úkolů.</p>
+          ) : (
+            <ul className="space-y-1">
+              {visibleAssignments.map((a) => {
+                const deadline = new Date(a.deadline ?? "");
+                const days = differenceInCalendarDays(deadline, now);
+                const colorClass = deadlineColorClass(deadline, now);
                 const KindIcon = a.exam_type ? Flag : SquareCheckBig;
-                return <AssignmentStatusCard title={a.title} status={status}
-                  icon={<span className="assignment-state-icon"><KindIcon aria-hidden="true" className="h-5 w-5" /></span>}
-                  actions={<Button size="sm" className="assignment-card-action" onClick={() => handleAssignmentClick(a)}>Otevřít</Button>}>
-                  {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
-                </AssignmentStatusCard>;
-              }} />
-            {visibleAssignments.filter((a) => a.kind === "todo").map((a) => <Button key={a.id} variant="ghost" onClick={() => handleAssignmentClick(a)}><SquareCheckBig aria-hidden="true" />{a.title} · Můj úkol</Button>)}
-          </div>
-        ) : (
-          <ul className="space-y-1">
-            {visibleAssignments.map((a) => {
-              const deadline = new Date(a.deadline ?? "");
-              const days = differenceInCalendarDays(deadline, now);
-              const colorClass = deadlineColorClass(deadline, now);
-              const KindIcon = a.exam_type ? Flag : SquareCheckBig;
-              return (
-                <li key={a.id}>
-                  <button
-                    onClick={() => handleAssignmentClick(a)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
-                  >
-                    <KindIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="flex-1 truncate">{a.title}</span>
-                    {a.kind === "todo" && (
-                      <Badge variant="secondary" className="text-[11px] shrink-0">
-                        Můj úkol
-                      </Badge>
-                    )}
-                    <span
-                      className={`text-xs shrink-0 ${colorClass}`}
-                      style={days === 1 ? { color: "#ea580c" } : undefined}
+                return (
+                  <li key={a.id}>
+                    <button
+                      onClick={() => handleAssignmentClick(a)}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
                     >
-                      {relativeDeadline(deadline, now)}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                      <KindIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="flex-1 truncate">{a.title}</span>
+                      {a.kind === "todo" && <Badge variant="secondary" className="text-[11px] shrink-0">Můj úkol</Badge>}
+                      <span className={`text-xs shrink-0 ${colorClass}`} style={days === 1 ? { color: "#ea580c" } : undefined}>
+                        {relativeDeadline(deadline, now)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
-        {hasMoreAssignments && (
-          <div className="flex justify-end mt-3">
-            <button
-              onClick={() => navigate(assignmentsPath)}
-              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-            >
-              Zobrazit všechny ({upcomingAssignments.length}){" "}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
+          {hasMoreAssignments && (
+            <div className="flex justify-end mt-3">
+              <button onClick={() => navigate(assignmentsPath)} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+                Zobrazit všechny ({upcomingAssignments.length}) <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">

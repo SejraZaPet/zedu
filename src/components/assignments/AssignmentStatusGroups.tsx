@@ -1,4 +1,4 @@
-import { Fragment, useId, useState, type ReactNode } from "react";
+import { Fragment, useId, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Clock, CircleCheck, CircleAlert, CalendarClock, ChevronDown, ChevronRight, Hourglass, ClipboardCheck, Lock, BookOpen, Megaphone, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,10 +18,42 @@ export function AssignmentStateBadge({ status }: { status: AssignmentStatus }) {
   </span>;
 }
 
-export function AssignmentStatusCard({ status, title, children, actions, icon }: {
-  status: AssignmentStatus; title: string; children?: ReactNode; actions?: ReactNode; icon?: ReactNode;
+const isNestedAction = (target: EventTarget | null, currentTarget: Element) => {
+  if (!(target instanceof Element)) return false;
+  const action = target.closest("a, button, input, select, textarea, label, [contenteditable='true'], [role='button'], [role='link'], [role='menuitem'], [role='tab'], [data-card-action]");
+  return !!action && action !== currentTarget;
+};
+
+export function AssignmentStatusCard({ status, title, children, actions, icon, onOpen }: {
+  status: AssignmentStatus; title: ReactNode; children?: ReactNode; actions?: ReactNode; icon?: ReactNode;
+  onOpen?: () => void;
 }) {
-  return <Card className={`assignment-status-card assignment-status-${status.state} p-4`}>
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!onOpen) return;
+    if (isNestedAction(event.target, event.currentTarget)) {
+      event.stopPropagation();
+      return;
+    }
+    onOpen();
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onOpen) return;
+    if (isNestedAction(event.target, event.currentTarget)) {
+      event.stopPropagation();
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (!event.repeat) onOpen();
+    }
+  };
+  return <Card
+    role={onOpen ? "link" : undefined}
+    tabIndex={onOpen ? 0 : undefined}
+    onClick={onOpen ? handleClick : undefined}
+    onKeyDown={onOpen ? handleKeyDown : undefined}
+    className={`assignment-status-card assignment-status-${status.state} p-4${onOpen ? " assignment-status-card--interactive" : ""}`}
+  >
     <div className="flex items-start gap-3 min-w-0">
       {icon ?? <AssignmentStateIcon status={status} />}
       <div className="min-w-0 flex-1 space-y-2">

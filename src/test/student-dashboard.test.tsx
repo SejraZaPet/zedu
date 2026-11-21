@@ -11,6 +11,13 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "test-student-id" }, loading: false }),
 }));
 vi.mock("@/lib/notebook", () => ({ ensureMyCourseNotebooks: mocks.ensureNotebooks }));
+vi.mock("@/lib/student-courses", () => ({
+  fetchStudentCourses: async () => [{ audienceKind: "class", audienceName: "[TEST] 2. B", news: { total: 0 } }],
+}));
+vi.mock("@/lib/student-dashboard-summary", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/student-dashboard-summary")>()),
+  loadStudentDashboardSummary: async () => ({ xp: 1200, level: 7, streakDays: 4, monthAvgPct: 83 }),
+}));
 vi.mock("react-router-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-router-dom")>()),
   useNavigate: () => mocks.navigate,
@@ -47,8 +54,11 @@ vi.mock("@/components/profile/ProfileAvatarBubble", () => ({
 vi.mock("@/components/calendar/TodayWidget", async () => {
   const { useEffect } = await import("react");
   return {
-    default: ({ onOpenAssignmentsChange }: { onOpenAssignmentsChange?: (count: number) => void }) => {
-      useEffect(() => { onOpenAssignmentsChange?.(2); }, [onOpenAssignmentsChange]);
+    default: ({ onOpenAssignmentsChange, onUpcomingExamsChange }: { onOpenAssignmentsChange?: (count: number) => void; onUpcomingExamsChange?: (count: number) => void }) => {
+      useEffect(() => {
+        onOpenAssignmentsChange?.(2);
+        onUpcomingExamsChange?.(3);
+      }, [onOpenAssignmentsChange, onUpcomingExamsChange]);
       return <section data-testid="today-widget"><a href="/student/rozvrh">Rozvrh třídy</a><a href="/student/kalendar">Můj kalendář</a></section>;
     },
   };
@@ -129,13 +139,27 @@ describe("Žákovský přehled – etapa 1", () => {
     }
   });
 
-  it("počty pocházejí z předaných dat a kód žáka i profil zůstávají viditelné", async () => {
+  it("počty, kompaktní profil a pokrok pocházejí z existujících dat", async () => {
     await renderDashboard();
     expect(screen.getByRole("link", { name: "Učím se, počet nadcházejících testů: 3" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Úlohy, počet k odevzdání: 2" })).toBeInTheDocument();
     expect(screen.getByText("TEST-CODE-123")).toBeVisible();
-    expect(screen.getByText(/Kód žáka předejte svému rodiči/)).toBeVisible();
+    expect(screen.getByText("[TEST] 2. B")).toBeVisible();
+    expect(screen.getByText("Série · 4 dny")).toBeVisible();
+    expect(screen.getByText("Úroveň · 7")).toBeVisible();
+    expect(screen.getByText("1200")).toBeVisible();
+    expect(screen.getByText("83 %")).toBeVisible();
     expect(screen.getByRole("button", { name: "Upravit profil" })).toBeInTheDocument();
+    expect(screen.getByTestId("student-profile-summary").querySelectorAll("section")).toHaveLength(2);
+  });
+
+  it("odstraní staré widgety z přehledu, ale zachová odkazy na jejich funkce", async () => {
+    await renderDashboard();
+    for (const text of ["Co mě čeká", "Můj profil hráče", "Moje výsledky", "Ocenění", "Liga"]) {
+      expect(screen.queryByText(text)).not.toBeInTheDocument();
+    }
+    expect(screen.getByRole("link", { name: /^Portfolio/ })).toHaveAttribute("href", "/student/portfolio");
+    expect(screen.getByRole("link", { name: /^Učím se/ })).toHaveAttribute("href", "/student/metody");
   });
 
   it("avatar je čtvercový, velký 96 px a zůstává v hlavičce", async () => {

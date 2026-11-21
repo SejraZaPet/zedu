@@ -114,7 +114,7 @@ const StudentAssignments = () => {
         ) : (
           <AssignmentStatusGroups items={assignments.filter((a) => assignmentKind(a.settings) !== "announcement")} storageKey="assignment-groups:student" statusOf={(a) => assignmentStatus(a, a.attempts)} renderItem={(a, visualStatus) => {
               if (!isSubmittable(a.settings)) return (
-                <AssignmentStatusCard status={visualStatus} title={a.title}
+                <AssignmentStatusCard status={visualStatus} title={a.title} onOpen={() => navigate(`/student/ulohy/${a.id}`)}
                   actions={<Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>}>
                   {a.description && <p className="line-clamp-2 text-sm">{assignmentDescriptionToText(a.description)}</p>}
                   {assignmentKind(a.settings) === "material" && materialContentLabel(a) && (
@@ -130,7 +130,7 @@ const StudentAssignments = () => {
               const inProgress = a.attempts.find((att) => att.status === "in_progress");
 
               return (
-                <AssignmentStatusCard status={visualStatus} title={a.title}>
+                <AssignmentStatusCard status={visualStatus} title={a.title} onOpen={() => navigate(`/student/ulohy/${a.id}`)}>
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">

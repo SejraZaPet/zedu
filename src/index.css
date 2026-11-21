@@ -479,6 +479,9 @@ body.a11y-line-height main .whitespace-pre-wrap {
   overflow-wrap: anywhere;
 }
 .assignment-status-card h3 { letter-spacing: 0; }
+.assignment-status-card--interactive { cursor: pointer; transition: box-shadow .2s ease, transform .2s ease; }
+.assignment-status-card--interactive:hover { box-shadow: var(--dashboard-tile-shadow); transform: translateY(-2px); }
+.assignment-status-card--interactive:focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 3px; }
 .assignment-state-icon {
   display: inline-flex; width: 38px; height: 38px; flex: 0 0 38px;
   align-items: center; justify-content: center; border-radius: 6px;

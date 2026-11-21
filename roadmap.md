@@ -159,3 +159,10 @@
 - [x] Diagnostika stávajících čtení členství, předmětů, rozvrhu, úloh a jmen učitelů; jména učitelů žákovské RLS nepovoluje, karty proto ukazují jen třídu/skupinu.
 - [x] Chráněná `/student/predmety`, karty tříd/skupin, prázdný stav a dlaždice přehledu; Rozvrh i nová stránka sdílí jedno čtení členství a slotů, staré cesty zachovány.
 - [x] 21 cílených testů, typy a build OK; živě 24 karet, další hodiny/štítky, původní Rozvrh, 1360/360 px bez posunu a bez chyb stránky. Bez SQL, DB/RLS a nasazení; skutečný iPhone Safari neověřen.
+
+## Žákovský přehled – dokončení a klikací úlohy (schváleno)
+- [x] Hlavička se sérií a úrovní; Dnes s celým rozvrhem a datovými pilulkami; bez karty Nejbližší úkoly u žáka.
+- [x] Po dlaždicích jen kompaktní Můj profil a Můj pokrok z existujících dat; ostatní zdroje ponechat mimo přehled.
+- [x] Sdílená karta úlohy otevře detail klikem i Enter/Space; vnořené akce zůstanou samostatné v seznamu i předmětech.
+- [x] 25 cílených testů, typy a build; živý přehled 1360/390 px, Enter v seznamu i předmětu, bez vodorovného posunu a chyb stránky. Bez DB, SQL, edge funkcí a nasazení.
+- Denní cíle nemají existující datový zdroj, proto zůstal původní popisek Učím se. Živý účet neměl data pro pilulky Dnes; jejich stavy pokrývají testy. Skutečný iPhone Safari neověřen.
