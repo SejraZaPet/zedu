@@ -36,7 +36,7 @@
 - Lesson text cleanup only in `_shared/lesson-text.ts`; subject news via `subject-news.ts`.
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
-- Demo seed textbook details: lessons by textbook ID, preview-only, no shared writes.
+- Demo seed textbooks: preview-only, no shared writes.
 - XP only via server `add_xp(..., source, key)`; league reads only via definer RPCs, rules mirrored in `league-rules.ts`, so caps/privacy stay server-side.
 - Demo templates use service-only `demo_fill_game_templates` and per-pair keys; duplicates strip seed identity to preserve isolation and visitor edits.
 - Tools page and plans share ClassroomToolsOverlay/PhaseCountdownButton; memory-only state, authorized roster reads and local audio preserve plans and privacy.
