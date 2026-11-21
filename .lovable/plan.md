@@ -26,35 +26,34 @@
 **1) Vyhodnocení z dat** (žák × předmět, třída): pouze výpočet v nové `src/lib/evaluation.ts`, který znovu použije best-results a strengths-weaknesses a seskupí data podle lekce/tématu. Panel na `TeacherResults` a v detailu žáka, jen pro učitele. Upozornění při málo datech (méně než 3 položky).
 - Bez SQL. Odhad M, 1,5–2 dny.
 
-**2) Slovní závěr s verzemi a tlačítkem „Aktualizovat závěr“** (vyžaduje SQL ke schválení):
-- Nová tabulka `student_evaluations`: id, student_id, teacher_id, subject_id, group_id/class_id, text, source (teacher/ai_draft/ai_edited), data_snapshot (jsonb s čísly, z nichž závěr vznikl), based_on_until, visibility (draft/published), published_at, created_at.
-- Každá změna přidá nový řádek, starý se nepřepíše. Tím vznikne historie verzí.
-- RLS: zapisuje a čte autor a učitelé třídy nebo skupiny. Žák a rodič čtou jen řádky `published`, a to přes SECURITY DEFINER RPC. Přidají se RESTRICTIVE `demo_guard_*` a `demo_iso`.
-- AI připraví pouze koncept. Žákovi se závěr zobrazí až po kliknutí učitele na „Zveřejnit“.
+**Viditelnost:** vše je interní a vidí to jen učitel. Žák ani rodič nic nevidí, nic se jim nezveřejňuje a u žáka není žádný štítek AI.
+
+**2) Závěr s historií verzí a „Aktualizovat závěr“** (SQL ke schválení)
+- Tabulka `teacher_student_evaluations` jen pro přidávání nových řádků:
+  - sloupce: id, student_id, subject_id, scope_type (class/group), scope_id, author_id, kind (conclusion/note), text, source (teacher/ai_draft/ai_edited), data_snapshot jsonb, based_on_until, supersedes_id, created_at;
+  - oprava = nový řádek, bez UPDATE/DELETE (mazání jen adminem na žádost GDPR).
+- Přístup se vyhodnocuje jedinou SECURITY DEFINER funkcí `can_access_student_evaluation(scope_type, scope_id, subject_id)`.
+  - Nyní vrací true jen učiteli, který danému žákovi v daném předmětu a třídě/skupině zadává úkoly: autor `assignments` nebo `class_teachers`/`subject_groups` pro daný předmět.
+  - Politiky SELECT/INSERT volají jen tuto funkci, INSERT navíc `author_id = auth.uid()`.
+- **Pozdější rozšíření bez přestavby:** třídní učitel a vedení se doplní jen do těla funkce (např. `role` z `class_teachers` nebo `school_admin` stejné školy jen pro čtení). Tabulka, politiky ani klient se nemění. Případně přibude sloupec `audience` (výchozí `subject_teacher`), který umožní skrýt poznámku před vedením.
+- Grants jen pro authenticated a service_role. Přidají se RESTRICTIVE `demo_guard_*` a `demo_iso`.
+- Žák, rodič ani anon nemají žádnou politiku.
 - Odhad M–L, 2–3 dny.
 
-**3) AI návrh „co opakovat“:** z dat etapy 1 navrhne 3–5 lekcí nebo témat s odkazem do procvičování.
-- Opakování se pozná automaticky z nových `student_practice_sessions`, `student_activity_results` a pokusů po datu závěru (porovnání s `based_on_until`). Pak se zobrazí výzva „Data se změnila – aktualizovat závěr“.
-- Bez SQL. Odhad M, 1,5 dne.
+**3) AI „co opakovat“:** 3–5 slabých lekcí nebo témat s odkazem na procvičování.
+- Nová data po `based_on_until` vyvolají výzvu „Data se změnila – aktualizovat závěr“.
+- Bez dalšího SQL. Odhad M, 1,5 dne.
 
-**4) Učitelova doplňující informace:** poznámka k žákovi a předmětu (např. „ústně zopakoval zlomky – zvládá“).
-- Vstupuje do dalšího AI návrhu jako ověřený údaj od učitele a má přednost před starými daty.
-- Ukládala by se do tabulky `student_evaluation_notes` (učitelská, žák ji nevidí), nebo jako `source='teacher_note'` v tabulce z etapy 2. **Doporučuji druhou variantu: jedna tabulka místo dvou.**
-- SQL je potřeba jen s etapou 2. Odhad S, 0,5–1 den.
+**4) Poznámky učitele** (`kind='note'`): AI je při dalším závěru dostane jako ověřený údaj od učitele. Odhad S.
 
-**Ochrana osobních údajů (všechny etapy):**
-- AI dostane jen pseudonym a čísla po tématech, bez jména a bez doslovných odpovědí žáka.
-- Volání AI přes token učitele, v demu podle `demo-ai-guard`.
-- Rodič a žák vidí jen zveřejněnou verzi, nikdy koncept ani učitelské poznámky.
+**Ochrana osobních údajů:**
+- AI dostane pseudonym „Žák A“ a čísla po tématech, dále předchozí závěr a poznámky.
+- AI nedostane jméno, e-mail, třídu, doslovné odpovědi, přílohy ani data jiných žáků.
+- Učitel uvidí upozornění, ať do poznámek nepíše citlivé údaje.
+- Volání jde přes token učitele, v demu platí `demo-ai-guard`.
+- U učitele zůstává štítek AI.
 
-## Otázky pro Tynu
-1. Má žák nebo rodič u zveřejněného závěru vidět štítek „AI“? Pravidlo EU AI Act vyžaduje označení u učitele. U žáka rozhodne Tyna, bez jejího rozhodnutí štítek nepřidám.
-2. Mají závěr vidět i rodiče, nebo jen žák?
-3. Mají se zavést známky 1–5, A, N? Spec v projektu chybí.
-
-## D) Doporučené první kroky
-1. Etapa 1 (bez SQL), nasaditelná samostatně: panel vyhodnocení z dat po tématech, jen pro učitele.
-2. Etapa 3 bez ukládání: AI návrh „co opakovat“ jako dočasný koncept s odkazem do procvičování.
-3. Teprve po schválení SQL etapy 2 a 4: verze závěru, zveřejnění žákovi a poznámky učitele.
-
-Nic se nespouští, nemigruje ani nenasazuje.
+## D) První kroky
+1. Etapa 1 bez SQL.
+2. Etapa 3 jako dočasný koncept.
+3. Po schválení SQL etapy 2 a 4.
