@@ -1,9 +1,10 @@
+import { legacyFormatHint } from "@/lib/office-extract";
 /**
  * Jednotný vstup zdrojů (etapa 0) – čisté funkce bez Reactu.
  * Typy položek, limity, sloučení textů a jednotné české hlášky.
  * Nikdy tiše neořezává: překročení limitu se ukáže a generování se zablokuje.
  */
-export type SourceKind = "text" | "pdf" | "docx" | "pptx" | "txt" | "photo" | "url" | "lesson";
+export type SourceKind = "text" | "pdf" | "docx" | "pptx" | "xlsx" | "odt" | "txt" | "photo" | "url" | "lesson";
 export type SourceStatus = "loading" | "ready" | "error";
 export type SourceAudience = "teacher" | "student";
 
@@ -16,6 +17,10 @@ export interface SourceItem {
   error?: string;
   /** Název souboru / host odkazu / název lekce – jen pro popisek, nikdy se neloguje. */
   origin?: string;
+  /** Náhled fotky (object URL) – jen v prohlížeči. */
+  preview?: string;
+  /** PDF bez textové vrstvy – nabídnout zpracování stránek jako fotek. */
+  scanned?: boolean;
 }
 
 export const SOURCE_LIMITS = {
@@ -30,9 +35,22 @@ export const SOURCE_LIMITS = {
 } as const;
 
 export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
-  text: "Text", pdf: "PDF", docx: "Word", pptx: "PowerPoint", txt: "Textový soubor",
+  text: "Text", pdf: "PDF", docx: "Word", pptx: "PowerPoint", xlsx: "Excel", odt: "OpenDocument", txt: "Textový soubor",
   photo: "Fotka", url: "Odkaz", lesson: "Lekce",
 };
+
+/** Limity zobrazené předem u vkládání. */
+export const SOURCE_LIMITS_SUMMARY =
+  `Nejvýše ${SOURCE_LIMITS.maxItems} zdrojů: ${SOURCE_LIMITS.maxFiles} soubory do ${SOURCE_LIMITS.maxDocBytes / 1048576} MB, ${SOURCE_LIMITS.maxPhotos} fotek do ${SOURCE_LIMITS.maxPhotoBytes / 1048576} MB.`;
+export const CLOUD_LINK_HINT =
+  "Odkazy z Teamsu, OneDrive, SharePointu, Classroomu a Google Disku vyžadují přihlášení – stáhněte soubor a nahrajte ho, nebo zkopírujte text.";
+/** Odkazy na cloudová úložiště škol, která bez přihlášení nejdou načíst. */
+export function isCloudLoginHost(url: string): boolean {
+  try {
+    const h = new URL(url).hostname.toLowerCase();
+    return /(^|\.)(teams\.microsoft\.com|teams\.live\.com|onedrive\.live\.com|1drv\.ms|sharepoint\.com|classroom\.google\.com|drive\.google\.com|docs\.google\.com)$/.test(h);
+  } catch { return false; }
+}
 
 export const SOURCE_URL_NOTICE = "Použijte jen obsah, který smíte ve výuce použít, a uveďte zdroj.";
 
@@ -44,11 +62,13 @@ export function kindForFile(file: Pick<File, "name" | "type">): SourceKind | nul
   if (n.endsWith(".pdf") || t === "application/pdf") return "pdf";
   if (n.endsWith(".docx") || n.endsWith(".doc")) return "docx";
   if (n.endsWith(".pptx")) return "pptx";
+  if (n.endsWith(".xlsx")) return "xlsx";
+  if (n.endsWith(".odt") || n.endsWith(".odp")) return "odt";
   if (n.endsWith(".txt") || n.endsWith(".md") || t === "text/plain") return "txt";
   return null;
 }
 
-const isFileKind = (k: SourceKind) => k === "pdf" || k === "docx" || k === "pptx" || k === "txt";
+const isFileKind = (k: SourceKind) => k === "pdf" || k === "docx" || k === "pptx" || k === "xlsx" || k === "odt" || k === "txt";
 
 /**
  * Kontrola, zda lze přidat dávku (celou, nebo vůbec – nikdy jen část).
@@ -60,7 +80,8 @@ export function checkAddBatch(
 ): string | null {
   if (incoming.length === 0) return null;
   const bad = incoming.find((f) => f.kind === null);
-  if (bad) return `Soubor „${bad.name ?? ""}“ nemá podporovaný formát (PDF, Word, PowerPoint, TXT nebo fotka).`;
+  if (bad) return legacyFormatHint(bad.name ?? "")
+    ?? `Soubor „${bad.name ?? ""}“ nemá podporovaný formát (PDF, Word, PowerPoint, Excel, ODT, TXT nebo fotka).`;
   if (items.length + incoming.length > SOURCE_LIMITS.maxItems)
     return `Najednou lze použít nejvýše ${SOURCE_LIMITS.maxItems} zdrojů. Celý výběr byl odmítnut – odeberte některé zdroje.`;
   const photos = items.filter((i) => i.kind === "photo").length + incoming.filter((i) => i.kind === "photo").length;
@@ -125,14 +146,17 @@ export function moveSource<T extends { id: string }>(items: T[], id: string, del
 
 /** Chybové kódy funkce fetch-source-url → česká hláška. */
 export function urlErrorMessage(code: unknown): string {
+  const save = "Uložte ji jako PDF (Ctrl+P) a nahrajte, nebo text zkopírujte.";
   switch (code) {
     case "BLOCKED_URL": return "Tento odkaz nelze načíst. Použijte veřejnou webovou adresu začínající http(s)://.";
-    case "AUTH_REQUIRED": return "Stránka vyžaduje přihlášení. Zkopírujte text ručně.";
-    case "JS_ONLY": return "Stránka se vykresluje skriptem a text z ní nejde načíst. Uložte ji jako PDF (Ctrl+P) a nahrajte, nebo text zkopírujte.";
-    case "FRAMES": return "Stránka používá rámce. Vložte odkaz na konkrétní podstránku s textem, nebo text zkopírujte.";
+    case "CLOUD_LOGIN":
+    case "AUTH_REQUIRED": return `Stránka vyžaduje přihlášení. ${CLOUD_LINK_HINT}`;
+    case "JS_ONLY": return `Stránka se vykresluje skriptem a text z ní nejde načíst. ${save} ${CLOUD_LINK_HINT}`;
+    case "FRAMES": return `Stránka používá rámce. Vložte odkaz na konkrétní podstránku s textem, nebo ji ${save.charAt(0).toLowerCase()}${save.slice(1)}`;
     case "CANVA": return "Web z Canvy nejde načíst odkazem. V Canvě stáhněte PDF (Sdílet → Stáhnout) a nahrajte ho jako soubor.";
-    case "TOO_LARGE": return "Stránka je příliš velká (víc než 2 MB).";
-    case "UNSUPPORTED_TYPE": return "Odkaz nevede na webovou stránku, text ani PDF.";
-    default: return "Odkaz se nepodařilo načíst.";
+    case "TOO_LARGE": return "Stránka nebo soubor na odkazu je příliš velký (víc než 2 MB). Stáhněte ho a nahrajte jako soubor, nebo zkopírujte podstatný text.";
+    case "UNSUPPORTED_TYPE": return `Odkaz nevede na webovou stránku, text ani PDF. Soubor (např. Word nebo PowerPoint) stáhněte a nahrajte. ${CLOUD_LINK_HINT}`;
+    case "FETCH_FAILED": return `Stránku se nepodařilo stáhnout (je nedostupná nebo vyžaduje přihlášení). ${CLOUD_LINK_HINT}`;
+    default: return `Odkaz se nepodařilo načíst. ${CLOUD_LINK_HINT}`;
   }
 }

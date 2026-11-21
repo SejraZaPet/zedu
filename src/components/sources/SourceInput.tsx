@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { SOURCE_KIND_LABEL, SOURCE_URL_NOTICE } from "@/lib/source-bundle";
+import { CLOUD_LINK_HINT, SOURCE_KIND_LABEL, SOURCE_LIMITS_SUMMARY, SOURCE_URL_NOTICE } from "@/lib/source-bundle";
 import type { SourceBundle } from "@/lib/use-source-bundle";
 
 type Panel = null | "text" | "url" | "lesson";
-const DOC_ACCEPT = ".pdf,.docx,.doc,.pptx,.txt,.md,application/pdf,text/plain";
+const DOC_ACCEPT = ".pdf,.docx,.doc,.pptx,.xlsx,.odt,.odp,.txt,.md,application/pdf,text/plain";
+const PHOTO_ACCEPT = "image/*,.heic,.heif";
 
 /**
  * Sdílený vstup zdrojů: text, soubory, galerie, foťák, odkaz a volitelně lekce.
@@ -64,8 +65,11 @@ export default function SourceInput({
         {allowUrl && tile(<Link2 className="h-4 w-4 shrink-0 text-primary" />, "Vložit odkaz", () => setPanel(panel === "url" ? null : "url"), panel === "url")}
         {lessonPicker && tile(<BookOpen className="h-4 w-4 shrink-0 text-primary" />, "Z lekce", () => setPanel(panel === "lesson" ? null : "lesson"), panel === "lesson")}
       </div>
+      <p className="text-xs text-muted-foreground">
+        Soubory: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX), ODT, TXT. Fotky: JPG, PNG, HEIC. {SOURCE_LIMITS_SUMMARY}
+      </p>
       <input ref={files} type="file" multiple accept={DOC_ACCEPT} className="hidden" onChange={onFiles} data-testid="source-files" />
-      <input ref={gallery} type="file" multiple accept="image/*" className="hidden" onChange={onFiles} data-testid="source-gallery" />
+      <input ref={gallery} type="file" multiple accept={PHOTO_ACCEPT} className="hidden" onChange={onFiles} data-testid="source-gallery" />
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
 
       {panel === "text" && (
@@ -80,7 +84,7 @@ export default function SourceInput({
         <div className="space-y-2 rounded-md border border-border p-3">
           <Label htmlFor="source-url">Webová adresa</Label>
           <Input id="source-url" type="url" inputMode="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} disabled={disabled} />
-          <p className="text-xs text-muted-foreground">{SOURCE_URL_NOTICE}</p>
+          <p className="text-xs text-muted-foreground">{SOURCE_URL_NOTICE} {CLOUD_LINK_HINT}</p>
           <Button type="button" size="sm" disabled={disabled || !/^https?:\/\//i.test(url.trim())}
             onClick={() => { if (bundle.addUrl(url)) { setUrl(""); setPanel(null); } }}>Načíst odkaz</Button>
         </div>
@@ -94,12 +98,16 @@ export default function SourceInput({
           {items.map((it, i) => (
             <li key={it.id} className="rounded-md border border-border p-2">
               <div className="flex items-start gap-2">
+                {it.preview && (
+                  <img src={it.preview} alt="" className="h-11 w-11 shrink-0 rounded object-cover" />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{i + 1}. {it.label}</p>
                   <p className="text-xs text-muted-foreground">
                     {SOURCE_KIND_LABEL[it.kind]}
                     {it.status === "loading" && <> · <Loader2 className="inline h-3 w-3 animate-spin" /> načítá se</>}
-                    {it.status === "ready" && <> · <CheckCircle2 className="inline h-3 w-3 text-primary" /> {fmt((it.text ?? "").length)} znaků</>}
+                    {it.status === "ready" && <> · <CheckCircle2 className="inline h-3 w-3 text-primary" /> hotovo · {fmt((it.text ?? "").length)} znaků</>}
+                    {it.status === "error" && <> · <span className="text-destructive">chyba</span></>}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-0.5">
@@ -114,7 +122,11 @@ export default function SourceInput({
               {it.error && (
                 <p className={cn("mt-1 flex items-start gap-1 text-xs", it.status === "error" ? "text-destructive" : "text-muted-foreground")}>
                   <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />{it.error}
-                  {it.status === "error" && (
+                  {it.status === "error" && it.scanned && (
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 pl-1 text-xs" disabled={disabled}
+                      onClick={() => void bundle.convertPdfToPhotos(it.id)}>Zpracovat stránky jako fotky</Button>
+                  )}
+                  {it.status === "error" && !it.scanned && (
                     <Button type="button" variant="link" size="sm" className="h-auto p-0 pl-1 text-xs" onClick={() => bundle.retry(it.id)}>
                       <RotateCcw className="mr-1 h-3 w-3" />Zkusit znovu</Button>
                   )}

@@ -10,7 +10,7 @@ export const OWN_MATERIAL_HEADING = "Materiál učitele";
 export const LESSON_TEXT_HEADING = "Text lekce";
 export const OWN_SOURCE_HINT = "Materiál z Teamsu nebo Classroomu stačí nahrát jako soubor nebo vložit odkaz/text.";
 export const OWN_SOURCE_PRIVACY = "Nevkládejte osobní údaje žáků (jména, hodnocení, kontakty).";
-export const SCANNED_PDF_HINT = "PDF neobsahuje čitelný text (nejspíš je naskenované). Nahrajte jeho stránky jako fotky.";
+export const SCANNED_PDF_HINT = "PDF neobsahuje čitelný text (nejspíš je naskenované). Klikněte na „Zpracovat stránky jako fotky“ – přečteme až 6 stránek. Delší sken rozdělte, nebo text vložte ručně.";
 /** Pod tuto hranici považujeme přečtené PDF za sken bez textové vrstvy. */
 export const SCANNED_PDF_MAX_CHARS = 50;
 
@@ -43,6 +43,6 @@ export function combineLessonAndOwn(args: {
 }
 
 /** Připravená PDF bez čitelného textu (skeny) – nabídnout nahrání jako fotek. */
-export function scannedPdfItems(items: Pick<SourceItem, "id" | "kind" | "status" | "text">[]): string[] {
-  return items.filter((i) => i.kind === "pdf" && i.status === "ready" && (i.text ?? "").trim().length < SCANNED_PDF_MAX_CHARS).map((i) => i.id);
+export function scannedPdfItems(items: Pick<SourceItem, "id" | "kind" | "status" | "text" | "scanned">[]): string[] {
+  return items.filter((i) => i.kind === "pdf" && (i.scanned || (i.status === "ready" && (i.text ?? "").trim().length < SCANNED_PDF_MAX_CHARS))).map((i) => i.id);
 }

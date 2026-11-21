@@ -302,3 +302,9 @@
 ## Pracovní list z vlastního materiálu (21. 11. 2026)
 - [x] Sdílený výběr „Z lekce / Vlastní materiál / Obojí“ (`LessonOrOwnSourcePicker`, `lesson-or-own-source.ts`) v editoru listu a v „Vytvořit z lekce“; materiál se neukládá, bez DB/RLS.
 - [ ] Uložení materiálu k listu pro AI opravu – čeká na rozhodnutí Tyny.
+
+## Vlastní materiál – formáty (doplnění)
+- [x] PDF (skeny → „Zpracovat stránky jako fotky", max 6), DOCX/PPTX/XLSX/ODT/ODP čteny v prohlížeči, DOC heuristika, PPT/XLS/ODS/RTF rada „uložte jako…"
+- [x] Odkazy: cloudové školní odkazy odmítnuty předem, české hlášky s návodem pro všechny kódy
+- [x] Fotky s náhledem, limity zobrazeny předem, stav načítá se/hotovo/chyba
+- [ ] Ruční průchod v náhledu s přihlášeným učitelem a ostrou AI (neověřeno)
