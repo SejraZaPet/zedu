@@ -6,6 +6,10 @@ export interface PracticeLessonOption {
   title: string;
   textbook: string;
   subject: string;
+  /** Existující pořadí v učebnici/tématu; stará data bez něj zůstanou abecedně. */
+  sortOrder?: number | null;
+  topicSortOrder?: number | null;
+  topicId?: string | null;
 }
 
 export interface PracticeLessonGroup {
@@ -19,6 +23,9 @@ export interface RawPracticeLesson {
   status: string | null;
   textbook: string;
   subject: string;
+  sortOrder?: number | null;
+  topicSortOrder?: number | null;
+  topicId?: string | null;
 }
 
 function throwOnQueryError(...results: Array<{ error?: unknown } | { data: unknown }>): void {
@@ -27,7 +34,15 @@ function throwOnQueryError(...results: Array<{ error?: unknown } | { data: unkno
   }
 }
 
-/** Jen publikované lekce, bez duplicit, seskupené Předmět → Lekce (abecedně). */
+function compareOrder(a: number | null | undefined, b: number | null | undefined): number {
+  const aHas = typeof a === "number" && Number.isFinite(a);
+  const bHas = typeof b === "number" && Number.isFinite(b);
+  if (aHas && bHas) return a - b;
+  if (aHas !== bHas) return aHas ? -1 : 1;
+  return 0;
+}
+
+/** Jen publikované lekce, bez duplicit; existující pořadí učebnice/tématu, jinak abecedně. */
 export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonGroup[] {
   const seen = new Set<string>();
   const bySubject = new Map<string, PracticeLessonOption[]>();
@@ -36,7 +51,15 @@ export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonG
     seen.add(r.id);
     const subject = r.subject?.trim() || "Ostatní";
     const list = bySubject.get(subject) ?? [];
-    list.push({ id: r.id, title: r.title || "Lekce", textbook: r.textbook, subject });
+    list.push({
+      id: r.id,
+      title: r.title || "Lekce",
+      textbook: r.textbook,
+      subject,
+      sortOrder: r.sortOrder,
+      topicSortOrder: r.topicSortOrder,
+      topicId: r.topicId,
+    });
     bySubject.set(subject, list);
   }
   return [...bySubject.entries()]
@@ -44,7 +67,10 @@ export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonG
     .map(([subject, lessons]) => ({
       subject,
       lessons: lessons.sort(
-        (a, b) => a.textbook.localeCompare(b.textbook, "cs") || a.title.localeCompare(b.title, "cs"),
+        (a, b) => a.textbook.localeCompare(b.textbook, "cs")
+          || compareOrder(a.topicSortOrder, b.topicSortOrder)
+          || compareOrder(a.sortOrder, b.sortOrder)
+          || a.title.localeCompare(b.title, "cs"),
       ),
     }));
 }
@@ -126,13 +152,13 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
       ? supabase.from("teacher_textbooks").select("id, title, subject_id").in("id", tbIds).is("deleted_at", null)
       : Promise.resolve({ data: [] as any[] }),
     tbIds.length
-      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, status, textbook_id").in("textbook_id", tbIds).eq("status", "published")
+      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, status, textbook_id, sort_order").in("textbook_id", tbIds).eq("status", "published")
       : Promise.resolve({ data: [] as any[] }),
     placedLessonIds.length
-      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, status, textbook_id").in("id", placedLessonIds).eq("status", "published")
+      ? supabase.from("teacher_textbook_lessons" as any).select("id, title, status, textbook_id, sort_order").in("id", placedLessonIds).eq("status", "published")
       : Promise.resolve({ data: [] as any[] }),
     [...globalLessonIds, ...placedLessonIds].length
-      ? supabase.from("textbook_lessons").select("id, title, status, topic_id").in("id", [...new Set([...globalLessonIds, ...placedLessonIds])]).eq("status", "published")
+      ? supabase.from("textbook_lessons").select("id, title, status, topic_id, sort_order").in("id", [...new Set([...globalLessonIds, ...placedLessonIds])]).eq("status", "published")
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
@@ -142,7 +168,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
   const gLessons = ((gLessonsRes as any).data ?? []) as any[];
   const topicIds = [...new Set(gLessons.map((l) => l.topic_id).filter(Boolean))];
   const topicsPromise = topicIds.length
-    ? supabase.from("textbook_topics").select("id, subject").in("id", topicIds)
+    ? supabase.from("textbook_topics").select("id, subject, sort_order").in("id", topicIds)
     : Promise.resolve({ data: [] as any[] });
 
   // Doplňování učebnic je podmíněné a běží souběžně s načtením témat.
@@ -155,6 +181,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
   const topicsRes = await topicsPromise;
   throwOnQueryError(topicsRes);
   const slugByTopic = new Map<string, string>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, t.subject]));
+  const topicOrderById = new Map<string, number>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, t.sort_order]));
   const slugs = [...new Set([...slugByTopic.values()].filter(Boolean))];
 
   const subjectIds = [...new Set([
@@ -174,12 +201,28 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
     const tb = tbById.get(l.textbook_id);
     if (!tb) continue; // smazaná nebo nečitelná učebnice
     const sid = teacherSubjectByTb.get(l.textbook_id) || tb.subject_id;
-    rows.push({ id: l.id, title: l.title, status: l.status, textbook: tb.title ?? "", subject: (sid && subjectName.get(sid)) || tb.title || "" });
+    rows.push({
+      id: l.id,
+      title: l.title,
+      status: l.status,
+      textbook: tb.title ?? "",
+      subject: (sid && subjectName.get(sid)) || tb.title || "",
+      sortOrder: l.sort_order,
+    });
   }
   for (const l of gLessons) {
     const slug = slugByTopic.get(l.topic_id);
     const label = (slug && labelBySlug.get(slug)) || "";
-    rows.push({ id: l.id, title: l.title, status: l.status, textbook: label, subject: label });
+    rows.push({
+      id: l.id,
+      title: l.title,
+      status: l.status,
+      textbook: label,
+      subject: label,
+      sortOrder: l.sort_order,
+      topicSortOrder: topicOrderById.get(l.topic_id),
+      topicId: l.topic_id,
+    });
   }
   return groupPracticeLessons(rows);
 }

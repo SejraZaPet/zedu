@@ -5,8 +5,18 @@ import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useToast } from "@/hooks/use-toast";
-import { loadStudentLearningOverview, examDayLabel, type StudentLearningOverview } from "@/lib/student-learning-overview";
+import {
+  examDayLabel,
+  examPreparationMinutes,
+  loadStudentLearningOverview,
+  pickExamPreparationTopic,
+  readStoredLearningSubject,
+  resolveLearningSubject,
+  storeLearningSubject,
+  type StudentLearningOverview,
+} from "@/lib/student-learning-overview";
 import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
 import { czechDays } from "@/lib/student-dashboard-summary";
 import { pickStudyMethod, type StudyMethodLite } from "@/lib/lesson-study";
@@ -32,6 +42,8 @@ const MODES: Array<{ id: ModeId; title: string; detail: string; icon: typeof Bra
   { id: "tricks", title: "Triky na učení", detail: "Techniky lidsky vysvětlené", icon: Brain, tone: "subjects" },
 ];
 
+const PATH_PAGE_SIZE = 8;
+
 function missionStateLabel(state: "done" | "now" | "bonus"): string {
   return state === "done" ? "Hotovo" : state === "now" ? "Právě teď" : "Bonus";
 }
@@ -41,10 +53,18 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
   const [loading, setLoading] = useState(true);
   const [studyAction, setStudyAction] = useState<StudyLessonAction | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(() => readStoredLearningSubject(userId));
+  const [pathVisibleCount, setPathVisibleCount] = useState(PATH_PAGE_SIZE);
+  const [otherLessonId, setOtherLessonId] = useState("");
   const pathRef = useRef<HTMLElement>(null);
+  const subjectSwitchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: cachedLessonGroups, isPending: lessonsPending, isError: lessonsError } = useStudentPracticeLessons(userId);
+
+  useEffect(() => {
+    setSelectedSubject(readStoredLearningSubject(userId));
+  }, [userId]);
 
   useEffect(() => {
     if (lessonsPending) {
@@ -66,36 +86,67 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
     return () => { cancelled = true; };
   }, [userId, cachedLessonGroups, lessonsPending, lessonsError, toast]);
 
+  const subjects = overview?.lessonGroups.map((group) => group.subject) ?? [];
+  const activeSubject = resolveLearningSubject(subjects, overview?.activeSubject ?? null, selectedSubject);
+  const activeTopics = overview?.topics.filter((topic) => topic.subject === activeSubject) ?? [];
+  const currentTopicId = activeTopics.find((topic) => topic.id === overview?.currentTopicId)?.id
+    ?? activeTopics.find((topic) => topic.sessionsCount > 0 && !topic.mastered)?.id
+    ?? activeTopics.find((topic) => !topic.mastered)?.id
+    ?? null;
+  const examTopic = overview?.nextExam ? pickExamPreparationTopic(overview.topics, overview.nextExam.lessonIds) : null;
+  const visibleTopics = activeTopics.slice(0, pathVisibleCount);
+  const progress = overview ? Math.min(100, (overview.todaySessions / overview.dailyGoal) * 100) : 0;
+  const recentLessonIds = (overview?.topics ?? [])
+    .filter((topic) => topic.lastPracticedAt)
+    .sort((a, b) => (b.lastPracticedAt ?? "").localeCompare(a.lastPracticedAt ?? ""))
+    .map((topic) => topic.id);
+
+  useEffect(() => {
+    setPathVisibleCount(PATH_PAGE_SIZE);
+    setOtherLessonId("");
+  }, [activeSubject]);
+
   const scrollBehavior = (): ScrollBehavior => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 
-  const startQuiz = (lessonId: string | null) => {
+  const startPractice = (lessonId: string | null, minutes: number) => {
     const method = pickStudyMethod(methods, preferredIds);
     if (!method) {
       toast({ title: "Kvíz zatím nelze spustit", description: "Studijní metody se nepodařilo načíst. Zkus obnovit stránku.", variant: "destructive" });
       return;
     }
-    onPractice(method, lessonId, 5);
+    onPractice(method, lessonId, minutes);
+  };
+  const startQuiz = (lessonId: string | null) => startPractice(lessonId, 5);
+  const startExamPreparation = () => {
+    if (examTopic && overview?.nextExam) {
+      startPractice(examTopic.id, examPreparationMinutes(overview.nextExam.days));
+      return;
+    }
+    // Bez skutečné vazby testu na dostupnou lekci se nic nevymýšlí.
+    startQuiz(overview?.lastLesson?.id ?? null);
+  };
+
+  const selectSubject = (subject: string) => {
+    setSelectedSubject(subject);
+    storeLearningSubject(userId, subject);
   };
 
   const runMode = (id: ModeId) => {
     if (id === "cards" || id === "summary") setStudyAction(id);
-    if (id === "quiz" || id === "exam") startQuiz(overview?.lastLesson?.id ?? null);
+    if (id === "quiz") startQuiz(overview?.lastLesson?.id ?? null);
+    if (id === "exam") startExamPreparation();
     if (id === "material") navigate("/student/z-materialu");
     if (id === "chat") setChatOpen(true);
-    if (id === "path") pathRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+    if (id === "path") {
+      pathRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+      subjectSwitchRef.current?.focus({ preventScroll: true });
+    }
     if (id === "tricks") {
       const target = document.getElementById("triky-na-uceni");
       target?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
       target?.focus({ preventScroll: true });
     }
   };
-
-  const activeTopics = overview?.topics.filter((topic) => topic.subject === overview.activeSubject) ?? [];
-  const progress = overview ? Math.min(100, (overview.todaySessions / overview.dailyGoal) * 100) : 0;
-  const recentLessonIds = (overview?.topics ?? [])
-    .filter((topic) => topic.lastPracticedAt)
-    .sort((a, b) => (b.lastPracticedAt ?? "").localeCompare(a.lastPracticedAt ?? ""))
-    .map((topic) => topic.id);
 
   return (
     <div className="mb-10 space-y-8">
@@ -156,13 +207,18 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
         <div className="learning-mode-grid">
           {MODES.map((mode) => {
             const Icon = mode.icon;
-            const detail = mode.id === "exam" && overview?.nextExam ? examDayLabel(overview.nextExam.days) : mode.detail;
+            const title = mode.id === "exam" && !loading && !overview?.nextExam ? "Žádný test na obzoru" : mode.title;
+            const detail = mode.id === "exam"
+              ? overview?.nextExam
+                ? examTopic ? `${examPreparationMinutes(overview.nextExam.days)} min · nejdřív slabá místa` : examDayLabel(overview.nextExam.days)
+                : loading ? mode.detail : "Zopakuj si poslední lekci"
+              : mode.detail;
             return (
-              <button key={mode.id} type="button" onClick={() => runMode(mode.id)} className={`dashboard-tile dashboard-tile--${mode.tone} learning-mode-tile`} aria-label={`${mode.title}: ${detail}`}>
+              <button key={mode.id} type="button" onClick={() => runMode(mode.id)} className={`dashboard-tile dashboard-tile--${mode.tone} learning-mode-tile`} aria-label={`${title}: ${detail}`}>
                 <span className="dashboard-tile-body">
                   <Icon className="dashboard-tile-icon learning-mode-icon" aria-hidden />
                   <span className="dashboard-tile-copy">
-                    <span className="dashboard-tile-title">{mode.title}</span>
+                    <span className="dashboard-tile-title">{title}</span>
                     <span className="dashboard-tile-description">{detail}</span>
                   </span>
                 </span>
@@ -174,28 +230,90 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
       </section>
 
       <section ref={pathRef} aria-labelledby="learning-path" className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 id="learning-path" className="flex items-center gap-2 font-heading text-xl font-semibold"><Map className="h-5 w-5 text-primary" aria-hidden />Moje cesta</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{overview?.activeSubject ? `${overview.activeSubject} · zeleně hotovo, fialově právě teď` : "Zvládnutí se ukáže po procvičení tvých lekcí."}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{activeSubject ? `${activeSubject} · zeleně hotovo, fialově právě teď` : "Zvládnutí se ukáže po procvičení tvých lekcí."}</p>
           </div>
         </div>
-        {activeTopics.length > 0 ? (
-          <ol className="learning-path-list">
-            {activeTopics.map((topic, index) => {
-              const state = topic.mastered ? "done" : topic.id === overview?.currentTopicId ? "current" : "upcoming";
-              return (
-                <li key={topic.id} className={`learning-path-step learning-path-step--${state}`}>
-                  <span className="learning-path-marker" aria-hidden>{state === "done" ? <CheckCircle2 className="h-5 w-5" /> : index + 1}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{topic.title}</span>
-                    <span className="text-xs text-muted-foreground">{state === "done" ? "Zvládnuto" : state === "current" ? "Právě teď" : topic.sessionsCount ? `${Math.round(topic.masteryPercent)} % · ještě potrénovat` : "Zatím neprocvičeno"}</span>
-                  </span>
-                  <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => startQuiz(topic.id)}>{state === "done" ? "Zopakovat" : "Procvičit"}</Button>
-                </li>
-              );
-            })}
-          </ol>
+        {subjects.length > 0 && (
+          <div
+            ref={subjectSwitchRef}
+            role="group"
+            aria-label="Předmět cesty"
+            tabIndex={-1}
+            className="mb-5 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {subjects.map((subject) => (
+              <Button
+                key={subject}
+                type="button"
+                variant={subject === activeSubject ? "default" : "outline"}
+                size="sm"
+                className="min-h-11 shrink-0"
+                aria-pressed={subject === activeSubject}
+                onClick={() => selectSubject(subject)}
+              >
+                {subject}
+              </Button>
+            ))}
+          </div>
+        )}
+        {activeSubject === "Ostatní" && activeTopics.length > 0 && (
+          <div className="mb-4">
+            <SearchableSelect
+              value={otherLessonId}
+              onValueChange={(id) => {
+                setOtherLessonId(id);
+                const index = activeTopics.findIndex((topic) => topic.id === id);
+                if (index >= 0) setPathVisibleCount((count) => Math.max(count, index + 1));
+              }}
+              options={activeTopics.map((topic) => ({
+                value: topic.id,
+                label: topic.title,
+                subtitle: topic.textbook && topic.textbook !== "Ostatní" ? topic.textbook : undefined,
+              }))}
+              placeholder="Vyber lekci bez předmětu"
+              label="Hledat lekci bez předmětu"
+              triggerLabel="Vyhledat v Ostatních"
+              searchPlaceholder="Hledat v názvu nebo učebnici…"
+              emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
+              showSelectedSubtitle
+              growing
+            />
+          </div>
+        )}
+        {visibleTopics.length > 0 ? (
+          <>
+            <ol className="learning-path-list">
+              {visibleTopics.map((topic, index) => {
+                const state = topic.mastered ? "done" : topic.id === currentTopicId ? "current" : "upcoming";
+                return (
+                  <li key={topic.id} className={`learning-path-step learning-path-step--${state}`}>
+                    <span className="learning-path-marker" aria-hidden>{state === "done" ? <CheckCircle2 className="h-5 w-5" /> : index + 1}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{topic.title}</span>
+                      <span className="text-xs text-muted-foreground">{state === "done" ? "Zvládnuto" : state === "current" ? "Právě teď" : topic.sessionsCount ? `${Math.round(topic.masteryPercent)} % · ještě potrénovat` : "Zatím neprocvičeno"}</span>
+                    </span>
+                    <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => startQuiz(topic.id)}>{state === "done" ? "Zopakovat" : "Procvičit"}</Button>
+                  </li>
+                );
+              })}
+            </ol>
+            {activeTopics.length > PATH_PAGE_SIZE && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <p className="mr-auto text-xs text-muted-foreground">Zobrazeno {visibleTopics.length} z {activeTopics.length}</p>
+                {visibleTopics.length < activeTopics.length && (
+                  <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => setPathVisibleCount((count) => count + PATH_PAGE_SIZE)}>
+                    Zobrazit další ({Math.min(PATH_PAGE_SIZE, activeTopics.length - visibleTopics.length)})
+                  </Button>
+                )}
+                {pathVisibleCount > PATH_PAGE_SIZE && (
+                  <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => setPathVisibleCount(PATH_PAGE_SIZE)}>Zobrazit méně</Button>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-sm text-muted-foreground">{loading ? "Načítám témata…" : "Zatím nemáš dostupné lekce. Jakmile je učitel zveřejní, uvidíš tady svoji cestu."}</p>
         )}
@@ -211,7 +329,7 @@ export default function StudentLearningHome({ userId, methods, preferredIds, onP
       />
       <BezlaiTutorChat
         question={overview?.lastLesson ? `Chci se učit z lekce ${overview.lastLesson.title}.` : "Chci se naučit nové učivo."}
-        subject={overview?.activeSubject ?? undefined}
+        subject={activeSubject ?? undefined}
         open={chatOpen}
         onOpenChange={setChatOpen}
         hideTrigger

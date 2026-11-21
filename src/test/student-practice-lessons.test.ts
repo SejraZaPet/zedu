@@ -31,6 +31,20 @@ describe("Učím se – výběr lekcí", () => {
     ]);
     expect(groups[0].lessons.map((l) => l.id)).toEqual(["b"]);
   });
+  it("cesta použije pořadí učebnice a témat, chybějící pořadí nechá abecedně", () => {
+    const ordered = groupPracticeLessons([
+      { id: "a", title: "Alfa", status: "published", textbook: "Učebnice", subject: "Předmět", sortOrder: 20 },
+      { id: "b", title: "Beta", status: "published", textbook: "Učebnice", subject: "Předmět", sortOrder: 10 },
+      { id: "c", title: "Cela", status: "published", textbook: "Učebnice", subject: "Předmět" },
+    ]);
+    expect(ordered[0].lessons.map((lesson) => lesson.id)).toEqual(["b", "a", "c"]);
+
+    const topics = groupPracticeLessons([
+      { id: "pozde", title: "A", status: "published", textbook: "Předmět", subject: "Předmět", topicId: "t2", topicSortOrder: 20, sortOrder: 1 },
+      { id: "brzy", title: "Z", status: "published", textbook: "Předmět", subject: "Předmět", topicId: "t1", topicSortOrder: 10, sortOrder: 1 },
+    ]);
+    expect(topics[0].lessons.map((lesson) => lesson.id)).toEqual(["brzy", "pozde"]);
+  });
   it("délka určuje počet otázek", () => {
     expect([5, 10, 15].map(questionCountForDuration)).toEqual([4, 8, 12]);
     expect(clampQuestionCount(undefined, 6)).toBe(6);

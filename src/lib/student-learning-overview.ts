@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchStudentPracticeLessons, type PracticeLessonGroup, type PracticeLessonOption } from "@/lib/student-practice-lessons";
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
+import { planLessons } from "@/lib/planned-assignment";
 
 export type MissionState = "done" | "now" | "bonus";
 export type MissionAction = "quiz" | "material";
@@ -26,6 +27,8 @@ export interface NextLearningExam {
   title: string;
   deadline: string;
   days: number;
+  /** Existující vazba testu; žádné dohady z názvu nebo popisu. */
+  lessonIds: string[];
 }
 
 export interface StudentLearningOverview {
@@ -60,6 +63,9 @@ interface ExamRow {
   id: string;
   title: string;
   deadline: string;
+  lesson_id: string | null;
+  lesson_source: string | null;
+  settings: unknown;
 }
 
 export interface LearningOverviewInput {
@@ -68,7 +74,7 @@ export interface LearningOverviewInput {
   mastery: MasteryRow[];
   xp?: number | null;
   streakDays?: number | null;
-  nextExam?: Omit<NextLearningExam, "days"> | null;
+  nextExam?: (Omit<NextLearningExam, "days" | "lessonIds"> & { lessonIds?: string[] }) | null;
   now: Date;
 }
 
@@ -86,6 +92,39 @@ export function examDayLabel(days: number): string {
   if (days === 0) return "Test je dnes";
   if (days === 1) return "Test je zítra";
   return `Test za ${days} ${days >= 2 && days <= 4 ? "dny" : "dní"}`;
+}
+
+export function examPreparationMinutes(days: number): number {
+  if (days <= 1) return 20;
+  if (days <= 4) return 15;
+  return 10;
+}
+
+/** Vybere nejslabší dostupnou navázanou lekci; bez vazby vrací null a UI drží původní kvíz. */
+export function pickExamPreparationTopic(topics: LearningTopic[], lessonIds: string[]): LearningTopic | null {
+  const ids = new Set(lessonIds);
+  return topics
+    .filter((topic) => ids.has(topic.id))
+    .sort((a, b) => Number(a.mastered) - Number(b.mastered)
+      || a.masteryPercent - b.masteryPercent
+      || (b.lastPracticedAt ?? "").localeCompare(a.lastPracticedAt ?? "")
+      || a.title.localeCompare(b.title, "cs"))[0] ?? null;
+}
+
+const learningSubjectKey = (userId: string) => `bezli:learning-subject:${userId}`;
+
+export function readStoredLearningSubject(userId: string): string | null {
+  try { return window.localStorage.getItem(learningSubjectKey(userId)); } catch { return null; }
+}
+
+export function storeLearningSubject(userId: string, subject: string): void {
+  try { window.localStorage.setItem(learningSubjectKey(userId), subject); } catch { /* soukromý režim */ }
+}
+
+export function resolveLearningSubject(subjects: string[], lastSubject: string | null, storedSubject: string | null): string | null {
+  if (storedSubject && subjects.includes(storedSubject)) return storedSubject;
+  if (lastSubject && subjects.includes(lastSubject)) return lastSubject;
+  return subjects[0] ?? null;
 }
 
 /** Čisté sestavení mise a cesty; nemění žádná data ani neuděluje XP. */
@@ -183,7 +222,11 @@ export function buildLearningOverview(input: LearningOverviewInput): StudentLear
     lastLesson,
     weakLesson,
     missions: missions.slice(0, 3),
-    nextExam: input.nextExam ? { ...input.nextExam, days: daysUntilLocalDay(input.nextExam.deadline, input.now) } : null,
+    nextExam: input.nextExam ? {
+      ...input.nextExam,
+      lessonIds: input.nextExam.lessonIds ?? [],
+      days: daysUntilLocalDay(input.nextExam.deadline, input.now),
+    } : null,
   };
 }
 
@@ -206,7 +249,7 @@ export async function loadStudentLearningOverview(userId: string, now = new Date
       .eq("student_id", userId)
       .maybeSingle(),
     supabase.from("assignments")
-      .select("id, title, deadline")
+      .select("id, title, deadline, lesson_id, lesson_source, settings")
       .eq("status", "published")
       .in("exam_type", ["exam", "test"])
       .not("deadline", "is", null)
@@ -219,7 +262,11 @@ export async function loadStudentLearningOverview(userId: string, now = new Date
   const examIds = ((examsResult.data ?? []) as ExamRow[]).map((exam) => exam.id);
   const attempts = await loadStudentAssignmentAttempts(userId, examIds);
   const submitted = new Set(attempts.filter((attempt) => attempt.status === "submitted").map((attempt) => attempt.assignment_id));
-  const nextExam = ((examsResult.data ?? []) as ExamRow[]).find((exam) => exam.deadline && !submitted.has(exam.id)) ?? null;
+  const nextExamRow = ((examsResult.data ?? []) as ExamRow[]).find((exam) => exam.deadline && !submitted.has(exam.id)) ?? null;
+  const nextExam = nextExamRow ? {
+    ...nextExamRow,
+    lessonIds: planLessons(nextExamRow).map((lesson) => lesson.id),
+  } : null;
 
   return buildLearningOverview({
     lessonGroups,

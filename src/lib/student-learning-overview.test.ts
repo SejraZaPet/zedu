@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildLearningOverview, daysUntilLocalDay, examDayLabel } from "@/lib/student-learning-overview";
+import { describe, expect, it, vi } from "vitest";
+import { buildLearningOverview, daysUntilLocalDay, examDayLabel, examPreparationMinutes, pickExamPreparationTopic, readStoredLearningSubject, resolveLearningSubject, storeLearningSubject } from "@/lib/student-learning-overview";
 
 const groups = [{
   subject: "Přírodopis",
@@ -55,6 +55,37 @@ describe("Učím se – denní cíl a cesta", () => {
     expect(result.missions).toHaveLength(2);
     expect(result.missions[1]).toMatchObject({ action: "material", state: "bonus" });
     expect(result.activeSubject).toBeNull();
+  });
+
+  it("příprava na navázaný test začne nejslabší lekcí a délka se řídí termínem", () => {
+    const result = buildLearningOverview({
+      lessonGroups: groups,
+      sessions: [{ lesson_id: "l2", created_at: "2026-11-20T09:00:00" }],
+      mastery: [
+        { lesson_id: "l1", mastery_percent: 25, sessions_count: 2, mastered_at: null },
+        { lesson_id: "l2", mastery_percent: 70, sessions_count: 1, mastered_at: null },
+      ],
+      nextExam: { id: "exam", title: "Test", deadline: "2026-11-24T08:00:00", lessonIds: ["l1", "l2"] },
+      now,
+    });
+    expect(pickExamPreparationTopic(result.topics, result.nextExam!.lessonIds)?.id).toBe("l1");
+    expect(examPreparationMinutes(0)).toBe(20);
+    expect(examPreparationMinutes(3)).toBe(15);
+    expect(examPreparationMinutes(8)).toBe(10);
+  });
+
+  it("uložený předmět platí jen když stále existuje, jinak se použije poslední", () => {
+    expect(resolveLearningSubject(["Matematika", "Fyzika"], "Fyzika", "Matematika")).toBe("Matematika");
+    expect(resolveLearningSubject(["Matematika", "Fyzika"], "Fyzika", "Odstraněný")).toBe("Fyzika");
+    expect(resolveLearningSubject(["Matematika"], null, null)).toBe("Matematika");
+  });
+
+  it("nedostupné úložiště nezabrání použití výchozího předmětu", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    expect(readStoredLearningSubject("student-1")).toBeNull();
+    expect(() => storeLearningSubject("student-1", "Matematika")).not.toThrow();
+    vi.restoreAllMocks();
   });
 
   it("počítá test podle kalendářních dnů a používá české popisky", () => {

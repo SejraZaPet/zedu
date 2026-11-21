@@ -226,6 +226,12 @@
 - [x] Nezávislé dotazy a vazby skupin/umístění běží souběžně; doplňování učebnic jen při potřebě, stejné RLS/publikace/seskupení a 22 dostupných lekcí v preview.
 - [x] Test cache bez nových dotazů při druhém otevření, skeletonu a retry; typy a regrese. Preview před: 11 vln/22 dotazů a 1,48–1,50 s při každém otevření; po: 9 vln při prefetch, 0 dotazů a 0,46–0,68 s při otevření. Mobil 390 px bez horizontálního posunu, živá chyba i retry ověřeny; bez DB/SQL a nasazení.
 
+## Učím se – přepínač předmětů a příprava na test
+- [x] Cesta: všechny předměty, výchozí poslední předmět a bezpečné localStorage podle userId; fokus/scroll z dlaždice.
+- [x] Řazení podle existujícího sort_order učebnice/tématu, jinak abecedně; Ostatní mají SearchableSelect vždy a dlouhé seznamy se rozbalují po 8.
+- [x] Test: existující lesson_id/settings.lessons filtrované přes dostupné žákovské lekce; 10/15/20 minut a nejslabší lekce, jinak původní 5minutový fallback. Bez testu text „Žádný test na obzoru“.
+- [x] 45 testů, typy/build a živá kontrola mobilu 390 px: 5 předmětů, uložení/reload, fokus, Ostatní se 7 lekcemi a 3 vyhledané shody, bez přetečení a chyb stránky. Ostré spuštění procvičování/AI neověřeno; bez DB/RLS/SQL a nasazení.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
