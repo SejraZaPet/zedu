@@ -33,7 +33,7 @@
 - Notebook worksheets: `worksheet-notebook.ts` resumes by pageIndex/pageCount after print readiness; image recovery is view-only, export/snapshots require backgrounds (thumbs unchanged), keeping answers and private snapshot storage.
 - Worksheet kind stays separate from AI focus (worksheet-kinds.ts); server section counts use _shared/worksheet-sections.ts for consistent generation/exports.
 
-- Lesson text cleanup only in `_shared/lesson-text.ts`; subject news only via `subject-news.ts` (no per-card reads).
+- Lesson text cleanup only in `_shared/lesson-text.ts`; subject news via `subject-news.ts`.
 - Class/group plans are published contentless `assignments` (`settings.plan`/`lessons`) via `planned-assignment.ts`, so student filters and RLS stay unchanged.
 - Subdirectories have their own `AGENTS.md`; read them before changing files there.
 - Demo seed textbook details read lessons by textbook ID in a preview-only view, never authoring controls, to avoid shared writes.
