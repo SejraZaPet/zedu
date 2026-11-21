@@ -67,6 +67,7 @@ import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
 import StudentSubjectClass from "./pages/StudentSubjectClass";
 import StudentSchedule from "./pages/StudentSchedule";
+import StudentSubjects from "./pages/StudentSubjects";
 import TeacherCalendar from "./pages/TeacherCalendar";
 import SchoolMeetings from "./pages/SchoolMeetings";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -205,6 +206,7 @@ const App = () => (
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/student/rozvrh" element={<ProtectedRoute><StudentSchedule /></ProtectedRoute>} />
+            <Route path="/student/predmety" element={<ProtectedRoute><StudentSubjects /></ProtectedRoute>} />
             <Route path="/student/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><StudentSubjectClass /></ProtectedRoute>} />
             <Route path="/student/predmet/:subjectId/skupina/:groupId" element={<ProtectedRoute><StudentSubjectClass /></ProtectedRoute>} />
             <Route path="/ucitel/porady" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><SchoolMeetings /></ProtectedRoute>} />

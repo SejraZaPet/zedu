@@ -154,3 +154,8 @@
 - [x] Přesné funkční barvy s minimální korekcí kontrastu, ikona/název/popisek pod sebou; druhá řada beze změny.
 - [x] Testy, typy a screenshoty žáka i učitele při 1360/390 px. Bez DB, SQL, edge funkcí a nasazení.
 - 30 testů, typy a build OK. Žák 1360 px: dvě plné řady, Rozvrh doplňuje druhou; 390 px: tři dvousloupcové řady. Učitel sdílí vzhled i funkční barvy, široké dlaždice vedle sebe.
+
+## Žák – Moje předměty (etapa 1b)
+- [x] Diagnostika stávajících čtení členství, předmětů, rozvrhu, úloh a jmen učitelů; jména učitelů žákovské RLS nepovoluje, karty proto ukazují jen třídu/skupinu.
+- [x] Chráněná `/student/predmety`, karty tříd/skupin, prázdný stav a dlaždice přehledu; Rozvrh i nová stránka sdílí jedno čtení členství a slotů, staré cesty zachovány.
+- [x] 21 cílených testů, typy a build OK; živě 24 karet, další hodiny/štítky, původní Rozvrh, 1360/360 px bez posunu a bez chyb stránky. Bez SQL, DB/RLS a nasazení; skutečný iPhone Safari neověřen.

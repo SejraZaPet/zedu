@@ -701,13 +701,48 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   .dashboard-today-lesson { flex-wrap: nowrap; }
 }
 @media (min-width: 1024px) {
-  /* Without the not-yet-approved Subjects page, Schedule completes the student's second row. */
   .student-dashboard-main-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .student-dashboard-main-grid .dashboard-tile--schedule:last-child { grid-column: span 2; }
   .dashboard-compact-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .teacher-dashboard-personal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* Žákovy kurzy: stejná osvědčená paleta jako hlavní dlaždice, stabilní podle předmětu. */
+.student-course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 16px; }
+.student-course-card {
+  display: flex;
+  min-width: 0;
+  min-height: 210px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 16px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: var(--dashboard-tile-shadow);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.student-course-card:hover, .student-course-card:focus-visible { transform: translateY(-4px); box-shadow: var(--dashboard-tile-shadow-raised); }
+.student-course-card:focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 3px; }
+.student-course-card-top {
+  min-height: 132px;
+  padding: 20px;
+  background-image: linear-gradient(140deg, var(--student-course-from), var(--student-course-to));
+  color: hsl(var(--dashboard-tile-foreground));
+}
+.student-course-card-top h2 { overflow-wrap: anywhere; font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; line-height: 1.25; }
+.student-course-card-top p { margin-top: 8px; overflow-wrap: anywhere; font-size: .85rem; color: hsl(var(--dashboard-tile-foreground) / .9); }
+.student-course-card-body { display: flex; flex: 1; flex-direction: column; justify-content: flex-end; gap: 14px; padding: 14px 16px 16px; }
+.student-course-card-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.student-course-badge { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; border-radius: 8px; background: hsl(var(--muted)); padding: 6px 9px; font-size: .75rem; font-weight: 600; }
+.student-course-badge svg { width: 15px; height: 15px; flex-shrink: 0; color: hsl(var(--primary)); }
+.student-course-badge--exam { background: hsl(var(--warning) / .12); color: hsl(var(--foreground)); }
+.student-course-next { display: flex; align-items: flex-start; gap: 7px; color: hsl(var(--muted-foreground)); font-size: .8rem; line-height: 1.4; }
+.student-course-next svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+@media (max-width: 420px) {
+  .student-dashboard-main-grid .dashboard-tile--schedule:last-child { grid-column: span 2; }
+}
 @media (prefers-reduced-motion: reduce) {
+  .student-course-card { transition: none; }
+  .student-course-card:hover, .student-course-card:focus-visible { transform: none; }
   .dashboard-tile, .dashboard-compact-tile { transition: none; }
   .dashboard-tile:hover, .dashboard-tile:focus-visible,
   .dashboard-compact-tile:hover, .dashboard-compact-tile:focus-visible { transform: none; }

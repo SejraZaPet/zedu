@@ -85,6 +85,7 @@ describe("Žákovský přehled – etapa 1", () => {
       ["learn", "/student/metody", "lucide-graduation-cap"],
       ["textbooks", "/student/ucebnice", "lucide-book"],
       ["assignments", "/student/ulohy", "lucide-square-check-big"],
+      ["subjects", "/student/predmety", "lucide-library"],
       ["notebook", "/student/sesit", "lucide-notebook-text"],
       ["portfolio", "/student/portfolio", "lucide-folder-open"],
       ["schedule", "/student/rozvrh", "lucide-calendar-days"],
@@ -95,7 +96,8 @@ describe("Žákovský přehled – etapa 1", () => {
       expect(link.querySelector("svg")).toHaveClass(icon);
     }
     expect(screen.getByText("Kartičky, kvízy a příprava na test z látky tvého učitele")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Moje předměty" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Moje předměty/ })).toHaveAttribute("href", "/student/predmety");
+    expect(screen.getByText("Třídy a kurzy")).toBeInTheDocument();
   });
 
   it("kompaktní dlaždice zachovají všechny cesty a hra používá Gamepad2", async () => {

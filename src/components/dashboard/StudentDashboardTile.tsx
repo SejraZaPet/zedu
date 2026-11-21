@@ -7,7 +7,7 @@ import {
   type DashboardTileTone,
 } from "./DashboardTile";
 
-export type StudentTileTone = Extract<DashboardTileTone, "learn" | "textbooks" | "assignments" | "notebook" | "portfolio" | "schedule">;
+export type StudentTileTone = Extract<DashboardTileTone, "learn" | "subjects" | "textbooks" | "assignments" | "notebook" | "portfolio" | "schedule">;
 type StudentDashboardTileProps = Omit<DashboardTileProps, "tone" | "testIdPrefix"> & { tone: StudentTileTone };
 type StudentDashboardCompactTileProps = Omit<DashboardCompactTileProps, "testIdPrefix">;
 

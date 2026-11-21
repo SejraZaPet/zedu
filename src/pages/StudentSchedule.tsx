@@ -14,29 +14,12 @@ import {
   getSubjectColor,
   getSubjectName,
 } from "@/lib/subject-appearance";
+import { fetchStudentScheduleData, type StudentClassSlot } from "@/lib/student-schedule";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
 
 type ParityTab = "both" | "odd" | "even";
-
-interface ClassSlot {
-  id: string;
-  class_id: string | null;
-  group_id?: string | null;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  week_parity: "every" | "odd" | "even";
-  subject_label: string | null;
-  abbreviation: string | null;
-  color: string | null;
-  room: string | null;
-  textbook_id: string | null;
-  classes?: { name: string } | null;
-  subject_groups?: { name?: string | null } | null;
-  subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
-}
 
 const fmtTime = (t: string) => {
   if (!t) return "";
@@ -53,7 +36,7 @@ const toMin = (t: string): number => {
 export default function StudentSchedule() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [slots, setSlots] = useState<ClassSlot[]>([]);
+  const [slots, setSlots] = useState<StudentClassSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ParityTab>("both");
   const [mobileDay, setMobileDay] = useState(() => {
@@ -78,63 +61,10 @@ export default function StudentSchedule() {
         setStudentName(n || prof?.email || user.email || "");
       }
 
-      const [{ data: members }, { data: gm }] = await Promise.all([
-        supabase.from("class_members").select("class_id").eq("user_id", user.id),
-        supabase
-          .from("subject_group_members")
-          .select("group_id")
-          .eq("student_id", user.id),
-      ]);
-      const classIds = (members ?? []).map((r: any) => r.class_id);
-      const groupIds = (gm ?? []).map((r: any) => r.group_id);
-      if (classIds.length === 0 && groupIds.length === 0) {
-        if (!cancelled) {
-          setSlots([]);
-          setClassNames([]);
-          setLoading(false);
-        }
-        return;
-      }
-
-      const select =
-        "*, classes(name), subjects(name, color, abbreviation), subject_groups(name)";
-      const [classSlotsRes, groupSlotsRes] = await Promise.all([
-        classIds.length
-          ? supabase
-              .from("class_schedule_slots" as any)
-              .select(select)
-              .in("class_id", classIds)
-          : Promise.resolve({ data: [] as any[] }),
-        groupIds.length
-          ? supabase
-              .from("class_schedule_slots" as any)
-              .select(select)
-              .in("group_id", groupIds)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
-
+      const data = await fetchStudentScheduleData(user.id);
       if (cancelled) return;
-      const merged = [
-        ...(((classSlotsRes as any).data as any[]) ?? []),
-        ...(((groupSlotsRes as any).data as any[]) ?? []),
-      ];
-      const byId = new Map<string, any>();
-      for (const r of merged) byId.set(r.id, r);
-      const list = Array.from(byId.values()).sort(
-        (a, b) =>
-          a.day_of_week - b.day_of_week ||
-          toMin((a.start_time || "").slice(0, 5)) -
-            toMin((b.start_time || "").slice(0, 5)),
-      ) as ClassSlot[];
-      setSlots(list);
-      const names = Array.from(
-        new Set(
-          list
-            .map((s) => s.classes?.name ?? (s as any).subject_groups?.name)
-            .filter(Boolean) as string[],
-        ),
-      );
-      setClassNames(names);
+      setSlots(data.slots);
+      setClassNames(data.classNames);
       setLoading(false);
     })();
     return () => {
@@ -150,7 +80,7 @@ export default function StudentSchedule() {
   const periods = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8], []);
 
   const slotsByCell = useMemo(() => {
-    const m = new Map<string, ClassSlot[]>();
+    const m = new Map<string, StudentClassSlot[]>();
     const periodInfo = periods.map((p) => {
       const t = DEFAULT_PERIOD_TIMES[p];
       return { period: p, start: toMin(t.start), end: toMin(t.end) };
@@ -344,7 +274,7 @@ function ReadOnlyClassCard({
   navigate,
   wide = false,
 }: {
-  slot: ClassSlot;
+  slot: StudentClassSlot;
   navigate: (path: string) => void;
   wide?: boolean;
 }) {

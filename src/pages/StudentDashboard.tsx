@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Gamepad2,
   GraduationCap,
+  Library,
   NotebookText,
   SquareCheckBig,
   Trophy,
@@ -102,6 +103,14 @@ const StudentDashboard = () => {
       to: "/student/ulohy",
       tone: "assignments" as const,
       count: assignmentsCount,
+    },
+    {
+      id: "subjects",
+      icon: Library,
+      title: "Moje předměty",
+      description: "Třídy a kurzy",
+      to: "/student/predmety",
+      tone: "subjects" as const,
     },
     {
       id: "notebook",
