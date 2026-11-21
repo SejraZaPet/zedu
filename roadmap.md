@@ -237,7 +237,16 @@
 - [x] Ve volném režimu prohledat pouze zdroje čitelné JWT žáka, bez diakritiky, max 5 × 800 znaků, s názvy zdrojů, prázdným stavem a čitelnou chybou; demo limity beze změny.
 - [x] Testy promptů, normalizace, RLS/token scopu, chyb a stávajících kontextových volání; roadmapa, bez SQL/nasazení.
 - Prohledávají se nejvýše 80 nejnovějších publikovaných lekcí z každé lekceové tabulky a vlastní poznámky z max. 20 sešitů/100 stránek; dočasný text „Z materiálu“ se neukládá, proto jej zpětné hledání nezahrnuje. Nové SQL není potřeba.
-- 25 cílených testů a typy prošly. Živé preview při 390 px ověřilo `mode: free`, prázdný vynucený kontext, AI odhalení, odpověď a chybu hledání s maketou bez ostrého AI, bez vodorovného posunu a chyb stránky. Ostrá funkce před nasazením, skutečné AI a reálné RLS odpověď nebyly spuštěny; samostatnou Deno kontrolu zabránilo chybějící lokální npm rozlišení.
+- Původní kontrola: 25 cílených testů a typy prošly; preview při 390 px ověřilo režim, úvod a chybu hledání s maketou bez ostrého AI, bez vodorovného posunu a chyb stránky.
+
+### Bezlai – dokončení po doplnění kreditů
+- [x] Backendový test převeden na nativní Deno runner: 7/7 prošlo; 18 frontendových regresí a typy rovněž prošly. Bez nasazení.
+- [x] Živé preview s JWT přihlášeného účtu a dočasným lokálním můstkem nad stejnými search/prompt moduly: „hovězího masa“ i „hovezi maso“ posílají `mode: free` a prázdný vynucený kontext; obě AI odpovědi citují „Hovězí maso“, žádná mediální výchova.
+- „hovězího masa“: 5 úryvků – 2× Hovězí maso (800+800 znaků), Vykosťování a práce s masem v předběžné přípravě (800), Zvěřina (800), Skopové maso (800).
+- „hovezi maso“: 5 úryvků – 2× Hovězí maso (800+798), Úvod maso (800), Vepřové maso (800), Skopové maso (799). Obsah úryvků se nezapisuje do logu ani roadmapy.
+- [x] Kontextový režim živě v lekci i rozpracovaném úkolu: `mode: context`, původní úvod, odmítnutí přímé odpovědi a vodítko podle zadání; bez odevzdání či úpravy odpovědí.
+- Ostrá nasazená funkce se záměrně nespustila ani nezměnila; lokální můstek pouze pro non-demo ověření použil skutečné RLS čtení a AI. Prázdný stav a označení obecné odpovědi kryjí backendové testy.
+- [x] Návrh „Můj materiál“ ke schválení: výslovně opt-in uložení extrahovaného/potvrzeného textu pod vlastnictvím žáka s názvem, typem zdroje, verzí souhlasu a možností kdykoli text smazat; samostatná tabulka s owner-only RLS pro čtení i zápisy, demo omezení a kvóty. Bezlai by tyto řádky četla stále jen JWT žáka. Rozsah M (cca 1,5–2,5 dne): UI souhlasu/správy, migrace a RLS, napojení hledání, testy soukromí a mobilu. Žádné SQL navrženo ani aplikováno.
 
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
