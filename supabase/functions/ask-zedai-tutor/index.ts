@@ -2,8 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
-import { buildTutorSummaryPrompt, buildTutorSystemPrompt, isTutorProvenanceQuestion, TUTOR_UNCERTAIN_SOURCE_REPLY, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
+import { assignmentContextSnippets, buildTutorSummaryPrompt, buildTutorSystemPrompt, isTutorProvenanceQuestion, TUTOR_UNCERTAIN_SOURCE_REPLY, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
 import { searchStudentMaterialSnippets } from "./search.ts";
+import { isUuid, loadAssignmentRow, loadLinkedLesson, loadMaterialFiles, parseMaterialRefs, selectMaterialFiles } from "../_shared/assignment-context.ts";
+
+const TUTOR_ASSIGNMENT_MATERIALS = 2;
 import { SOURCE_KINDS, SOURCE_TEXT_LIMIT, type SourceKind } from "../_shared/practice-phases.ts";
 
 const corsHeaders = {
@@ -91,6 +94,31 @@ serve(async (req) => {
 
     let snippets: TutorSourceSnippet[] = [];
     let searchFailed = false;
+    if (tutorMode === "context" && task === "chat" && body.assignmentId !== undefined && body.assignmentId !== null) {
+      if (!isUuid(body.assignmentId)) return json({ error: "Neplatný úkol." }, 400);
+      try {
+        // Stejně jako ve volném režimu: anon klient + JWT žáka, RLS a storage politiky rozhodují.
+        const studentDb = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: auth.authHeader } } },
+        );
+        const row = await loadAssignmentRow(studentDb, body.assignmentId);
+        if (row) {
+          const documents: Array<{ title: string; kind: string; text: string; href?: string }> = [];
+          const lesson = await loadLinkedLesson(studentDb, row.lesson_id, row.lesson_source, 8000);
+          if (lesson) documents.push({ title: lesson.title, kind: "Lekce k úkolu", text: lesson.text, ...(lesson.href ? { href: lesson.href } : {}) });
+          const files = selectMaterialFiles(parseMaterialRefs(row.materials), TUTOR_ASSIGNMENT_MATERIALS, true);
+          const { materials } = await loadMaterialFiles(studentDb, files, { pdfAs: "text", textOnly: true });
+          for (const material of materials) {
+            if (material.status === "ok" && material.text) documents.push({ title: material.title, kind: "Materiál k úkolu", text: material.text });
+          }
+          snippets = assignmentContextSnippets(documents, `${studentMessage} ${question}`);
+        }
+      } catch {
+        searchFailed = true;
+      }
+    }
     if (tutorMode === "free" && task === "chat" && !providedMaterial) {
       try {
         // Důležité: anon klient + původní JWT. RLS rozhoduje, nic se nečte service rolí.
@@ -151,7 +179,7 @@ serve(async (req) => {
       reply,
       grounded: usedSources.length > 0,
       sources: usedSources.map(({ title, kind, href }) => ({ title, kind, ...(href ? { href } : {}) })),
-      ...(searchFailed ? { searchError: "Materiály se nepodařilo prohledat. Bezlai odpoví bez nich." } : {}),
+      ...(searchFailed ? { searchError: tutorMode === "context" ? "Podklady k úkolu se nepodařilo načíst. Bezlai odpoví bez nich." : "Materiály se nepodařilo prohledat. Bezlai odpoví bez nich." } : {}),
     });
   } catch {
     console.error("ask-zedai-tutor request failed");

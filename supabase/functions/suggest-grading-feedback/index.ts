@@ -4,9 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 import {
   buildPointsUserContent, buildUserContent, classifyAttachment, hasGradableContent, LoadedAttachment,
-  MAX_DOC_TEXT_CHARS, MAX_FILE_BYTES, MAX_TOTAL_BYTES, normalizePointSuggestions,
+  MAX_DOC_TEXT_CHARS, MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES, normalizePointSuggestions,
   POINTS_SYSTEM_PROMPT, sanitizeAttachmentRefs, sanitizePointItems, SYSTEM_PROMPT,
 } from "./prompt.ts";
+import {
+  GRADING_LESSON_CHARS, isUuid, loadAssignmentRow, loadLinkedLesson, loadMaterialFiles, type LoadedMaterial,
+  parseMaterialRefs, selectMaterialFiles,
+} from "../_shared/assignment-context.ts";
 
 const BUCKETS = ["student-portfolio", "assignment-uploads", "student-attachments"];
 
@@ -87,7 +91,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: auth.authHeader } } },
     );
 
-    if (refs.length > 0 || itemId || pointsMode) {
+    const assignmentId = !pointsMode && isUuid(body?.assignmentId) ? body.assignmentId : null;
+    if (refs.length > 0 || itemId || pointsMode || assignmentId) {
       const { data: staff } = await userClient.rpc("is_admin_or_teacher");
       if (staff !== true) {
         return new Response(JSON.stringify({ error: "Návrh hodnocení může vytvořit jen učitel nebo správce." }), {
@@ -137,6 +142,30 @@ serve(async (req) => {
       count: attachments.length, readable: attachments.filter((a) => a.status === "ok").length, totalBytes,
     });
 
+    // Podklady učitele: úkol, lekce i materiály čte token učitele (RLS + storage politiky), nic service rolí.
+    let lessonContext: { title: string; text: string } | null = null;
+    let teacherMaterials: LoadedMaterial[] = [];
+    if (assignmentId) {
+      try {
+        const row = await loadAssignmentRow(userClient as any, assignmentId);
+        if (row) {
+          lessonContext = await loadLinkedLesson(userClient as any, row.lesson_id, row.lesson_source, GRADING_LESSON_CHARS);
+          const allRefs = parseMaterialRefs(row.materials);
+          const files = selectMaterialFiles(allRefs, MAX_FILES, false);
+          const loaded = await loadMaterialFiles(userClient as any, files, { pdfAs: "file", textOnly: false });
+          teacherMaterials = [
+            ...loaded.materials,
+            ...allRefs.filter((ref) => ref.kind === "link").slice(0, MAX_FILES).map((ref) => ({ title: ref.title, status: "link" as const })),
+          ];
+          console.log("suggest-grading-feedback context", {
+            lesson: Boolean(lessonContext), materials: teacherMaterials.length, storageDenied: loaded.storageDenied,
+          });
+        }
+      } catch {
+        console.error("suggest-grading-feedback context failed");
+      }
+    }
+
     const scoreLine =
       (score != null ? `Skóre: ${score}${maxScore != null ? ` / ${maxScore}` : ""}` : "") +
       (isCorrect === true ? "\nOdpověď je vyhodnocena jako správná."
@@ -144,7 +173,7 @@ serve(async (req) => {
 
     const userContent = pointsMode
       ? buildPointsUserContent(question, pointItems)
-      : buildUserContent({ question, criteria, answerText, scoreLine, attachments });
+      : buildUserContent({ question, criteria, answerText, scoreLine, attachments, lesson: lessonContext, teacherMaterials });
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

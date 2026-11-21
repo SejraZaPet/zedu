@@ -38,6 +38,8 @@ interface BezlaiTutorChatProps {
   subject?: string;
   /** Volitelná změna klíče vyresetuje konverzaci (např. při přechodu na další otázku). */
   contextKey?: string;
+  /** Kontextový režim v úkolu: server přes token žáka dočte propojenou lekci a textové materiály zadání. */
+  assignmentId?: string;
   /** Umístění plovoucího tlačítka. */
   className?: string;
   /** Řízené otevření zvenčí (např. tlačítkem „Zeptat se“ ve studijní liště). */
@@ -63,6 +65,7 @@ export default function BezlaiTutorChat({
   question,
   subject,
   contextKey,
+  assignmentId,
   className,
   open: openProp,
   onOpenChange,
@@ -131,6 +134,7 @@ export default function BezlaiTutorChat({
           conversationHistory: nextHistory.slice(2, -1).filter((message) => !message.content.startsWith("⚠️")),
           subject,
           ...(mode === "free" && material ? { material } : {}),
+          ...(mode === "context" && assignmentId ? { assignmentId } : {}),
         },
       });
       if (error) throw error;

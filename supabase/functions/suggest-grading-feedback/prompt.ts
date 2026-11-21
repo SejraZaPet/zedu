@@ -65,6 +65,7 @@ ZÁSADY:
 - Hodnoť podle zadání a kritérií, pokud jsou uvedena.
 - Odevzdaná práce může být v textu odpovědi i v přílohách (PDF, obrázky, dokumenty). Přílohy jsou součást odevzdání – pokud nějaké přílohy existují, NIKDY netvrď, že výstup chybí nebo že je odevzdáno jen zadání.
 - Pokud je u přílohy uvedeno, že ji nebylo možné přečíst, napiš, že přílohu se nepodařilo přečíst, a nehodnoť ji jako chybějící.
+- Podklady od učitele (propojená lekce a materiály zadání) jsou jen podklad pro posouzení – NIKDY je nepovažuj za práci žáka a nehodnoť je.
 - Nejdřív krátce pochval, co je dobře, pak konkrétně navrhni zlepšení.
 - Nikdy nediktuj správnou odpověď doslovně – navrhni směr.
 - Odpověz pouze samotným textem zpětné vazby, bez uvozovek, úvodu a podpisu.`;
@@ -79,11 +80,25 @@ export function buildUserContent(input: {
   answerText: string;
   scoreLine?: string;
   attachments: LoadedAttachment[];
+  /** Text propojené lekce/kapitoly (podklad učitele). */
+  lesson?: { title: string; text: string } | null;
+  /** Materiály zadání od učitele (podklad, ne práce žáka). */
+  teacherMaterials?: Array<{ title: string; status: "ok" | "unreadable" | "link"; text?: string; dataUrl?: string }>;
 }): Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> {
   const parts: Array<any> = [];
   const lines: string[] = [];
   lines.push(`Zadání / otázka:\n"""\n${input.question.trim() || "(neuvedeno)"}\n"""`);
   if (input.criteria?.trim()) lines.push(`Kritéria hodnocení:\n"""\n${input.criteria.trim()}\n"""`);
+  if (input.lesson?.text.trim()) {
+    lines.push(`PODKLAD OD UČITELE – propojená lekce „${input.lesson.title}“ (není to práce žáka):\n"""\n${input.lesson.text.trim()}\n"""`);
+  }
+  const teacherMaterials = input.teacherMaterials ?? [];
+  if (teacherMaterials.length) {
+    lines.push(
+      `PODKLADY OD UČITELE – materiály zadání (${teacherMaterials.length}, nejsou práce žáka):\n` +
+        teacherMaterials.map((m, i) => `${i + 1}. ${m.title} – ${m.status === "ok" ? "obsah níže" : m.status === "link" ? "odkaz, obsah nebyl načten" : "nepodařilo se přečíst"}`).join("\n"),
+    );
+  }
   lines.push(`Textová odpověď žáka:\n"""\n${input.answerText.trim() || "(bez textové odpovědi)"}\n"""`);
   if (input.scoreLine) lines.push(input.scoreLine.trim());
   if (input.attachments.length) {
@@ -105,6 +120,15 @@ export function buildUserContent(input: {
     } else if (a.dataUrl) {
       parts.push({ type: "text", text: `Příloha ${i + 1} (${a.name}):` });
       parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
+    }
+  });
+  teacherMaterials.forEach((m, i) => {
+    if (m.status !== "ok") return;
+    if (m.text != null) {
+      parts.push({ type: "text", text: `Podklad od učitele – materiál ${i + 1} (${m.title}), NENÍ práce žáka:\n"""\n${m.text}\n"""` });
+    } else if (m.dataUrl) {
+      parts.push({ type: "text", text: `Podklad od učitele – materiál ${i + 1} (${m.title}), NENÍ práce žáka:` });
+      parts.push({ type: "image_url", image_url: { url: m.dataUrl } });
     }
   });
   parts.push({ type: "text", text: "Napiš návrh zpětné vazby (2–3 věty)." });

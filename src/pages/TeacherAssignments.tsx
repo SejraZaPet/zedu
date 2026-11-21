@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AssignmentDetailDialog from "@/components/admin/AssignmentDetailDialog";
+import AssignmentStudentPreview from "@/components/assignments/AssignmentStudentPreview";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -195,6 +196,7 @@ const TeacherAssignments = () => {
   const [recipientIds, setRecipientIds] = useState<string[]>([]);
   /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
   const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
+  const [previewAssignment, setPreviewAssignment] = useState<Assignment | null>(null);
   /** Úloha, pro kterou se mají zobrazit výsledky. */
   const [resultsAssignmentId, setResultsAssignmentId] = useState<string | null>(null);
   // Naplánované zveřejnění – appka úlohu zpřístupní žákům sama v daný čas.
@@ -2131,6 +2133,7 @@ const TeacherAssignments = () => {
                               </div>
 
                               <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Button size="icon" variant="ghost" className="assignment-card-action h-9 w-9" aria-label={`Náhled zadání: ${a.title}`} title="Náhled zadání" onClick={() => setPreviewAssignment(a)}><Eye className="h-4 w-4" aria-hidden /></Button>
                                 <Button size="sm" variant="outline" className="assignment-card-action" onClick={() => setDetailAssignment(a)}>Detail</Button>
                                 {a.status === "published" && a.class_id && assignmentKind(a.settings) === "task" && (
                                   <RemindButton
@@ -2192,6 +2195,7 @@ const TeacherAssignments = () => {
           );
         })()}
 
+        <AssignmentStudentPreview assignment={previewAssignment} open={!!previewAssignment} onOpenChange={(o) => { if (!o) setPreviewAssignment(null); }} />
         <AssignmentDetailDialog
           assignment={detailAssignment}
           open={!!detailAssignment}

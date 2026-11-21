@@ -1220,6 +1220,7 @@ const StudentAssignmentPlayer = () => {
         <BezlaiTutorChat
           question={`${assignment.title}${assignment.description ? `\n\n${assignmentDescriptionToText(assignment.description)}` : ""}`}
           contextKey={assignment.id}
+          assignmentId={assignment.id}
         />
       )}
       <SiteFooter />

@@ -27,10 +27,11 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
+import AssignmentStudentPreview from "@/components/assignments/AssignmentStudentPreview";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
-import { BookOpen, BarChart3, Check } from "lucide-react";
+import { BookOpen, BarChart3, Check, Eye } from "lucide-react";
 import { fetchLessonActivities } from "@/lib/lesson-activity-index";
 import {
   bestResultsByActivity,
@@ -129,6 +130,7 @@ interface Props {
  * s panelem zpětné vazby učitele (emoji + slovní hodnocení).
  */
 const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
+  const [studentViewOpen, setStudentViewOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -537,9 +539,15 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{assignment?.title}</DialogTitle>
+        <DialogHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0 pr-8">
+          <DialogTitle className="break-words">{assignment?.title}</DialogTitle>
+          {assignment && (
+            <Button type="button" size="sm" variant="outline" className="min-h-9" onClick={() => setStudentViewOpen(true)}>
+              <Eye className="mr-1 h-3.5 w-3.5" aria-hidden />Žákovský pohled
+            </Button>
+          )}
         </DialogHeader>
+        <AssignmentStudentPreview assignment={assignment} open={studentViewOpen} onOpenChange={setStudentViewOpen} />
 
         {assignment && (
           <div className="space-y-4">

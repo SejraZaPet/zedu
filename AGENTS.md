@@ -76,3 +76,4 @@
 - Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
 - Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
 - List filters: shared FilterBar+useStoredFilters; logic per page, data/access unchanged.
+- AI assignment context (linked lesson + assignment materials) is loaded only server-side via `_shared/assignment-context.ts` with the caller's JWT from an `assignmentId`, never from client-supplied text, so RLS/storage policies decide access.

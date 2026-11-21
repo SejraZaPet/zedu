@@ -278,3 +278,10 @@
 - [x] `SearchableSelect`, SubjectPicker, témata ŠVP, výběr člena v pracovním úkolu a oba výběry publikace lekce používají `Popover modal`; výška, `overscroll-contain` a datové chování zůstávají beze změny. Radix Select už je ve výchozím stavu modální, proto zůstal beze změny. Informační popovery a seznamy mimo dialog se nemění.
 - [x] Trvalý `e2e/popover_dialog_wheel.py` ověřil Shrnutí, Chci si to zapamatovat i Procvičit metodou: wheel 0 → 500 px, klik mimo, Escape jen popover, klávesnicový výběr a návrat fokusu. Dotyk při 390 px 0 → 135 px, bez vodorovného přetečení.
 - [x] 12 souvisejících testů, typy, diff check a build prošly; nový lint problém nepřibyl (cílený lint hlásí jen dřívější `any`/Fast Refresh v legacy částech). Bez DB/RLS/SQL a nasazení.
+
+## Náhled zadání a podklady AI u úkolů (schváleno, kroky 1–3)
+- [x] 1) Žákovský náhled zadání (ikona oka v řádku, „Žákovský pohled“ v detailu), jen čtení, zkrácený výchozí stav.
+- [x] 2) AI hodnocení dostává propojenou lekci (6 000 znaků) a materiály zadání (5 souborů / 8 MB / 15 MB) tokenem učitele jako podklad. Rubrika: k úkolu dnes není nijak navázaná – čte se jen `settings.criteria`; navázání rubriky vyžaduje volbu v editoru úkolu (bez SQL), ke schválení.
+- [x] 3) Bezlai v úkolu: lekce + max. 2 textové materiály (PDF/TXT/DOCX) tokenem žáka, úryvky 5×800, štítky zdrojů.
+- Ověřeno: testy, čtení tokenem učitele nad reálnými úkoly, mobil 390 px. Neověřeno: nasazené funkce a ostrá AI, čtení tokenem žáka (politika storage to povoluje přes `can_read_assignment_material`).
+- [ ] 4) Vlastní podklad v CreateFromLessonDialog – NEDĚLAT (rozhodnutí Tyny).

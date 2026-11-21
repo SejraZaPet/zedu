@@ -1,4 +1,5 @@
 import { cleanLessonText } from "../_shared/lesson-text.ts";
+import { lessonBlocksText } from "../_shared/assignment-context.ts";
 
 export type TutorMode = "context" | "free";
 
@@ -94,25 +95,7 @@ export function findTutorSnippets(
 }
 
 export function lessonTextForTutor(blocks: unknown, maxLength = 8000): string {
-  if (!Array.isArray(blocks)) return "";
-  const out: string[] = [];
-  const textFields = ["text", "title", "heading", "caption", "content", "question", "explanation", "front", "back"];
-  const nestedFields = ["props", "children", "blocks", "items", "data", "quiz", "questions", "answers", "flashcards", "revealCards", "cards"];
-  const walk = (node: unknown): void => {
-    if (typeof node === "string") {
-      const text = cleanLessonText(node);
-      if (text) out.push(text);
-      return;
-    }
-    if (Array.isArray(node)) { node.forEach(walk); return; }
-    if (!node || typeof node !== "object") return;
-    const record = node as Record<string, unknown>;
-    if (record.visible === false) return;
-    for (const field of textFields) if (typeof record[field] === "string") walk(record[field]);
-    for (const field of nestedFields) if (record[field] && typeof record[field] === "object") walk(record[field]);
-  };
-  walk(blocks);
-  return out.join("\n\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, maxLength);
+  return lessonBlocksText(blocks, maxLength);
 }
 
 export function notebookTextForTutor(content: unknown): string {
@@ -126,6 +109,19 @@ export function notebookTextForTutor(content: unknown): string {
     .filter(Boolean)
     .join("\n\n")
     .slice(0, 8000);
+}
+
+/** Úryvky z podkladů úkolu: nejdřív podle klíčových slov, jinak začátek každého dokumentu (vše je k úkolu relevantní). */
+export function assignmentContextSnippets(
+  documents: Array<{ title: string; kind: string; text: string; href?: string }>,
+  query: string,
+): TutorSourceSnippet[] {
+  const usable = documents.filter((document) => document.text.trim());
+  const matched = findTutorSnippets(usable, query);
+  if (matched.length) return matched;
+  return usable.slice(0, MAX_TUTOR_SNIPPETS).map(({ title, kind, text, href }) => ({
+    title, kind, text: text.slice(0, MAX_TUTOR_SNIPPET_CHARS).trim(), ...(href ? { href } : {}),
+  }));
 }
 
 export function buildTutorSystemPrompt(input: {
@@ -152,7 +148,14 @@ ${TUTOR_SOURCE_RULES}
 AKTUÁLNÍ OTÁZKA/ÚKOL, KE KTERÉMU POMÁHÁŠ:
 """
 ${question || "(učitel nespecifikoval konkrétní zadání – pomoz žákovi obecně s tématem, na které se ptá)"}
-"""`;
+"""${snippets.length ? `
+
+PODKLADY K ÚKOLU (propojená lekce a materiály od učitele):
+- Používej je jen k nápovědám a navádějícím otázkám; ani z nich nikdy neprozrazuj hotovou odpověď.
+- Když se o ně opíráš, uveď název zdroje, například „Podívej se v lekci …“.
+- Úryvky mohou být neúplné; nevymýšlej, co v nich není.
+
+${snippets.map((snippet, index) => `ZDROJ ${index + 1}: ${snippet.title} (${snippet.kind})\n"""\n${snippet.text}\n"""`).join("\n\n")}` : ""}`;
   }
 
   const sourceText = snippets.map((snippet, index) =>

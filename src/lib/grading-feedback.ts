@@ -9,6 +9,8 @@ export interface GradingAttachment {
 
 export interface AssignmentFeedbackRequestInput {
   assignment: {
+    /** ID úkolu: server přes token učitele dočte propojenou lekci a materiály zadání. */
+    id?: string;
     title: string;
     description?: string | null;
     settings?: unknown;
@@ -78,6 +80,7 @@ export function buildAssignmentFeedbackRequest(input: AssignmentFeedbackRequestI
     attachments: assignmentAttachmentRefs(input.attachments),
     score: input.score ?? null,
     maxScore: input.maxScore ?? null,
+    ...(input.assignment.id ? { assignmentId: input.assignment.id } : {}),
   };
 }
 
