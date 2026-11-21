@@ -2565,7 +2565,9 @@ export type Database = {
           consent_version: string
           created_at: string
           email: string
+          final_email_claimed_at: string | null
           pair_id: string
+          reminder_0d_sent_at: string | null
           reminder_1d_sent_at: string | null
           reminder_3d_sent_at: string | null
           reminder_deadline_at: string | null
@@ -2579,7 +2581,9 @@ export type Database = {
           consent_version: string
           created_at?: string
           email: string
+          final_email_claimed_at?: string | null
           pair_id: string
+          reminder_0d_sent_at?: string | null
           reminder_1d_sent_at?: string | null
           reminder_3d_sent_at?: string | null
           reminder_deadline_at?: string | null
@@ -2593,7 +2597,9 @@ export type Database = {
           consent_version?: string
           created_at?: string
           email?: string
+          final_email_claimed_at?: string | null
           pair_id?: string
+          reminder_0d_sent_at?: string | null
           reminder_1d_sent_at?: string | null
           reminder_3d_sent_at?: string | null
           reminder_deadline_at?: string | null
@@ -9249,6 +9255,14 @@ export type Database = {
       demo_can_see_portfolio_item: { Args: { _iid: string }; Returns: boolean }
       demo_can_see_session: { Args: { _sid: string }; Returns: boolean }
       demo_can_see_user: { Args: { _target: string }; Returns: boolean }
+      demo_claim_final_email: {
+        Args: { _pair_id: string }
+        Returns: {
+          email: string
+          final_email_claimed_at: string
+          pair_id: string
+        }[]
+      }
       demo_claim_reminders: {
         Args: { _limit: number }
         Returns: {
@@ -9279,6 +9293,10 @@ export type Database = {
         }[]
       }
       demo_purge_pair: { Args: { _pair_id: string }; Returns: Json }
+      demo_release_final_email: {
+        Args: { _claimed_at: string; _pair_id: string }
+        Returns: undefined
+      }
       demo_release_reminder: {
         Args: { _had_3d: boolean; _kind: string; _pair_id: string }
         Returns: undefined

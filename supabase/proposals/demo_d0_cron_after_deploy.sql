@@ -25,8 +25,8 @@ BEGIN
     PERFORM cron.unschedule('demo-expiry-reminders-daily');
   END IF;
 
-  -- 01:00 UTC = 02:00 CET / 03:00 CEST v Praze, vždy v pražském D−0.
-  PERFORM cron.schedule('demo-expiry-reminders-daily', '0 1 * * *', reminder_command);
+  -- 05:00 UTC = 06:00 CET / 07:00 CEST v Praze, vždy v pražském D−0.
+  PERFORM cron.schedule('demo-expiry-reminders-daily', '0 5 * * *', reminder_command);
 
   -- 04:00 UTC = 05:00 CET / 06:00 CEST; nikdy před pražskou půlnocí D+1.
   PERFORM cron.alter_job(cleanup_jobid, schedule := '0 4 * * *');

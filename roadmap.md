@@ -119,10 +119,12 @@
 - [x] Ověřena jednorázová nepovinná nabídka až po prvním vlastním obsahu; ruční otevření zůstává dostupné.
 - [x] Texty D−0 a „dnes o půlnoci“; schválený souhlas v2 pro nové kontakty, uložené v1 beze změny a bez závěrečné zprávy.
 - [x] Připraven závěrečný e-mail pouze pro souhlas v2, po úklidu, jediný pokus a výmaz kontaktu i starých demo logů.
-- [x] Přesné SQL v `supabase/proposals/demo_d0_final_notice.sql` a cron po nasazení v `demo_d0_cron_after_deploy.sql`; NEAPLIKOVÁNO.
-- [x] 37 cílených testů, typy, edge překlad a automatický build; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů, změn dat a nasazení.
-- [x] Schválené znění v2, rozlišení připomínek v1/v2, dialog a zásady; SQL stále NEAPLIKOVÁNO.
-- Čeká na schválení: pouze SQL. Neověřeno: skutečné odeslání, doručení, cron a úklid nad schválenou databázovou změnou.
+- [x] Schválené SQL `supabase/proposals/demo_d0_final_notice.sql` aplikováno 21. 11. jako `0096_demo_d0_final_notice`; předem ověřena shoda `demo_purge_pair` kromě podmíněného kontaktu v2.
+- [x] Čtecí kontrola: všech 5 požadovaných funkcí a `demo_purge_pair` existují, 10 dem má platný budoucí termín, 0 kandidátů a 0 předčasných kandidátů úklidu; žádné demo nebylo smazáno.
+- [x] 45 aktuálních cílených testů v 6 souborech a automatický build prošly; letní/zimní přepočet ověřen čtecím dotazem. Bez odeslání e-mailů a nasazení.
+- [x] Schválené znění v2, rozlišení připomínek v1/v2, dialog a zásady.
+- [ ] Po nasazení funkcí a samostatném schválení aplikovat cron návrh: připomínky 05:00 UTC, úklid 04:00 UTC. Návrh zatím NEAPLIKOVÁN; živý úklid zůstal 03:00 UTC.
+- Neověřeno: přímé spuštění servisních/auth RPC čtecím účtem (oprávnění záměrně beze změny), skutečné odeslání, doručení, cron a úklid.
 
 ## Demo – plán ochrany a limitů
 - [x] Plán uložen (`.lovable/plan.md`); nic neimplementováno.
