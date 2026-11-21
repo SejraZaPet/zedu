@@ -170,7 +170,7 @@ const StudentDashboard = () => {
             <TodayWidget role="student" onOpenAssignmentsChange={setAssignmentsCount} />
           </div>
 
-          <section className="dashboard-main-grid" aria-label="Hlavní odkazy" data-testid="student-main-links">
+          <section className="dashboard-main-grid student-dashboard-main-grid" aria-label="Hlavní odkazy" data-testid="student-main-links">
             {mainTiles.map((tile) => <StudentDashboardTile key={tile.id} {...tile} />)}
           </section>
 

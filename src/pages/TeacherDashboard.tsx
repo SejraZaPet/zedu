@@ -88,6 +88,7 @@ interface CardConfig {
   title: string;
   description: string;
   to: string;
+  tone?: TeacherTileTone;
 }
 
 const GROUP_LABELS: Record<Exclude<TeacherDashboardGroup, "priority">, string> = {
@@ -181,7 +182,7 @@ const TeacherDashboard = () => {
   const cards: Record<string, CardConfig> = {
     subjects: {
       id: "subjects", icon: Library, title: "Moje předměty",
-      description: "Přehled vyučovaných předmětů.", to: "/ucitel/predmety",
+      description: "Přehled vyučovaných předmětů.", to: "/ucitel/predmety", tone: "subjects",
     },
     "classroom-tools": {
       id: "classroom-tools",
@@ -196,6 +197,7 @@ const TeacherDashboard = () => {
       title: "Moje učebnice",
       description: "Spravujte a upravujte své digitální učebnice.",
       to: "/ucitel/ucebnice",
+      tone: "textbooks",
     },
     activities: {
       id: "activities",
@@ -210,6 +212,7 @@ const TeacherDashboard = () => {
       title: "Úlohy pro žáky",
       description: "Zadat a spravovat",
       to: "/ucitel/ulohy",
+      tone: "assignments",
     },
     classes: {
       id: "classes",
@@ -314,7 +317,7 @@ const TeacherDashboard = () => {
           title={card.title}
           description={card.description}
           to={card.to}
-          tone={tone}
+          tone={card.tone ?? tone}
           wide={wide}
           count={countFor(id)}
           countLabel={countLabelFor(id)}

@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type DashboardTileTone =
-  | "learn" | "textbooks" | "assignments" | "notebook" | "portfolio" | "schedule"
+  | "learn" | "subjects" | "textbooks" | "assignments" | "notebook" | "portfolio" | "schedule"
   | "studio" | "review" | "teaching" | "preparation" | "classes";
 
 export interface DashboardTileProps {

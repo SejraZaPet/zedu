@@ -5,7 +5,7 @@ import {
   type DashboardTileTone,
 } from "./DashboardTile";
 
-export type TeacherTileTone = Extract<DashboardTileTone, "studio" | "review" | "teaching" | "preparation" | "classes">;
+export type TeacherTileTone = Extract<DashboardTileTone, "subjects" | "textbooks" | "assignments" | "studio" | "review" | "teaching" | "preparation" | "classes">;
 type Props = Omit<DashboardTileProps, "tone" | "testIdPrefix"> & { tone: TeacherTileTone };
 
 /** The teacher-specific tone is the only difference; behavior stays shared with students. */

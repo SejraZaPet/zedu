@@ -148,3 +148,9 @@
 - [x] Dnes, široké dlaždice, Pro mě a profil; cílené testy, typy a živá kontrola mobilu.
 - 41 cílených testů, typy a build OK; živě všech 16 cest, avatar 96 px/8 px, ikony 30 px, mobil 360 px bez posunu.
 - Neověřeno živé tažení a lektor; skutečná právě probíhající hodina nebyla v účtu. Ke kontrole nemá dostupný počet. Bez DB, SQL, edge funkcí a nasazení.
+
+## Sdílené dlaždice – vizuální doladění žák + U1
+- [x] Kompaktní obsahové dlaždice 128 px, radius 16 px, auto-fit/dense a široká Učím se podle 420 px.
+- [x] Přesné funkční barvy s minimální korekcí kontrastu, ikona/název/popisek pod sebou; druhá řada beze změny.
+- [x] Testy, typy a screenshoty žáka i učitele při 1360/390 px. Bez DB, SQL, edge funkcí a nasazení.
+- 30 testů, typy a build OK. Žák 1360 px: dvě plné řady, Rozvrh doplňuje druhou; 390 px: tři dvousloupcové řady. Učitel sdílí vzhled i funkční barvy, široké dlaždice vedle sebe.

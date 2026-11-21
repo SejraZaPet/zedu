@@ -19,7 +19,7 @@ function luminance(h: number, s: number, l: number): number {
 
 describe("Sdílené dlaždice – kontrast", () => {
   it("bílý text má aspoň 4,5:1 na obou koncích každého žákovského i učitelského přechodu", () => {
-    for (const tone of ["learn", "textbooks", "assignments", "notebook", "portfolio", "schedule", "studio", "review", "teaching", "preparation", "classes"]) {
+    for (const tone of ["learn", "subjects", "textbooks", "assignments", "notebook", "portfolio", "schedule", "studio", "review", "teaching", "preparation", "classes"]) {
       for (const stop of ["from", "to"]) {
         const match = css.match(new RegExp(`--dashboard-tile-${tone}-${stop}:\\s*([\\d.]+)\\s+([\\d.]+)%\\s+([\\d.]+)%`));
         expect(match, `${tone}-${stop}`).not.toBeNull();
