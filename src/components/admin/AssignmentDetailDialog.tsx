@@ -42,6 +42,8 @@ import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultySt
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AssignmentDescription from "@/components/assignments/AssignmentDescription";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
+import GradingFeedbackSuggestionButton from "@/components/assignments/GradingFeedbackSuggestionButton";
+import { requestAssignmentFeedback } from "@/lib/grading-feedback";
 import { bestAttempt, resultRatio } from "@/lib/best-results";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted" | "lesson_in_progress" | "lesson_done";
@@ -69,6 +71,7 @@ export interface AssignmentDetailAssignment {
   lesson_source?: string | null;
   worksheet_id?: string | null;
   is_portfolio_task?: boolean | null;
+  settings?: unknown;
 }
 
 interface AttemptInfo {
@@ -85,6 +88,7 @@ interface AttemptInfo {
   teacher_feedback_emoji: string | null;
   teacher_feedback_at: string | null;
   attempt_number: number;
+  group_id?: string | null;
 }
 
 interface StudentRow {
@@ -197,9 +201,11 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
       });
 
       const sharedGroupIds = [...new Set(((attemptsRes.data ?? []) as any[]).map((a) => a.group_id).filter(Boolean))] as string[];
+      const sharedMembersByGroup: Record<string, string[]> = {};
       if (sharedGroupIds.length) {
         const { data: sharedMembers } = await supabase.from("assignment_group_members").select("group_id, student_id").in("group_id", sharedGroupIds);
         for (const member of sharedMembers ?? []) {
+          (sharedMembersByGroup[member.group_id] ??= []).push(member.student_id);
           const shared = ((attemptsRes.data ?? []) as any[]).filter((a) => a.group_id === member.group_id);
           const combined = [...(attemptsByStudent[member.student_id] ?? []), ...shared];
           attemptsByStudent[member.student_id] = [...new Map(combined.map((a) => [a.id, a])).values()];
@@ -254,6 +260,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           teacher_feedback_emoji: item.teacher_feedback_emoji ?? null,
           teacher_feedback_at: item.teacher_feedback_at ?? null,
           attempt_number: item.attempt_number ?? 0,
+          group_id: item.group_id ?? null,
         }));
         const bestSubmitted = bestAttempt(mappedAttempts);
         const reopenedDraft = !!submitted[0] && atts[0]?.status === "in_progress" && atts[0].id !== submitted[0].id;
@@ -271,7 +278,13 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           reopenedDraft,
           latestAttempt: latest ? mappedAttempts.find((item) => item.id === latest.id) ?? null : null,
           attempts: mappedAttempts,
-          attachments: filesByStudent[sid] || [],
+          attachments: latest?.group_id
+            ? [...new Map(
+                (sharedMembersByGroup[latest.group_id] ?? [sid])
+                  .flatMap((memberId) => filesByStudent[memberId] ?? [])
+                  .map((file) => [file.id, file]),
+              ).values()]
+            : filesByStudent[sid] || [],
         };
       });
 
@@ -494,6 +507,18 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
     } finally {
       setSavingId(null);
     }
+  };
+
+  const suggestFeedback = async (row: StudentRow): Promise<string> => {
+    if (!assignment || !row.latestAttempt) throw new Error("Nejdřív vyberte odevzdání.");
+    return requestAssignmentFeedback({
+      assignment,
+      answers: row.latestAttempt.answers,
+      submissionNote: row.latestAttempt.submission_note,
+      attachments: row.attachments,
+      score: row.latestAttempt.score,
+      maxScore: row.latestAttempt.max_score,
+    });
   };
 
   const toggleRow = (row: StudentRow) => {
@@ -771,6 +796,13 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                         </Button>
                                       );
                                     })}
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <GradingFeedbackSuggestionButton
+                                      onRequest={() => suggestFeedback(s)}
+                                      onSuggestion={(text) => setDrafts((current) => ({ ...current, [attempt.id]: text }))}
+                                      disabled={savingId === attempt.id}
+                                    />
                                   </div>
                                   <Textarea
                                     rows={3}

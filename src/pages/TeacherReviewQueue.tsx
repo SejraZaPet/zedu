@@ -26,7 +26,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SearchField } from "@/components/ui/search-field";
 import ReviewSubmissionAttachments from "@/components/assignments/ReviewSubmissionAttachments";
+import GradingFeedbackSuggestionButton from "@/components/assignments/GradingFeedbackSuggestionButton";
 import WorksheetAttemptGrading, { type TeacherGrading } from "@/components/admin/WorksheetAttemptGrading";
+import { requestAssignmentFeedback } from "@/lib/grading-feedback";
 import { submittableOnly } from "@/lib/assignment-kind";
 import { attachmentsForSubmission, type ReviewAttachment } from "@/lib/review-attachments";
 import { toast } from "@/hooks/use-toast";
@@ -40,6 +42,7 @@ import {
   ClipboardCheck,
   Loader2,
   MessageSquarePlus,
+  Save,
   Undo2,
 } from "lucide-react";
 import {
@@ -84,6 +87,7 @@ export default function TeacherReviewQueue() {
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [notifyStudents, setNotifyStudents] = useState(false);
   const [comment, setComment] = useState("");
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>({});
   const [templates, setTemplates] = useState<string[]>(() => loadCommentTemplates(localStorage));
   const [lastUndoable, setLastUndoable] = useState<ReviewRow[]>([]);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -95,7 +99,7 @@ export default function TeacherReviewQueue() {
       if (!user) return;
       const { data: asg, error: asgErr } = await supabase
         .from("assignments" as any)
-        .select("id, title, class_id, group_id, worksheet_id, status, settings")
+        .select("id, title, description, class_id, group_id, worksheet_id, status, settings")
         .eq("teacher_id", user.id)
         .neq("status", "archived");
       if (asgErr) throw asgErr;
@@ -148,6 +152,13 @@ export default function TeacherReviewQueue() {
       if (attemptsResult.error) throw attemptsResult.error;
       if (attachmentsResult.error) throw attachmentsResult.error;
       const attempts = (attemptsResult.data ?? []) as unknown as ReviewAttempt[];
+      setFeedbackDrafts((current) => {
+        const next = { ...current };
+        for (const attempt of attempts) {
+          if (!(attempt.id in next)) next[attempt.id] = attempt.teacher_feedback_text ?? "";
+        }
+        return next;
+      });
       const attachmentsByAssignment: Record<string, ReviewAttachment[]> = {};
       for (const file of (attachmentsResult.data ?? []) as unknown as ReviewAttachment[]) {
         (attachmentsByAssignment[file.assignment_id] ??= []).push(file);
@@ -215,6 +226,7 @@ export default function TeacherReviewQueue() {
   const activeIndex = filtered.findIndex((r) => r.attemptId === activeId);
   const activeRow = activeIndex >= 0 ? filtered[activeIndex] : null;
   const activeGroupId = activeRow?.attempt.group_id ?? null;
+  const activeAssignment = activeRow ? assignments.find((assignment) => assignment.id === activeRow.assignmentId) ?? null : null;
   const activeAttachments = activeRow
     ? attachmentsForSubmission(
         attachments[activeRow.assignmentId] ?? [],
@@ -256,6 +268,58 @@ export default function TeacherReviewQueue() {
       .update(patch as any)
       .eq("id", attemptId);
     if (error) throw error;
+  };
+
+  const requestActiveFeedback = async (): Promise<string> => {
+    if (!activeRow || !activeAssignment) throw new Error("Nejdřív vyberte odevzdání.");
+    return requestAssignmentFeedback({
+      assignment: activeAssignment,
+      answers: activeRow.attempt.answers,
+      submissionNote: activeRow.attempt.submission_note,
+      attachments: activeAttachments,
+      score: activeRow.score,
+      maxScore: activeRow.maxScore,
+    });
+  };
+
+  const saveFeedback = async (row: ReviewRow) => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const now = new Date().toISOString();
+      const text = (feedbackDrafts[row.attemptId] ?? "").trim() || null;
+      const changed = text !== (row.attempt.teacher_feedback_text ?? null);
+      await patchAttempt(row.attemptId, {
+        teacher_feedback_text: text,
+        teacher_feedback_at: now,
+        teacher_feedback_by: user?.id ?? null,
+      });
+      if (changed && user) {
+        const { error: notifyError } = await supabase.from("notifications").insert({
+          recipient_id: row.studentId,
+          sender_id: user.id,
+          sender_role: "teacher",
+          type: "assignment_feedback",
+          title: "Nová zpětná vazba k úkolu",
+          body: text ? (text.length > 140 ? `${text.slice(0, 140)}…` : text) : `Učitel aktualizoval zpětnou vazbu k úkolu „${row.assignmentTitle}“.`,
+          link: `/n/${row.assignmentId}`,
+          status: "sent",
+          sent_at: now,
+          payload: { assignment_id: row.assignmentId, attempt_id: row.attemptId },
+        } as any);
+        if (notifyError) {
+          toast({ title: "Hodnocení uloženo, ale upozornění se neodeslalo", description: notifyError.message, variant: "destructive" });
+        }
+      }
+      setRows((current) => current.map((candidate) => candidate.attemptId === row.attemptId
+        ? { ...candidate, attempt: { ...candidate.attempt, teacher_feedback_text: text } }
+        : candidate));
+      toast({ title: "Hodnocení uloženo" });
+    } catch (error: any) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   /** Uložení bodování po položkách – stejný mechanismus jako v detailu úkolu. */
@@ -603,6 +667,27 @@ export default function TeacherReviewQueue() {
                   Tento úkol nemá pracovní list – bodování po položkách není k dispozici.
                 </p>
               )}
+
+              <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+                <h3 className="text-xs font-semibold">Zpětná vazba pro žáka</h3>
+                <div className="flex justify-end">
+                  <GradingFeedbackSuggestionButton
+                    onRequest={requestActiveFeedback}
+                    onSuggestion={(text) => setFeedbackDrafts((current) => ({ ...current, [activeRow.attemptId]: text }))}
+                    disabled={saving}
+                  />
+                </div>
+                <Textarea
+                  rows={3}
+                  placeholder="Slovní hodnocení pro žáka…"
+                  value={feedbackDrafts[activeRow.attemptId] ?? ""}
+                  onChange={(event) => setFeedbackDrafts((current) => ({ ...current, [activeRow.attemptId]: event.target.value }))}
+                />
+                <Button type="button" size="sm" className="min-h-11" disabled={saving} onClick={() => saveFeedback(activeRow)}>
+                  {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                  Uložit hodnocení
+                </Button>
+              </div>
 
               <div className="flex flex-wrap gap-2 border-t border-border pt-3">
                 {!activeRow.reviewed && (

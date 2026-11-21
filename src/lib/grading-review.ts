@@ -30,6 +30,7 @@ export interface GradingState {
 export interface ReviewAssignment {
   id: string;
   title: string;
+  description?: string | null;
   class_id?: string | null;
   group_id?: string | null;
   worksheet_id?: string | null;

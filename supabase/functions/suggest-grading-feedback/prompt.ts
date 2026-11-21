@@ -110,3 +110,83 @@ export function buildUserContent(input: {
   parts.push({ type: "text", text: "Napiš návrh zpětné vazby (2–3 věty)." });
   return parts;
 }
+
+export interface PointRequestItem {
+  id: string;
+  prompt: string;
+  answer: string;
+  max: number;
+  rubric?: string;
+}
+
+export interface PointSuggestion {
+  id: string;
+  points: number;
+  reason: string;
+}
+
+/** Vstup bodování je omezený a obsahuje jen položky skutečně zobrazené učiteli. */
+export function sanitizePointItems(raw: unknown): PointRequestItem[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: PointRequestItem[] = [];
+  for (const value of raw) {
+    if (!value || typeof value !== "object") continue;
+    const item = value as Record<string, unknown>;
+    const id = typeof item.id === "string" ? item.id.trim().slice(0, 100) : "";
+    const max = Number(item.max);
+    if (!id || seen.has(id) || !Number.isFinite(max) || max <= 0 || max > 1000) continue;
+    seen.add(id);
+    out.push({
+      id,
+      prompt: typeof item.prompt === "string" ? item.prompt.slice(0, 2000) : "Položka",
+      answer: typeof item.answer === "string" ? item.answer.slice(0, 6000) : "",
+      max,
+      ...(typeof item.rubric === "string" && item.rubric.trim() ? { rubric: item.rubric.slice(0, 2000) } : {}),
+    });
+    if (out.length >= 50) break;
+  }
+  return out;
+}
+
+export const POINTS_SYSTEM_PROMPT = `Jsi zkušený český pedagog. Navrhni body za jednotlivé otevřené odpovědi žáka podle zadání a uvedených kritérií.
+
+Pravidla:
+- Body za každou položku musí být od 0 do jejího maxima, nejvýše s přesností na půl bodu.
+- Prázdná odpověď = 0 bodů. Neodhaduj chybějící obsah.
+- Ke každé položce napiš jednu krátkou českou větu zdůvodnění pro učitele.
+- Odpověz pouze JSON objektem s polem items; každá položka obsahuje id, points a reason.`;
+
+export function buildPointsUserContent(question: string, items: PointRequestItem[]) {
+  const lines = items.map((item, index) => [
+    `Položka ${index + 1} (ID ${item.id}), maximum ${item.max} bodů:`,
+    `Zadání: ${item.prompt}`,
+    item.rubric ? `Kritéria: ${item.rubric}` : "",
+    `Odpověď žáka: ${item.answer.trim() || "(bez odpovědi)"}`,
+  ].filter(Boolean).join("\n"));
+  return [{
+    type: "text" as const,
+    text: `Pracovní list / zadání:\n${question.trim() || "(neuvedeno)"}\n\n${lines.join("\n\n")}\n\nNavrhni body a zdůvodnění pro všechny položky.`,
+  }];
+}
+
+/** AI nemůže změnit ID ani maximum; body se bezpečně omezí na půlbody v rozsahu položky. */
+export function normalizePointSuggestions(raw: unknown, items: PointRequestItem[]): PointSuggestion[] {
+  const candidates = raw && typeof raw === "object" && Array.isArray((raw as any).items)
+    ? (raw as any).items
+    : [];
+  const out: PointSuggestion[] = [];
+  for (const item of items) {
+    const candidate = candidates.find((value: any) => value?.id === item.id);
+    if (!candidate) continue;
+    const points = Number(candidate.points);
+    if (!Number.isFinite(points)) continue;
+    const clamped = Math.min(item.max, Math.max(0, points));
+    out.push({
+      id: item.id,
+      points: Math.round(clamped * 2) / 2,
+      reason: typeof candidate.reason === "string" ? candidate.reason.trim().slice(0, 500) : "",
+    });
+  }
+  return out;
+}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildUserContent, classifyAttachment, hasGradableContent, sanitizeAttachmentRefs, SYSTEM_PROMPT, MAX_FILES,
+  buildUserContent, classifyAttachment, hasGradableContent, normalizePointSuggestions,
+  sanitizeAttachmentRefs, sanitizePointItems, SYSTEM_PROMPT, MAX_FILES,
 } from "../../supabase/functions/suggest-grading-feedback/prompt";
 import { portfolioAttachmentRefs } from "@/lib/portfolio";
 
@@ -52,5 +53,29 @@ describe("suggest-grading-feedback attachments", () => {
   it("nothing to grade without text and attachments", () => {
     expect(hasGradableContent("  ", [])).toBe(false);
     expect(hasGradableContent("", [{}])).toBe(true);
+  });
+
+  it("validates point items and clamps suggestions to each item maximum", () => {
+    const items = sanitizePointItems([
+      { id: "q1", prompt: "Vysvětli", answer: "Odpověď", max: 2, rubric: "2 b za vysvětlení" },
+      { id: "q2", prompt: "Uveď příklad", answer: "", max: 3 },
+      { id: "bad", prompt: "Neplatné", answer: "", max: -1 },
+    ]);
+    expect(items).toHaveLength(2);
+    const suggestions = normalizePointSuggestions({ items: [
+      { id: "q1", points: 99, reason: "Nad maximum se body nedostanou." },
+      { id: "q2", points: -2, reason: "Prázdná odpověď." },
+      { id: "foreign", points: 3, reason: "Cizí položka se ignoruje." },
+    ] }, items);
+    expect(suggestions).toEqual([
+      { id: "q1", points: 2, reason: "Nad maximum se body nedostanou." },
+      { id: "q2", points: 0, reason: "Prázdná odpověď." },
+    ]);
+  });
+
+  it("rounds suggested points to half points", () => {
+    const [item] = sanitizePointItems([{ id: "q", prompt: "P", answer: "A", max: 4 }]);
+    expect(normalizePointSuggestions({ items: [{ id: "q", points: 2.26, reason: "Částečně." }] }, [item]))
+      .toEqual([{ id: "q", points: 2.5, reason: "Částečně." }]);
   });
 });

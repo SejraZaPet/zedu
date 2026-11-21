@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Sparkles } from "lucide-react";
 import { readSnapshot, SNAPSHOT_BUCKET } from "@/lib/worksheet-notebook";
+import { requestWorksheetPoints } from "@/lib/grading-feedback";
+import { toast } from "@/hooks/use-toast";
 
 /** Odevzdané stránky ze sešitu (rukopis přes list) — jen ke čtení. */
 function NotebookSnapshotView({ answers }: { answers: Record<string, unknown> | null }) {
@@ -75,6 +77,7 @@ interface Row {
   unknown?: boolean;
   choices?: string[];
   tableRows?: string[][];
+  rubric?: string;
 }
 
 const isEmpty = (v: unknown) =>
@@ -134,6 +137,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
   const [points, setPoints] = useState<Record<string, string>>({});
   const [maxes, setMaxes] = useState<Record<string, string>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
+  const [aiBusy, setAiBusy] = useState(false);
 
   useEffect(() => {
     let c = false;
@@ -174,6 +178,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
           : undefined,
         choices: Array.isArray(it.choices) ? it.choices : undefined,
         tableRows: Array.isArray(it.tableRows) ? it.tableRows : undefined,
+        rubric: keys.get(it.id)?.rubric,
       });
     }
     for (const id of Object.keys(ans)) {
@@ -187,6 +192,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
         answer: ans[id],
         correct: it ? checkCorrect(it, ans[id], keys.get(id)) : null,
         unknown: !it,
+        rubric: keys.get(id)?.rubric,
       });
     }
     return out;
@@ -215,6 +221,40 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
     const p = num(points[r.id]);
     return p < 0 || p > num(maxes[r.id]) || num(maxes[r.id]) <= 0;
   });
+  const pointRows = rows.filter((r) => r.correct === null && !r.unknown && !LAYOUT_TYPES.has(r.type));
+
+  const suggestPoints = async () => {
+    setAiBusy(true);
+    try {
+      const suggestions = await requestWorksheetPoints(
+        String(spec?.title || spec?.header?.title || "Pracovní list"),
+        pointRows.map((row) => ({
+          id: row.id,
+          prompt: row.prompt,
+          answer: isEmpty(row.answer) ? "" : formatAnswer(row),
+          max: num(maxes[row.id]),
+          ...(row.rubric ? { rubric: row.rubric } : {}),
+        })),
+      );
+      for (const suggestion of suggestions) {
+        const row = pointRows.find((candidate) => candidate.id === suggestion.id);
+        if (!row || !Number.isFinite(suggestion.points)) continue;
+        const max = num(maxes[row.id]);
+        const value = Math.round(Math.min(max, Math.max(0, suggestion.points)) * 2) / 2;
+        setPoints((current) => ({ ...current, [row.id]: String(value) }));
+        if (suggestion.reason) setComments((current) => ({ ...current, [row.id]: suggestion.reason }));
+      }
+      toast({ title: "Návrh bodů vložen", description: "Před uložením můžete body i zdůvodnění upravit." });
+    } catch (error: any) {
+      toast({
+        title: "Návrh bodů se nepodařilo vytvořit",
+        description: error?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   const save = () => {
     const items: Record<string, ItemGrade> = {};
@@ -287,7 +327,13 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
       <div className="flex flex-wrap items-center gap-3 pt-1">
         <span className="text-sm font-semibold">Celkem: {Math.round(total * 10) / 10} / {maxTotal}</span>
         {invalid && <span className="text-xs text-destructive">Body musí být mezi 0 a maximem položky.</span>}
-        <Button size="sm" disabled={saving || invalid} onClick={save}>
+        {pointRows.length > 0 && (
+          <Button type="button" size="sm" variant="outline" className="min-h-11 gap-1.5" disabled={saving || aiBusy || invalid} onClick={suggestPoints}>
+            {aiBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            Navrhnout body pomocí AI
+          </Button>
+        )}
+        <Button size="sm" className="min-h-11" disabled={saving || aiBusy || invalid} onClick={save}>
           {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
           Uložit hodnocení
         </Button>

@@ -3,8 +3,9 @@ import { requireAuth } from "../_shared/auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
 import {
-  buildUserContent, classifyAttachment, hasGradableContent, LoadedAttachment,
-  MAX_DOC_TEXT_CHARS, MAX_FILE_BYTES, MAX_TOTAL_BYTES, sanitizeAttachmentRefs, SYSTEM_PROMPT,
+  buildPointsUserContent, buildUserContent, classifyAttachment, hasGradableContent, LoadedAttachment,
+  MAX_DOC_TEXT_CHARS, MAX_FILE_BYTES, MAX_TOTAL_BYTES, normalizePointSuggestions,
+  POINTS_SYSTEM_PROMPT, sanitizeAttachmentRefs, sanitizePointItems, SYSTEM_PROMPT,
 } from "./prompt.ts";
 
 const BUCKETS = ["student-portfolio", "assignment-uploads", "student-attachments"];
@@ -55,6 +56,8 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
+    const pointsMode = body?.mode === "worksheet_points";
+    const pointItems = pointsMode ? sanitizePointItems(body?.items) : [];
     const studentAnswer = body?.studentAnswer ?? "";
     const question = typeof body?.question === "string" ? body.question.slice(0, 4000) : "";
     const criteria = typeof body?.criteria === "string" ? body.criteria.slice(0, 4000) : "";
@@ -66,7 +69,12 @@ serve(async (req) => {
       ? studentAnswer
       : JSON.stringify(studentAnswer ?? "", null, 2)).slice(0, 12000);
 
-    if (!hasGradableContent(answerText === '""' ? "" : answerText, refs)) {
+    if (pointsMode && pointItems.length === 0) {
+      return new Response(JSON.stringify({ error: "V pracovním listu nejsou otevřené položky k bodovému návrhu." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!pointsMode && !hasGradableContent(answerText === '""' ? "" : answerText, refs)) {
       return new Response(JSON.stringify({
         error: "Žák zatím neodevzdal žádný text ani přílohu, takže není co hodnotit.",
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -79,7 +87,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: auth.authHeader } } },
     );
 
-    if (refs.length > 0 || itemId) {
+    if (refs.length > 0 || itemId || pointsMode) {
       const { data: staff } = await userClient.rpc("is_admin_or_teacher");
       if (staff !== true) {
         return new Response(JSON.stringify({ error: "Návrh hodnocení může vytvořit jen učitel nebo správce." }), {
@@ -134,7 +142,9 @@ serve(async (req) => {
       (isCorrect === true ? "\nOdpověď je vyhodnocena jako správná."
         : isCorrect === false ? "\nOdpověď je vyhodnocena jako nesprávná." : "");
 
-    const userContent = buildUserContent({ question, criteria, answerText, scoreLine, attachments });
+    const userContent = pointsMode
+      ? buildPointsUserContent(question, pointItems)
+      : buildUserContent({ question, criteria, answerText, scoreLine, attachments });
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -145,9 +155,38 @@ serve(async (req) => {
       body: JSON.stringify({
         model: AI_MODEL_QUALITY,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: pointsMode ? POINTS_SYSTEM_PROMPT : SYSTEM_PROMPT },
           { role: "user", content: userContent },
         ],
+        ...(pointsMode ? {
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "worksheet_point_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        points: { type: "number" },
+                        reason: { type: "string" },
+                      },
+                      required: ["id", "points", "reason"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["items"],
+                additionalProperties: false,
+              },
+            },
+          },
+        } : {}),
       }),
     });
 
@@ -171,14 +210,25 @@ serve(async (req) => {
     }
 
     const data = await resp.json();
-    const feedback: string = (data.choices?.[0]?.message?.content ?? "").trim();
-    if (!feedback) {
+    const content: string = (data.choices?.[0]?.message?.content ?? "").trim();
+    if (!content) {
       return new Response(JSON.stringify({ error: "Prázdná odpověď z AI" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ feedback }), {
+    if (pointsMode) {
+      const suggestions = normalizePointSuggestions(JSON.parse(content), pointItems);
+      if (suggestions.length === 0) {
+        return new Response(JSON.stringify({ error: "AI nevrátila použitelný návrh bodů." }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ items: suggestions }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ feedback: content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

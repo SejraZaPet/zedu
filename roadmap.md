@@ -179,6 +179,12 @@
 - [x] Přílohy všech zobrazených úkolů se načítají jedním dotazem; panel dostává poznámku i soubory všech členů skupinového odevzdání.
 - [x] 18 cílených testů, typy a build prošly; živá obrazovka při 390 px ukázala přílohu i poznámku bez vodorovného posunu a chyb stránky. Bez SQL, změn oprávnění a nasazení.
 
+## AI návrh hodnocení – etapy 1 a 2
+- [x] Textový návrh v Ke kontrole a detailu úkolu ze zadání, odpovědi, poznámky, skóre a příloh; pouze předvyplnění bez AI příznaku.
+- [x] Stejná funkce má oddělený strukturovaný režim bodů s validací maxima a zdůvodněním; původní portfolio a demo/429/402 chování beze změny.
+- [x] 41 cílených testů, typy, Deno kontrola a build prošly; oba panely i body při 390 px s maketou AI, nula automatických zápisů a přetečení. Bez DB a nasazení.
+- Neověřeno živé AI volání a ostrá funkce před nasazením; skutečné odevzdání ani notifikace nebyly změněny.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
