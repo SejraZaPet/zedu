@@ -159,30 +159,36 @@
 
     --surface: 0 0% 100%;
     --surface-hover: 225 33% 96%;
-    --teacher-tile-from: 271.05 58.76% 61.96%; /* #A065D7 */
-    --teacher-tile-to: 184.44 52.94% 60%; /* #63C7CF */
-    --teacher-tile-foreground: 0 0% 100%;
-    --teacher-tile-count-foreground: 270 48% 35%;
-    --teacher-tile-shadow: 0 8px 24px -8px hsl(var(--secondary-dark) / .3);
-    --teacher-tile-shadow-raised: 0 14px 30px -8px hsl(var(--secondary-dark) / .45);
 
-    /* Student dashboard: white text reaches at least 4.5:1 at both gradient stops. */
-    --student-tile-foreground: 0 0% 100%;
-    --student-tile-count-foreground: 222 26% 16%;
-    --student-tile-learn-from: 272 51% 39%; /* #663196 */
-    --student-tile-learn-to: 274 49% 54%; /* #8A4FC4 */
-    --student-tile-textbooks-from: 201 47% 31%; /* #2F657F, darkened for contrast */
-    --student-tile-textbooks-to: 182 55% 32%; /* #24777D, darkened for contrast */
-    --student-tile-assignments-from: 274 49% 54%; /* #8A4FC4 */
-    --student-tile-assignments-to: 202 52% 41%; /* #34749F, darkened for contrast */
-    --student-tile-notebook-from: 254 49% 44%; /* #5A3AA8 */
-    --student-tile-notebook-to: 249 49% 56%; /* #6B56C6, darkened for contrast */
-    --student-tile-portfolio-from: 183 56% 30%; /* #26747A, darkened for contrast */
-    --student-tile-portfolio-to: 182 55% 32%; /* #24777D, darkened for contrast */
-    --student-tile-schedule-from: 320 41% 44%; /* #9C417F, darkened for contrast */
-    --student-tile-schedule-to: 317 34% 48%; /* #A44F91, darkened for contrast */
-    --student-today-current-from: 272 51% 39%;
-    --student-today-current-to: 182 55% 32%;
+    /* Shared dashboard tiles: every white-text gradient stop reaches at least 4.5:1. */
+    --dashboard-tile-foreground: 0 0% 100%;
+    --dashboard-tile-count-foreground: 222 26% 16%;
+    --dashboard-tile-shadow: 0 8px 24px -8px hsl(var(--secondary-dark) / .3);
+    --dashboard-tile-shadow-raised: 0 14px 30px -8px hsl(var(--secondary-dark) / .45);
+    --dashboard-tile-learn-from: 272 51% 39%; /* #663196 */
+    --dashboard-tile-learn-to: 274 49% 54%; /* #8A4FC4 */
+    --dashboard-tile-textbooks-from: 201 47% 31%; /* #2F657F */
+    --dashboard-tile-textbooks-to: 182 55% 32%; /* #24777D */
+    --dashboard-tile-assignments-from: 274 49% 54%; /* #8A4FC4 */
+    --dashboard-tile-assignments-to: 202 52% 41%; /* #34749F */
+    --dashboard-tile-notebook-from: 254 49% 44%; /* #5A3AA8 */
+    --dashboard-tile-notebook-to: 249 49% 56%; /* #6B56C6 */
+    --dashboard-tile-portfolio-from: 183 56% 30%; /* #26747A */
+    --dashboard-tile-portfolio-to: 182 55% 32%; /* #24777D */
+    --dashboard-tile-schedule-from: 320 41% 44%; /* #9C417F */
+    --dashboard-tile-schedule-to: 317 34% 48%; /* #A44F91 */
+    --dashboard-tile-studio-from: 272 51% 39%; /* #663196 */
+    --dashboard-tile-studio-to: 202 52% 41%; /* #34749F */
+    --dashboard-tile-review-from: 327 33% 36%; /* #7B3F75 */
+    --dashboard-tile-review-to: 320 41% 44%; /* #9C417F */
+    --dashboard-tile-teaching-from: 201 47% 31%; /* #2F657F */
+    --dashboard-tile-teaching-to: 182 55% 32%; /* #24777D */
+    --dashboard-tile-preparation-from: 254 49% 44%; /* #5A3AA8 */
+    --dashboard-tile-preparation-to: 249 49% 56%; /* #6B56C6 */
+    --dashboard-tile-classes-from: 327 33% 36%; /* #7B3F75 */
+    --dashboard-tile-classes-to: 320 41% 44%; /* #9C417F */
+    --dashboard-today-current-from: 272 51% 39%;
+    --dashboard-today-current-to: 182 55% 32%;
 
     --font-heading: 'Baloo 2', Lato, system-ui, sans-serif;
     --font-body: 'Lato', system-ui, sans-serif;
@@ -531,106 +537,34 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   .view-as-pill--stacked { bottom: calc(4rem + env(safe-area-inset-bottom)); }
 }
 
-/* Teacher-only navigation tiles; other dashboards retain their existing layout. */
-.teacher-dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-@media (min-width: 640px) {
-  .teacher-dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-}
-@media (min-width: 1024px) {
-  .teacher-dashboard-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-.teacher-dashboard-grid > div { min-width: 0; }
-.teacher-dashboard-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0;
-  width: 100%;
-  height: auto;
-  min-height: 44px;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border-radius: 8px;
-  white-space: normal;
-  background-image: linear-gradient(135deg, hsl(var(--teacher-tile-from)), hsl(var(--teacher-tile-to)));
-  color: hsl(var(--teacher-tile-foreground));
-  box-shadow: var(--teacher-tile-shadow);
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-.teacher-dashboard-tile:hover,
-.teacher-dashboard-tile:focus-visible {
-  transform: translateY(-4px);
-  filter: none;
-  box-shadow: var(--teacher-tile-shadow-raised);
-}
-.teacher-dashboard-grid .teacher-dashboard-tile > svg {
-  position: absolute;
-  top: 18%;
-  width: 44%;
-  height: 44%;
-}
-.teacher-dashboard-tile-title {
-  position: absolute;
-  bottom: 8%;
-  left: 5%;
-  right: 5%;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-family: var(--font-heading);
-  font-size: clamp(17px, 1.5rem, 24px);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0;
-  text-align: center;
-}
-@media (max-width: 767px) {
-  .teacher-dashboard-tile-title { font-size: 17px; }
-}
-.teacher-dashboard-tile-count {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: hsl(var(--teacher-tile-foreground));
-  color: hsl(var(--teacher-tile-count-foreground));
-  font-size: 20px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .teacher-dashboard-tile { transition: none; }
-  .teacher-dashboard-tile:hover, .teacher-dashboard-tile:focus-visible { transform: none; }
-}
-
-/* Student-only navigation tiles; teacher tiles above retain their original appearance. */
-.student-dashboard-main-grid {
+/* Shared student and teacher dashboard navigation. */
+.dashboard-main-grid,
+.dashboard-compact-grid,
+.teacher-dashboard-wide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 16px;
 }
-.student-dashboard-compact-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+.dashboard-main-grid { margin-bottom: 16px; }
+.dashboard-compact-grid { margin-bottom: 24px; }
+.teacher-dashboard-wide-grid { grid-template-columns: minmax(0, 1fr); margin-bottom: 24px; }
+.teacher-dashboard-section { margin-top: 24px; }
+.teacher-dashboard-section .dashboard-main-grid,
+.teacher-dashboard-section .dashboard-compact-grid { margin-bottom: 0; }
+.teacher-dashboard-section-heading {
+  margin: 0 0 10px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
-.student-dashboard-tile {
-  --student-tile-from: var(--student-tile-learn-from);
-  --student-tile-to: var(--student-tile-learn-to);
+.dashboard-main-grid > div,
+.teacher-dashboard-wide-grid > div { min-width: 0; }
+.dashboard-tile {
+  --dashboard-tile-from: var(--dashboard-tile-learn-from);
+  --dashboard-tile-to: var(--dashboard-tile-learn-to);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -644,39 +578,46 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   padding: 16px;
   border-radius: 8px;
   white-space: normal;
-  background-image: linear-gradient(135deg, hsl(var(--student-tile-from)), hsl(var(--student-tile-to)));
-  color: hsl(var(--student-tile-foreground));
-  box-shadow: var(--teacher-tile-shadow);
+  background-image: linear-gradient(135deg, hsl(var(--dashboard-tile-from)), hsl(var(--dashboard-tile-to)));
+  color: hsl(var(--dashboard-tile-foreground));
+  box-shadow: var(--dashboard-tile-shadow);
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.student-dashboard-tile--wide { grid-column: span 2; aspect-ratio: auto; }
-.student-dashboard-tile--textbooks { --student-tile-from: var(--student-tile-textbooks-from); --student-tile-to: var(--student-tile-textbooks-to); }
-.student-dashboard-tile--assignments { --student-tile-from: var(--student-tile-assignments-from); --student-tile-to: var(--student-tile-assignments-to); }
-.student-dashboard-tile--notebook { --student-tile-from: var(--student-tile-notebook-from); --student-tile-to: var(--student-tile-notebook-to); }
-.student-dashboard-tile--portfolio { --student-tile-from: var(--student-tile-portfolio-from); --student-tile-to: var(--student-tile-portfolio-to); }
-.student-dashboard-tile--schedule { --student-tile-from: var(--student-tile-schedule-from); --student-tile-to: var(--student-tile-schedule-to); }
-.student-dashboard-main-grid .student-dashboard-tile > svg {
+.dashboard-tile--wide { aspect-ratio: auto; }
+.dashboard-main-grid .dashboard-tile--wide { grid-column: span 2; }
+.dashboard-tile--textbooks { --dashboard-tile-from: var(--dashboard-tile-textbooks-from); --dashboard-tile-to: var(--dashboard-tile-textbooks-to); }
+.dashboard-tile--assignments { --dashboard-tile-from: var(--dashboard-tile-assignments-from); --dashboard-tile-to: var(--dashboard-tile-assignments-to); }
+.dashboard-tile--notebook { --dashboard-tile-from: var(--dashboard-tile-notebook-from); --dashboard-tile-to: var(--dashboard-tile-notebook-to); }
+.dashboard-tile--portfolio { --dashboard-tile-from: var(--dashboard-tile-portfolio-from); --dashboard-tile-to: var(--dashboard-tile-portfolio-to); }
+.dashboard-tile--schedule { --dashboard-tile-from: var(--dashboard-tile-schedule-from); --dashboard-tile-to: var(--dashboard-tile-schedule-to); }
+.dashboard-tile--studio { --dashboard-tile-from: var(--dashboard-tile-studio-from); --dashboard-tile-to: var(--dashboard-tile-studio-to); }
+.dashboard-tile--review { --dashboard-tile-from: var(--dashboard-tile-review-from); --dashboard-tile-to: var(--dashboard-tile-review-to); }
+.dashboard-tile--teaching { --dashboard-tile-from: var(--dashboard-tile-teaching-from); --dashboard-tile-to: var(--dashboard-tile-teaching-to); }
+.dashboard-tile--preparation { --dashboard-tile-from: var(--dashboard-tile-preparation-from); --dashboard-tile-to: var(--dashboard-tile-preparation-to); }
+.dashboard-tile--classes { --dashboard-tile-from: var(--dashboard-tile-classes-from); --dashboard-tile-to: var(--dashboard-tile-classes-to); }
+.dashboard-main-grid .dashboard-tile > svg,
+.teacher-dashboard-wide-grid .dashboard-tile > svg {
   position: absolute;
   top: 16px;
   left: 16px;
   width: 30px;
   height: 30px;
 }
-.student-dashboard-tile-body { display: flex; min-width: 0; flex-direction: column; gap: 4px; text-align: left; }
-.student-dashboard-tile-title {
+.dashboard-tile-body { display: flex; min-width: 0; flex-direction: column; gap: 4px; text-align: left; }
+.dashboard-tile-title {
   font-family: var(--font-heading);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
-.student-dashboard-tile-description {
-  color: hsl(var(--student-tile-foreground) / .94);
+.dashboard-tile-description {
+  color: hsl(var(--dashboard-tile-foreground) / .94);
   font-size: 12px;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
-.student-dashboard-tile-count {
+.dashboard-tile-count {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -687,24 +628,24 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   height: 32px;
   padding: 0 8px;
   border-radius: 999px;
-  background: hsl(var(--student-tile-foreground));
-  color: hsl(var(--student-tile-count-foreground));
+  background: hsl(var(--dashboard-tile-foreground));
+  color: hsl(var(--dashboard-tile-count-foreground));
   font-size: 16px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
-.student-dashboard-tile:hover,
-.student-dashboard-tile:focus-visible {
+.dashboard-tile:hover,
+.dashboard-tile:focus-visible {
   transform: translateY(-4px);
   filter: none;
-  box-shadow: var(--teacher-tile-shadow-raised);
+  box-shadow: var(--dashboard-tile-shadow-raised);
 }
-.student-dashboard-tile:focus-visible,
-.student-dashboard-compact-tile:focus-visible {
+.dashboard-tile:focus-visible,
+.dashboard-compact-tile:focus-visible {
   outline: 3px solid hsl(var(--foreground));
   outline-offset: 3px;
 }
-.student-dashboard-compact-tile {
+.dashboard-compact-tile {
   display: flex;
   width: 100%;
   height: 100%;
@@ -721,34 +662,45 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   line-height: 1.25;
   text-align: left;
   white-space: normal;
-  box-shadow: var(--teacher-tile-shadow);
+  box-shadow: var(--dashboard-tile-shadow);
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.student-dashboard-compact-grid .student-dashboard-compact-tile > svg { width: 22px; height: 22px; flex-shrink: 0; color: hsl(var(--primary)); }
-.student-dashboard-compact-tile > span { min-width: 0; overflow-wrap: anywhere; }
-.student-dashboard-compact-tile:hover,
-.student-dashboard-compact-tile:focus-visible { transform: translateY(-3px); background: hsl(var(--surface-hover)); box-shadow: var(--teacher-tile-shadow-raised); }
-.student-today-lesson { flex-wrap: wrap; }
-.student-today-lesson--current {
-  background-image: linear-gradient(135deg, hsl(var(--student-today-current-from)), hsl(var(--student-today-current-to)));
-  color: hsl(var(--student-tile-foreground));
+.dashboard-compact-grid .dashboard-compact-tile > svg { width: 22px; height: 22px; flex-shrink: 0; color: hsl(var(--primary)); }
+.dashboard-compact-tile > span { min-width: 0; overflow-wrap: anywhere; }
+.dashboard-compact-tile-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  font-variant-numeric: tabular-nums;
 }
-.student-today-lesson--current,
-.student-today-lesson--current .text-muted-foreground { color: hsl(var(--student-tile-foreground)); }
-.student-today-now-badge { background: hsl(var(--student-tile-foreground) / .18); color: hsl(var(--student-tile-foreground)); border-color: hsl(var(--student-tile-foreground) / .5); }
+.dashboard-compact-tile:hover,
+.dashboard-compact-tile:focus-visible { transform: translateY(-3px); background: hsl(var(--surface-hover)); box-shadow: var(--dashboard-tile-shadow-raised); }
+.dashboard-today-lesson { flex-wrap: wrap; }
+.dashboard-today-lesson--current {
+  background-image: linear-gradient(135deg, hsl(var(--dashboard-today-current-from)), hsl(var(--dashboard-today-current-to)));
+  color: hsl(var(--dashboard-tile-foreground));
+}
+.dashboard-today-lesson--current,
+.dashboard-today-lesson--current .text-muted-foreground { color: hsl(var(--dashboard-tile-foreground)); }
+.dashboard-today-now-badge { background: hsl(var(--dashboard-tile-foreground) / .18); color: hsl(var(--dashboard-tile-foreground)); border-color: hsl(var(--dashboard-tile-foreground) / .5); }
 @media (min-width: 640px) {
-  .student-dashboard-main-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-  .student-dashboard-compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-  .student-dashboard-tile { min-height: 190px; padding: 20px; }
-  .student-dashboard-tile-description { font-size: 13px; }
-  .student-today-lesson { flex-wrap: nowrap; }
+  .dashboard-main-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .dashboard-compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .teacher-dashboard-wide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .dashboard-tile { min-height: 190px; padding: 20px; }
+  .dashboard-tile-description { font-size: 13px; }
+  .dashboard-today-lesson { flex-wrap: nowrap; }
 }
 @media (min-width: 1024px) {
-  .student-dashboard-main-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
-  .student-dashboard-compact-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dashboard-main-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+  .dashboard-compact-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .teacher-dashboard-personal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .student-dashboard-tile, .student-dashboard-compact-tile { transition: none; }
-  .student-dashboard-tile:hover, .student-dashboard-tile:focus-visible,
-  .student-dashboard-compact-tile:hover, .student-dashboard-compact-tile:focus-visible { transform: none; }
+  .dashboard-tile, .dashboard-compact-tile { transition: none; }
+  .dashboard-tile:hover, .dashboard-tile:focus-visible,
+  .dashboard-compact-tile:hover, .dashboard-compact-tile:focus-visible { transform: none; }
 }

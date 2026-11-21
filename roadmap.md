@@ -141,3 +141,10 @@
 - „Moje předměty“ záměrně bez dlaždice: žákovská seznamová stránka neexistuje. Navržen jednoduchý seznam z dostupných učebnic/rozvrhu k samostatnému schválení.
 - Neověřeno na reálné právě probíhající hodině (stav pokryt testem); skutečný iPhone Safari neověřen. Bez DB, SQL, edge funkcí a nasazení.
 - Etapa 2 (cesta s denním cílem v Učím se) NESCHVÁLENA – nedělat.
+
+## Učitelský přehled – etapa U1 (schváleno)
+- [x] Sdílet komponentu dlaždic a tokeny se žákovským přehledem, bez dvou verzí.
+- [x] Seskupit dlaždice, zachovat všechny cesty/role a omezit dnd-kit na přesuny uvnitř skupiny; migrace v1 → v2.
+- [x] Dnes, široké dlaždice, Pro mě a profil; cílené testy, typy a živá kontrola mobilu.
+- 41 cílených testů, typy a build OK; živě všech 16 cest, avatar 96 px/8 px, ikony 30 px, mobil 360 px bez posunu.
+- Neověřeno živé tažení a lektor; skutečná právě probíhající hodina nebyla v účtu. Ke kontrole nemá dostupný počet. Bez DB, SQL, edge funkcí a nasazení.

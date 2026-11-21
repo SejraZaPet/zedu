@@ -17,11 +17,11 @@ function luminance(h: number, s: number, l: number): number {
   return 0.2126 * linear(r1) + 0.7152 * linear(g1) + 0.0722 * linear(b1);
 }
 
-describe("Žákovské dlaždice – kontrast", () => {
-  it("bílý text má aspoň 4,5:1 na obou koncích každého přechodu", () => {
-    for (const tone of ["learn", "textbooks", "assignments", "notebook", "portfolio", "schedule"]) {
+describe("Sdílené dlaždice – kontrast", () => {
+  it("bílý text má aspoň 4,5:1 na obou koncích každého žákovského i učitelského přechodu", () => {
+    for (const tone of ["learn", "textbooks", "assignments", "notebook", "portfolio", "schedule", "studio", "review", "teaching", "preparation", "classes"]) {
       for (const stop of ["from", "to"]) {
-        const match = css.match(new RegExp(`--student-tile-${tone}-${stop}:\\s*([\\d.]+)\\s+([\\d.]+)%\\s+([\\d.]+)%`));
+        const match = css.match(new RegExp(`--dashboard-tile-${tone}-${stop}:\\s*([\\d.]+)\\s+([\\d.]+)%\\s+([\\d.]+)%`));
         expect(match, `${tone}-${stop}`).not.toBeNull();
         const ratio = 1.05 / (luminance(Number(match![1]), Number(match![2]), Number(match![3])) + 0.05);
         expect(ratio, `${tone}-${stop}`).toBeGreaterThanOrEqual(4.5);

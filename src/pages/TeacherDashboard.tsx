@@ -1,6 +1,6 @@
 import DashboardBanners from "@/components/dashboard/DashboardBanners";
 import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import {
   Library, GripVertical, Timer, SquareCheckBig, Gamepad2, WandSparkles,
   Book, List, Landmark, ClipboardCheck, ListChecks, type LucideIcon,
 } from "lucide-react";
-import TeacherDashboardTile from "@/components/dashboard/TeacherDashboardTile";
+import TeacherDashboardTile, { type TeacherTileTone } from "@/components/dashboard/TeacherDashboardTile";
+import { DashboardCompactTile } from "@/components/dashboard/DashboardTile";
 import { EMPTY_DASHBOARD_COUNTS, loadTeacherDashboardCounts } from "@/lib/teacher-dashboard-counts";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -30,11 +31,19 @@ import {
   rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@/lib/utils";
-import { mergeTeacherDashboardOrder } from "@/lib/teacher-dashboard-order";
+import {
+  createDefaultTeacherDashboardOrder,
+  migrateTeacherDashboardOrder,
+  moveTeacherDashboardTile,
+  parseTeacherDashboardOrder,
+  serializeTeacherDashboardOrder,
+  TEACHER_DASHBOARD_LEGACY_STORAGE_KEY,
+  TEACHER_DASHBOARD_STORAGE_KEY,
+  type TeacherDashboardGroup,
+  type TeacherDashboardOrder,
+} from "@/lib/teacher-dashboard-order";
 
 interface Profile {
   first_name: string;
@@ -43,50 +52,20 @@ interface Profile {
   school: string;
 }
 
-const STORAGE_KEY = "teacher-dashboard-widget-order-v1";
-
-const DEFAULT_ORDER = [
-  "today",
-  "classroom-tools",
-  "subjects",
-  "textbooks",
-  "activities",
-  "assignments",
-  "classes",
-  "results",
-  "review",
-  "calendar",
-  "worksheets",
-  "lesson-plans",
-  "suggest-method",
-  "svp",
-  "academy",
-  "todos",
-  "notifications",
-  "profile",
-];
-
-const FULL_WIDTH_IDS = new Set(["today", "profile"]);
-
 interface SortableWrapperProps {
   id: string;
-  fullWidth?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-const SortableWrapper = ({ id, fullWidth, children }: SortableWrapperProps) => {
+const SortableWrapper = ({ id, children }: SortableWrapperProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style: React.CSSProperties = {
+  const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn("relative group", fullWidth && "col-span-full")}
-    >
+    <div ref={setNodeRef} style={style} className="relative group min-w-0">
       <Button
         variant="ghost"
         size="icon"
@@ -111,29 +90,40 @@ interface CardConfig {
   to: string;
 }
 
+const GROUP_LABELS: Record<Exclude<TeacherDashboardGroup, "priority">, string> = {
+  teaching: "Vyučuji dnes",
+  preparation: "Příprava hodin",
+  classes: "Třídy a předměty",
+  personal: "Pro mě",
+};
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user, role, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState(EMPTY_DASHBOARD_COUNTS);
-  const [order, setOrder] = useState<string[]>(DEFAULT_ORDER);
+  const [order, setOrder] = useState<TeacherDashboardOrder>(createDefaultTeacherDashboardOrder);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved: string[] = JSON.parse(raw);
-        const merged = mergeTeacherDashboardOrder(saved, DEFAULT_ORDER);
-        setOrder(merged);
+      const rawV2 = localStorage.getItem(TEACHER_DASHBOARD_STORAGE_KEY);
+      const savedV2 = parseTeacherDashboardOrder(rawV2);
+      const savedV1 = parseTeacherDashboardOrder(localStorage.getItem(TEACHER_DASHBOARD_LEGACY_STORAGE_KEY));
+      const restored = migrateTeacherDashboardOrder(savedV2 ?? savedV1);
+      setOrder(restored);
+      if (!rawV2 && savedV1 !== undefined) {
+        localStorage.setItem(TEACHER_DASHBOARD_STORAGE_KEY, serializeTeacherDashboardOrder(restored));
       }
-    } catch {}
+    } catch {
+      setOrder(createDefaultTeacherDashboardOrder());
+    }
   }, []);
 
-  const persistOrder = (next: string[]) => {
+  const persistOrder = (next: TeacherDashboardOrder) => {
     setOrder(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(TEACHER_DASHBOARD_STORAGE_KEY, serializeTeacherDashboardOrder(next));
     } catch {}
   };
 
@@ -197,7 +187,7 @@ const TeacherDashboard = () => {
       id: "classroom-tools",
       icon: Timer,
       title: "Nástroje do hodiny",
-      description: "Odpočet, stopky, losování, skupiny, megatext a měřič hlasitosti.",
+      description: "Odpočet, losování, skupiny",
       to: "/ucitel/nastroje",
     },
     textbooks: {
@@ -218,7 +208,7 @@ const TeacherDashboard = () => {
       id: "assignments",
       icon: SquareCheckBig,
       title: "Úlohy pro žáky",
-      description: "Zadávejte a spravujte úkoly, testy a pracovní listy pro žáky.",
+      description: "Zadat a spravovat",
       to: "/ucitel/ulohy",
     },
     classes: {
@@ -231,15 +221,15 @@ const TeacherDashboard = () => {
     results: {
       id: "results",
       icon: BarChart3,
-      title: "Výsledky studentů",
-      description: "Sledujte úspěšnost a dokončené aktivity.",
+      title: "Výsledky",
+      description: "Úspěšnost žáků",
       to: "/ucitel/vysledky",
     },
     review: {
       id: "review",
       icon: ListChecks,
       title: "Ke kontrole",
-      description: "Odevzdané úkoly čekající na kontrolu a hromadné akce.",
+      description: "Odevzdané úkoly čekající na kontrolu",
       to: "/ucitel/ke-kontrole",
     },
     calendar: {
@@ -300,77 +290,92 @@ const TeacherDashboard = () => {
     },
   };
 
-  const renderWidget = (id: string) => {
-    if (id === "today") {
-      return (
-        <div className="bg-card border border-border rounded-xl p-1">
-          <TodayWidget role="teacher" />
-        </div>
-      );
-    }
+  const countFor = (id: string) => {
+    if (id === "assignments") return counts.assignments;
+    if (id === "todos") return counts.todos;
+    if (id === "notifications") return counts.notifications;
+    return null;
+  };
 
-    if (id === "profile") {
-      return (
-        <div className="bg-card border border-border rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="font-heading text-lg font-semibold">Můj profil</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm items-center">
-            <div>
-              <span className="text-muted-foreground block">Jméno</span>
-              <span>
-                {profile?.first_name} {profile?.last_name}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground block">E-mail</span>
-              <span>{profile?.email}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground block">Škola</span>
-              <span>{profile?.school || "—"}</span>
-            </div>
-            <div>
-              <Button onClick={() => navigate("/profil")} variant="outline" size="sm">
-                Upravit profil
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  const countLabelFor = (id: string) => {
+    if (id === "assignments") return "počet zveřejněných úloh";
+    if (id === "todos") return "počet nevyřízených úkolů";
+    return "počet nepřečtených notifikací";
+  };
 
+  const renderTile = (id: string, tone: TeacherTileTone, wide = false) => {
     const card = cards[id];
     if (!card) return null;
     return (
-      <TeacherDashboardTile icon={card.icon} title={card.title}
-        description={card.description} to={card.to}
-        count={id === "assignments" ? counts.assignments : id === "todos" ? counts.todos : id === "notifications" ? counts.notifications : null} />
+      <SortableWrapper key={id} id={id}>
+        <TeacherDashboardTile
+          id={id}
+          icon={card.icon}
+          title={card.title}
+          description={card.description}
+          to={card.to}
+          tone={tone}
+          wide={wide}
+          count={countFor(id)}
+          countLabel={countLabelFor(id)}
+        />
+      </SortableWrapper>
+    );
+  };
+
+  const renderCompactTile = (id: string) => {
+    const card = cards[id];
+    if (!card) return null;
+    return (
+      <SortableWrapper key={id} id={id}>
+        <DashboardCompactTile
+          id={id}
+          icon={card.icon}
+          title={card.title}
+          to={card.to}
+          count={countFor(id)}
+          countLabel={countLabelFor(id)}
+          testIdPrefix="teacher"
+        />
+      </SortableWrapper>
     );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = order.indexOf(String(active.id));
-    const newIndex = order.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    persistOrder(arrayMove(order, oldIndex, newIndex));
+    if (!over) return;
+    const next = moveTeacherDashboardTile(order, String(active.id), String(over.id));
+    if (next !== order) persistOrder(next);
   };
+
+  const renderSortableGroup = (group: Exclude<TeacherDashboardGroup, "priority" | "personal">, tone: TeacherTileTone) => (
+    <section className="teacher-dashboard-section" aria-labelledby={`teacher-group-${group}`} data-testid={`teacher-group-${group}`}>
+      <h2 id={`teacher-group-${group}`} className="teacher-dashboard-section-heading">{GROUP_LABELS[group]}</h2>
+      <SortableContext items={order[group]} strategy={rectSortingStrategy}>
+        <div className="dashboard-main-grid">
+          {order[group].map((id) => renderTile(id, tone))}
+        </div>
+      </SortableContext>
+    </section>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
       <main
-        className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
+        className="flex-1 container mx-auto px-4 py-12 max-w-6xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
-            <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} showStreakBadge={false} />
+            <ProfileAvatarBubble
+              userId={user?.id ?? null}
+              size={96}
+              shape="square"
+              crop="head"
+              showEditButton={false}
+              showStreakBadge={false}
+            />
             <div>
               <h1 className="font-heading text-3xl font-bold">
                 Ahoj, {profile?.first_name || (isLektor ? "lektore" : "učiteli")}! 👋
@@ -382,11 +387,7 @@ const TeacherDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <BannersNewsButton />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => persistOrder(DEFAULT_ORDER)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => persistOrder(createDefaultTeacherDashboardOrder())}>
               Obnovit pořadí
             </Button>
           </div>
@@ -394,17 +395,58 @@ const TeacherDashboard = () => {
 
         <DashboardBanners />
 
+        <div data-testid="teacher-today-slot">
+          <TodayWidget role="teacher" />
+        </div>
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={order} strategy={rectSortingStrategy}>
-            <div className="teacher-dashboard-grid">
-              {[...order.filter(id => id !== "profile"), "profile"].map((id) => (
-                <SortableWrapper key={id} id={id} fullWidth={FULL_WIDTH_IDS.has(id)}>
-                  {renderWidget(id)}
-                </SortableWrapper>
-              ))}
-            </div>
-          </SortableContext>
+          <section aria-label="Hlavní nástroje" data-testid="teacher-priority-links">
+            <SortableContext items={order.priority} strategy={rectSortingStrategy}>
+              <div className="teacher-dashboard-wide-grid">
+                {order.priority.map((id) => renderTile(id, id === "activities" ? "studio" : "review", true))}
+              </div>
+            </SortableContext>
+          </section>
+
+          {renderSortableGroup("teaching", "teaching")}
+          {renderSortableGroup("preparation", "preparation")}
+          {renderSortableGroup("classes", "classes")}
+
+          <section className="teacher-dashboard-section" aria-labelledby="teacher-group-personal" data-testid="teacher-group-personal">
+            <h2 id="teacher-group-personal" className="teacher-dashboard-section-heading">{GROUP_LABELS.personal}</h2>
+            <SortableContext items={order.personal} strategy={rectSortingStrategy}>
+              <div className="dashboard-compact-grid teacher-dashboard-personal-grid">
+                {order.personal.map(renderCompactTile)}
+              </div>
+            </SortableContext>
+          </section>
         </DndContext>
+
+        <section className="bg-card border border-border rounded-xl p-6 mt-8" aria-labelledby="teacher-profile-heading">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
+              <User className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h2 id="teacher-profile-heading" className="font-heading text-lg font-semibold">Můj profil</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm items-center">
+            <div>
+              <span className="text-muted-foreground block">Jméno</span>
+              <span>{profile?.first_name} {profile?.last_name}</span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-muted-foreground block">E-mail</span>
+              <span className="break-all">{profile?.email}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block">Škola</span>
+              <span>{profile?.school || "—"}</span>
+            </div>
+            <div>
+              <Button onClick={() => navigate("/profil")} variant="outline" size="sm">Upravit profil</Button>
+            </div>
+          </div>
+        </section>
       </main>
       <SiteFooter />
     </div>

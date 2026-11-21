@@ -93,7 +93,7 @@ describe("TodayWidget – celý žákovský den", () => {
     expect(screen.getByText("proběhlo")).toBeVisible();
 
     const current = screen.getByText("Odborný výcvik").closest("li")!;
-    expect(current).toHaveClass("student-today-lesson--current");
+    expect(current).toHaveClass("dashboard-today-lesson--current");
     expect(within(current).getByText("Teď")).toBeVisible();
     expect(current.querySelector("svg.lucide-graduation-cap")).not.toBeNull();
     expect(screen.getByText("Čeština").closest("li")!.querySelector("svg.lucide-book")).not.toBeNull();

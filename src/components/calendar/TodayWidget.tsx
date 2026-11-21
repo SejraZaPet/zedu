@@ -4,7 +4,7 @@ import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, ClipboardList, ArrowRight, Plus, Book, Flag, GraduationCap, SquareCheckBig } from "lucide-react";
+import { CalendarDays, ClipboardList, ArrowRight, Plus, Book, Flag, GraduationCap, School, SquareCheckBig } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -335,7 +335,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
               const isCurrent = status === "current";
               const isPast = status === "past";
               const isActiveLesson = isCurrent && ev.scheduleStatus !== "cancelled";
-              const LessonIcon = role === "student" && /\bodborn(?:ý|á|é)\s+výcvik\b|\bpraxe\b/i.test(ev.title) ? GraduationCap : Book;
+              const LessonIcon = role === "teacher" ? School : role === "student" && /\bodborn(?:ý|á|é)\s+výcvik\b|\bpraxe\b/i.test(ev.title) ? GraduationCap : Book;
               const target = lessonTargets[ev.scheduleSource?.slotId ?? ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
               const canChange = role === "teacher" && !!user && !!ownedSource(ev, user.id);
               return (
@@ -355,12 +355,12 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
                       : undefined
                   }
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    role === "student" ? "student-today-lesson " : ""
-                  }${isActiveLesson && role === "student" ? "student-today-lesson--current font-medium" : isCurrent ? "bg-primary/10 font-medium" : ""} ${isPast ? "opacity-60" : ""} ${
+                    "dashboard-today-lesson "
+                  }${isActiveLesson ? "dashboard-today-lesson--current font-medium" : isCurrent ? "bg-primary/10 font-medium" : ""} ${isPast ? "opacity-60" : ""} ${
                     target ? "cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring" : ""
                   }`}
                 >
-                  {role === "student" && <LessonIcon className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                  <LessonIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span className={`font-mono text-xs w-24 shrink-0 text-muted-foreground ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
@@ -379,9 +379,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
                   {isActiveLesson && (
-                    <Badge className={role === "student" ? "student-today-now-badge shrink-0" : "bg-primary text-primary-foreground shrink-0"}>
-                      {role === "student" ? "Teď" : "právě probíhá"}
-                    </Badge>
+                    <Badge className="dashboard-today-now-badge shrink-0">Teď</Badge>
                   )}
                   {isPast && !ev.scheduleStatus && (
                     <span className="text-xs text-muted-foreground shrink-0">proběhlo</span>
@@ -487,15 +485,14 @@ const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
               const deadline = new Date(a.deadline ?? "");
               const days = differenceInCalendarDays(deadline, now);
               const colorClass = deadlineColorClass(deadline, now);
+              const KindIcon = a.exam_type ? Flag : SquareCheckBig;
               return (
                 <li key={a.id}>
                   <button
                     onClick={() => handleAssignmentClick(a)}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
                   >
-                    <span className="shrink-0">
-                      {days <= 0 ? "🔴" : days === 1 ? "🟠" : "⚪"}
-                    </span>
+                    <KindIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span className="flex-1 truncate">{a.title}</span>
                     {a.kind === "todo" && (
                       <Badge variant="secondary" className="text-[11px] shrink-0">

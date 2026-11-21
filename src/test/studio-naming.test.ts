@@ -39,6 +39,7 @@ function sourceFiles(dir: string): string[] {
 describe("název místa Studio (dřív Moje aktivity)", () => {
   it("dlaždice v učitelském panelu se jmenuje Studio s popisem „Aktivity a hry:“", () => {
     expect(activitiesTile).toContain('title: "Studio"');
+    expect(activitiesTile).toContain('icon: Gamepad2');
     expect(activitiesTile).toContain('description: "Aktivity a hry:');
     expect(activitiesTile).toContain('to: "/ucitel/studio"');
     expect(activitiesTile).not.toContain("Moje aktivity");

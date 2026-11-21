@@ -170,11 +170,11 @@ const StudentDashboard = () => {
             <TodayWidget role="student" onOpenAssignmentsChange={setAssignmentsCount} />
           </div>
 
-          <section className="student-dashboard-main-grid" aria-label="Hlavní odkazy" data-testid="student-main-links">
+          <section className="dashboard-main-grid" aria-label="Hlavní odkazy" data-testid="student-main-links">
             {mainTiles.map((tile) => <StudentDashboardTile key={tile.id} {...tile} />)}
           </section>
 
-          <section className="student-dashboard-compact-grid" aria-label="Další odkazy" data-testid="student-compact-links">
+          <section className="dashboard-compact-grid" aria-label="Další odkazy" data-testid="student-compact-links">
             {compactTiles.map((tile) => <StudentDashboardCompactTile key={tile.id} {...tile} />)}
           </section>
 
