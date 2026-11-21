@@ -18,12 +18,12 @@ export function AssignmentStateBadge({ status }: { status: AssignmentStatus }) {
   </span>;
 }
 
-export function AssignmentStatusCard({ status, title, children, actions }: {
-  status: AssignmentStatus; title: string; children?: ReactNode; actions?: ReactNode;
+export function AssignmentStatusCard({ status, title, children, actions, icon }: {
+  status: AssignmentStatus; title: string; children?: ReactNode; actions?: ReactNode; icon?: ReactNode;
 }) {
   return <Card className={`assignment-status-card assignment-status-${status.state} p-4`}>
     <div className="flex items-start gap-3 min-w-0">
-      <AssignmentStateIcon status={status} />
+      {icon ?? <AssignmentStateIcon status={status} />}
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h3 className="font-semibold break-words min-w-0 flex-1">{title}</h3>

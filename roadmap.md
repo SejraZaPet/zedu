@@ -133,3 +133,11 @@
 - [x] Sbalení na 5px proužek + záložka „Demo", paměť v localStorage, vynucené rozbalení ≤ 3 dny / vyčerpaný limit / po prodloužení; skryto při tisku.
 - [x] Čipy z `get_my_demo_limits()`, hláška po 429 z jakékoli AI funkce (centrální sledování jen u dema).
 - Čeká na schválení: SQL `supabase/proposals/demo_my_limits_rpc.sql` (bez něj se čipy nezobrazí, hláška po 429 funguje).
+
+## Žákovský přehled – etapa 1 (schváleno)
+- [x] Ověřeno: Dnes už načítá všechny hodiny dne včetně proběhlých; upraveno jen zobrazení, ikony a aktuální hodina.
+- [x] Čtvercový avatar 96 px/radius 8 px jen na přehledu; 6 hlavních a 6 kompaktních dlaždic, původní cesty, počty z existujících dat, profil a widgety zachovány.
+- [x] 17 cílených testů v 6 souborech a typy prošly; build OK. Živý náhled na desktopu, 390 px a 360 px bez vodorovného posunu; dyslexie, řádkování, reduced motion, Space/Enter a shoda počtu úloh ověřeny.
+- „Moje předměty“ záměrně bez dlaždice: žákovská seznamová stránka neexistuje. Navržen jednoduchý seznam z dostupných učebnic/rozvrhu k samostatnému schválení.
+- Neověřeno na reálné právě probíhající hodině (stav pokryt testem); skutečný iPhone Safari neověřen. Bez DB, SQL, edge funkcí a nasazení.
+- Etapa 2 (cesta s denním cílem v Učím se) NESCHVÁLENA – nedělat.

@@ -40,10 +40,14 @@ function daysLabel(days: number): string {
 }
 
 /** Karta „Co mě čeká“ – nejbližší testy, zkoušení a písemky v příštích 14 dnech. */
-const UpcomingExamsCard = ({ userId }: { userId: string }) => {
+const UpcomingExamsCard = ({ userId, onCountChange }: { userId: string; onCountChange?: (count: number | null) => void }) => {
   const navigate = useNavigate();
   const [items, setItems] = useState<UpcomingExam[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    onCountChange?.(loading ? null : items.length);
+  }, [items.length, loading, onCountChange]);
 
   useEffect(() => {
     (async () => {

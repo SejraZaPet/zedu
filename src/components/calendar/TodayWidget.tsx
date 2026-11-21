@@ -4,7 +4,7 @@ import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, ClipboardList, ArrowRight, Plus } from "lucide-react";
+import { CalendarDays, ClipboardList, ArrowRight, Plus, Book, Flag, GraduationCap, SquareCheckBig } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,7 @@ const emptyPlan = (): PlanForm => ({ target: "", subjectId: null, kind: "test", 
 
 interface Props {
   role: "student" | "teacher";
+  onOpenAssignmentsChange?: (count: number | null) => void;
 }
 
 interface UpcomingAssignment {
@@ -70,7 +71,7 @@ const deadlineColorClass = (deadline: Date, now: Date): string => {
   return "text-muted-foreground";
 };
 
-const TodayWidget = ({ role }: Props) => {
+const TodayWidget = ({ role, onOpenAssignmentsChange }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -290,6 +291,17 @@ const TodayWidget = ({ role }: Props) => {
 
   const visibleAssignments = role === "student" ? upcomingAssignments : upcomingAssignments.slice(0, 5);
   const hasMoreAssignments = upcomingAssignments.length > 5;
+  const openAssignmentsCount = role === "student" && !loading
+    ? upcomingAssignments.filter((item) => {
+        if (item.kind !== "assignment") return false;
+        const group = assignmentStatus(item, item.attempts).group;
+        return group === "pending";
+      }).length
+    : null;
+
+  useEffect(() => {
+    onOpenAssignmentsChange?.(openAssignmentsCount);
+  }, [onOpenAssignmentsChange, openAssignmentsCount]);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 mb-8">
@@ -322,6 +334,8 @@ const TodayWidget = ({ role }: Props) => {
               const status = lessonStatus(ev);
               const isCurrent = status === "current";
               const isPast = status === "past";
+              const isActiveLesson = isCurrent && ev.scheduleStatus !== "cancelled";
+              const LessonIcon = role === "student" && /\bodborn(?:ý|á|é)\s+výcvik\b|\bpraxe\b/i.test(ev.title) ? GraduationCap : Book;
               const target = lessonTargets[ev.scheduleSource?.slotId ?? ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
               const canChange = role === "teacher" && !!user && !!ownedSource(ev, user.id);
               return (
@@ -341,11 +355,12 @@ const TodayWidget = ({ role }: Props) => {
                       : undefined
                   }
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    isCurrent ? "bg-primary/10 font-medium" : ""
-                  } ${isPast ? "opacity-60" : ""} ${
+                    role === "student" ? "student-today-lesson " : ""
+                  }${isActiveLesson && role === "student" ? "student-today-lesson--current font-medium" : isCurrent ? "bg-primary/10 font-medium" : ""} ${isPast ? "opacity-60" : ""} ${
                     target ? "cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring" : ""
                   }`}
                 >
+                  {role === "student" && <LessonIcon className="h-4 w-4 shrink-0" aria-hidden="true" />}
                   <span className={`font-mono text-xs w-24 shrink-0 text-muted-foreground ${ev.scheduleStatus === "cancelled" ? "line-through" : ""}`}>
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
@@ -363,9 +378,9 @@ const TodayWidget = ({ role }: Props) => {
                   {ev.room && (
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
-                  {isCurrent && ev.scheduleStatus !== "cancelled" && (
-                    <Badge className="bg-primary text-primary-foreground shrink-0">
-                      právě probíhá
+                  {isActiveLesson && (
+                    <Badge className={role === "student" ? "student-today-now-badge shrink-0" : "bg-primary text-primary-foreground shrink-0"}>
+                      {role === "student" ? "Teď" : "právě probíhá"}
                     </Badge>
                   )}
                   {isPast && !ev.scheduleStatus && (
@@ -456,11 +471,15 @@ const TodayWidget = ({ role }: Props) => {
           <div className="space-y-3">
             <AssignmentStatusGroups items={visibleAssignments.filter((a) => a.kind === "assignment")}
               storageKey="assignment-groups:student:dashboard" statusOf={(a) => assignmentStatus(a, a.attempts)}
-              renderItem={(a, status) => <AssignmentStatusCard title={a.title} status={status}
-                actions={<Button size="sm" className="assignment-card-action" onClick={() => handleAssignmentClick(a)}>Otevřít</Button>}>
-                {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
-              </AssignmentStatusCard>} />
-            {visibleAssignments.filter((a) => a.kind === "todo").map((a) => <Button key={a.id} variant="ghost" onClick={() => handleAssignmentClick(a)}>{a.title} · Můj úkol</Button>)}
+              renderItem={(a, status) => {
+                const KindIcon = a.exam_type ? Flag : SquareCheckBig;
+                return <AssignmentStatusCard title={a.title} status={status}
+                  icon={<span className="assignment-state-icon"><KindIcon aria-hidden="true" className="h-5 w-5" /></span>}
+                  actions={<Button size="sm" className="assignment-card-action" onClick={() => handleAssignmentClick(a)}>Otevřít</Button>}>
+                  {a.deadline && <p className="assignment-card-meta text-xs">Termín {format(new Date(a.deadline), "d. M. HH:mm", { locale: cs })}</p>}
+                </AssignmentStatusCard>;
+              }} />
+            {visibleAssignments.filter((a) => a.kind === "todo").map((a) => <Button key={a.id} variant="ghost" onClick={() => handleAssignmentClick(a)}><SquareCheckBig aria-hidden="true" />{a.title} · Můj úkol</Button>)}
           </div>
         ) : (
           <ul className="space-y-1">

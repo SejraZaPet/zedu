@@ -109,9 +109,11 @@ interface Props {
   showEditButton?: boolean;
   /** When false, hides the equipped achievement badge overlay (used for teachers). Default true. */
   showStreakBadge?: boolean;
+  /** Optional square bubble for the student dashboard; legacy rounding remains the default elsewhere. */
+  shape?: "circle" | "square";
 }
 
-export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true, crop = "full", showEditButton = true, showStreakBadge = true }: Props) {
+export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true, crop = "full", showEditButton = true, showStreakBadge = true, shape = "circle" }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -227,11 +229,14 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     ? { transform: "scale(2.1) translateY(-9%)", transformOrigin: "center top" }
     : undefined;
 
+  const shapeClass = shape === "square" ? "rounded-[8px]" : "rounded-[14px]";
+
   const inner = (
     <>
       <span
         className={cn(
-          "absolute inset-0 rounded-[14px] overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
+          "absolute inset-0 overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
+          shapeClass,
           editable && "transition-colors group-hover:border-primary/50",
         )}
         aria-hidden
@@ -275,8 +280,9 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   if (!editable) {
     return (
       <span
-        className={cn("relative inline-block rounded-[14px]", className)}
+        className={cn("relative inline-block", shapeClass, className)}
         style={{ width: size, height: size }}
+        data-avatar-shape={shape}
         aria-hidden
       >
         {inner}
@@ -289,10 +295,12 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       to="/avatar"
       aria-label="Upravit avatara"
       className={cn(
-        "relative inline-block rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
+        "relative inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
+        shapeClass,
         className,
       )}
       style={{ width: size, height: size }}
+      data-avatar-shape={shape}
     >
       {inner}
     </Link>
