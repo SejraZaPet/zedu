@@ -51,6 +51,8 @@ import { LayoutTemplate, Shapes, Pencil, Eraser } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
+import ActivitySettingsPanel from "@/components/presentation/ActivitySettingsPanel";
+import { presentationMissingReport } from "@/lib/activity-completeness";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import ColorPicker from "@/components/admin/ColorPicker";
 import ActivityAppearanceControls from "@/components/admin/ActivityAppearanceControls";
@@ -360,6 +362,34 @@ export const PresentationEditorDialog = ({
   const transition = transitionFromSlides(pendingSlides);
   const setTransition = (next: SlideTransition) =>
     setPendingSlides(applyTransitionToSlides(pendingSlides, next));
+
+  const isActivitySlide = currentSlide?.type === "activity" || (currentSlide as any)?.type === "studio_step";
+  const [activityPanelOpen, setActivityPanelOpen] = useState(true);
+  const [focusActivityFor, setFocusActivityFor] = useState<string | number | null>(null);
+  const handlePrintActivity = async () => {
+    if (!currentSlide) return;
+    setExportingPdf(true);
+    try {
+      await exportSlidesToPdf([currentSlide], themeId, `${presentationLesson?.title || "prezentace"} – aktivita`);
+      toast({ title: "List vytvořen", description: "Aktivita byla stažena jako PDF k tisku." });
+    } catch (e: any) {
+      toast({ title: "Tisk se nepodařil", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+  /** Spuštění: když aktivitám chybí obsah, učitel se dozví co a kde. */
+  const launchWithCheck = () => {
+    const missing = presentationMissingReport(pendingSlides);
+    if (missing.length) {
+      toast({
+        title: "Některé aktivity nejsou hotové",
+        description: `${missing.slice(0, 3).join("; ")}${missing.length > 3 ? " …" : ""}. Nedokončené aktivity se ve hře přeskočí nebo poběží bez bodů.`,
+        variant: "destructive",
+      });
+    }
+    onLaunch(pendingSlides);
+  };
 
   const handleExportPdf = async () => {
     setExportingPdf(true);
@@ -752,6 +782,12 @@ export const PresentationEditorDialog = ({
   };
 
 
+  /** Po vložení aktivity se rovnou otevře její editor (pravý panel) s kurzorem v otázce. */
+  const openActivityEditor = (slide: any, index: number) => {
+    setActivityPanelOpen(true);
+    setFocusActivityFor(slide?.slideId ?? index);
+  };
+
   /** ČÁST 4a – vložení předpřipravené aktivity za aktuální slide. */
   const [activityTarget, setActivityTarget] = useState<"slide" | "new">("slide");
   const insertActivityPreset = (preset: ActivityPreset) => {
@@ -762,6 +798,7 @@ export const PresentationEditorDialog = ({
       updated[editingSlideIndex] = markSlideEditedByTeacher(buildPresetIntoSlide(currentSlide, built), linkedToLesson);
       setPendingSlides(updated);
       setSelectedBlockId(null);
+      openActivityEditor(updated[editingSlideIndex], editingSlideIndex);
       toast({ title: "Aktivita přidána", description: `„${preset.label}" je teď součástí tohoto slidu.` });
       return;
     }
@@ -770,6 +807,7 @@ export const PresentationEditorDialog = ({
     setPendingSlides(updated);
     setEditingSlideIndex(editingSlideIndex + 1);
     setSelectedBlockId(null);
+    openActivityEditor(built, editingSlideIndex + 1);
     toast({
       title: "Aktivita přidána",
       description: activityTarget === "slide"
@@ -866,10 +904,12 @@ export const PresentationEditorDialog = ({
   /** Aktivita ze Studia – kopie slidu (originál ve Studiu se nemění), vždy jako nový slide. */
   const insertStudioSlide = (slide: any, label: string) => {
     const updated = [...pendingSlides];
-    updated.splice(editingSlideIndex + 1, 0, cloneStudioSlide(slide));
+    const copy = cloneStudioSlide(slide);
+    updated.splice(editingSlideIndex + 1, 0, copy);
     setPendingSlides(updated);
     setEditingSlideIndex(editingSlideIndex + 1);
     setSelectedBlockId(null);
+    openActivityEditor(copy, editingSlideIndex + 1);
     toast({ title: "Aktivita ze Studia vložena", description: `„${label}" byla přidána jako nový slide.` });
   };
 
@@ -1048,7 +1088,10 @@ export const PresentationEditorDialog = ({
                       await onSave(pendingSlides);
                       baselineRef.current = JSON.stringify(pendingSlides);
                       setConfirmClose(null);
-                      toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
+                      const missing = presentationMissingReport(pendingSlides);
+                      toast(missing.length
+                        ? { title: "Uloženo – aktivity nejsou hotové", description: `${missing.slice(0, 3).join("; ")}${missing.length > 3 ? " …" : ""}.` }
+                        : { title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
                     }}
                   >
                     <Save className="h-4 w-4" /> Uložit
@@ -1056,7 +1099,7 @@ export const PresentationEditorDialog = ({
                 )}
                 <Button
                   size="sm"
-                  onClick={() => onLaunch(pendingSlides)}
+                  onClick={() => launchWithCheck()}
                   className="h-8 gap-1.5 border-0 bg-gradient-brand text-white hover:opacity-90"
                 >
                   <Monitor className="h-4 w-4" /> Spustit prezentaci
@@ -1587,149 +1630,10 @@ export const PresentationEditorDialog = ({
                     {/* AI aktivita je v levém railu v záložce Aktivity. */}
 
 
-                    {/* Nastavení aktivity */}
-                    {currentSlide?.type === "activity" && (
-                      <div className="space-y-3 border-t border-border pt-3">
-                        <div>
-                          <Label className="text-xs">Typ aktivity</Label>
-                          <Select
-                            value={(currentSlide as any).activitySpec?.activityType || "true_false"}
-                            onValueChange={(v) => {
-                              const prev = (currentSlide as any).activitySpec || {};
-                              const becomesQuiz = (v === "quiz" || v === "mcq") && prev.timeLimitSec === undefined;
-                              updateSlide({ activitySpec: { ...prev, activityType: v, ...(becomesQuiz ? { timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC } : {}) } });
-                            }}
-                          >
-                            <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
-                              <SelectItem value="quiz">Kvíz (výběr odpovědi)</SelectItem>
-                              <SelectItem value="poll">Anketa</SelectItem>
-                              <SelectItem value="wall">Zeď odpovědí</SelectItem>
-                              <SelectItem value="flashcards">Kartičky (Flashcards)</SelectItem>
-                              <SelectItem value="matching">Párování / Spojování dvojic</SelectItem>
-                              <SelectItem value="ordering">Seřazení kroků</SelectItem>
-                              <SelectItem value="sorting">Třídění do skupin</SelectItem>
-                              <SelectItem value="fill_blanks">Doplňovačka</SelectItem>
-                              <SelectItem value="fill_choice">Doplňovačka s výběrem</SelectItem>
-                              <SelectItem value="image_label">Obrázek s popisem</SelectItem>
-                              <SelectItem value="image_hotspot">Obrázek – aktivní body</SelectItem>
-                              <SelectItem value="reveal_cards">Odhalovací karty</SelectItem>
-                              <SelectItem value="memory_game">Pexeso</SelectItem>
-                              <SelectItem value="crossword">Křížovka</SelectItem>
-                              <SelectItem value="open">Otevřená odpověď</SelectItem>
-                              <SelectItem value="summary">Shrnutí lekce</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs">Herní režim tohoto slidu</Label>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => updateSlide({ gameSettings: undefined })}
-                              className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                !(currentSlide as any).gameSettings
-                                  ? "border-primary bg-primary/10 text-foreground"
-                                  : "border-border text-muted-foreground hover:bg-muted/50"
-                              }`}
-                            >
-                              Jako celá prezentace
-                            </button>
-                            {SLIDE_GAME_MODES.map((m) => {
-                              const active = (currentSlide as any).gameSettings?.mode === m.id;
-                              return (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  onClick={() => updateSlide({
-                                    gameSettings: {
-                                      mode: m.id,
-                                      teamMode: (currentSlide as any).gameSettings?.teamMode ?? "none",
-                                    },
-                                  })}
-                                  title={m.hint}
-                                  className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                    active
-                                      ? "border-primary bg-primary/10 text-foreground"
-                                      : "border-border text-muted-foreground hover:bg-muted/50"
-                                  }`}
-                                >
-                                  {m.emoji} {m.name}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {(currentSlide as any).gameSettings && (
-                            <Select
-                              value={(currentSlide as any).gameSettings?.teamMode || "none"}
-                              onValueChange={(v) => updateSlide({
-                                gameSettings: { ...(currentSlide as any).gameSettings, teamMode: v },
-                              })}
-                            >
-                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">Bez týmů</SelectItem>
-                                <SelectItem value="random">Náhodné týmy</SelectItem>
-                                <SelectItem value="manual">Ruční týmy</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-
-                        {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && (
-                          <div className="border-t border-border pt-3">
-                            <TimeLimitPicker
-                              value={(currentSlide as any).activitySpec?.timeLimitSec}
-                              onChange={(next) => {
-                                const spec = { ...(currentSlide as any).activitySpec };
-                                if (next === undefined) delete spec.timeLimitSec;
-                                else spec.timeLimitSec = next;
-                                updateSlide({ activitySpec: spec });
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {(currentSlide as any).activitySpec?.activityType === "wall" && (
-                          <div className="space-y-2 border-t border-border pt-3">
-                            <Label className="text-xs">Otázka pro žáky</Label>
-                            <Textarea
-                              rows={2}
-                              className="text-xs"
-                              value={(currentSlide as any).activitySpec?.question || ""}
-                              onChange={(e) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, question: e.target.value } })}
-                              placeholder="Napište otázku pro žáky..."
-                            />
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={(currentSlide as any).activitySpec?.anonymous === true}
-                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, anonymous: !!v } })}
-                                id="slide-wall-anonymous"
-                              />
-                              <Label htmlFor="slide-wall-anonymous" className="cursor-pointer text-xs">Anonymní odpovědi</Label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={(currentSlide as any).activitySpec?.allowMultiple === true}
-                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, allowMultiple: !!v } })}
-                                id="slide-wall-multiple"
-                              />
-                              <Label htmlFor="slide-wall-multiple" className="cursor-pointer text-xs">Povolit více odpovědí</Label>
-                            </div>
-                          </div>
-                        )}
-
-                        <LiveActivitySpecEditor
-                          spec={(currentSlide as any).activitySpec}
-                          onChange={(patch) =>
-                            updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })
-                          }
-                        />
-                      </div>
+                    {/* Nastavení aktivity je v pravém panelu „Vlastnosti aktivity“. */}
+                    {isActivitySlide && !activityPanelOpen && (
+                      <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setActivityPanelOpen(true)}>Otevřít vlastnosti aktivity</Button>
                     )}
-
 
                     {/* Vzhled aktivity na snímku */}
                     {selectedBlock?.type === "activity" && (
@@ -2188,6 +2092,162 @@ export const PresentationEditorDialog = ({
                   </div>
                 </div>
               </div>
+              {isActivitySlide && activityPanelOpen && (
+                <ActivitySettingsPanel
+                  key={(currentSlide as any).slideId ?? editingSlideIndex}
+                  spec={(currentSlide as any).activitySpec}
+                  onSpecChange={(patch) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })}
+                  autoFocus={focusActivityFor === ((currentSlide as any).slideId ?? editingSlideIndex)}
+                  printing={exportingPdf}
+                  onPrint={handlePrintActivity}
+                  onLaunch={() => launchWithCheck()}
+                  onClose={() => setActivityPanelOpen(false)}
+                  settings={
+                    <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Typ aktivity</Label>
+                          <Select
+                            value={(currentSlide as any).activitySpec?.activityType || "true_false"}
+                            onValueChange={(v) => {
+                              const prev = (currentSlide as any).activitySpec || {};
+                              const becomesQuiz = (v === "quiz" || v === "mcq") && prev.timeLimitSec === undefined;
+                              const needsOptions = (v === "mcq" || v === "poll") && !(Array.isArray(prev.options) && prev.options.length);
+                              updateSlide({ activitySpec: { ...prev, activityType: v, ...(becomesQuiz ? { timeLimitSec: DEFAULT_NEW_QUIZ_TIME_SEC } : {}), ...(needsOptions ? { options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }], ...(v === "mcq" ? { correctIndex: 0 } : {}) } : {}) } });
+                            }}
+                          >
+                            <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
+                              <SelectItem value="mcq">Kvíz – jedna otázka</SelectItem>
+                              <SelectItem value="quiz">Kvíz – více otázek</SelectItem>
+                              <SelectItem value="wordcloud">Slovní mrak</SelectItem>
+                              <SelectItem value="poll">Anketa</SelectItem>
+                              <SelectItem value="wall">Zeď odpovědí</SelectItem>
+                              <SelectItem value="flashcards">Kartičky (Flashcards)</SelectItem>
+                              <SelectItem value="matching">Párování / Spojování dvojic</SelectItem>
+                              <SelectItem value="ordering">Seřazení kroků</SelectItem>
+                              <SelectItem value="sorting">Třídění do skupin</SelectItem>
+                              <SelectItem value="fill_blanks">Doplňovačka</SelectItem>
+                              <SelectItem value="fill_choice">Doplňovačka s výběrem</SelectItem>
+                              <SelectItem value="image_label">Obrázek s popisem</SelectItem>
+                              <SelectItem value="image_hotspot">Obrázek – aktivní body</SelectItem>
+                              <SelectItem value="reveal_cards">Odhalovací karty</SelectItem>
+                              <SelectItem value="memory_game">Pexeso</SelectItem>
+                              <SelectItem value="crossword">Křížovka</SelectItem>
+                              <SelectItem value="open">Otevřená odpověď</SelectItem>
+                              <SelectItem value="summary">Shrnutí lekce</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">Herní režim tohoto slidu</Label>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => updateSlide({ gameSettings: undefined })}
+                              className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                                !(currentSlide as any).gameSettings
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border text-muted-foreground hover:bg-muted/50"
+                              }`}
+                            >
+                              Jako celá prezentace
+                            </button>
+                            {SLIDE_GAME_MODES.map((m) => {
+                              const active = (currentSlide as any).gameSettings?.mode === m.id;
+                              return (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => updateSlide({
+                                    gameSettings: {
+                                      mode: m.id,
+                                      teamMode: (currentSlide as any).gameSettings?.teamMode ?? "none",
+                                    },
+                                  })}
+                                  title={m.hint}
+                                  className={`rounded-lg border-2 px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                                    active
+                                      ? "border-primary bg-primary/10 text-foreground"
+                                      : "border-border text-muted-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  {m.emoji} {m.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {(currentSlide as any).gameSettings && (
+                            <Select
+                              value={(currentSlide as any).gameSettings?.teamMode || "none"}
+                              onValueChange={(v) => updateSlide({
+                                gameSettings: { ...(currentSlide as any).gameSettings, teamMode: v },
+                              })}
+                            >
+                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Bez týmů</SelectItem>
+                                <SelectItem value="random">Náhodné týmy</SelectItem>
+                                <SelectItem value="manual">Ruční týmy</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {["quiz", "mcq", "true_false", "matching", "fill_blanks", "ordering"].includes((currentSlide as any).activitySpec?.activityType) && (
+                          <div className="border-t border-border pt-3">
+                            <TimeLimitPicker
+                              value={(currentSlide as any).activitySpec?.timeLimitSec}
+                              onChange={(next) => {
+                                const spec = { ...(currentSlide as any).activitySpec };
+                                if (next === undefined) delete spec.timeLimitSec;
+                                else spec.timeLimitSec = next;
+                                updateSlide({ activitySpec: spec });
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {(currentSlide as any).activitySpec?.activityType === "wall" && (
+                          <div className="space-y-2 border-t border-border pt-3">
+                            <Label className="text-xs">Otázka pro žáky</Label>
+                            <Textarea
+                              rows={2}
+                              className="text-xs"
+                              value={(currentSlide as any).activitySpec?.question || ""}
+                              onChange={(e) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, question: e.target.value } })}
+                              placeholder="Napište otázku pro žáky..."
+                            />
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={(currentSlide as any).activitySpec?.anonymous === true}
+                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, anonymous: !!v } })}
+                                id="slide-wall-anonymous"
+                              />
+                              <Label htmlFor="slide-wall-anonymous" className="cursor-pointer text-xs">Anonymní odpovědi</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={(currentSlide as any).activitySpec?.allowMultiple === true}
+                                onCheckedChange={(v) => updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, allowMultiple: !!v } })}
+                                id="slide-wall-multiple"
+                              />
+                              <Label htmlFor="slide-wall-multiple" className="cursor-pointer text-xs">Povolit více odpovědí</Label>
+                            </div>
+                          </div>
+                        )}
+
+                        <LiveActivitySpecEditor
+                          spec={(currentSlide as any).activitySpec}
+                          onChange={(patch) =>
+                            updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })
+                          }
+                        />
+                      </div>
+                  }
+                />
+              )}
             </div>
           )}
 

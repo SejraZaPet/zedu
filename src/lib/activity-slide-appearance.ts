@@ -6,6 +6,7 @@
  * nastavení vzhledu (uložené v `block.props.slideAppearance`) a převádí ho na
  * CSS proměnné, které přepíší tokeny uvnitř karty aktivity.
  */
+import { hasActivityColors, readActivityColors, resolveActivityColors, type ActivityColors } from "@/lib/activity-colors";
 
 export type ActivityLook = "light" | "dark" | "custom";
 
@@ -21,6 +22,8 @@ export interface ActivitySlideAppearance {
   expanded: boolean;
   /** Zobrazit hlavičku aktivity (název, typ, čas, povinnost). */
   showHeader: boolean;
+  /** Barvy aktivity (`activitySpec.colors`), mají přednost před `look`. */
+  colors?: ActivityColors;
 }
 
 export const DEFAULT_ACTIVITY_APPEARANCE: ActivitySlideAppearance = {
@@ -53,6 +56,7 @@ export function getActivitySlideAppearance(raw: unknown): ActivitySlideAppearanc
     fontScale: a.fontScale === undefined ? 1 : clampScale(a.fontScale),
     expanded: a.expanded === undefined ? true : a.expanded !== false,
     showHeader: a.showHeader === undefined ? true : a.showHeader !== false,
+    ...(hasActivityColors(a.colors) ? { colors: readActivityColors(a.colors) } : {}),
   };
 }
 
@@ -139,6 +143,17 @@ export function activitySlideAppearanceStyle(
         vars["--muted-foreground"] = text;
       }
     }
+  }
+
+  if (hasActivityColors(a.colors)) {
+    const r = resolveActivityColors(a.colors);
+    const t = (hex: string) => hexToHslTriplet(hex) as string;
+    Object.assign(vars, r.dark ? DARK_VARS : LIGHT_VARS, {
+      "--card": t(r.card), "--background": t(r.card),
+      "--foreground": t(r.text), "--card-foreground": t(r.text), "--muted-foreground": t(r.text),
+      "--muted": t(r.answer), "--border": t(r.accent),
+      "--primary": t(r.accent), "--primary-foreground": t(r.accentText),
+    });
   }
 
   return {

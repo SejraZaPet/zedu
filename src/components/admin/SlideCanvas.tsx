@@ -1204,7 +1204,7 @@ function EditableBlockInner({
         isTeacher={false}
         activityAppearance={
           block.type === "activity"
-            ? getActivitySlideAppearance((block.props as any)?.slideAppearance)
+            ? { ...getActivitySlideAppearance((block.props as any)?.slideAppearance), colors: (block.props as any)?.colors }
             : undefined
         }
       />
@@ -1890,8 +1890,10 @@ export function SlideBody({
 
   // Bílý text jen na wrapperu; potomci barvu dědí (`text-inherit`), takže
   // inline `style.color` z props konkrétního bloku vždy vyhraje.
+  // Tmavý slide přebarví text bloků na bílou – kromě karet aktivit ([data-activity-surface]),
+  // které mají vlastní čitelné barvy (jinak vznikl bílý text na krémové kartě).
   const blockTextScope = isDark
-    ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
+    ? "text-white [&_*:not([data-activity-surface],[data-activity-surface]_*)]:text-inherit [&_.bg-card:not([data-activity-surface],[data-activity-surface]_*)]:!bg-white/10 [&_.bg-muted\\/40:not([data-activity-surface],[data-activity-surface]_*)]:!bg-white/10 [&_.bg-muted\\/30:not([data-activity-surface],[data-activity-surface]_*)]:!bg-white/10 [&_.border:not([data-activity-surface],[data-activity-surface]_*)]:!border-white/20"
     : "";
 
   // Úroveň nadpisu z lekce (h1/h2 = hlavní téma, h3/h4 = podtéma) se přenáší
@@ -2173,7 +2175,7 @@ export function SlideBody({
       <>
         {headlineEl}
         <div data-slide-group="full" className={`w-full space-y-6 ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
-          {blocks.length === 0 && framedBlocks.length === 0 && editable && slide?.type === "activity" && slide?.activitySpec ? (
+          {blocks.length === 0 && framedBlocks.length === 0 && (slide?.type === "activity" || slide?.type === "studio_step") && slide?.activitySpec ? (
             <ActivitySpecPreview spec={slide.activitySpec} />
           ) : blocks.length === 0 && framedBlocks.length === 0 && editable && !hideEmptyEditorPlaceholders ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">

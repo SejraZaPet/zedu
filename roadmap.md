@@ -314,3 +314,5 @@
 - [x] Etapa 1: Spustit v seznamu, horní lišta promítání (Předchozí/číslo/Další, klávesy), Nástroje do hodiny v každém promítání, úprava propojené prezentace přes kopii s odkazem na lekci
 - [ ] Ruční průchod klikáním v editoru a živá hra s telefony (neověřeno)
 - [ ] Etapy 2–5 čekají na zadání
+- [x] Čitelnost karty aktivity na tmavých slidech, barvy aktivity s kontrolou kontrastu, editor prázdného kvízu/ankety, pravý panel vlastností, hlášky co chybí
+- [ ] Jednotný editor aktivit – plán v .lovable/plan/jednotny-editor-aktivit-2026-11-21.md, čeká na schválení

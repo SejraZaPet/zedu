@@ -1,4 +1,5 @@
 import { resolveGameMode } from "@/lib/game-slide-settings";
+import { activityCardStyle, hasActivityColors } from "@/lib/activity-colors";
 import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
@@ -421,7 +422,11 @@ const StudentGamePlay = () => {
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky.
               Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
           {isPhoneMcq ? (
-            <section className="live-game-surface mx-3 mt-28 rounded-lg p-4 space-y-3">
+            <section
+              data-activity-surface
+              className={`mx-3 mt-28 rounded-lg p-4 space-y-3 ${hasActivityColors(currentSlideData.activitySpec?.colors) ? "border-4" : "live-game-surface"}`}
+              style={hasActivityColors(currentSlideData.activitySpec?.colors) ? activityCardStyle(currentSlideData.activitySpec.colors) : undefined}
+            >
               <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">{currentSlideData.activitySpec?.question || currentSlideData.projector?.headline}</h1>
               {mcqImage && <img src={mcqImage} alt="Obrázek k otázce" className="max-h-64 w-full object-contain" />}
             </section>

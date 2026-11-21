@@ -691,7 +691,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
       );
       if (!activityAppearance) return shell;
       return (
-        <div data-activity-appearance={activityAppearance.look} style={activitySlideAppearanceStyle(activityAppearance)}>
+        <div data-activity-surface data-activity-appearance={activityAppearance.look} style={activitySlideAppearanceStyle(activityAppearance)}>
           {shell}
         </div>
       );

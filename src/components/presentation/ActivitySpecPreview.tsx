@@ -1,4 +1,5 @@
 import { activityTypeLabel } from "@/lib/presentation-activity";
+import { activityCardStyle } from "@/lib/activity-colors";
 
 const txt = (v: unknown) => String((v as any)?.text ?? v ?? "").replace(/<[^>]*>/g, "").trim();
 
@@ -24,30 +25,52 @@ export function activityPreviewItems(spec: any): { text: string; ok?: boolean }[
  * (šablony aktivit, AI aktivita). Dřív se zobrazil prázdný slide.
  */
 export default function ActivitySpecPreview({ spec }: { spec: any }) {
-  const items = activityPreviewItems(spec).filter((i) => i.text).slice(0, 6);
+  const at = String(spec?.activityType ?? "");
+  const choice = at === "mcq" || at === "poll";
+  let items = activityPreviewItems(spec).slice(0, 6);
+  // Prázdný kvíz/anketa: viditelná místa pro odpovědi místo prázdné karty.
+  if (choice && items.filter((i) => i.text).length === 0) items = [1, 2, 3, 4].map((n) => ({ text: "", ok: false, n } as any));
+  else items = items.filter((i) => i.text);
   const question = txt(spec?.question);
+  const placeholder = "opacity-60 italic";
   return (
     <div
       data-testid="activity-spec-preview"
-      className="mx-auto w-full max-w-[1200px] rounded-[2rem] bg-deck-cream p-10 font-deck-body text-deck-violet-deep shadow-lg"
+      data-activity-surface
+      className="mx-auto w-full max-w-[1200px] rounded-[2rem] border-4 p-10 font-deck-body shadow-lg"
+      style={activityCardStyle(spec?.colors)}
     >
-      <span className="inline-flex rounded-full bg-deck-teal px-6 py-2 text-[1.4rem] font-semibold uppercase tracking-wide text-deck-violet-deep">
+      <span
+        className="inline-flex rounded-full px-6 py-2 text-[1.4rem] font-semibold uppercase tracking-wide"
+        style={{ backgroundColor: "var(--activity-accent)", color: "var(--activity-accent-text)" }}
+      >
         Aktivita · {activityTypeLabel(spec?.activityType)}
       </span>
-      {question && <p className="mt-6 font-deck-heading text-[2.6rem] uppercase leading-tight">{question}</p>}
+      {(question || choice) && (
+        <p className={`mt-6 font-deck-heading text-[2.6rem] uppercase leading-tight ${question ? "" : placeholder}`}>
+          {question || "Sem napište otázku (v panelu vpravo)"}
+        </p>
+      )}
       {items.length > 0 ? (
         <ul className="mt-6 grid grid-cols-2 gap-4">
-          {items.map((it, i) => (
+          {items.map((it: any, i) => (
             <li
               key={i}
-              className={`rounded-2xl border-2 px-6 py-4 text-[1.6rem] ${it.ok ? "border-deck-teal bg-background" : "border-border bg-background"}`}
+              data-correct={it.ok ? "true" : undefined}
+              className={`rounded-2xl border-4 px-6 py-4 text-[1.6rem] ${it.text ? "" : placeholder}`}
+              style={{
+                backgroundColor: "var(--activity-answer)",
+                color: "var(--activity-answer-text)",
+                borderColor: it.ok ? "var(--activity-accent)" : "transparent",
+              }}
             >
-              {it.text}
+              {it.text || `Odpověď ${i + 1}`}
+              {it.ok && <span className="ml-3 text-[1.2rem] font-semibold">✓ správná</span>}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-6 text-[1.5rem] opacity-80">Žáci odpovídají na svých zařízeních. Obsah aktivity upravíte v panelu Slide.</p>
+        <p className="mt-6 text-[1.5rem] opacity-80">Žáci odpovídají na svých zařízeních. Obsah aktivity upravíte v panelu vpravo.</p>
       )}
     </div>
   );

@@ -4,6 +4,19 @@ import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
+
+/** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
+function ActivityCardFrame({ spec, className, children }: { spec: any; className: string; children: (dark: boolean) => React.ReactNode }) {
+  if (!hasActivityColors(spec?.colors)) {
+    return <TextScrim className={`border border-white/20 ${className}`}>{children(true)}</TextScrim>;
+  }
+  return (
+    <div data-activity-surface className={`rounded-3xl border-4 shadow-2xl ${className}`} style={activityCardStyle(spec.colors)}>
+      {children(resolveActivityColors(spec.colors).dark)}
+    </div>
+  );
+}
 import { McqAnswerDistribution, McqCountdown, McqResultsBoard } from "@/components/live/LiveMcqWidgets";
 import { isLiveMcqSlide, isMcqRevealed } from "@/lib/live-mcq";
 import { isAwaitingStart } from "@/lib/live-timing";
@@ -305,9 +318,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                         {!revealed && session?.status === "playing" && (
                           <div className="w-full max-w-md"><McqCountdown session={session} active size="lg" /></div>
                         )}
-                        <TextScrim className="w-full border border-white/20 px-8 py-6 text-2xl">
-                          <ActivityTaskPreview spec={currentSlide.activitySpec} showSolution={revealed} darkMode />
-                        </TextScrim>
+                        <ActivityCardFrame spec={currentSlide.activitySpec} className="w-full px-8 py-6 text-2xl">
+                          {(dark) => <ActivityTaskPreview spec={currentSlide.activitySpec} showSolution={revealed} darkMode={dark} />}
+                        </ActivityCardFrame>
                         {revealed && responses && (
                           <div className="grid w-full max-w-5xl grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-start gap-4">
                             <McqAnswerDistribution
@@ -321,9 +334,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       </div>
                     );
                   })() : (
-                  <TextScrim className="w-full max-w-5xl border border-white/20 px-8 py-6 shrink-0 text-xl">
-                    <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
-                  </TextScrim>
+                  <ActivityCardFrame spec={currentSlide.activitySpec} className="w-full max-w-5xl px-8 py-6 shrink-0 text-xl">
+                    {(dark) => <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode={dark} />}
+                  </ActivityCardFrame>
                   )
                 ) : currentSlide.type === "activity" ? (
                   <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
