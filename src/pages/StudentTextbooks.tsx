@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import TextbookCover from "@/components/textbooks/TextbookCover";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
-import { KeyRound, BookOpen, ArrowRight } from "lucide-react";
+import { KeyRound, BookOpen } from "lucide-react";
 import { fetchStudentClassTextbookLinks, globalTextbooksCoveredByTeacher } from "@/lib/student-class-textbooks";
 
 
@@ -22,6 +23,7 @@ interface DisplayTextbook {
   textbook_type: "global" | "teacher";
   title: string;
   subject: string;
+  subjectId?: string | null;
   description: string;
   sources: Source[];
   /** route to open the textbook detail */
@@ -57,7 +59,7 @@ const StudentTextbooks = () => {
     // Set A — direct enrollments (teacher textbooks via code)
     const { data: enrollData } = await supabase
       .from("teacher_textbook_enrollments")
-      .select("textbook_id, teacher_textbooks(id, title, subject, description)")
+      .select("textbook_id, teacher_textbooks(id, title, subject, subject_id, description)")
       .eq("student_id", userId)
       .order("enrolled_at", { ascending: false })
       .order("id", { ascending: true });
@@ -111,6 +113,7 @@ const StudentTextbooks = () => {
         textbook_type: "teacher",
         title: tb.title,
         subject: tb.subject || "",
+        subjectId: tb.subject_id ?? null,
         description: tb.description || "",
         sources: [{ kind: "enrollment" }],
         href: `/student/ucebnice/${tb.id}`,
@@ -136,6 +139,7 @@ const StudentTextbooks = () => {
             textbook_type: "teacher",
             title: tb.title,
             subject: tb.subject || "",
+            subjectId: tb.subject_id ?? null,
             description: tb.description || "",
             sources: [{ kind: "class", className }],
             href: `/student/ucebnice/${tb.id}`,
@@ -154,7 +158,8 @@ const StudentTextbooks = () => {
             textbook_id: sub.id,
             textbook_type: "global",
             title: sub.label,
-            subject: sub.abbreviation || "",
+            subject: sub.abbreviation || sub.label || "",
+            subjectId: sub.id,
             description: sub.description || "",
             sources: [{ kind: "class", className }],
             href: `/ucebnice/${sub.slug}`,
@@ -244,43 +249,34 @@ const StudentTextbooks = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <ul className="textbook-card-grid" role="list">
             {items.map((it) => (
-              <div key={it.key} className="bg-card border border-border rounded-xl p-6 hover:shadow-md transition-shadow flex flex-col">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge
-                    variant="outline"
-                    className={
-                      it.textbook_type === "global"
-                        ? "bg-blue-500/15 text-blue-500 border-blue-500/30"
-                        : "bg-teal-500/15 text-teal-500 border-teal-500/30"
-                    }
-                  >
-                    {it.textbook_type === "global" ? "Globální" : "Učitelská"}
-                  </Badge>
-                  {it.sources.map((s, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {s.kind === "enrollment"
-                        ? "Vlastní zápis"
-                        : s.className
-                          ? `Z třídy ${s.className}`
-                          : "Z výuky"}
-                    </Badge>
-                  ))}
-                </div>
-                <h3 className="font-heading font-semibold text-lg mb-1">{it.title}</h3>
-                {it.subject && <p className="text-sm text-muted-foreground mb-2">{it.subject}</p>}
-                {it.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{it.description}</p>}
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 mt-auto"
-                  onClick={() => navigate(it.href)}
+              <li key={it.key}>
+                <Link
+                  to={it.href}
+                  className="textbook-card group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label={`Otevřít učebnici ${it.title}${it.subject ? `, ${it.subject}` : ""}`}
                 >
-                  Otevřít <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
+                  <TextbookCover subjectId={it.subjectId} subject={it.subject} title={it.title} />
+                  <div className="flex flex-1 flex-col gap-1 p-4">
+                    <h3 className="font-heading text-base font-semibold leading-tight line-clamp-2">{it.title}</h3>
+                    {it.subject && <p className="text-sm text-muted-foreground">{it.subject}</p>}
+                    <div className="mt-auto flex flex-wrap gap-1 pt-2">
+                      {it.sources.map((s, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {s.kind === "enrollment"
+                            ? "Vlastní zápis"
+                            : s.className
+                              ? `Z třídy ${s.className}`
+                              : "Z výuky"}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </main>
       <SiteFooter />

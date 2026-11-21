@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import TextbookCover from "@/components/textbooks/TextbookCover";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
@@ -54,6 +55,7 @@ const StudentTextbookDetail = () => {
   const { textbookId } = useParams<{ textbookId: string }>();
   const navigate = useNavigate();
   const [textbookTitle, setTextbookTitle] = useState("");
+  const [textbookCover, setTextbookCover] = useState<{ subject: string; subjectId: string | null }>({ subject: "", subjectId: null });
   const [textbookDescription, setTextbookDescription] = useState("");
   const [grades, setGrades] = useState<GradeGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,12 +98,13 @@ const StudentTextbookDetail = () => {
       // Fetch textbook info
       const { data: tb } = await supabase
         .from("teacher_textbooks")
-        .select("title, description, subject")
+        .select("title, description, subject, subject_id")
         .eq("id", textbookId)
         .single();
       if (!tb) { setLoading(false); return; }
       const tbAny = tb as any;
       setTextbookTitle(tbAny.title);
+      setTextbookCover({ subject: tbAny.subject ?? "", subjectId: tbAny.subject_id ?? null });
       setTextbookDescription(tbAny.description || "");
 
       // 1) Lekce z teacher_textbook_lessons (učitelský systém)
@@ -520,7 +523,11 @@ const StudentTextbookDetail = () => {
         </Button>
 
         <div className="mb-8">
-          <h1 className="font-heading text-2xl font-bold mb-2">{textbookTitle}</h1>
+          <TextbookCover variant="banner" title={textbookTitle} subject={textbookCover.subject} subjectId={textbookCover.subjectId} className="mb-4">
+            <div className="absolute inset-x-0 bottom-0 p-5 pt-12" style={{ background: "linear-gradient(to top, hsl(var(--secondary-dark) / .55), transparent)" }}>
+              <h1 className="font-heading text-2xl sm:text-3xl font-bold break-words">{textbookTitle}</h1>
+            </div>
+          </TextbookCover>
           {textbookDescription && (
             <p className="text-muted-foreground mb-4">{textbookDescription}</p>
           )}

@@ -795,3 +795,10 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   .learning-mission-card { transition: none; }
   .learning-mission-card:hover { transform: none; }
 }
+
+/* Textbook tiles with automatic covers */
+.textbook-card-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+@media (max-width: 420px) { .textbook-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; } }
+.textbook-card { box-shadow: var(--dashboard-tile-shadow); transition: transform .2s ease, box-shadow .2s ease; }
+.textbook-card:hover, .textbook-card:focus-within { transform: translateY(-3px); box-shadow: var(--dashboard-tile-shadow-raised); }
+@media (prefers-reduced-motion: reduce) { .textbook-card, .textbook-card:hover, .textbook-card:focus-within { transform: none; transition: none; } }

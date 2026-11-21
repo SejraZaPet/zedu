@@ -1,3 +1,4 @@
+import TextbookCover from "@/components/textbooks/TextbookCover";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -283,7 +284,16 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
   const GridCard = ({ tb, dragHandleProps, setNodeRef, style }: any) => {
     const matchedSubject = subjects?.find(s => s.slug === tb.subject);
     return (
-      <div ref={setNodeRef} style={style} className="bg-card border border-border rounded-xl p-6 hover:shadow-md transition-shadow relative">
+      <div ref={setNodeRef} style={style} className="textbook-card bg-card border border-border rounded-2xl overflow-hidden relative flex flex-col">
+        <button
+          type="button"
+          onClick={() => onOpen(tb)}
+          className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          aria-label={`Otevřít učebnici ${tb.title}`}
+        >
+          <TextbookCover subjectId={tb.subject_id} subject={matchedSubject?.label ?? tb.subject} title={tb.title} className="aspect-[16/7]" />
+        </button>
+        <div className="p-6 pt-2 relative flex-1 flex flex-col">
         {isManual && (
           <button {...dragHandleProps} className="absolute top-2 left-2 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Přesunout">
             <GripVertical className="w-4 h-4" />
@@ -321,6 +331,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
           <Button size="sm" variant="outline" onClick={() => onOpen(tb)} className="gap-1">
             <Eye className="w-4 h-4" /> Detail
           </Button>
+        </div>
         </div>
       </div>
     );
@@ -416,7 +427,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
           ? <SortableItem key={tb.id} tb={tb} render={(p) => <GridCard {...p} />} />
           : <GridCard key={tb.id} tb={tb} />
       );
-      return <div className="grid gap-4 md:grid-cols-2">{items}</div>;
+      return <div className="textbook-card-grid">{items}</div>;
     }
     const rows = sortedTextbooks.map(tb =>
       isManual
