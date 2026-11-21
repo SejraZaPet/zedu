@@ -43,7 +43,7 @@ export function isDemoAiLimitBody(status: number, body: string): boolean {
 export function installDemoLimitWatcher(): () => void {
   const orig = window.fetch;
   const wrapped: typeof fetch = async (...args) => {
-    const res = await orig(...args);
+    const res = await orig(args[0], args[1]);
     try {
       const url = typeof args[0] === "string" ? args[0] : args[0] instanceof URL ? args[0].href : (args[0] as Request).url;
       if (res.status === 429 && url.includes("/functions/v1/")) {
