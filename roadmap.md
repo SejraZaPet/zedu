@@ -207,6 +207,12 @@
 - [x] Sdílený combobox pro kartičky a shrnutí: hledání bez diakritiky v názvu/předmětu/učebnici, naposledy procvičované lekce první, prázdný stav, klávesnice a mobil 390 px; bez DB/RLS a nasazení.
 - 9 testů prošlo; živě 22 lekcí, hledání 3 shody, přesný prázdný stav, šipky/Enter/Escape, výběr a maketované kartičky, min. dotykový cíl 50 px a nulový horizontální posun. Skutečná mobilní klávesnice ani ostré AI nebyly spuštěny.
 
+## Učím se – skupiny lekcí a delší výběry sešitů
+- [x] Sdílený combobox v „Procvičit metodou“: „Bez konkrétní lekce“ vždy první, nadpisy předmětů i po filtrování, prázdné skupiny skryté.
+- [x] Hledání bez diakritiky/velikosti v názvu lekce, učebnice i předmětu; vlastní posun a výška/otvírání podle visualViewport nad mobilní klávesnicí.
+- [x] Sešit a stránka používají sdílený SearchableSelect až od 9 položek; kratší Select beze změny.
+- [x] 36 cílených/regresních testů, typy i build prošly. Živě 22 lekcí ve 5 předmětech, filtry/prázdný stav, první volba a 390×500 bez překrytí či vodorovného posunu. Skutečná mobilní klávesnice a živých 9 sešitů/stránek neověřeny; bez DB a nasazení.
+
 ## Učím se – sdílená cache a rychlejší načtení lekcí
 - [x] Sdílený react-query hook s userId, staleTime 5 min a gcTime 30 min; prefetch v „Učím se“ i na žákovském přehledu, stejná data používá i tahák.
 - [x] Společný combobox i v „Procvičit metodou“, skeleton při prvním načtení, přesná chyba a funkční „Zkusit znovu“.

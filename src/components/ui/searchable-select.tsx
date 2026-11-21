@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Command, CommandInput, CommandList, CommandItem } from "./command";
 import { SearchEmpty } from "./search-field";
 import { matchesSearch, needsSearch } from "@/lib/picker-search";
+import { usePopoverListPlacement } from "@/hooks/usePopoverListPlacement";
 
 export interface SearchOption { value: string; label: string; subtitle?: string; disabled?: boolean }
 export function SearchableSelect({ value, onValueChange, options, placeholder = "Vyberte…", label = "Hledat", growing = false, disabled = false, id }: {
@@ -12,14 +13,16 @@ export function SearchableSelect({ value, onValueChange, options, placeholder = 
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listPlacement = usePopoverListPlacement(open, triggerRef, 82);
   const visible = options.filter((o) => matchesSearch(query, o.label, o.subtitle));
   const selected = options.find((o) => o.value === value);
   return <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
-    <PopoverTrigger asChild><Button id={id} type="button" variant="outline" disabled={disabled} role="combobox" aria-label={label} aria-expanded={open}
+    <PopoverTrigger asChild><Button ref={triggerRef} id={id} type="button" variant="outline" disabled={disabled} role="combobox" aria-label={label} aria-expanded={open}
       className="h-auto min-h-11 w-full min-w-0 justify-between whitespace-normal text-left font-normal">
       <span className="min-w-0 break-words">{selected?.label || placeholder}</span><ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
     </Button></PopoverTrigger>
-    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0">
+    <PopoverContent align="start" side={listPlacement.side} collisionPadding={8} className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0">
       <Command shouldFilter={false}>
         {needsSearch(options.length, growing) && <>
           <div className="flex min-w-0 items-center">
@@ -28,7 +31,7 @@ export function SearchableSelect({ value, onValueChange, options, placeholder = 
           </div>
           <p role="status" className="px-3 py-1 text-xs text-muted-foreground">Nalezeno {visible.length}</p>
         </>}
-        <CommandList>
+        <CommandList className="overscroll-contain" style={{ maxHeight: listPlacement.maxHeight }}>
           {visible.length === 0 && <SearchEmpty onClear={() => setQuery("")} />}
           {visible.map((o) => <CommandItem key={o.value} value={o.value} disabled={o.disabled} className="min-h-11 gap-2 whitespace-normal"
             onSelect={() => { onValueChange(o.value); setOpen(false); setQuery(""); }}>

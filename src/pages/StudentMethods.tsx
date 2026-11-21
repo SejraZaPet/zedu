@@ -21,6 +21,7 @@ import { usePracticePhotos } from "@/lib/use-practice-photos";
 import { useDemoPair } from "@/lib/demo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
 import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { methodHumanInfo, methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import StudentLearningHome from "@/components/student/StudentLearningHome";
 import {
@@ -42,6 +43,10 @@ type Method = {
 const ICONS: Record<string, React.ElementType> = {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer, NotebookPen, ArrowRightCircle,
 };
+
+function practicePageLabel(page: { order: number; text: string }): string {
+  return `Strana ${page.order + 1}${page.text ? ` – ${page.text.slice(0, 40)}${page.text.length > 40 ? "…" : ""}` : " – bez textu – rukopis zatím neumíme číst"}`;
+}
 
 const StudentMethods = () => {
   const { toast } = useToast();
@@ -548,27 +553,49 @@ const StudentMethods = () => {
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="practice-notebook">Sešit</Label>
-                  <Select value={notebookId} onValueChange={setNotebookId}>
-                    <SelectTrigger id="practice-notebook" className="mt-1"><SelectValue placeholder="Vyber sešit" /></SelectTrigger>
-                    <SelectContent>
-                      {notebooks.map((n) => <SelectItem key={n.id} value={n.id}>{n.title}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  {notebooks.length > 8 ? (
+                    <SearchableSelect
+                      id="practice-notebook"
+                      value={notebookId}
+                      onValueChange={setNotebookId}
+                      options={notebooks.map((notebook) => ({ value: notebook.id, label: notebook.title }))}
+                      placeholder="Vyber sešit"
+                      label="Hledat sešit"
+                      growing
+                    />
+                  ) : (
+                    <Select value={notebookId} onValueChange={setNotebookId}>
+                      <SelectTrigger id="practice-notebook" className="mt-1"><SelectValue placeholder="Vyber sešit" /></SelectTrigger>
+                      <SelectContent>
+                        {notebooks.map((n) => <SelectItem key={n.id} value={n.id}>{n.title}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
                   {notebooks.length === 0 && <p className="text-xs text-muted-foreground mt-1">Zatím nemáš žádný sešit.</p>}
                 </div>
                 {notebookId && (
                   <div>
                     <Label htmlFor="practice-page">Stránka</Label>
-                    <Select value={pageId} onValueChange={setPageId}>
-                      <SelectTrigger id="practice-page" className="mt-1"><SelectValue placeholder="Vyber stránku" /></SelectTrigger>
-                      <SelectContent>
-                        {pages.map((pg) => (
-                          <SelectItem key={pg.id} value={pg.id} disabled={!pg.text}>
-                            Strana {pg.order + 1}{pg.text ? ` – ${pg.text.slice(0, 40)}${pg.text.length > 40 ? "…" : ""}` : " – bez textu – rukopis zatím neumíme číst"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {pages.length > 8 ? (
+                      <SearchableSelect
+                        id="practice-page"
+                        value={pageId}
+                        onValueChange={setPageId}
+                        options={pages.map((page) => ({ value: page.id, label: practicePageLabel(page), disabled: !page.text }))}
+                        placeholder="Vyber stránku"
+                        label="Hledat stránku"
+                        growing
+                      />
+                    ) : (
+                      <Select value={pageId} onValueChange={setPageId}>
+                        <SelectTrigger id="practice-page" className="mt-1"><SelectValue placeholder="Vyber stránku" /></SelectTrigger>
+                        <SelectContent>
+                          {pages.map((pg) => (
+                            <SelectItem key={pg.id} value={pg.id} disabled={!pg.text}>{practicePageLabel(pg)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">Použijeme jen text z textových polí na stránce.</p>
                   </div>
                 )}

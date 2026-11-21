@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Command, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { matchesSearch } from "@/lib/picker-search";
 import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
+import { usePopoverListPlacement } from "@/hooks/usePopoverListPlacement";
 import type { PracticeLessonGroup, PracticeLessonOption } from "@/lib/student-practice-lessons";
 
 export function orderedPracticeLessons(
@@ -52,11 +53,18 @@ export default function LessonSearchCombobox({
 }: LessonSearchComboboxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listPlacement = usePopoverListPlacement(open, triggerRef);
   const lessonsQuery = useStudentPracticeLessons(userId);
   const groups = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
   const lessons = useMemo(() => orderedPracticeLessons(groups, recentLessonIds), [groups, recentLessonIds]);
-  const visible = lessons.filter((lesson) => matchesSearch(query, lesson.title, lesson.subject, lesson.textbook));
-  const showNone = allowNone && (!query.trim() || matchesSearch(query, "Bez konkrétní lekce"));
+  const visibleGroups = useMemo(() => groups.map((group) => ({
+    ...group,
+    lessons: orderedPracticeLessons([group], recentLessonIds)
+      .filter((lesson) => matchesSearch(query, lesson.title, lesson.subject, lesson.textbook)),
+  })).filter((group) => group.lessons.length > 0), [groups, query, recentLessonIds]);
+  const visibleCount = visibleGroups.reduce((sum, group) => sum + group.lessons.length, 0);
+  const showNone = allowNone;
   const selected = lessons.find((lesson) => lesson.id === value);
   const close = () => { setOpen(false); setQuery(""); };
 
@@ -86,6 +94,7 @@ export default function LessonSearchCombobox({
       <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(""); }}>
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             type="button"
             variant="outline"
             role="combobox"
@@ -104,6 +113,7 @@ export default function LessonSearchCombobox({
         </PopoverTrigger>
         <PopoverContent
           align="start"
+          side={listPlacement.side}
           collisionPadding={8}
           className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-1rem)] p-0"
         >
@@ -115,8 +125,8 @@ export default function LessonSearchCombobox({
               placeholder="Napiš název lekce, předmětu nebo učebnice…"
               aria-label="Hledat lekci"
             />
-            <CommandList className="max-h-[min(300px,45dvh)]">
-              {!showNone && visible.length === 0 && (
+            <CommandList className="overscroll-contain" style={{ maxHeight: listPlacement.maxHeight }}>
+              {query.trim() && visibleCount === 0 && (
                 <p role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">
                   Nic jsme nenašli. Zkus jiné slovo.
                 </p>
@@ -131,19 +141,23 @@ export default function LessonSearchCombobox({
                   <span>Bez konkrétní lekce</span>
                 </CommandItem>
               )}
-              {visible.map((lesson) => (
-                <CommandItem
-                  key={lesson.id}
-                  value={lesson.id}
-                  className="min-h-11 gap-2 whitespace-normal px-3 py-2"
-                  onSelect={() => { onValueChange(lesson.id); close(); }}
-                >
-                  <Check aria-hidden className={`h-4 w-4 shrink-0 ${value === lesson.id ? "opacity-100" : "opacity-0"}`} />
-                  <span className="min-w-0 break-words">
-                    {lesson.title}
-                    <span className="block text-xs text-muted-foreground">{lessonSubtitle(lesson)}</span>
-                  </span>
-                </CommandItem>
+              {visibleGroups.map((group) => (
+                <CommandGroup key={group.subject} heading={group.subject}>
+                  {group.lessons.map((lesson) => (
+                    <CommandItem
+                      key={lesson.id}
+                      value={lesson.id}
+                      className="min-h-11 gap-2 whitespace-normal px-3 py-2"
+                      onSelect={() => { onValueChange(lesson.id); close(); }}
+                    >
+                      <Check aria-hidden className={`h-4 w-4 shrink-0 ${value === lesson.id ? "opacity-100" : "opacity-0"}`} />
+                      <span className="min-w-0 break-words">
+                        {lesson.title}
+                        <span className="block text-xs text-muted-foreground">{lessonSubtitle(lesson)}</span>
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               ))}
             </CommandList>
           </Command>
