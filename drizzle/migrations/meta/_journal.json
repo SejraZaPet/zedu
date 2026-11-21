@@ -680,6 +680,13 @@
       "when": 1795256278875,
       "tag": "0096_demo_d0_final_notice",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1795256508698,
+      "tag": "0097_revoke_client_exec_sensitive_definers",
+      "breakpoints": true
     }
   ]
 }
