@@ -60,7 +60,7 @@
 - Picker search uses `picker-search.ts` with shared SearchField/SearchableSelect/SearchableList; filtering never mutates selection or authorization, so stored values and hidden selections remain unchanged.
 - Teacher wall posts are announcements marked in settings and published from a saved draft; wall and announcement tabs read the same assignment, avoiding duplicate content and preserving existing RLS.
 - Mind maps use one tree model in `src/lib/mind-map.ts` (limits, scoring, outline) rendered by `MindMapView`; worksheet blanks keep answers only in `answerKeys` (array in blank order), never in `mindMap`, so the student version can be stripped like other item types.
-- Standalone cheat sheets use owner-only notebook/page rows tagged by CHEATSHEET_STORAGE_MARKER in cover_color and content.kind; exclude these containers from every notebook picker/read and never normalize them as notebook content, preserving separate lists without schema changes.
+- Cheat sheets: owner-only notebook rows tagged CHEATSHEET_STORAGE_MARKER (cover_color, content.kind); excluded from notebook pickers/reads, never normalized as notebooks.
 - Material lesson/worksheet lists are normalized by assignment-content.ts; worksheet_id mirrors the first settings.worksheets entry and material previews never create attempts or own-work rows, preserving task grading and legacy records.
 - Live answer time and manual "Spustit" use only `_shared/live-timing.ts` (re-exported by `src/lib/live-timing.ts`): `activitySpec.timeLimitSec` overrides game time, `settings.activityStartMode`/`armedQuestion` gate answers on client and server; missing keys keep legacy behaviour (incl. 20 s fallback).
 
