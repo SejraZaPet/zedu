@@ -1,11 +1,13 @@
-import { Rocket, Play } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Rocket, Play, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import heroBgDefault from "@/assets/hero-students.png";
 import heroLogoDefault from "@/assets/bezli-logo.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 import Editable from "@/components/landing-edit/Editable";
 import IntroPricingBanner from "@/components/landing/IntroPricingBanner";
+import { dashboardFor, startDemo } from "@/lib/demo";
 
 interface HeroProps {
   props?: Partial<typeof DEFAULT_HERO_PROPS>;
@@ -13,6 +15,9 @@ interface HeroProps {
 
 const Hero = ({ props }: HeroProps) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
   const p = mergeSectionProps(DEFAULT_HERO_PROPS, props);
 
   const bgUrl = p.background_image_url && p.background_image_url.trim() !== "" ? p.background_image_url : heroBgDefault;
@@ -22,8 +27,29 @@ const Hero = ({ props }: HeroProps) => {
   const titleParts: string[] = Array.isArray(p.title_parts) ? p.title_parts : DEFAULT_HERO_PROPS.title_parts;
   const features = Array.isArray(p.features) ? p.features : DEFAULT_HERO_PROPS.features;
 
-  const handlePrimary = () => {
-    if (p.primary_cta?.href) navigate(p.primary_cta.href);
+  const handlePrimary = async () => {
+    const href = p.primary_cta?.href;
+    const isTeacherDemo = href === "/demo?role=teacher"
+      // Existující CMS obsah má zatím uložené /auth; hlavní CTA se chová jako demo i bez migrace dat.
+      || (href === "/auth" && p.primary_cta?.label === "Vyzkoušet zdarma");
+
+    if (!isTeacherDemo) {
+      if (href) navigate(href);
+      return;
+    }
+    if (demoBusy) return;
+
+    setDemoBusy(true);
+    setDemoError(null);
+    try {
+      const role = await startDemo("teacher", searchParams.get("akce"));
+      window.location.assign(dashboardFor(role));
+    } catch (e) {
+      setDemoError(e instanceof Error && e.message
+        ? e.message
+        : "Demo se nepodařilo spustit. Zkuste to prosím znovu.");
+      setDemoBusy(false);
+    }
   };
   const handleSecondary = () => {
     if (p.secondary_cta?.scroll_to) {
@@ -86,15 +112,20 @@ const Hero = ({ props }: HeroProps) => {
             style={{ animationDelay: "0.5s" }}
           >
             <button
+              type="button"
               onClick={handlePrimary}
-              className="bg-white text-primary font-semibold rounded-2xl px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all inline-flex items-center justify-center"
+              disabled={demoBusy}
+              aria-busy={demoBusy || undefined}
+              className="bg-white text-primary font-semibold rounded-2xl px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all inline-flex items-center justify-center disabled:opacity-70 disabled:hover:scale-100"
             >
-              <PrimaryIcon className="w-5 h-5 mr-2" />{" "}
-              <Editable
-                path="primary_cta.label"
-                value={p.primary_cta?.label ?? "Vyzkoušet zdarma"}
-                placeholder="Text tlačítka"
-              />
+              {demoBusy ? <Loader2 className="w-5 h-5 mr-2 animate-spin" aria-hidden /> : <PrimaryIcon className="w-5 h-5 mr-2" />}{" "}
+              {demoBusy ? "Připravuji demo…" : (
+                <Editable
+                  path="primary_cta.label"
+                  value={p.primary_cta?.label ?? "Vyzkoušet zdarma"}
+                  placeholder="Text tlačítka"
+                />
+              )}
             </button>
             <button
               onClick={handleSecondary}
@@ -108,6 +139,19 @@ const Hero = ({ props }: HeroProps) => {
               />
             </button>
           </div>
+
+          {demoError && (
+            <div role="alert" className="mt-4 max-w-xl mx-auto rounded-2xl bg-background/95 p-4 text-foreground shadow-lg">
+              <p className="text-sm">{demoError}</p>
+              <button
+                type="button"
+                onClick={() => navigate("/auth?role=teacher")}
+                className="mt-3 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Vytvořit účet
+              </button>
+            </div>
+          )}
 
           {p.disclaimer && (
             <p

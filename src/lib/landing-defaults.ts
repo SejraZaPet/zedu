@@ -9,7 +9,7 @@ export const DEFAULT_HERO_PROPS = {
   disclaimer: "Zdarma pro všechny učitele. Bez platební karty.",
   background_image_url: "",
   logo_image_url: "",
-  primary_cta: { label: "Vyzkoušet zdarma", href: "/auth", icon: "Rocket" },
+  primary_cta: { label: "Vyzkoušet zdarma", href: "/demo?role=teacher", icon: "Rocket" },
   secondary_cta: { label: "Jak to funguje ↓", scroll_to: "jak-to-funguje", icon: "Play" },
   features: [
     { icon: "BookOpen", title: "Digitální učebnice", description: "Vytvářejte kapitoly, výukový obsah a strukturované materiály.", href: null as string | null },
