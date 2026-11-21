@@ -28,4 +28,13 @@ describe("Sdílené dlaždice – kontrast", () => {
       }
     }
   });
+
+  it("zlatý režim testu a fialový aktuální krok cesty drží bílý text aspoň 4,5:1", () => {
+    for (const token of ["learning-exam-from", "learning-exam-to", "dashboard-tile-learn-from"]) {
+      const match = css.match(new RegExp(`--${token}:\\s*([\\d.]+)\\s+([\\d.]+)%\\s+([\\d.]+)%`));
+      expect(match, token).not.toBeNull();
+      const ratio = 1.05 / (luminance(Number(match![1]), Number(match![2]), Number(match![3])) + 0.05);
+      expect(ratio, token).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });

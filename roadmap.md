@@ -166,3 +166,11 @@
 - [x] Sdílená karta úlohy otevře detail klikem i Enter/Space; vnořené akce zůstanou samostatné v seznamu i předmětech.
 - [x] 25 cílených testů, typy a build; živý přehled 1360/390 px, Enter v seznamu i předmětu, bez vodorovného posunu a chyb stránky. Bez DB, SQL, edge funkcí a nasazení.
 - Denní cíle nemají existující datový zdroj, proto zůstal původní popisek Učím se. Živý účet neměl data pro pilulky Dnes; jejich stavy pokrývají testy. Skutečný iPhone Safari neověřen.
+
+## Učím se – etapa 2, varianta D (schváleno)
+- [x] Uvítací denní cíl z dokončeného procvičování, XP, série a zvládnutí témat z existujících dat.
+- [x] Dnešní mise podle posledních/slabých lekcí a režimy podle záměru; zachovat kartičky, kvíz, shrnutí, chat i materiál.
+- [x] Lidské názvy studijních technik s původním názvem jako nápovědou; beze změny spouštění a funkcí.
+- [x] Moje cesta podle zvládnutí lekcí, mobilní vzhled, kontrast a reduced motion.
+- [x] 62 testů, typy a build; živě 1360/390 px, kvíz, chat, techniky, skutečná data, bez přetečení a chyb. Bez DB, SQL, edge funkcí a nasazení.
+- XP odměny misí nejsou přidány: dokončené procvičování dnes XP nepřipisuje a bezpečná serverová odměna by vyžadovala samostatnou změnu. Živé AI volání nebylo spuštěno; kartičky/shrnutí ověřují komponentové testy, chat bylo ověřeno pouze otevření.

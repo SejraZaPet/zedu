@@ -12,6 +12,26 @@ const INFO: Record<string, { purpose: string; duration: string }> = {
 
 export const methodPurpose = (slug: string | null | undefined) => (slug ? INFO[slug] ?? null : null);
 
+export interface HumanMethodInfo {
+  title: string;
+  description: string;
+  originalName: string;
+}
+
+/** Žák vybírá podle záměru; odborný název zůstává pouze jako malá nápověda. */
+const HUMAN_INFO: Record<string, HumanMethodInfo> = {
+  "5p": { title: "Kapitola v pěti krocích", description: "Nejprve se podíváš, pak čteš a ověříš si, co umíš.", originalName: "5P" },
+  akrostika: { title: "Zapamatování větou", description: "Věta, která ti pomůže zapamatovat.", originalName: "Akrostika" },
+  loci: { title: "Paměťový palác", description: "Pojmy rozložíš po známých místech.", originalName: "Loci" },
+  neana: { title: "Čtení a vlastní poznámky", description: "Text si přečteš, vysvětlíš a zapíšeš vlastními slovy.", originalName: "NEANA" },
+  pomodoro: { title: "Soustředění s pauzami", description: "25 minut soustředění, pak pauza.", originalName: "Pomodoro" },
+  pqrst: { title: "Čtení s otázkami", description: "Otázky si položíš před čtením i po něm.", originalName: "PQRST" },
+  sekvencni: { title: "Učivo po částech", description: "Velké téma si rozdělíš na menší kroky.", originalName: "Sekvenční" },
+  sq4r: { title: "Čtení krok za krokem", description: "Text projdeš od prvního náhledu až po opakování.", originalName: "SQ4R" },
+};
+
+export const methodHumanInfo = (slug: string | null | undefined): HumanMethodInfo | null => (slug ? HUMAN_INFO[slug] ?? null : null);
+
 export const PRACTICE_DURATIONS = [5, 10, 15] as const;
 
 /** 5 min = 4 otázky, 10 min = 8, 15 min = 12. */

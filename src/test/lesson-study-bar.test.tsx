@@ -17,6 +17,7 @@ vi.mock("@/components/BezlaiTutorChat", () => ({
   },
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), info: vi.fn() } }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ role: "user" }) }));
 
 import LessonStudyBar from "@/components/lesson/LessonStudyBar";
 
@@ -35,12 +36,11 @@ describe("LessonStudyBar – Učím se", () => {
     invoke.mockReset();
   });
 
-  it("v liště je jen jedno tlačítko Učím se", () => {
+  it("v liště je jedno hlavní tlačítko Učím se a zůstávají Další možnosti", () => {
     renderBar();
     const bar = screen.getByLabelText("Studijní nástroje lekce");
-    const buttons = within(bar).getAllByRole("button");
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveTextContent("Učím se");
+    expect(within(bar).getAllByRole("button", { name: "Učím se" })).toHaveLength(1);
+    expect(within(bar).getByRole("button", { name: "Další možnosti lekce" })).toBeInTheDocument();
   });
 
   it("panel má dvě sekce a 8 technik s odkazem na lekci", () => {

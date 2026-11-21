@@ -22,7 +22,8 @@ import { useDemoPair } from "@/lib/demo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
 import { SelectGroup, SelectLabel } from "@/components/ui/select";
 import { fetchStudentPracticeLessons, type PracticeLessonGroup } from "@/lib/student-practice-lessons";
-import { methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
+import { methodHumanInfo, methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
+import StudentLearningHome from "@/components/student/StudentLearningHome";
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
   NotebookPen, ArrowRightCircle, GraduationCap, Play, ChevronLeft, ChevronRight, CheckCircle2,
@@ -48,6 +49,7 @@ const StudentMethods = () => {
   const navigate = useNavigate();
   const [methods, setMethods] = useState<Method[]>([]);
   const [preferredIds, setPreferredIds] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Method | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
@@ -175,6 +177,7 @@ const StudentMethods = () => {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user.id ?? null);
       const { data, error } = await supabase
         .from("study_methods")
         .select("id, name, slug, description, icon, steps_json")
@@ -231,6 +234,15 @@ const StudentMethods = () => {
     setSearchParams(next, { replace: true });
   }, [guideSlug, methods]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const openQuickPractice = (method: { id: string; slug: string }, lessonId: string | null, minutes: number) => {
+    const fullMethod = methods.find((item) => item.id === method.id);
+    if (!fullMethod) return;
+    setSourceKind("lesson");
+    setSelectedLesson(lessonId ?? "none");
+    setDuration(String(minutes));
+    setPracticeFor(fullMethod);
+  };
+
   const startPractice = () => {
     if (!practiceFor) return;
     const params = new URLSearchParams();
@@ -255,17 +267,19 @@ const StudentMethods = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
-      <main className="flex-1 container mx-auto px-4 py-12 max-w-5xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
+      <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2 text-primary">
             <GraduationCap className="w-5 h-5" />
             <span className="text-sm font-medium uppercase tracking-wider">Učím se</span>
           </div>
-          <h1 className="font-heading text-3xl font-bold">Jak se učit chytře</h1>
+          <h1 className="font-heading text-3xl font-bold">Uč se podle toho, co dnes potřebuješ</h1>
           <p className="text-muted-foreground mt-1">
-            Vyber si techniku, vyber učivo a nech si z něj udělat procvičení. Každá technika má krátký návod.
+            Vyber si krátkou misi nebo způsob učení. Odborné techniky najdeš vysvětlené lidsky dole.
           </p>
         </div>
+
+        {userId && <StudentLearningHome userId={userId} methods={methods} preferredIds={preferredIds} onPractice={openQuickPractice} />}
 
         {loading ? (
           <p className="text-muted-foreground">Načítání...</p>
@@ -275,6 +289,7 @@ const StudentMethods = () => {
 
           const renderCard = (m: Method, big: boolean) => {
             const Icon = (m.icon && ICONS[m.icon]) || Brain;
+            const human = methodHumanInfo(m.slug);
             return (
               <button
                 key={m.id}
@@ -297,7 +312,9 @@ const StudentMethods = () => {
                 >
                   <Icon className={`text-primary ${big ? "w-8 h-8" : "w-6 h-6"}`} />
                 </div>
-                <h3 className={`font-heading font-semibold mb-1 ${big ? "text-2xl" : "text-lg"}`}>{m.name}</h3>
+                <h3 className={`font-heading font-semibold mb-1 ${big ? "text-2xl" : "text-lg"}`}>{human?.title ?? m.name}</h3>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Technika: {human?.originalName ?? m.name}</p>
+                {human && <p className={`mb-3 text-foreground/85 ${big ? "text-base" : "text-sm"}`}>{human.description}</p>}
                 {methodPurpose(m.slug) && (
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="text-sm font-medium text-foreground/80">{methodPurpose(m.slug)!.purpose}</span>
@@ -306,7 +323,7 @@ const StudentMethods = () => {
                     </span>
                   </div>
                 )}
-                {m.description && (
+                {m.description && !human && (
                   <p className={`text-muted-foreground ${big ? "text-base line-clamp-4" : "text-sm line-clamp-3"}`}>
                     {m.description}
                   </p>
@@ -317,7 +334,11 @@ const StudentMethods = () => {
           };
 
           return (
-            <div className="space-y-10">
+            <div id="triky-na-uceni" tabIndex={-1} className="space-y-10 scroll-mt-24 focus:outline-none">
+              <div>
+                <h2 className="font-heading text-2xl font-semibold">Triky na učení</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Vyber podle toho, co ti pomůže. Malým písmem zůstává původní název techniky.</p>
+              </div>
               {preferred.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
@@ -363,10 +384,11 @@ const StudentMethods = () => {
                       <Icon className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <DialogTitle>{detail.name}</DialogTitle>
-                      {detail.description && (
-                        <DialogDescription className="mt-1">{detail.description}</DialogDescription>
-                      )}
+                      <DialogTitle>{methodHumanInfo(detail.slug)?.title ?? detail.name}</DialogTitle>
+                      <DialogDescription className="mt-1">
+                        {methodHumanInfo(detail.slug)?.description ?? detail.description}
+                        <span className="mt-1 block text-xs">Původní technika: {detail.name}</span>
+                      </DialogDescription>
                     </div>
                   </div>
                 </DialogHeader>

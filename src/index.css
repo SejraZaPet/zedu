@@ -751,3 +751,47 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   .dashboard-tile:hover, .dashboard-tile:focus-visible,
   .dashboard-compact-tile:hover, .dashboard-compact-tile:focus-visible { transform: none; }
 }
+
+/* Učím se: volby podle záměru žáka nad původními studijními technikami. */
+:root {
+  --learning-exam-from: 40 100% 27%;
+  --learning-exam-to: 40 100% 30%;
+}
+.learning-welcome-card { border: 1px solid hsl(var(--primary) / .2); border-radius: 20px; background: linear-gradient(135deg, hsl(var(--primary) / .09), hsl(var(--accent) / .09)); padding: 22px; box-shadow: var(--dashboard-tile-shadow); }
+.learning-stat-pill { display: inline-flex; min-height: 36px; align-items: center; gap: 7px; border: 1px solid hsl(var(--primary) / .18); border-radius: 9999px; background: hsl(var(--card) / .85); padding: 7px 12px; color: hsl(var(--foreground)); font-size: .82rem; font-weight: 650; }
+.learning-stat-pill svg { color: hsl(var(--primary)); }
+.learning-mission-card { display: flex; min-width: 0; min-height: 170px; flex-direction: column; align-items: flex-start; border: 1px solid hsl(var(--border)); border-radius: 16px; background: hsl(var(--card)); padding: 16px; text-align: left; box-shadow: var(--dashboard-tile-shadow); transition: transform .2s ease, border-color .2s ease; }
+.learning-mission-card:hover { transform: translateY(-2px); border-color: hsl(var(--primary) / .45); }
+.learning-mission-card:focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 3px; }
+.learning-mission-state { display: inline-flex; align-items: center; gap: 5px; border-radius: 9999px; padding: 4px 9px; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+.learning-mission-state--done { background: hsl(var(--assignment-graded-from)); color: hsl(var(--assignment-foreground)); }
+.learning-mission-state--now { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.learning-mission-state--bonus { background: hsl(var(--learning-exam-from)); color: hsl(var(--assignment-foreground)); }
+.learning-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; grid-auto-rows: 1fr; }
+.learning-mode-tile { aspect-ratio: 1; min-height: 0; }
+.learning-mode-tile .dashboard-tile-body { height: 100%; }
+.learning-mode-tile .dashboard-tile-copy { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
+.learning-mode-tile .dashboard-tile-title { font-size: .98rem; line-height: 1.2; }
+.learning-mode-icon { width: 38px; height: 38px; }
+.dashboard-tile--exam { --dashboard-tile-from: var(--learning-exam-from); --dashboard-tile-to: var(--learning-exam-to); }
+.learning-path-list { display: grid; gap: 0; }
+.learning-path-step { position: relative; display: flex; min-height: 72px; align-items: center; gap: 12px; padding: 8px 0; }
+.learning-path-step:not(:last-child)::before { position: absolute; top: 46px; bottom: -12px; left: 17px; width: 2px; background: hsl(var(--border)); content: ""; }
+.learning-path-marker { z-index: 1; display: inline-flex; width: 36px; height: 36px; flex-shrink: 0; align-items: center; justify-content: center; border: 2px solid hsl(var(--border)); border-radius: 9999px; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); font-size: .8rem; font-weight: 750; }
+.learning-path-step--done .learning-path-marker { border-color: hsl(var(--assignment-graded-from)); background: hsl(var(--assignment-graded-from)); color: hsl(var(--assignment-foreground)); }
+.learning-path-step--current .learning-path-marker { border-color: hsl(var(--dashboard-tile-learn-from)); background: hsl(var(--dashboard-tile-learn-from)); color: hsl(var(--dashboard-tile-foreground)); box-shadow: 0 0 0 5px hsl(var(--dashboard-tile-learn-from) / .14); }
+@media (min-width: 768px) {
+  .learning-mode-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .learning-welcome-card { padding: 18px; }
+  .learning-mode-tile { padding: 13px 12px; }
+  .learning-mode-tile .dashboard-tile-description { display: none; }
+  .learning-mode-icon { width: 34px; height: 34px; }
+  .learning-path-step { gap: 9px; }
+  .learning-path-step .min-h-11 { padding-inline: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .learning-mission-card { transition: none; }
+  .learning-mission-card:hover { transform: none; }
+}
