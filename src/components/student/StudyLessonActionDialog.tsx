@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layers, ListChecks, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
+import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 import { Button } from "@/components/ui/button";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import type { StudyCard } from "@/lib/lesson-study";
@@ -24,6 +26,11 @@ export default function StudyLessonActionDialog({ action, onOpenChange, userId, 
   const [cards, setCards] = useState<StudyCard[]>([]);
   const [bullets, setBullets] = useState<string[]>([]);
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
+  const lessonsQuery = useStudentPracticeLessons(userId);
+  const lessonOptions = useMemo(
+    () => practiceLessonSelectOptions(lessonsQuery.data ?? [], recentLessonIds),
+    [lessonsQuery.data, recentLessonIds],
+  );
 
   useEffect(() => {
     if (!action) return;
@@ -81,12 +88,24 @@ export default function StudyLessonActionDialog({ action, onOpenChange, userId, 
 
         {!hasResult ? (
           <div className="space-y-3">
-            <LessonSearchCombobox
-              userId={userId}
-              recentLessonIds={recentLessonIds}
+            <SearchableSelect
+              id="study-lesson"
               value={lessonId}
               onValueChange={setLessonId}
-              disabled={busy}
+              options={lessonOptions}
+              disabled={busy || lessonOptions.length === 0}
+              label="Hledat lekci"
+              triggerLabel="Lekce pro studijní pomůcku"
+              placeholder={lessonOptions.length ? "Vyber lekci" : "Zatím nemáš dostupnou lekci"}
+              searchPlaceholder="Napiš název lekce, předmětu nebo učebnice…"
+              emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
+              emptyMessage="Jakmile ti učitel zveřejní lekci, bude dostupná tady."
+              loading={lessonsQuery.isPending && lessonsQuery.data === undefined}
+              loadingLabel="Načítám tvoje lekce…"
+              error={lessonsQuery.isError ? "Lekce se nepodařilo načíst" : null}
+              retrying={lessonsQuery.isFetching}
+              onRetry={() => { void lessonsQuery.refetch(); }}
+              showSelectedSubtitle
             />
           </div>
         ) : action === "cards" ? (

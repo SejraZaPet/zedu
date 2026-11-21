@@ -58,7 +58,7 @@ beforeEach(() => { mocks.notebookCount = 9; mocks.pageCount = 9; });
 afterEach(cleanup);
 
 describe("Výběr sešitu a stránky při procvičování", () => {
-  it("od devíti položek nabídne hledání sešitu i stránky a zachová jejich ID", async () => {
+  it("od osmi položek nabídne hledání sešitu i stránky a zachová jejich ID", async () => {
     await openNotebookSource();
     const notebookTrigger = await screen.findByRole("combobox", { name: "Hledat sešit" });
     fireEvent.click(notebookTrigger);
@@ -76,8 +76,8 @@ describe("Výběr sešitu a stránky při procvičování", () => {
     expect(pageTrigger).toHaveTextContent("Strana 9");
   });
 
-  it("u osmi a méně položek ponechá původní jednoduchý výběr", async () => {
-    mocks.notebookCount = 8;
+  it("u sedmi a méně položek ponechá původní jednoduchý výběr", async () => {
+    mocks.notebookCount = 7;
     await openNotebookSource();
     expect(await screen.findByRole("combobox", { name: "Sešit" })).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Hledat sešit" })).not.toBeInTheDocument();

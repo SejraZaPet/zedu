@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
+import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 
 const mocks = vi.hoisted(() => ({ fetchLessons: vi.fn() }));
 vi.mock("@/lib/student-practice-lessons", async (importOriginal) => ({
@@ -24,7 +26,19 @@ function wrapper(queryClient: QueryClient) {
 }
 
 function Picker() {
-  return <LessonSearchCombobox userId="student-1" value="" onValueChange={vi.fn()} />;
+  const lessonsQuery = useStudentPracticeLessons("student-1");
+  return <SearchableSelect
+    value=""
+    onValueChange={vi.fn()}
+    options={practiceLessonSelectOptions(lessonsQuery.data ?? [])}
+    label="Hledat lekci"
+    triggerLabel="Lekce pro studijní pomůcku"
+    loading={lessonsQuery.isPending && lessonsQuery.data === undefined}
+    loadingLabel="Načítám tvoje lekce…"
+    error={lessonsQuery.isError ? "Lekce se nepodařilo načíst" : null}
+    retrying={lessonsQuery.isFetching}
+    onRetry={() => { void lessonsQuery.refetch(); }}
+  />;
 }
 
 afterEach(() => {
@@ -32,7 +46,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("Sdílená cache lekcí pro studijní dialogy", () => {
+describe("Sdílená cache lekcí pro SearchableSelect", () => {
   it("druhé otevření použije data z cache a nespustí nové dotazy", async () => {
     mocks.fetchLessons.mockResolvedValue(groups);
     const queryClient = client();
@@ -56,7 +70,7 @@ describe("Sdílená cache lekcí pro studijní dialogy", () => {
     const queryClient = client();
     const Wrapper = wrapper(queryClient);
     const first = render(<Wrapper><Picker /></Wrapper>);
-    expect(screen.getByTestId("lesson-search-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("searchable-select-loading")).toBeInTheDocument();
     resolve(groups);
     expect(await screen.findByRole("combobox", { name: "Lekce pro studijní pomůcku" })).toBeInTheDocument();
     first.unmount();

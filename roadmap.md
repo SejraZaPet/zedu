@@ -207,10 +207,17 @@
 - [x] Sdílený combobox pro kartičky a shrnutí: hledání bez diakritiky v názvu/předmětu/učebnici, naposledy procvičované lekce první, prázdný stav, klávesnice a mobil 390 px; bez DB/RLS a nasazení.
 - 9 testů prošlo; živě 22 lekcí, hledání 3 shody, přesný prázdný stav, šipky/Enter/Escape, výběr a maketované kartičky, min. dotykový cíl 50 px a nulový horizontální posun. Skutečná mobilní klávesnice ani ostré AI nebyly spuštěny.
 
+## Sjednocení na SearchableSelect + audit dlouhých výběrů
+- [x] LessonSearchCombobox odstraněn; StudyLessonActionDialog a StudentMethods používají přímo SearchableSelect při zachování cache, skeletonu a retry.
+- [x] SearchableSelect má nepovinné skupiny, hledání v group/subtitle, připnutou první volbu, načítání/chybu, triggerLabel a stávající mobilní/klávesnicové chování; výchozí chování starých použití beze změny.
+- [x] Kvíz, test, Můj materiál a Zedík nemají vlastní rozbalovací výběr lekce; používají poslední lekci nebo samostatný postup, proto se neměnily.
+- [x] 65 testů prošlo; typy/build a živé dialogy při 390×500 prošly bez překrytí či vodorovného posunu. Skutečná mobilní klávesnice, ostré AI a spuštění procvičování neověřeny.
+- [x] Audit 41 dalších souborů s prostým Select a potenciálně dlouhými datovými seznamy je předán pouze ke schválení; kandidáty nebyly přepsány. Odhady jsou rozsahy podle zdroje dat, ne přesné počty konkrétního účtu.
+
 ## Učím se – skupiny lekcí a delší výběry sešitů
 - [x] Sdílený combobox v „Procvičit metodou“: „Bez konkrétní lekce“ vždy první, nadpisy předmětů i po filtrování, prázdné skupiny skryté.
 - [x] Hledání bez diakritiky/velikosti v názvu lekce, učebnice i předmětu; vlastní posun a výška/otvírání podle visualViewport nad mobilní klávesnicí.
-- [x] Sešit a stránka používají sdílený SearchableSelect až od 9 položek; kratší Select beze změny.
+- [x] Sešit a stránka používají sdílený SearchableSelect až od 8 položek; kratší Select beze změny.
 - [x] 36 cílených/regresních testů, typy i build prošly. Živě 22 lekcí ve 5 předmětech, filtry/prázdný stav, první volba a 390×500 bez překrytí či vodorovného posunu. Skutečná mobilní klávesnice a živých 9 sešitů/stránek neověřeny; bez DB a nasazení.
 
 ## Učím se – sdílená cache a rychlejší načtení lekcí

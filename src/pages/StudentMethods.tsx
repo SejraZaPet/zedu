@@ -20,8 +20,9 @@ import { PRACTICE_PHOTO_PRIVACY_NOTICE } from "@/lib/practice-photo";
 import { usePracticePhotos } from "@/lib/use-practice-photos";
 import { useDemoPair } from "@/lib/demo";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
-import LessonSearchCombobox from "@/components/student/LessonSearchCombobox";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
+import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 import { methodHumanInfo, methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import StudentLearningHome from "@/components/student/StudentLearningHome";
 import {
@@ -54,6 +55,8 @@ const StudentMethods = () => {
   const [methods, setMethods] = useState<Method[]>([]);
   const [preferredIds, setPreferredIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const lessonsQuery = useStudentPracticeLessons(userId);
+  const lessonOptions = useMemo(() => practiceLessonSelectOptions(lessonsQuery.data ?? [], [], true), [lessonsQuery.data]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Method | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
@@ -553,7 +556,7 @@ const StudentMethods = () => {
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="practice-notebook">Sešit</Label>
-                  {notebooks.length > 8 ? (
+                  {notebooks.length >= 8 ? (
                     <SearchableSelect
                       id="practice-notebook"
                       value={notebookId}
@@ -576,7 +579,7 @@ const StudentMethods = () => {
                 {notebookId && (
                   <div>
                     <Label htmlFor="practice-page">Stránka</Label>
-                    {pages.length > 8 ? (
+                    {pages.length >= 8 ? (
                       <SearchableSelect
                         id="practice-page"
                         value={pageId}
@@ -612,12 +615,23 @@ const StudentMethods = () => {
             {sourceKind === "lesson" && (
               <div>
                 <Label>Lekce z učebnice (volitelné)</Label>
-                <LessonSearchCombobox
-                  userId={userId}
+                <SearchableSelect
+                  id="practice-lesson"
                   value={selectedLesson}
                   onValueChange={setSelectedLesson}
-                  allowNone
+                  options={lessonOptions}
+                  label="Hledat lekci"
+                  triggerLabel="Lekce pro studijní pomůcku"
+                  placeholder="Vyber lekci"
+                  searchPlaceholder="Napiš název lekce, předmětu nebo učebnice…"
+                  emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
                   emptyMessage="Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce."
+                  loading={lessonsQuery.isPending && lessonsQuery.data === undefined}
+                  loadingLabel="Načítám tvoje lekce…"
+                  error={lessonsQuery.isError ? "Lekce se nepodařilo načíst" : null}
+                  retrying={lessonsQuery.isFetching}
+                  onRetry={() => { void lessonsQuery.refetch(); }}
+                  showSelectedSubtitle
                 />
               </div>
             )}

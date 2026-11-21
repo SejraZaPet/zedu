@@ -49,6 +49,32 @@ export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonG
     }));
 }
 
+export function practiceLessonSelectOptions(
+  groups: PracticeLessonGroup[],
+  recentLessonIds: string[] = [],
+  allowNone = false,
+) {
+  const rank = new Map(recentLessonIds.map((id, index) => [id, index]));
+  const options = groups.flatMap((group) => group.lessons
+    .map((lesson, index) => ({ lesson, index }))
+    .sort((a, b) => {
+      const aRank = rank.get(a.lesson.id) ?? Number.MAX_SAFE_INTEGER;
+      const bRank = rank.get(b.lesson.id) ?? Number.MAX_SAFE_INTEGER;
+      return aRank - bRank || a.index - b.index;
+    })
+    .map(({ lesson }) => ({
+      value: lesson.id,
+      label: lesson.title,
+      subtitle: [lesson.subject, lesson.textbook]
+        .filter((part, index, all) => part.trim() && all.indexOf(part) === index)
+        .join(" · "),
+      group: group.subject,
+    })));
+  return allowNone
+    ? [{ value: "none", label: "Bez konkrétní lekce", pinned: true }, ...options]
+    : options;
+}
+
 /**
  * Lekce, které žák vidí na stránce svých učebnic: učitelské učebnice
  * (třída, předmět třídy, rozvrh, skupina, zápis kódem, umístění lekce)

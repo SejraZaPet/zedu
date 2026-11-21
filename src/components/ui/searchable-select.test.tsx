@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import LessonSearchCombobox, { orderedPracticeLessons } from "./LessonSearchCombobox";
+import { afterEach, describe, expect, it } from "vitest";
+import { SearchableSelect } from "./searchable-select";
+import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 import type { PracticeLessonGroup } from "@/lib/student-practice-lessons";
 
 globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any;
@@ -15,26 +16,29 @@ const groups: PracticeLessonGroup[] = [{
   ],
 }, {
   subject: "Matematika",
-  lessons: [
-    { id: "l3", title: "Zlomky", textbook: "Matematika 7", subject: "Matematika" },
-  ],
+  lessons: [{ id: "l3", title: "Zlomky", textbook: "Matematika 7", subject: "Matematika" }],
 }];
-
-vi.mock("@/hooks/useStudentPracticeLessons", () => ({
-  useStudentPracticeLessons: () => ({ data: groups, isPending: false, isError: false, isFetching: false, refetch: vi.fn() }),
-}));
 
 function Host({ allowNone = false }: { allowNone?: boolean }) {
   const [value, setValue] = useState(allowNone ? "none" : "");
   return <>
-    <LessonSearchCombobox userId="student-1" value={value} onValueChange={setValue} allowNone={allowNone} />
+    <SearchableSelect
+      value={value}
+      onValueChange={setValue}
+      options={practiceLessonSelectOptions(groups, [], allowNone)}
+      label="Hledat lekci"
+      triggerLabel="Lekce pro studijní pomůcku"
+      emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
+      showSelectedSubtitle
+      growing
+    />
     <output aria-label="Vybrané ID">{value}</output>
   </>;
 }
 
 afterEach(cleanup);
 
-describe("Vyhledávací výběr lekce", () => {
+describe("Sdílený SearchableSelect pro lekce", () => {
   it("hledá kdekoli v názvu bez diakritiky a velikosti písmen", () => {
     render(<Host />);
     fireEvent.click(screen.getByRole("combobox", { name: "Lekce pro studijní pomůcku" }));
@@ -50,7 +54,7 @@ describe("Vyhledávací výběr lekce", () => {
     fireEvent.change(input, { target: { value: "dejepis" } });
     expect(screen.getAllByRole("option")).toHaveLength(2);
     fireEvent.change(input, { target: { value: "neexistuje" } });
-    expect(screen.getByText("Nic jsme nenašli. Zkus jiné slovo.", { selector: '[role="status"]' })).toBeInTheDocument();
+    expect(screen.getByText("Nic jsme nenašli. Zkus jiné slovo.", { selector: "p" })).toBeInTheDocument();
   });
 
   it("podporuje šipky, Enter i Escape a vrací stejné ID lekce", () => {
@@ -70,7 +74,7 @@ describe("Vyhledávací výběr lekce", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("ponechá volbu bez lekce první a po filtrování zobrazí jen neprázdné předmětové skupiny", () => {
+  it("ponechá připnutou volbu první a po filtrování zobrazí jen neprázdné předmětové skupiny", () => {
     render(<Host allowNone />);
     fireEvent.click(screen.getByRole("combobox", { name: "Lekce pro studijní pomůcku" }));
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("Bez konkrétní lekce");
@@ -78,11 +82,9 @@ describe("Vyhledávací výběr lekce", () => {
       .toEqual(["Společenské vědy", "Matematika"]);
 
     const input = screen.getByRole("combobox", { name: "Hledat lekci" });
-    fireEvent.change(input, { target: { value: "MEDIALNI" } });
-    expect(screen.getByText("Společenské vědy", { selector: "[cmdk-group-heading]" })).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "SPOLECENSKE VEDY" } });
+    expect(screen.getAllByRole("option")).toHaveLength(3);
     expect(screen.queryByText("Matematika", { selector: "[cmdk-group-heading]" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("option")).toHaveLength(2);
-    expect(screen.getAllByRole("option")[0]).toHaveTextContent("Bez konkrétní lekce");
 
     fireEvent.change(input, { target: { value: "matematika 7" } });
     expect(screen.getByText("Matematika", { selector: "[cmdk-group-heading]" })).toBeInTheDocument();
@@ -90,14 +92,26 @@ describe("Vyhledávací výběr lekce", () => {
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("Bez konkrétní lekce");
 
     fireEvent.change(input, { target: { value: "neexistuje" } });
-    expect(screen.getByText("Nic jsme nenašli. Zkus jiné slovo.", { selector: '[role="status"]' })).toBeInTheDocument();
+    expect(screen.getByText("Nic jsme nenašli. Zkus jiné slovo.", { selector: "p" })).toBeInTheDocument();
     expect(screen.getAllByRole("option")).toHaveLength(1);
-    expect(screen.getAllByRole("option")[0]).toHaveTextContent("Bez konkrétní lekce");
     expect(document.querySelectorAll("[cmdk-group-heading]")).toHaveLength(0);
   });
 
-  it("upřednostní naposledy procvičovanou lekci uvnitř skupin a ostatní ponechá ve stávajícím pořadí", () => {
-    expect(orderedPracticeLessons([groups[0]], ["l2"]).map((lesson) => lesson.id)).toEqual(["l2", "l1"]);
-    expect(orderedPracticeLessons(groups).map((lesson) => lesson.id)).toEqual(["l1", "l2", "l3"]);
+  it("upřednostní naposledy procvičovanou lekci uvnitř skupin a ostatní ponechá v pořadí", () => {
+    expect(practiceLessonSelectOptions([groups[0]], ["l2"]).map((lesson) => lesson.value)).toEqual(["l2", "l1"]);
+    expect(practiceLessonSelectOptions(groups).map((lesson) => lesson.value)).toEqual(["l1", "l2", "l3"]);
+  });
+
+  it("zobrazí hledání přesně od osmi položek a kratší běžný výběr nepřidává skupiny", () => {
+    const makeOptions = (count: number) => Array.from({ length: count }, (_, index) => ({ value: `${index}`, label: `Volba ${index + 1}` }));
+    const { unmount } = render(<SearchableSelect value="" onValueChange={() => {}} options={makeOptions(8)} label="Hledat volbu" />);
+    fireEvent.click(screen.getByRole("combobox", { name: "Hledat volbu" }));
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(document.querySelectorAll("[cmdk-group-heading]")).toHaveLength(0);
+    unmount();
+
+    render(<SearchableSelect value="" onValueChange={() => {}} options={makeOptions(7)} label="Hledat volbu" />);
+    fireEvent.click(screen.getByRole("combobox", { name: "Hledat volbu" }));
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
   });
 });

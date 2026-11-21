@@ -35,7 +35,10 @@ vi.mock("react-router-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-router-dom")>()),
   useNavigate: () => mocks.navigate,
 }));
-vi.mock("@/lib/student-practice-lessons", () => ({ fetchStudentPracticeLessons: async () => [] }));
+vi.mock("@/lib/student-practice-lessons", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/student-practice-lessons")>()),
+  fetchStudentPracticeLessons: async () => [],
+}));
 vi.mock("@/hooks/useStudentPracticeLessons", () => ({
   useStudentPracticeLessons: () => ({ data: [], isPending: false, isError: false, isFetching: false, refetch: vi.fn() }),
 }));

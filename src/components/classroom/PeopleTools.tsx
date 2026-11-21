@@ -71,7 +71,7 @@ function PeopleSource({ onPeople, initialTarget }: { onPeople: (people: Classroo
   const present = useMemo(() => presentClassroomPeople(people, absent), [people, absent]);
   useEffect(() => { onPeople(source === "manual" ? manualPeople : present); }, [source, manualPeople, present, onPeople]);
   return <div className="space-y-3">
-    <label className="block space-y-2"><span>Třída nebo skupina</span><SearchableSelect value={source} onValueChange={pickSource} disabled={listsLoading} label="Hledat třídu nebo skupinu" options={[...myClasses.map(c => ({ value: `class:${c.id}`, label: c.name, subtitle: "Třída" })), ...groups.map(g => ({ value: `group:${g.id}`, label: g.name, subtitle: "Skupina" })), { value: "manual", label: "Vlastní seznam" }]} /></label>
+    <label className="block space-y-2"><span>Třída nebo skupina</span><SearchableSelect value={source} onValueChange={pickSource} disabled={listsLoading} label="Hledat třídu nebo skupinu" triggerLabel="Třída nebo skupina" options={[...myClasses.map(c => ({ value: `class:${c.id}`, label: c.name, subtitle: "Třída" })), ...groups.map(g => ({ value: `group:${g.id}`, label: g.name, subtitle: "Skupina" })), { value: "manual", label: "Vlastní seznam" }]} /></label>
     {listsLoading && <p className="text-sm text-muted-foreground">Načítám třídy a skupiny…</p>}
     {listsEmpty && <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><span>Nenalezeny žádné třídy ani skupiny – zkuste Obnovit.</span><Button type="button" size="sm" variant="outline" onClick={refreshLists}>Obnovit seznam tříd</Button></div>}
     {fromPlan && <p className="text-sm text-muted-foreground">Předvybráno z plánu hodiny.</p>}
