@@ -28,6 +28,7 @@ import {
 import { buildToc, listSections, pageDisplayTitle } from "@/lib/notebook-toc";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 export default function MyNotebook() {
   const { user, role } = useAuth();
@@ -213,13 +214,16 @@ export default function MyNotebook() {
   /* --- automatické ukládání obsahu stránky --- */
   const onContentChange = (next: NotebookPageContent) => {
     if (!activePage) return;
-    setPages((prev) => prev.map((p, i) => (i === activeIndex ? { ...p, content: next } : p)));
+    const stamped = next.ai_generated && !next.ai_modified_at
+      ? { ...next, ai_modified_at: new Date().toISOString() }
+      : next;
+    setPages((prev) => prev.map((p, i) => (i === activeIndex ? { ...p, content: stamped } : p)));
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     const pageId = activePage.id;
     setSaving(true);
     saveTimer.current = window.setTimeout(async () => {
       try {
-        await savePageContent(pageId, next);
+        await savePageContent(pageId, stamped);
       } catch (e: any) {
         toast.error(e.message || "Uložení se nepodařilo.");
       } finally {
@@ -514,11 +518,12 @@ export default function MyNotebook() {
         ) : (
           <>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
                 <Button variant="ghost" size="sm" className="gap-1.5" onClick={backToList}>
                   <ArrowLeft className="h-4 w-4" /> Zpět na sešity
                 </Button>
-                <h1 className="text-xl font-bold">{open.title}</h1>
+                <h1 className="min-w-0 flex-1 basis-48 break-words text-xl font-bold">{open.title}</h1>
+                <AiContentBadge aiGenerated={activePage?.content.ai_generated} aiModifiedAt={activePage?.content.ai_modified_at} />
                 <span className="text-xs text-muted-foreground">
                   {saving ? "Ukládám…" : "Uloženo"}
                 </span>

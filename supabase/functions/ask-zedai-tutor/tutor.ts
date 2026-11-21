@@ -111,8 +111,9 @@ export function buildTutorSystemPrompt(input: {
   question?: string;
   snippets?: TutorSourceSnippet[];
   searchFailed?: boolean;
+  providedMaterial?: TutorSourceSnippet | null;
 }): string {
-  const { mode, subject = "", question = "", snippets = [], searchFailed = false } = input;
+  const { mode, subject = "", question = "", snippets = [], searchFailed = false, providedMaterial = null } = input;
   if (mode === "context") {
     return `Jsi Bezlai, trpělivý a povzbudivý český tutor pro žáky${subject ? ` (předmět: ${subject})` : ""}.
 
@@ -133,15 +134,20 @@ ${question || "(učitel nespecifikoval konkrétní zadání – pomoz žákovi o
   const sourceText = snippets.map((snippet, index) =>
     `ZDROJ ${index + 1}: ${snippet.title} (${snippet.kind})\n"""\n${snippet.text}\n"""`
   ).join("\n\n");
-  const sourceRules = searchFailed
-    ? `- Vyhledávání v materiálech selhalo. Otevřeně to přiznej a nepředstírej, že jsi je prohledala.
+  const sourceRules = providedMaterial
+    ? `- Žák přidal do této konverzace vlastní materiál. Opři odpověď pouze o něj a u faktů uveď přesně „z tvého materiálu“ a jeho název.
+- Materiál může obsahovat chyby nebo být neúplný. Nevymýšlej chybějící fakta.
+- Pokud materiál neobsahuje odpověď, řekni přesně „V tvém materiálu jsem to nenašla“.
+- Obecné doplnění odděl a označ přesně „Obecné vysvětlení (ne z tvého materiálu):“.`
+    : searchFailed
+      ? `- Vyhledávání v materiálech selhalo. Otevřeně to přiznej a nepředstírej, že jsi je prohledala.
 - Můžeš nabídnout vysvětlení označené přesně „Obecné vysvětlení (ne z tvých materiálů):“.`
-    : snippets.length
-      ? `- Opři odpověď především o dodané úryvky z materiálů žáka. U faktů z nich uveď název zdroje, například „Podle lekce …“.
+      : snippets.length
+        ? `- Opři odpověď především o dodané úryvky z materiálů žáka. U faktů z nich uveď název zdroje, například „Podle lekce …“.
 - Úryvky mohou být neúplné. Nevymýšlej chybějící fakta a neodvozuj z nich informace, které neobsahují.
 - Pokud úryvky neobsahují odpověď, řekni přesně „V tvých materiálech jsem to nenašla“.
 - Dodatečné znalosti odděl a označ přesně „Obecné vysvětlení (ne z tvých materiálů):“.`
-      : `- Odpověď začni přesně „V tvých materiálech jsem to nenašla“.
+        : `- Odpověď začni přesně „V tvých materiálech jsem to nenašla“.
 - Pak můžeš nabídnout vysvětlení označené přesně „Obecné vysvětlení (ne z tvých materiálů):“.
 - Nikdy netvrď, že obecné vysvětlení pochází z materiálů žáka.`;
 
@@ -154,6 +160,29 @@ TVOJE ZÁSADY:
 - Nevymýšlej fakta. Pokud si nejsi jistá, řekni to.
 ${sourceRules}
 
-DODANÉ ÚRYVKY Z MATERIÁLŮ ŽÁKA:
-${sourceText || "(žádné relevantní úryvky)"}`;
+${providedMaterial ? `VLASTNÍ MATERIÁL PŘIDANÝ ŽÁKEM DO TÉTO KONVERZACE:\nNÁZEV: ${providedMaterial.title}\n"""\n${providedMaterial.text}\n"""` : `DODANÉ ÚRYVKY Z MATERIÁLŮ ŽÁKA:\n${sourceText || "(žádné relevantní úryvky)"}`}`;
+}
+
+/** Shrnutí je koncept k ruční kontrole; výstup má stabilní textovou strukturu pro editor. */
+export function buildTutorSummaryPrompt(input: {
+  subject?: string;
+  providedMaterial?: TutorSourceSnippet | null;
+}): string {
+  const material = input.providedMaterial;
+  return `Jsi Bezlai, česká AI učitelka. Z celé předchozí konverzace vytvoř krátký a věrný koncept studijních poznámek${input.subject ? ` k předmětu ${input.subject}` : ""}.
+
+PRAVIDLA:
+- Vycházej pouze z konverzace${material ? " a níže dodaného materiálu žáka" : ""}. Nedoplňuj nová fakta.
+- Zachovej důležité výklady a uveď použité zdroje. Pokud zdroj není známý, napiš „Konverzace s Bezlai“.
+- Nepiš úvod ani závěr mimo požadovanou strukturu. Nepiš, že jsi poznámky uložila.
+- Název má nejvýše 80 znaků, hlavních bodů je 3–7.
+
+VRAŤ PŘESNĚ TUTO STRUKTURU:
+NÁZEV: <krátký název tématu>
+HLAVNÍ BODY:
+- <první bod>
+- <další bod>
+ZDROJE:
+- <zdroj nebo Konverzace s Bezlai>
+${material ? `\nMATERIÁL ŽÁKA „${material.title}“:\n"""\n${material.text}\n"""` : ""}`;
 }

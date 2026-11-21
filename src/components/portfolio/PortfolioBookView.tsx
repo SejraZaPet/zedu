@@ -11,6 +11,7 @@ import {
   PortfolioItem, TYPE_LABEL, getAttachmentSignedUrl, getStudentAttachmentSignedUrl,
 } from "@/lib/portfolio";
 import PortfolioSourceActions from "@/components/portfolio/PortfolioSourceActions";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -134,6 +135,7 @@ export default function PortfolioBookView({ items, initialSubject }: Props) {
                       <Badge variant="outline" className="text-[10px]">
                         {TYPE_LABEL[active.type] || active.type}
                       </Badge>
+                      <AiContentBadge aiGenerated={active.ai_generated} aiModifiedAt={active.ai_modified_at} />
                       {active.subject && (
                         <Badge variant="secondary" className="text-[10px]">{active.subject}</Badge>
                       )}

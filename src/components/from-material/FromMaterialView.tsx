@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   recomputeMetadata,
 } from "@/lib/worksheet-defaults";
 import type { WorksheetItem, WorksheetSpec, ItemType, AnswerKeyEntry } from "@/lib/worksheet-spec";
+import { readPracticeSource } from "@/lib/practice-method";
 
 type Role = "teacher" | "student";
 type OutputType = "worksheet" | "single_activity" | "activity_mix" | "presentation";
@@ -92,13 +93,18 @@ interface Props {
 
 export default function FromMaterialView({ role }: Props) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const requestedType = searchParams.get("typ");
+  const handedSource = role === "student" && (requestedType === "flashcards" || requestedType === "mcq")
+    ? readPracticeSource()
+    : null;
 
   // Step 1: input
   const [images, setImages] = useState<{ file: File; preview: string; b64: string }[]>([]);
-  const [extractedText, setExtractedText] = useState("");
-  const [sourceFileName, setSourceFileName] = useState("");
+  const [extractedText, setExtractedText] = useState(handedSource?.text ?? "");
+  const [sourceFileName, setSourceFileName] = useState(handedSource?.label ?? "");
   const [uploading, setUploading] = useState(false);
   const imageBusy = useRef(false);
   const imagesRef = useRef(images);
@@ -110,10 +116,10 @@ export default function FromMaterialView({ role }: Props) {
   const [outputType, setOutputType] = useState<OutputType>(
     role === "teacher" ? "worksheet" : "single_activity"
   );
-  const [singleType, setSingleType] = useState<ItemType>("mcq");
+  const [singleType, setSingleType] = useState<ItemType>(requestedType === "flashcards" ? "flashcards" : "mcq");
   const [mixTypes, setMixTypes] = useState<ItemType[]>(["mcq", "true_false"]);
   const [itemCount, setItemCount] = useState(8);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(handedSource?.label?.replace(/^Bezlai\s*–\s*/, "") ?? "");
 
   const [generating, setGenerating] = useState(false);
   const [ephemeralSpec, setEphemeralSpec] = useState<WorksheetSpec | null>(null);

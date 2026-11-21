@@ -1,4 +1,4 @@
-import { drawNotebookTextBox } from "@/lib/notebook-rich-text";
+import { drawNotebookTextBox, plainToNotebookHtml } from "@/lib/notebook-rich-text";
 import { buildToc } from "@/lib/notebook-toc";
 import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
 // Digitální sešit — typy, vykreslování a datová vrstva.
@@ -62,6 +62,9 @@ export interface NotebookPageContent {
     pageIndex?: number;
     pageCount?: number;
   };
+  /** Původ AI konceptu a případná následná ruční úprava žákem. */
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 export type BackgroundStyle = "blank" | "lined" | "grid" | "dotted";
@@ -124,6 +127,8 @@ export function normalizeContent(raw: any): NotebookPageContent {
     textBoxes: Array.isArray(raw?.textBoxes) ? raw.textBoxes : [],
     images: Array.isArray(raw?.images) ? raw.images : [],
     ...(raw?.worksheet && typeof raw.worksheet.worksheetId === "string" ? { worksheet: raw.worksheet } : {}),
+    ...(raw?.ai_generated === true ? { ai_generated: true } : {}),
+    ...(typeof raw?.ai_modified_at === "string" ? { ai_modified_at: raw.ai_modified_at } : {}),
   };
 }
 
@@ -379,6 +384,42 @@ export async function createNotebookPage(input: {
     .single();
   if (error) throw error;
   return { ...(data as any), content: normalizeContent((data as any).content) } as NotebookPage;
+}
+
+/** Přidá ručně potvrzené textové poznámky jako novou poslední stránku existujícího sešitu. */
+export async function appendTextPageToNotebook(input: {
+  notebookId: string;
+  title: string;
+  text: string;
+  aiModifiedAt?: string | null;
+}): Promise<NotebookPage> {
+  const title = input.title.trim();
+  const text = input.text.trim();
+  if (!title || !text) throw new Error("Před vložením doplň název i text poznámek.");
+  const pages = await loadPages(input.notebookId);
+  const pageOrder = pages.length ? Math.max(...pages.map((page) => page.page_order)) + 1 : 0;
+  return createNotebookPage({
+    notebookId: input.notebookId,
+    pageOrder,
+    title: title.slice(0, 120),
+    content: {
+      strokes: [],
+      images: [],
+      textBoxes: [{
+        id: crypto.randomUUID(),
+        x: 0.06,
+        y: 0.06,
+        w: 0.88,
+        h: 0.88,
+        text,
+        html: plainToNotebookHtml(text),
+        color: "#000000",
+        fontSize: 24,
+      }],
+      ai_generated: true,
+      ai_modified_at: input.aiModifiedAt ?? null,
+    },
+  });
 }
 
 /** Příznak textboxu se seznamem žáků třídy. */

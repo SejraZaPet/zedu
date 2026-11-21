@@ -36,6 +36,8 @@ export interface PortfolioItem {
   files?: PortfolioFile[];
   // synthetic flag — true for auto-aggregated items not present in DB
   synthetic?: boolean;
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 export interface PortfolioComment {
@@ -99,6 +101,8 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
   const manual: PortfolioItem[] = (manualRes.data ?? []).map((r: any) => ({
     ...r,
     content_json: r.content_json ?? {},
+    ai_generated: r.content_json?.ai_generated === true,
+    ai_modified_at: typeof r.content_json?.ai_modified_at === "string" ? r.content_json.ai_modified_at : null,
   }));
 
   // Load files for manual items in bulk
@@ -210,6 +214,35 @@ export async function saveWorksheetToPortfolio(input: {
   } as any);
   if (error) throw error;
   return { already: false };
+}
+
+/** Textová reflexe z Bezlai; využívá stejnou položku portfolia jako ručně přidaná reflexe. */
+export async function saveTextToPortfolio(input: {
+  studentId: string;
+  title: string;
+  text: string;
+  subject?: string | null;
+  aiModifiedAt?: string | null;
+}): Promise<{ id: string }> {
+  const title = input.title.trim();
+  const description = input.text.trim();
+  if (!title || !description) throw new Error("Před uložením doplň název i text poznámek.");
+  const { data, error } = await supabase.from("student_portfolio_items").insert({
+    student_id: input.studentId,
+    type: "reflection",
+    title: title.slice(0, 200),
+    description,
+    subject: input.subject?.trim() || null,
+    attachment_url: null,
+    source_type: "manual",
+    content_json: {
+      source: "bezlai",
+      ai_generated: true,
+      ai_modified_at: input.aiModifiedAt ?? null,
+    },
+  } as any).select("id").single();
+  if (error) throw error;
+  return { id: data.id };
 }
 
 export async function uploadPortfolioAttachment(studentId: string, file: File): Promise<string> {

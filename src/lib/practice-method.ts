@@ -92,6 +92,10 @@ export function notebookPageText(content: unknown): string {
     .join("\n\n");
 }
 
+export function practicePageLabel(page: { order: number; text: string }): string {
+  return `Strana ${page.order + 1}${page.text ? ` – ${page.text.slice(0, 40)}${page.text.length > 40 ? "…" : ""}` : " – bez textu – rukopis zatím neumíme číst"}`;
+}
+
 /* ---------- Předání vlastního zdroje do procvičování (jen relace prohlížeče) ---------- */
 export const PRACTICE_SOURCE_KEY = "bezli.practice.source";
 export type PracticeSource = { kind: "text" | "file" | "photo" | "notebook" | "portfolio"; text: string; label: string };

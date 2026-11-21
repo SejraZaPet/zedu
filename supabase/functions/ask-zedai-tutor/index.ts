@@ -2,8 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
-import { buildTutorSystemPrompt, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
+import { buildTutorSummaryPrompt, buildTutorSystemPrompt, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
 import { searchStudentMaterialSnippets } from "./search.ts";
+import { SOURCE_KINDS, SOURCE_TEXT_LIMIT, type SourceKind } from "../_shared/practice-phases.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,12 +44,33 @@ serve(async (req) => {
     const mode = body.mode ?? "context";
     if (mode !== "context" && mode !== "free") return json({ error: "Neplatný režim chatu." }, 400);
     const tutorMode: TutorMode = mode;
+    const task = body.task ?? "chat";
+    if (task !== "chat" && task !== "summary") return json({ error: "Neplatná operace chatu." }, 400);
+    if (task === "summary" && tutorMode !== "free") return json({ error: "Shrnutí je dostupné jen ve volném režimu." }, 400);
     const question = typeof body.question === "string" ? body.question : "";
     const studentMessage = typeof body.studentMessage === "string" ? body.studentMessage.trim() : "";
     const subject = typeof body.subject === "string" ? body.subject : "";
     if (!studentMessage) return json({ error: "Prázdná zpráva." }, 400);
     if (studentMessage.length > 4000 || question.length > 12000 || subject.length > 200) {
       return json({ error: "Zpráva nebo kontext je příliš dlouhý." }, 400);
+    }
+
+    let providedMaterial: TutorSourceSnippet | null = null;
+    if (body.material !== undefined && body.material !== null) {
+      if (tutorMode !== "free" || !body.material || typeof body.material !== "object" || Array.isArray(body.material)) {
+        return json({ error: "Materiál lze přidat jen ve volném režimu." }, 400);
+      }
+      const raw = body.material as Record<string, unknown>;
+      const text = typeof raw.text === "string" ? raw.text.trim() : "";
+      const title = typeof raw.label === "string" ? raw.label.trim() : "";
+      const kind = typeof raw.kind === "string" ? raw.kind : "";
+      if (!text || !title || !(SOURCE_KINDS as readonly string[]).includes(kind)) {
+        return json({ error: "Materiál nemá platný název, typ nebo text." }, 400);
+      }
+      if (text.length > SOURCE_TEXT_LIMIT || title.length > 200) {
+        return json({ error: `Materiál je příliš dlouhý. Text může mít nejvýše ${SOURCE_TEXT_LIMIT} znaků.` }, 400);
+      }
+      providedMaterial = { text, title, kind: kind as SourceKind };
     }
 
     const history: ChatMsg[] = Array.isArray(body.conversationHistory)
@@ -64,7 +86,7 @@ serve(async (req) => {
 
     let snippets: TutorSourceSnippet[] = [];
     let searchFailed = false;
-    if (tutorMode === "free") {
+    if (tutorMode === "free" && task === "chat" && !providedMaterial) {
       try {
         // Důležité: anon klient + původní JWT. RLS rozhoduje, nic se nečte service rolí.
         const studentDb = createClient(
@@ -78,14 +100,20 @@ serve(async (req) => {
         searchFailed = true;
       }
     }
+    if (task === "summary" && !history.some((message) => message.role === "user")) {
+      return json({ error: "Nejprve si s Bezlai popovídej. Potom můžeš vytvořit shrnutí." }, 400);
+    }
 
-    const systemPrompt = buildTutorSystemPrompt({
-      mode: tutorMode,
-      subject,
-      question,
-      snippets,
-      searchFailed,
-    });
+    const systemPrompt = task === "summary"
+      ? buildTutorSummaryPrompt({ subject, providedMaterial })
+      : buildTutorSystemPrompt({
+        mode: tutorMode,
+        subject,
+        question,
+        snippets,
+        searchFailed,
+        providedMaterial,
+      });
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {

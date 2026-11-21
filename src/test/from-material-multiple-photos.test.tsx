@@ -8,6 +8,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invo
 vi.mock("@/components/WorksheetPlayer", () => ({ default: () => null }));
 vi.mock("@/lib/pdf-page-renderer", () => ({ extractPdfText: vi.fn() }));
 import FromMaterialView from "@/components/from-material/FromMaterialView";
+import { savePracticeSource } from "@/lib/practice-method";
 beforeEach(() => {
   vi.clearAllMocks();
   URL.createObjectURL = vi.fn(() => "blob:test");
@@ -32,5 +33,16 @@ describe("Z materiálu – galerie a kamera", () => {
     fireEvent.change(input, { target: { files: photos(7) } });
     expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Nejvýše 6 fotek", variant: "destructive" }));
     expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+  it("převezme text z Bezlai a použije ho pro zvolené kartičky", async () => {
+    savePracticeSource({ kind: "text", label: "Bezlai – Hovězí maso", text: "Hovězí maso se dělí podle částí a tepelné úpravy." });
+    mocks.invoke.mockResolvedValue({ data: { items: [{ type: "flashcards", question: "Maso", flashcards: [{ front: "Předek", back: "Přední část" }] }] }, error: null });
+    render(<MemoryRouter initialEntries={["/student/z-materialu?typ=flashcards"]}><FromMaterialView role="student" /></MemoryRouter>);
+    expect(screen.getByDisplayValue("Hovězí maso")).toBeInTheDocument();
+    expect(screen.getByText(/Načteno .* znaků z dokumentu/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Vygenerovat" }));
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("generate-content-from-material", expect.objectContaining({
+      body: expect.objectContaining({ extractedText: "Hovězí maso se dělí podle částí a tepelné úpravy.", activityTypes: ["flashcards"], outputType: "single_activity" }),
+    })));
   });
 });

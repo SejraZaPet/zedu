@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
@@ -13,22 +12,18 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { notebookPageText, savePracticeSource, type PracticeSource } from "@/lib/practice-method";
-import { PRACTICE_PHOTO_PRIVACY_NOTICE } from "@/lib/practice-photo";
-import { usePracticePhotos } from "@/lib/use-practice-photos";
+import { savePracticeSource, type PracticeSource } from "@/lib/practice-method";
 import { useDemoPair } from "@/lib/demo";
-import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functions/_shared/practice-phases";
+import { MIN_SOURCE_TEXT_LENGTH } from "../../supabase/functions/_shared/practice-phases";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useStudentPracticeLessons } from "@/hooks/useStudentPracticeLessons";
 import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 import { methodHumanInfo, methodPurpose, PRACTICE_DURATIONS, questionCountForDuration } from "@/lib/study-method-info";
 import StudentLearningHome from "@/components/student/StudentLearningHome";
+import PracticeSourceEditor, { type PracticeEditorSourceKind } from "@/components/practice/PracticeSourceEditor";
 import {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer,
   NotebookPen, ArrowRightCircle, GraduationCap, Play, ChevronLeft, ChevronRight, CheckCircle2,
-  Camera, Loader2, Images, ArrowUp, ArrowDown, Trash2, RotateCcw,
 } from "lucide-react";
 
 type Method = {
@@ -45,10 +40,6 @@ const ICONS: Record<string, React.ElementType> = {
   Brain, BookOpen, ListChecks, Sparkles, MapPin, Timer, NotebookPen, ArrowRightCircle,
 };
 
-function practicePageLabel(page: { order: number; text: string }): string {
-  return `Strana ${page.order + 1}${page.text ? ` – ${page.text.slice(0, 40)}${page.text.length > 40 ? "…" : ""}` : " – bez textu – rukopis zatím neumíme číst"}`;
-}
-
 const StudentMethods = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -64,120 +55,13 @@ const StudentMethods = () => {
   const [selectedLesson, setSelectedLesson] = useState<string>("none");
   const [duration, setDuration] = useState<string>("15");
   const [submitting, setSubmitting] = useState(false);
-  const [sourceKind, setSourceKind] = useState<"lesson" | "text" | "file" | "photo" | "notebook">("lesson");
-  const [customText, setCustomText] = useState("");
-  const [fileSource, setFileSource] = useState<{ text: string; label: string } | null>(null);
-  const [fileBusy, setFileBusy] = useState(false);
+  const [sourceKind, setSourceKind] = useState<PracticeEditorSourceKind>("lesson");
+  const [chosenSource, setChosenSource] = useState<PracticeSource | null>(null);
+  const [sourceBusy, setSourceBusy] = useState(false);
   const demoPair = useDemoPair();
-  const photos = usePracticePhotos((description) => toast({ title: "Příliš mnoho fotek", description, variant: "destructive" }));
-  const { busy: photoBusy, text: photoText, setText: setPhotoText, review: photoReview, setReview: setPhotoReview,
-    confirmed: photoConfirmed, setConfirmed: setPhotoConfirmed } = photos;
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const photoTextRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (sourceKind !== "photo" || !practiceFor) {
-      photos.clear();
-      setPhotoError(null);
-    }
-  }, [sourceKind, practiceFor]);
-  const [notebooks, setNotebooks] = useState<{ id: string; title: string }[]>([]);
-  const [notebookId, setNotebookId] = useState("");
-  const [pages, setPages] = useState<{ id: string; order: number; text: string }[]>([]);
-  const [pageId, setPageId] = useState("");
-
-  useEffect(() => {
-    if (!practiceFor || sourceKind !== "notebook") return;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data } = await supabase.from("notebooks").select("id, title").eq("owner_id", session.user.id).or(`cover_color.is.null,cover_color.neq.${CHEATSHEET_STORAGE_MARKER}`).order("title");
-      setNotebooks((data ?? []) as any);
-    })();
-  }, [practiceFor, sourceKind]);
-
-  useEffect(() => {
-    setPages([]); setPageId("");
-    if (!notebookId) return;
-    (async () => {
-      const { data } = await supabase.from("notebook_pages").select("id, page_order, content")
-        .eq("notebook_id", notebookId).order("page_order");
-      setPages(((data ?? []) as any[]).map((r) => ({ id: r.id, order: r.page_order, text: notebookPageText(r.content) })));
-    })();
-  }, [notebookId]);
-
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    setFileBusy(true);
-    try {
-      let text = "";
-      if (file.name.toLowerCase().endsWith(".pdf")) {
-        const { extractPdfText } = await import("@/lib/pdf-page-renderer");
-        text = (await extractPdfText(file)).text;
-      } else {
-        text = await file.text();
-      }
-      text = text.trim();
-      if (text.length < MIN_SOURCE_TEXT_LENGTH) {
-        setFileSource(null);
-        toast({ title: "V souboru je málo textu", description: "Zkus jiný soubor nebo text vlož ručně.", variant: "destructive" });
-      } else {
-        setFileSource({ text: text.slice(0, SOURCE_TEXT_LIMIT), label: file.name });
-      }
-    } catch {
-      setFileSource(null);
-      toast({ title: "Soubor se nepodařilo přečíst", description: "Zkus PDF s textem nebo soubor .txt.", variant: "destructive" });
-    } finally {
-      setFileBusy(false);
-    }
-  };
-
-  const handlePhotoTextChange = (value: string) => {
-    setPhotoText(value);
-    setPhotoConfirmed(false);
-    setPhotoError(null);
-  };
-
-  const handlePhotoConfirm = () => {
-    const text = photoText.trim();
-    if (text.length < MIN_SOURCE_TEXT_LENGTH) {
-      setPhotoError(`Text je moc krátký. Potřebuju aspoň ${MIN_SOURCE_TEXT_LENGTH} znaků.`);
-      setPhotoConfirmed(false);
-      return;
-    }
-    if (text.length > SOURCE_TEXT_LIMIT) {
-      setPhotoError(`Text je moc dlouhý. Zkrať ho na ${SOURCE_TEXT_LIMIT} znaků.`);
-      setPhotoConfirmed(false);
-      return;
-    }
-    setPhotoText(text);
-    setPhotoError(null);
-    setPhotoConfirmed(true);
-  };
-
-  const handlePhotoEdit = () => {
-    setPhotoReview(true);
-    setPhotoConfirmed(false);
-    requestAnimationFrame(() => photoTextRef.current?.focus());
-  };
-
-  const chosenSource = ((): PracticeSource | null => {
-    if (sourceKind === "text") return { kind: "text", text: customText.slice(0, SOURCE_TEXT_LIMIT), label: "Vlastní text" };
-    if (sourceKind === "file") return fileSource ? { kind: "file", ...fileSource } : null;
-    if (sourceKind === "photo") {
-      return photoConfirmed ? { kind: "photo", text: photoText, label: "Fotografie" } : null;
-    }
-    if (sourceKind === "notebook") {
-      const pg = pages.find((x) => x.id === pageId);
-      const nb = notebooks.find((x) => x.id === notebookId);
-      return pg ? { kind: "notebook", text: pg.text, label: `Sešit ${nb?.title ?? ""}, strana ${pg.order + 1}` } : null;
-    }
-    return null;
-  })();
+  const handleSourceChange = useCallback((source: PracticeSource | null) => setChosenSource(source), []);
+  const handleSourceBusy = useCallback((busy: boolean) => setSourceBusy(busy), []);
   const sourceTooShort = sourceKind !== "lesson" && (!chosenSource || chosenSource.text.trim().length < MIN_SOURCE_TEXT_LENGTH);
-  const sourceTooLong = sourceKind === "photo" && photoText.trim().length > SOURCE_TEXT_LIMIT;
 
   useEffect(() => {
     (async () => {
@@ -190,14 +74,14 @@ const StudentMethods = () => {
       if (error) {
         toast({ title: "Chyba načítání", description: error.message, variant: "destructive" });
       } else {
-        setMethods((data ?? []) as any);
+        setMethods((data ?? []) as Method[]);
       }
       if (session) {
         const { data: prefs } = await supabase
           .from("student_preferred_methods")
           .select("method_id")
           .eq("student_id", session.user.id);
-        setPreferredIds(((prefs ?? []) as any[]).map((p) => p.method_id));
+        setPreferredIds(((prefs ?? []) as { method_id: string }[]).map((p) => p.method_id));
       }
       setLoading(false);
     })();
@@ -453,11 +337,8 @@ const StudentMethods = () => {
       <Dialog open={!!practiceFor} onOpenChange={(o) => {
         if (!o) {
           setPracticeFor(null);
-          photos.clear();
-          setPhotoError(null);
-          setPhotoText("");
-          setPhotoReview(false);
-          setPhotoConfirmed(false);
+          setChosenSource(null);
+          setSourceKind("lesson");
         }
       }}>
         <DialogContent>
@@ -469,172 +350,37 @@ const StudentMethods = () => {
           </DialogHeader>
 
           <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
-            <div>
-              <Label htmlFor="practice-source">Zdroj</Label>
-              <Select value={sourceKind} onValueChange={(v) => setSourceKind(v as any)}>
-                <SelectTrigger id="practice-source" className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lesson">Lekce z učebnice</SelectItem>
-                  <SelectItem value="text">Vlastní text</SelectItem>
-                  <SelectItem value="file">Soubor (PDF nebo .txt)</SelectItem>
-                  <SelectItem value="photo">Fotografie</SelectItem>
-                  <SelectItem value="notebook">Stránka mého sešitu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {sourceKind === "text" && (
-              <div>
-                <Label htmlFor="practice-text">Tvůj text</Label>
-                <Textarea id="practice-text" rows={7} maxLength={SOURCE_TEXT_LIMIT} value={customText}
-                  onChange={(e) => setCustomText(e.target.value)} className="mt-1 text-base"
-                  placeholder="Vlož sem zápis, výpisky nebo text z učebnice." />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {customText.length} / {SOURCE_TEXT_LIMIT} znaků (aspoň {MIN_SOURCE_TEXT_LENGTH}). Text se nikam neukládá, použije se jen pro otázky.
-                </p>
-              </div>
-            )}
-
-            {sourceKind === "file" && (
-              <div>
-                <Label htmlFor="practice-file">Soubor</Label>
-                <Input id="practice-file" type="file" accept=".pdf,.txt,application/pdf,text/plain" className="mt-1"
-                  disabled={fileBusy} onChange={(e) => handleFile(e.target.files?.[0])} />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {fileBusy ? "Čtu soubor…" : fileSource ? `Načteno: ${fileSource.label} (${fileSource.text.length} znaků)` : "PDF s textem nebo .txt. Fotky zatím neumíme přečíst."}
-                </p>
-              </div>
-            )}
-
-            {sourceKind === "photo" && (
-              <div className="space-y-3 min-w-0">
-                <p className="text-sm rounded-md border border-border bg-muted/40 p-3">{PRACTICE_PHOTO_PRIVACY_NOTICE}</p>
-                {demoPair && <p role="note" className="text-sm border border-border rounded-md p-3">Demo účet má limit 5 AI volání. Každá fotka spotřebuje jedno volání; další volání potřebuje i procvičování. Více fotek může limit vyčerpat.</p>}
-                <input ref={photoInputRef} id="practice-photo" type="file" accept="image/*" multiple className="hidden" disabled={photoBusy}
-                  onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void photos.add(files); }} />
-                <input ref={cameraInputRef} id="practice-photo-camera" type="file" accept="image/*" capture="environment" className="hidden" disabled={photoBusy}
-                  onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void photos.add(files); }} />
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" className="min-h-11 gap-2" disabled={photoBusy} onClick={() => photoInputRef.current?.click()}><Images className="h-4 w-4" />Vybrat fotografie</Button>
-                  <Button type="button" variant="outline" className="min-h-11 gap-2" disabled={photoBusy} onClick={() => cameraInputRef.current?.click()}><Camera className="h-4 w-4" />Vyfotit stránku</Button>
-                </div>
-                <p className="text-xs text-muted-foreground">{photos.entries.length} / 6 fotek</p>
-                {photoBusy && <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{photos.progress}</p>}
-                <ol className="space-y-3">
-                  {photos.entries.map((entry, index) => (
-                    <li key={entry.id} className="rounded-md border border-border p-3 space-y-2 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">Fotka {index + 1}</span>
-                        <div className="flex shrink-0">
-                          <Button type="button" variant="ghost" size="icon" title="Posunout nahoru" aria-label={`Fotka ${index + 1}: nahoru`} disabled={photoBusy || index === 0} onClick={() => photos.move(entry.id, -1)}><ArrowUp className="h-4 w-4" /></Button>
-                          <Button type="button" variant="ghost" size="icon" title="Posunout dolů" aria-label={`Fotka ${index + 1}: dolů`} disabled={photoBusy || index === photos.entries.length - 1} onClick={() => photos.move(entry.id, 1)}><ArrowDown className="h-4 w-4" /></Button>
-                          <Button type="button" variant="ghost" size="icon" title="Odebrat fotku" aria-label={`Fotka ${index + 1}: odebrat`} disabled={photoBusy} onClick={() => photos.remove(entry.id)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </div>
-                      {entry.photo && <img src={entry.photo.previewUrl} alt="Náhled fotografie stránky s učivem" className="max-h-48 w-full rounded-md object-contain" />}
-                      {entry.text && <p className="text-xs text-primary">Přepsáno AI</p>}
-                      {entry.error && <><p role="alert" className="text-sm text-destructive break-words">{entry.error}</p><Button type="button" variant="outline" className="gap-2" disabled={photoBusy} onClick={() => void photos.retry(entry.id)}><RotateCcw className="h-4 w-4" />Zkusit znovu</Button></>}
-                    </li>
-                  ))}
-                </ol>
-                {photos.entries.some((entry) => !entry.text && !entry.error) && <Button type="button" className="min-h-11 w-full gap-2" disabled={photoBusy} onClick={() => void photos.transcribe()}><Sparkles className="h-4 w-4" />{photos.entries.length === 1 ? "Přečíst text z fotky" : "Přečíst text z fotek"}</Button>}
-                {photos.entries.length > 0 && <Button type="button" variant="outline" className="min-h-11" disabled={photoBusy} onClick={handlePhotoEdit}>Upravit / doplnit ručně</Button>}
-                {photoReview && (
-                  <div className="space-y-3">
-                    <Label htmlFor="practice-photo-text" className="font-medium">Přepsáno AI – zkontroluj text</Label>
-                    <Textarea ref={photoTextRef} id="practice-photo-text" rows={8} value={photoText} onChange={(event) => handlePhotoTextChange(event.target.value)} className="mt-1 text-base" placeholder="Doplň nebo opiš text z fotek." disabled={photoBusy} />
-                    <p className="text-xs text-muted-foreground">{photoText.trim().length} / {SOURCE_TEXT_LIMIT} znaků (aspoň {MIN_SOURCE_TEXT_LENGTH}). Fotky se neukládají; po potvrzení se použije jen tento text.</p>
-                    {(photoError || sourceTooLong) && <p role="alert" className="text-sm text-destructive">{sourceTooLong ? `Text je moc dlouhý. Zkrať ho na ${SOURCE_TEXT_LIMIT} znaků; žádný text nebyl oříznut.` : photoError}</p>}
-                    <Button type="button" className="min-h-11 w-full" disabled={photoBusy || photoText.trim().length < MIN_SOURCE_TEXT_LENGTH || sourceTooLong} onClick={handlePhotoConfirm}>Potvrdit text</Button>
-                    {photoConfirmed && <p role="status" className="flex items-center gap-2 text-sm text-primary"><CheckCircle2 className="h-4 w-4" />Text je potvrzený. Teď můžeš spustit procvičování.</p>}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sourceKind === "notebook" && (
-              <div className="space-y-3">
+            <PracticeSourceEditor
+              kind={sourceKind}
+              onKindChange={setSourceKind}
+              onSourceChange={handleSourceChange}
+              onBusyChange={handleSourceBusy}
+              allowLesson
+              demoAccount={Boolean(demoPair)}
+              lessonContent={(
                 <div>
-                  <Label htmlFor="practice-notebook">Sešit</Label>
-                  {notebooks.length >= 8 ? (
-                    <SearchableSelect
-                      id="practice-notebook"
-                      value={notebookId}
-                      onValueChange={setNotebookId}
-                      options={notebooks.map((notebook) => ({ value: notebook.id, label: notebook.title }))}
-                      placeholder="Vyber sešit"
-                      label="Hledat sešit"
-                      growing
-                    />
-                  ) : (
-                    <Select value={notebookId} onValueChange={setNotebookId}>
-                      <SelectTrigger id="practice-notebook" className="mt-1"><SelectValue placeholder="Vyber sešit" /></SelectTrigger>
-                      <SelectContent>
-                        {notebooks.map((n) => <SelectItem key={n.id} value={n.id}>{n.title}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {notebooks.length === 0 && <p className="text-xs text-muted-foreground mt-1">Zatím nemáš žádný sešit.</p>}
+                  <Label>Lekce z učebnice (volitelné)</Label>
+                  <SearchableSelect
+                    id="practice-lesson"
+                    value={selectedLesson}
+                    onValueChange={setSelectedLesson}
+                    options={lessonOptions}
+                    label="Hledat lekci"
+                    triggerLabel="Lekce pro studijní pomůcku"
+                    placeholder="Vyber lekci"
+                    searchPlaceholder="Napiš název lekce, předmětu nebo učebnice…"
+                    emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
+                    emptyMessage="Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce."
+                    loading={lessonsQuery.isPending && lessonsQuery.data === undefined}
+                    loadingLabel="Načítám tvoje lekce…"
+                    error={lessonsQuery.isError ? "Lekce se nepodařilo načíst" : null}
+                    retrying={lessonsQuery.isFetching}
+                    onRetry={() => { void lessonsQuery.refetch(); }}
+                    showSelectedSubtitle
+                  />
                 </div>
-                {notebookId && (
-                  <div>
-                    <Label htmlFor="practice-page">Stránka</Label>
-                    {pages.length >= 8 ? (
-                      <SearchableSelect
-                        id="practice-page"
-                        value={pageId}
-                        onValueChange={setPageId}
-                        options={pages.map((page) => ({ value: page.id, label: practicePageLabel(page), disabled: !page.text }))}
-                        placeholder="Vyber stránku"
-                        label="Hledat stránku"
-                        growing
-                      />
-                    ) : (
-                      <Select value={pageId} onValueChange={setPageId}>
-                        <SelectTrigger id="practice-page" className="mt-1"><SelectValue placeholder="Vyber stránku" /></SelectTrigger>
-                        <SelectContent>
-                          {pages.map((pg) => (
-                            <SelectItem key={pg.id} value={pg.id} disabled={!pg.text}>{practicePageLabel(pg)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">Použijeme jen text z textových polí na stránce.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sourceKind !== "lesson" && sourceTooShort && (sourceKind !== "photo" || photoReview) && (
-              <p className="text-xs text-muted-foreground">Potřebuju aspoň {MIN_SOURCE_TEXT_LENGTH} znaků textu.</p>
-            )}
-            {sourceTooLong && (
-              <p className="text-xs text-muted-foreground">Text je potřeba zkrátit na {SOURCE_TEXT_LIMIT} znaků.</p>
-            )}
-
-            {sourceKind === "lesson" && (
-              <div>
-                <Label>Lekce z učebnice (volitelné)</Label>
-                <SearchableSelect
-                  id="practice-lesson"
-                  value={selectedLesson}
-                  onValueChange={setSelectedLesson}
-                  options={lessonOptions}
-                  label="Hledat lekci"
-                  triggerLabel="Lekce pro studijní pomůcku"
-                  placeholder="Vyber lekci"
-                  searchPlaceholder="Napiš název lekce, předmětu nebo učebnice…"
-                  emptySearchMessage="Nic jsme nenašli. Zkus jiné slovo."
-                  emptyMessage="Zatím nemáš žádné lekce z učebnic. Jakmile ti učitel zveřejní lekci, objeví se tady. Můžeš procvičovat i bez lekce."
-                  loading={lessonsQuery.isPending && lessonsQuery.data === undefined}
-                  loadingLabel="Načítám tvoje lekce…"
-                  error={lessonsQuery.isError ? "Lekce se nepodařilo načíst" : null}
-                  retrying={lessonsQuery.isFetching}
-                  onRetry={() => { void lessonsQuery.refetch(); }}
-                  showSelectedSubtitle
-                />
-              </div>
-            )}
+              )}
+            />
 
             <div>
               <Label htmlFor="duration">Délka (minuty)</Label>
@@ -655,7 +401,7 @@ const StudentMethods = () => {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPracticeFor(null)}>Zrušit</Button>
-            <Button onClick={startPractice} disabled={submitting || sourceTooShort || sourceTooLong || fileBusy || photoBusy} className="gap-2">
+            <Button onClick={startPractice} disabled={submitting || sourceTooShort || sourceBusy} className="gap-2">
               <Play className="w-4 h-4" /> Spustit procvičování
             </Button>
           </DialogFooter>

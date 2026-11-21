@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  buildTutorSummaryPrompt,
   buildTutorSystemPrompt,
   findTutorSnippets,
   lessonTextForTutor,
@@ -34,6 +35,30 @@ Deno.test("volný prompt neobsahuje vnucenou poslední lekci ani návrat k téma
   assertStringIncludes(prompt, "V tvých materiálech jsem to nenašla");
   assertStringIncludes(prompt, "Obecné vysvětlení (ne z tvých materiálů):");
   assertStringIncludes(prompt, "zpětnou otázku");
+});
+
+Deno.test("vlastní materiál má přednost, jasně se cituje a nepředstírá hledání jinde", () => {
+  const prompt = buildTutorSystemPrompt({
+    mode: "free",
+    providedMaterial: { title: "Moje poznámky", kind: "text", text: "Hovězí maso se dělí na přední a zadní." },
+    snippets: [{ title: "Mediální výchova", kind: "Lekce", text: "Reklama" }],
+  });
+  assertStringIncludes(prompt, "VLASTNÍ MATERIÁL PŘIDANÝ ŽÁKEM");
+  assertStringIncludes(prompt, "z tvého materiálu");
+  assertStringIncludes(prompt, "V tvém materiálu jsem to nenašla");
+  assertStringIncludes(prompt, "Obecné vysvětlení (ne z tvého materiálu):");
+  assert(!prompt.includes("Mediální výchova"));
+});
+
+Deno.test("shrnutí je pouze koncept s názvem, body a zdroji", () => {
+  const prompt = buildTutorSummaryPrompt({
+    providedMaterial: { title: "Moje poznámky", kind: "text", text: "Text" },
+  });
+  assertStringIncludes(prompt, "NÁZEV:");
+  assertStringIncludes(prompt, "HLAVNÍ BODY:");
+  assertStringIncludes(prompt, "ZDROJE:");
+  assertStringIncludes(prompt, "Nepiš, že jsi poznámky uložila");
+  assertStringIncludes(prompt, "Nedoplňuj nová fakta");
 });
 
 Deno.test("kontextový prompt zůstane bez přímé odpovědi a drží zadání", () => {

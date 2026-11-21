@@ -284,6 +284,7 @@ function PortfolioCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold truncate">{item.title}</h3>
                   <Badge variant="outline" className="text-[10px]">{TYPE_LABEL[item.type] || item.type}</Badge>
+                  <AiContentBadge aiGenerated={item.ai_generated} aiModifiedAt={item.ai_modified_at} />
                   {item.subject && <Badge variant="secondary" className="text-[10px]">{item.subject}</Badge>}
                   {sourceLabel && (
                     <Badge variant="outline" className="text-[10px] gap-1">

@@ -253,6 +253,12 @@
 - Ostrá nasazená funkce se záměrně nespustila ani nezměnila; lokální můstek pouze pro non-demo ověření použil skutečné RLS čtení a AI. Prázdný stav a označení obecné odpovědi kryjí backendové testy.
 - [x] Návrh „Můj materiál“ ke schválení: výslovně opt-in uložení extrahovaného/potvrzeného textu pod vlastnictvím žáka s názvem, typem zdroje, verzí souhlasu a možností kdykoli text smazat; samostatná tabulka s owner-only RLS pro čtení i zápisy, demo omezení a kvóty. Bezlai by tyto řádky četla stále jen JWT žáka. Rozsah M (cca 1,5–2,5 dne): UI souhlasu/správy, migrace a RLS, napojení hledání, testy soukromí a mobilu. Žádné SQL navrženo ani aplikováno.
 
+## Bezlai – dočasný materiál a shrnutí do výukových pomůcek (schváleno)
+- [x] Sdílený vstup materiálu z procvičování pro volný režim: vlastní text, PDF/TXT, max. 6 fotek s kontrolou AI přepisu a stránka vlastního sešitu; jen paměť konverzace, limity a texty soukromí beze změny.
+- [x] AI shrnutí konverzace do upravitelného pole; ručně potvrzené uložení do sešitu (včetně nového), portfolia nebo předání do procvičování, bez automatických zápisů. AI štítky a označení následné ruční úpravy jsou zachované.
+- [x] Čitelné chyby s retry a bez ztráty textu, demo pravidla, klávesnice/ARIA/mobil 390 px, testy; bez DB/RLS/SQL a nasazení.
+- Ověřeno: 104 frontendových a 9 backendových testů, typy/build; mobilní preview s mockovaným chatem a skutečnými zápisy/čtením `[TEST]` sešitu i portfolia, odkazy a předání do kartiček. Vlastní test data uklizena. Živá nasazená edge funkce, ostré AI, PDF/foto přepis a nativní mobilní galerie v tomto průchodu nebyly spuštěny.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
