@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Paperclip, Send, Flag, Users, Plus, FileText } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { useDemoPair } from "@/lib/demo";
+import { clearBezlaiMessengerDraft, readBezlaiMessengerDraft } from "@/lib/bezlai-verification";
 
 type Contact = { id: string; name: string; is_teacher: boolean; class_id: string | null; class_name: string | null };
 type Conv = { id: string; type: string; title: string | null; created_at: string };
@@ -50,6 +51,8 @@ const MessagesPage = () => {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [groupTitle, setGroupTitle] = useState("");
   const [contactQuery, setContactQuery] = useState("");
+  const [listLoaded, setListLoaded] = useState(false);
+  const bezlaiHandoffHandled = useRef(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const names = useMemo(() => {
@@ -60,6 +63,7 @@ const MessagesPage = () => {
 
   const loadList = useCallback(async () => {
     if (!uid) return;
+    setListLoaded(false);
     const [{ data: c }, { data: cs }, { data: p }] = await Promise.all([
       db.rpc("messenger_contacts"),
       db.from("conversations").select("*").order("created_at", { ascending: false }),
@@ -72,6 +76,7 @@ const MessagesPage = () => {
     const map: Record<string, Msg> = {};
     (lm ?? []).forEach((m: Msg) => { if (!map[m.conversation_id]) map[m.conversation_id] = m; });
     setLastMsgs(map);
+    setListLoaded(true);
   }, [uid]);
 
   useEffect(() => { loadList(); }, [loadList]);
@@ -90,6 +95,32 @@ const MessagesPage = () => {
 
   useEffect(() => { if (activeId) loadConv(activeId); }, [activeId, loadConv]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length]);
+
+  // Bezlai pouze předá koncept z relace. Kontakt musí stále povolit messenger_contacts;
+  // nová konverzace ani zpráva se nikdy nevytvoří bez dalšího kliknutí žáka.
+  useEffect(() => {
+    if (bezlaiHandoffHandled.current || params.get("bezlai") !== "1" || !uid || !listLoaded) return;
+    bezlaiHandoffHandled.current = true;
+    const draft = readBezlaiMessengerDraft();
+    clearBezlaiMessengerDraft();
+    const teacher = draft ? contacts.find((contact) => contact.id === draft.teacherId && contact.is_teacher) : null;
+    if (!draft || !teacher) {
+      toast.error("Koncept pro učitele už není dostupný. Nic se neodeslalo.");
+      setParams({});
+      return;
+    }
+    setText(draft.text);
+    setPicked(new Set([teacher.id]));
+    const existing = convs.find((conversation) => conversation.type === "direct"
+      && parts.some((participant) => participant.conversation_id === conversation.id && participant.user_id === teacher.id));
+    if (existing) {
+      setNewOpen(null);
+      setParams({ c: existing.id });
+    } else {
+      setParams({});
+      setNewOpen("direct");
+    }
+  }, [uid, listLoaded, params, contacts, convs, parts, setParams]);
 
   useEffect(() => {
     if (!uid) return;

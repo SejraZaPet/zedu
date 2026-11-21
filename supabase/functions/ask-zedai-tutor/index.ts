@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { AI_MODEL_QUALITY } from "../_shared/ai-models.ts";
-import { buildTutorSummaryPrompt, buildTutorSystemPrompt, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
+import { buildTutorSummaryPrompt, buildTutorSystemPrompt, isTutorProvenanceQuestion, TUTOR_UNCERTAIN_SOURCE_REPLY, type TutorMode, type TutorSourceSnippet } from "./tutor.ts";
 import { searchStudentMaterialSnippets } from "./search.ts";
 import { SOURCE_KINDS, SOURCE_TEXT_LIMIT, type SourceKind } from "../_shared/practice-phases.ts";
 
@@ -54,6 +54,9 @@ serve(async (req) => {
     if (studentMessage.length > 4000 || question.length > 12000 || subject.length > 200) {
       return json({ error: "Zpráva nebo kontext je příliš dlouhý." }, 400);
     }
+    if (task === "chat" && isTutorProvenanceQuestion(studentMessage)) {
+      return json({ reply: TUTOR_UNCERTAIN_SOURCE_REPLY, grounded: false, sources: [] });
+    }
 
     let providedMaterial: TutorSourceSnippet | null = null;
     if (body.material !== undefined && body.material !== null) {
@@ -64,13 +67,15 @@ serve(async (req) => {
       const text = typeof raw.text === "string" ? raw.text.trim() : "";
       const title = typeof raw.label === "string" ? raw.label.trim() : "";
       const kind = typeof raw.kind === "string" ? raw.kind : "";
+      const rawHref = typeof raw.href === "string" ? raw.href.trim() : "";
+      const href = rawHref.length <= 1000 && /^\/(?:student\/(?:sesit|ucebnice)(?:\/|\?)|ucebnice\/)/.test(rawHref) ? rawHref : undefined;
       if (!text || !title || !(SOURCE_KINDS as readonly string[]).includes(kind)) {
         return json({ error: "Materiál nemá platný název, typ nebo text." }, 400);
       }
       if (text.length > SOURCE_TEXT_LIMIT || title.length > 200) {
         return json({ error: `Materiál je příliš dlouhý. Text může mít nejvýše ${SOURCE_TEXT_LIMIT} znaků.` }, 400);
       }
-      providedMaterial = { text, title, kind: kind as SourceKind };
+      providedMaterial = { text, title, kind: kind as SourceKind, ...(href ? { href } : {}) };
     }
 
     const history: ChatMsg[] = Array.isArray(body.conversationHistory)
@@ -141,8 +146,11 @@ serve(async (req) => {
     const data = await resp.json();
     const reply: string = data.choices?.[0]?.message?.content ?? "";
     if (!reply) return json({ error: "Prázdná odpověď z AI" }, 500);
+    const usedSources = task === "chat" ? (providedMaterial ? [providedMaterial] : snippets) : [];
     return json({
       reply,
+      grounded: usedSources.length > 0,
+      sources: usedSources.map(({ title, kind, href }) => ({ title, kind, ...(href ? { href } : {}) })),
       ...(searchFailed ? { searchError: "Materiály se nepodařilo prohledat. Bezlai odpoví bez nich." } : {}),
     });
   } catch {

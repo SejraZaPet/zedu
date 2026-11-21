@@ -259,6 +259,14 @@
 - [x] Čitelné chyby s retry a bez ztráty textu, demo pravidla, klávesnice/ARIA/mobil 390 px, testy; bez DB/RLS/SQL a nasazení.
 - Ověřeno: 104 frontendových a 9 backendových testů, typy/build; mobilní preview s mockovaným chatem a skutečnými zápisy/čtením `[TEST]` sešitu i portfolia, odkazy a předání do kartiček. Vlastní test data uklizena. Živá nasazená edge funkce, ostré AI, PDF/foto přepis a nativní mobilní galerie v tomto průchodu nebyly spuštěny.
 
+## Bezlai – poctivé zdroje a ověření odpovědi (schváleno)
+- [x] Oba prompty zakazují tvrzení o tréninku, knihách, webech a vymyšlené citace; otázka na původ odpovědi dostane pevné poctivé znění přímo ze serveru, bez AI.
+- [x] Server vrací skutečně použité `sources` a `grounded`; aplikace pod každou vygenerovanou odpovědí ukazuje zelený zdrojový nebo žlutý obecný štítek s ikonou, textem a dostupnými odkazy na lekce/sešit.
+- [x] Pevný návod „Jak si to ověřit“ v hlavičce a u obecné odpovědi, s existujícím hledáním lekcí a odkazy na sešity/Můj materiál; texty jsou v `bezlai-verification.ts`.
+- [x] „Ověřit s učitelem“ používá stávající `messenger_contacts`, výběr z více učitelů a koncept pouze v `sessionStorage`; Zprávy otevřou existující konverzaci nebo kontrolovaný dialog nové, nikdy neodesílají samy. SQL není potřeba, demo tlačítko nemá.
+- [x] Testy: 85 frontendových + 11 backendových, typy/build. Mobil 390 px ověřil zelený/žlutý štítek, návod, dva maketované kontakty a messenger s 0 POST zápisy a 0 chybami stránky; zelený odkaz otevřel skutečnou lekci. AI odpovědi v preview byly maketované, ostrá nasazená funkce se nespustila. Cílová stránka lekce má staré přetečení vlastní lišty nástrojů; nové obrazovky přetečení nemají.
+- Jen návrh přísného režimu (neimplementováno): opt-in politika škola → třída/předmět, výchozí zůstane dnešní režim. Nová tabulka politik by držela `school_id`, volitelné `class_id`/`subject_id`, režim a autora změny; učitel by upravoval jen vlastní třídy/předměty pod pravidly školy, school_admin svou školu. Server by po JWT vyhodnotil nejpřísnější platnou politiku a povolené zdroje odvodil z existujících zařazení lekcí/učebnic třídy a školy; žákovy sešity by zůstaly owner-only. Čtení by stále šlo tokenem žáka přes RLS, bez service role; případný definer by vracel jen povolená ID, ne obsah. Vyžaduje samostatnou schválenou migraci, GRANT/RLS, UI nastavení a testy běžného i přísného režimu; odhad M/L, cca 2–4 dny. Bez této migrace se zdroje nedají spolehlivě omezit, proto se neskrývá za pouhý klientský filtr.
+
 ## Klikací karty učebnic – učitel a žák
 - [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.

@@ -10,6 +10,7 @@ export interface PracticeLessonOption {
   sortOrder?: number | null;
   topicSortOrder?: number | null;
   topicId?: string | null;
+  href?: string;
 }
 
 export interface PracticeLessonGroup {
@@ -26,6 +27,7 @@ export interface RawPracticeLesson {
   sortOrder?: number | null;
   topicSortOrder?: number | null;
   topicId?: string | null;
+  href?: string;
 }
 
 const TOPIC_SUBJECT_FALLBACKS: Record<string, string> = {
@@ -81,6 +83,7 @@ export function groupPracticeLessons(rows: RawPracticeLesson[]): PracticeLessonG
       sortOrder: r.sortOrder,
       topicSortOrder: r.topicSortOrder,
       topicId: r.topicId,
+      ...(r.href ? { href: r.href } : {}),
     });
     bySubject.set(subject, list);
   }
@@ -190,7 +193,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
   const gLessons = ((gLessonsRes as any).data ?? []) as any[];
   const topicIds = [...new Set(gLessons.map((l) => l.topic_id).filter(Boolean))];
   const topicsPromise = topicIds.length
-    ? supabase.from("textbook_topics").select("id, subject, sort_order").in("id", topicIds)
+    ? supabase.from("textbook_topics").select("id, subject, grade, sort_order").in("id", topicIds)
     : Promise.resolve({ data: [] as any[] });
 
   // Doplňování učebnic je podmíněné a běží souběžně s načtením témat.
@@ -204,6 +207,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
   throwOnQueryError(topicsRes);
   const slugByTopic = new Map<string, string>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, t.subject]));
   const topicOrderById = new Map<string, number>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, t.sort_order]));
+  const topicById = new Map<string, { id: string; subject: string; grade: number }>(((topicsRes.data ?? []) as any[]).map((t) => [t.id, { id: t.id, subject: t.subject, grade: t.grade }]));
   const slugs = [...new Set([...slugByTopic.values()].filter(Boolean))];
 
   const subjectIds = [...new Set([
@@ -230,6 +234,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
       textbook: tb.title ?? "",
       subject: (sid && subjectName.get(sid)) || tb.title || "",
       sortOrder: l.sort_order,
+      href: `/student/ucebnice/${encodeURIComponent(l.textbook_id)}?lesson=${encodeURIComponent(l.id)}`,
     });
   }
   for (const l of gLessons) {
@@ -244,6 +249,7 @@ export async function fetchStudentPracticeLessons(userId: string): Promise<Pract
       sortOrder: l.sort_order,
       topicSortOrder: topicOrderById.get(l.topic_id),
       topicId: l.topic_id,
+      ...(slug && topicById.get(l.topic_id) ? { href: `/ucebnice/${encodeURIComponent(slug)}/${topicById.get(l.topic_id)!.grade}/${encodeURIComponent(l.topic_id)}/${encodeURIComponent(l.id)}` } : {}),
     });
   }
   return groupPracticeLessons(rows);

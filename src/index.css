@@ -975,3 +975,9 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
 .textbook-card { box-shadow: var(--dashboard-tile-shadow); transition: transform .2s ease, box-shadow .2s ease; }
 .textbook-card:hover, .textbook-card:focus-within { transform: translateY(-3px); box-shadow: var(--dashboard-tile-shadow-raised); }
 @media (prefers-reduced-motion: reduce) { .textbook-card, .textbook-card:hover, .textbook-card:focus-within { transform: none; transition: none; } }
+
+/* Bezlai: stav zdroje je vždy čitelný textem a doplněný ikonou, ne jen barvou. */
+.bezlai-source-badge--grounded { border-color: hsl(var(--activity-correct) / .38); background: hsl(var(--activity-correct) / .10); color: hsl(var(--foreground)); }
+.bezlai-source-badge--grounded .bezlai-source-badge__icon { color: hsl(var(--activity-correct)); }
+.bezlai-source-badge--general { border-color: hsl(var(--warning) / .42); background: hsl(var(--warning) / .12); color: hsl(var(--foreground)); }
+.bezlai-source-badge--general .bezlai-source-badge__icon { color: hsl(var(--warning)); }

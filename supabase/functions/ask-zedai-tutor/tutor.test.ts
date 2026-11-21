@@ -3,8 +3,10 @@ import {
   buildTutorSummaryPrompt,
   buildTutorSystemPrompt,
   findTutorSnippets,
+  isTutorProvenanceQuestion,
   lessonTextForTutor,
   normalizeTutorSearch,
+  TUTOR_UNCERTAIN_SOURCE_REPLY,
 } from "./tutor.ts";
 import { searchStudentMaterialSnippets } from "./search.ts";
 
@@ -81,6 +83,23 @@ Deno.test("zdrojový prompt pojmenuje lekci a skryté bloky neprohledává", () 
   ]).includes("Skryté"));
 });
 
+Deno.test("oba režimy zakazují vymyšlené zdroje a obsahují pevnou poctivou odpověď", () => {
+  for (const mode of ["context", "free"] as const) {
+    const prompt = buildTutorSystemPrompt({ mode, question: "Otázka", snippets: [] });
+    assertStringIncludes(prompt, "Nikdy netvrď nic o svém tréninku");
+    assertStringIncludes(prompt, "Nevymýšlej názvy učebnic, autorů, citace, odkazy ani URL");
+    assertStringIncludes(prompt, "Cituj pouze úryvky");
+    assertStringIncludes(prompt, TUTOR_UNCERTAIN_SOURCE_REPLY);
+  }
+});
+
+Deno.test("meta otázka na ověření má pevnou odpověď, běžná otázka na maso ji nespustí", () => {
+  assert(isTutorProvenanceQuestion("a jak můžu vědět, že obecné vysvětlení je správné?"));
+  assert(isTutorProvenanceQuestion("Odkud to máš a z jakých knih čerpáš?"));
+  assert(!isTutorProvenanceQuestion("Jak připravit hovězí maso?"));
+  assertEquals(TUTOR_UNCERTAIN_SOURCE_REPLY, "Nevím to jistě. Jsem AI a můžu se mýlit. Ověř si to v lekci nebo se zeptej učitele.");
+});
+
 type Row = Record<string, any>;
 
 class FakeQuery {
@@ -110,23 +129,28 @@ Deno.test("žákovský datový scope čte jen publikované lekce a sešity s own
   const calls: Row[] = [];
   const db = fakeDb({
     textbook_lessons: [
-      { id: "g1", title: "Hovězí globální", status: "published", blocks: [{ text: "Hovězí globální text" }] },
+      { id: "g1", title: "Hovězí globální", status: "published", blocks: [{ text: "Hovězí globální text" }], textbook_topics: { id: "topic-1", subject: "gastronomie", grade: 1 } },
       { id: "draft", title: "Hovězí koncept", status: "draft", blocks: [{ text: "Cizí koncept" }] },
     ],
     teacher_textbook_lessons: [
-      { id: "t1", title: "Hovězí učitel", status: "published", blocks: [{ text: "Hovězí učitelský text" }] },
+      { id: "t1", title: "Hovězí učitel", status: "published", textbook_id: "book-1", blocks: [{ text: "Hovězí učitelský text" }] },
     ],
     notebooks: [
       { id: "own", owner_id: "student-1", title: "Můj sešit" },
       { id: "foreign", owner_id: "someone-else", title: "Cizí sešit" },
     ],
     notebook_pages: [
-      { notebook_id: "own", title: "Maso", content: { textBoxes: [{ text: "Hovězí z vlastních poznámek" }] } },
-      { notebook_id: "foreign", title: "Cizí", content: { textBoxes: [{ text: "Hovězí cizí poznámka" }] } },
+      { id: "page-own", notebook_id: "own", title: "Maso", content: { textBoxes: [{ text: "Hovězí z vlastních poznámek" }] } },
+      { id: "page-foreign", notebook_id: "foreign", title: "Cizí", content: { textBoxes: [{ text: "Hovězí cizí poznámka" }] } },
     ],
   }, calls);
   const snippets = await searchStudentMaterialSnippets(db, "student-1", "hovezi");
   assertEquals(snippets.map((snippet) => snippet.title), ["Hovězí globální", "Hovězí učitel", "Můj sešit – Maso"]);
+  assertEquals(snippets.map((snippet) => snippet.href), [
+    "/ucebnice/gastronomie/1/topic-1/g1",
+    "/student/ucebnice/book-1?lesson=t1",
+    "/student/sesit?otevrit=own&strana=page-own",
+  ]);
   assert(!snippets.some((snippet) => snippet.title.includes("Cizí")));
   assertEquals(calls.find((call) => call.table === "textbook_lessons")!.filters, [{ field: "status", value: "published" }]);
   assertEquals(calls.find((call) => call.table === "teacher_textbook_lessons")!.filters, [{ field: "status", value: "published" }]);

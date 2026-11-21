@@ -6,10 +6,28 @@ export interface TutorSourceSnippet {
   title: string;
   kind: string;
   text: string;
+  href?: string;
 }
 
 export const MAX_TUTOR_SNIPPETS = 5;
 export const MAX_TUTOR_SNIPPET_CHARS = 800;
+
+export const TUTOR_UNCERTAIN_SOURCE_REPLY = "Nevím to jistě. Jsem AI a můžu se mýlit. Ověř si to v lekci nebo se zeptej učitele.";
+
+const TUTOR_SOURCE_RULES = `- Nikdy netvrď nic o svém tréninku, načtených knihách nebo textech, databázích, webech ani o tom, odkud čerpáš své obecné znalosti.
+- Nevymýšlej názvy učebnic, autorů, citace, odkazy ani URL. Nesmíš doporučit konkrétní knihu nebo web, který není výslovně v dodaných úryvcích.
+- Cituj pouze úryvky, které ti funkce poslala v tomto požadavku. Pokud žádný úryvek nemáš, nic necituje.
+- Na otázku „jak to vím“, „odkud to máš“ nebo „jak si to mohu ověřit“ odpověz přesně: „${TUTOR_UNCERTAIN_SOURCE_REPLY}“ Nepřidávej žádné tvrzení o svých zdrojích.`;
+
+/** Meta otázky o původu odpovědi nepotřebují AI; pevná odpověď zabrání vymyšlenému zdroji. */
+export function isTutorProvenanceQuestion(value: string): boolean {
+  const text = normalizeTutorSearch(value);
+  if (!text) return false;
+  return /(?:odkud|z ceho|z jakych|jake|jaky).*(?:zdroj|knih|web|tren|cerp|informac|to mas|to je)/.test(text)
+    || /(?:jak|proc).*(?:to|tohle|obecne vysvetleni).*(?:vis|vedet|muzu|muzeme|poznat|overit)/.test(text)
+    || /(?:jak|proc).*(?:vis|vedet|muzu|muzeme|poznat|overit).*(?:zdroj|pravda|spravne|obecne vysvetleni)/.test(text)
+    || /(?:trenovany|trenovana|nactenych|nactene).*(?:knih|text|zdroj|web)/.test(text);
+}
 
 const STOP_WORDS = new Set([
   "a", "aby", "ale", "asi", "co", "coz", "cože", "do", "ho", "jak", "jake", "jaky", "je", "jen", "ji", "jsem",
@@ -43,7 +61,7 @@ function excerptAround(text: string, keyword: string): string {
 
 /** Čisté bodování již RLS-povolených dokumentů; bez DB a bez logování obsahu. */
 export function findTutorSnippets(
-  documents: Array<{ title: string; kind: string; text: string }>,
+  documents: Array<{ title: string; kind: string; text: string; href?: string }>,
   query: string,
 ): TutorSourceSnippet[] {
   const keywords = tutorKeywords(query);
@@ -67,7 +85,12 @@ export function findTutorSnippets(
     .filter((document) => document.score > 0)
     .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "cs"))
     .slice(0, MAX_TUTOR_SNIPPETS)
-    .map(({ title, kind, text, bestKeyword }) => ({ title, kind, text: excerptAround(text, bestKeyword) }));
+    .map(({ title, kind, text, href, bestKeyword }) => ({
+      title,
+      kind,
+      text: excerptAround(text, bestKeyword),
+      ...(href ? { href } : {}),
+    }));
 }
 
 export function lessonTextForTutor(blocks: unknown, maxLength = 8000): string {
@@ -124,6 +147,7 @@ TVOJE ZÁSADY (nikdy je neporušuj):
 - Piš krátce (2–4 věty), jednoduše, česky, tykej žákovi, buď povzbudivý.
 - Drž se tématu aktuální otázky/úkolu níže. Pokud se žák ptá na něco úplně jiného, jemně ho vrať k tématu.
 - Nevymýšlej si fakta. Pokud si nejsi jistý, řekni to a naveď žáka, kde/jak to zjistit.
+${TUTOR_SOURCE_RULES}
 
 AKTUÁLNÍ OTÁZKA/ÚKOL, KE KTERÉMU POMÁHÁŠ:
 """
@@ -158,6 +182,7 @@ TVOJE ZÁSADY:
 - Po klíčovém vysvětlení přidej jednu krátkou zpětnou otázku, která ověří porozumění.
 - Piš krátce (3–6 vět), jednoduše, česky a tykej žákovi.
 - Nevymýšlej fakta. Pokud si nejsi jistá, řekni to.
+${TUTOR_SOURCE_RULES}
 ${sourceRules}
 
 ${providedMaterial ? `VLASTNÍ MATERIÁL PŘIDANÝ ŽÁKEM DO TÉTO KONVERZACE:\nNÁZEV: ${providedMaterial.title}\n"""\n${providedMaterial.text}\n"""` : `DODANÉ ÚRYVKY Z MATERIÁLŮ ŽÁKA:\n${sourceText || "(žádné relevantní úryvky)"}`}`;
@@ -173,7 +198,8 @@ export function buildTutorSummaryPrompt(input: {
 
 PRAVIDLA:
 - Vycházej pouze z konverzace${material ? " a níže dodaného materiálu žáka" : ""}. Nedoplňuj nová fakta.
-- Zachovej důležité výklady a uveď použité zdroje. Pokud zdroj není známý, napiš „Konverzace s Bezlai“.
+- Zachovej důležité výklady a uveď pouze zdroje, které byly skutečně dodány. Pokud zdroj není známý, napiš „Konverzace s Bezlai“.
+- Nevymýšlej názvy učebnic, autorů, citace, odkazy ani URL a nepřidávej tvrzení o svém tréninku či obecných zdrojích.
 - Nepiš úvod ani závěr mimo požadovanou strukturu. Nepiš, že jsi poznámky uložila.
 - Název má nejvýše 80 znaků, hlavních bodů je 3–7.
 

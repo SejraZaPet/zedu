@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FilePlus2, ListChecks, Loader2, MessageCircleQuestion, Paperclip, Send, Sparkles, X } from "lucide-react";
+import { BookOpenCheck, FilePlus2, ListChecks, Loader2, MessageCircleQuestion, Paperclip, Send, Sparkles, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import PracticeSourceEditor, { type PracticeEditorSourceKind } from "@/components/practice/PracticeSourceEditor";
 import BezlaiSummaryDialog from "@/components/student/BezlaiSummaryDialog";
+import BezlaiSourceBadge, { type BezlaiResponseSource } from "@/components/student/BezlaiSourceBadge";
+import BezlaiVerificationGuide from "@/components/student/BezlaiVerificationGuide";
+import BezlaiTeacherVerificationDialog from "@/components/student/BezlaiTeacherVerificationDialog";
+import { BEZLAI_VERIFICATION_GUIDE } from "@/lib/bezlai-verification";
 import { parseBezlaiSummary, type BezlaiSummaryDraft } from "@/lib/bezlai-summary";
 import { useDemoPair } from "@/lib/demo";
 import { practiceErrorMessage } from "@/lib/practice-error";
@@ -17,6 +22,10 @@ import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../supabase/functi
 interface ChatMsg {
   role: "user" | "assistant";
   content: string;
+  generated?: boolean;
+  grounded?: boolean;
+  sources?: BezlaiResponseSource[];
+  studentQuestion?: string;
 }
 
 export type BezlaiTutorMode = "context" | "free";
@@ -79,6 +88,9 @@ export default function BezlaiTutorChat({
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryDraft, setSummaryDraft] = useState<BezlaiSummaryDraft | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [teacherVerification, setTeacherVerification] = useState<{ question: string; answer: string } | null>(null);
+  const navigate = useNavigate();
 
   const handleMaterialDraft = useCallback((source: PracticeSource | null) => setMaterialDraft(source), []);
   const handleMaterialBusy = useCallback((busy: boolean) => setMaterialDraftBusy(busy), []);
@@ -93,6 +105,8 @@ export default function BezlaiTutorChat({
     setSummaryDraft(null);
     setSummaryError(null);
     setSummaryOpen(false);
+    setGuideOpen(false);
+    setTeacherVerification(null);
   }, [contextKey, mode]);
 
   useEffect(() => {
@@ -125,11 +139,31 @@ export default function BezlaiTutorChat({
       if (errMsg) {
         setMessages((current) => [...current, { role: "assistant", content: `⚠️ ${errMsg}` }]);
       } else if (reply) {
-        const searchError = (data as { searchError?: string } | null)?.searchError;
+        const response = data as { searchError?: string; grounded?: boolean; sources?: unknown } | null;
+        const searchError = response?.searchError;
+        const sources: BezlaiResponseSource[] = Array.isArray(response?.sources)
+          ? response.sources.flatMap((source) => {
+            if (!source || typeof source !== "object") return [];
+            const item = source as Record<string, unknown>;
+            if (typeof item.title !== "string" || typeof item.kind !== "string") return [];
+            return [{
+              title: item.title,
+              kind: item.kind,
+              ...(typeof item.href === "string" && item.href.startsWith("/") ? { href: item.href } : {}),
+            }];
+          }).slice(0, 5)
+          : [];
         setMessages((current) => [
           ...current,
           ...(searchError ? [{ role: "assistant" as const, content: `⚠️ ${searchError}` }] : []),
-          { role: "assistant", content: reply },
+          {
+            role: "assistant",
+            content: reply,
+            generated: true,
+            grounded: response?.grounded === true && sources.length > 0,
+            sources,
+            studentQuestion: text,
+          },
         ]);
       } else {
         setMessages((current) => [...current, { role: "assistant", content: "⚠️ Nedostala jsem odpověď. Zkus to prosím znovu." }]);
@@ -179,6 +213,16 @@ export default function BezlaiTutorChat({
     if (!summaryDraft && !summaryLoading) void generateSummary();
   };
 
+  const openTeacherVerification = (message?: ChatMsg) => {
+    const target = message ?? [...messages].reverse().find((item) => item.generated && !item.grounded);
+    if (!target) {
+      navigate("/zpravy");
+      return;
+    }
+    setGuideOpen(false);
+    setTeacherVerification({ question: target.studentQuestion ?? question, answer: target.content });
+  };
+
   const materialValid = Boolean(
     materialDraft
     && materialDraft.text.trim().length >= MIN_SOURCE_TEXT_LENGTH
@@ -212,6 +256,9 @@ export default function BezlaiTutorChat({
             <SheetDescription className="text-xs text-left">
               {mode === "free" ? "Hledám v tvých materiálech a pomůžu ti porozumět. 🧭" : "Neřeknu ti přímo odpověď, ale nasměruju tě k ní. 🧭"}
             </SheetDescription>
+            <Button type="button" variant="ghost" size="sm" className="min-h-11 self-start gap-2 px-0 text-xs" onClick={() => setGuideOpen(true)}>
+              <BookOpenCheck className="h-4 w-4" aria-hidden />{BEZLAI_VERIFICATION_GUIDE.title}
+            </Button>
           </SheetHeader>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
@@ -231,6 +278,14 @@ export default function BezlaiTutorChat({
                   >
                     {message.content}
                   </div>
+                  {message.generated && (
+                    <BezlaiSourceBadge
+                      grounded={Boolean(message.grounded)}
+                      sources={message.sources ?? []}
+                      onGuide={() => setGuideOpen(true)}
+                      onTeacher={!message.grounded && !demoPair ? () => openTeacherVerification(message) : undefined}
+                    />
+                  )}
                   {canSummarize && (
                     <Button type="button" variant="ghost" size="sm" className="mt-1 min-h-11 gap-2 px-2 text-xs" onClick={openSummary}>
                       <ListChecks className="h-4 w-4" />Shrnout do poznámek
@@ -328,6 +383,19 @@ export default function BezlaiTutorChat({
           />
         </>
       )}
+
+      <BezlaiVerificationGuide
+        showTrigger={false}
+        open={guideOpen}
+        onOpenChange={setGuideOpen}
+        onTeacher={!demoPair ? () => openTeacherVerification() : undefined}
+      />
+      <BezlaiTeacherVerificationDialog
+        open={Boolean(teacherVerification)}
+        onOpenChange={(value) => { if (!value) setTeacherVerification(null); }}
+        question={teacherVerification?.question ?? ""}
+        answer={teacherVerification?.answer ?? ""}
+      />
     </>
   );
 }

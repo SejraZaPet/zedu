@@ -185,7 +185,12 @@ export default function PracticeSourceEditor({
     if (kind === "notebook") {
       const page = pages.find((item) => item.id === pageId);
       const notebook = notebooks.find((item) => item.id === notebookId);
-      return page ? { kind: "notebook", text: page.text, label: `Sešit ${notebook?.title ?? ""}, strana ${page.order + 1}` } : null;
+      return page ? {
+        kind: "notebook",
+        text: page.text,
+        label: `Sešit ${notebook?.title ?? ""}, strana ${page.order + 1}`,
+        href: `/student/sesit?otevrit=${encodeURIComponent(notebookId)}&strana=${encodeURIComponent(page.id)}`,
+      } : null;
     }
     return null;
   }, [kind, customText, fileSource, photoConfirmed, photoText, pages, pageId, notebooks, notebookId]);

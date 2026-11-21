@@ -2,26 +2,34 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ invoke: vi.fn(), demoPair: null as null | { id: string } }));
+const mocks = vi.hoisted(() => ({ invoke: vi.fn(), rpc: vi.fn(), demoPair: null as null | { id: string } }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getSession: vi.fn(async () => ({ data: { session: { user: { id: "student-1" } } } })) },
     functions: { invoke: mocks.invoke },
+    rpc: mocks.rpc,
   },
 }));
 vi.mock("@/lib/demo", () => ({ useDemoPair: () => mocks.demoPair }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "student-1" } }) }));
 vi.mock("@/lib/notebook", () => ({ loadNotebooks: vi.fn(async () => []), createNotebook: vi.fn(), appendTextPageToNotebook: vi.fn() }));
 vi.mock("@/lib/portfolio", () => ({ saveTextToPortfolio: vi.fn() }));
+vi.mock("@/hooks/useStudentPracticeLessons", () => ({
+  useStudentPracticeLessons: () => ({ data: [], isPending: false, isFetching: false, isError: false, refetch: vi.fn() }),
+}));
 
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
+import { BEZLAI_GENERAL_SOURCE_LABEL, readBezlaiMessengerDraft } from "@/lib/bezlai-verification";
 
 const LONG_TEXT = "Hovězí maso dělíme podle částí zvířete a způsobu tepelné úpravy. ".repeat(4).trim();
 
 beforeEach(() => {
   mocks.invoke.mockReset();
+  mocks.rpc.mockReset();
+  mocks.rpc.mockResolvedValue({ data: [{ id: "teacher-1", name: "Učitel Test", is_teacher: true, class_id: "class-1", class_name: "1. A" }], error: null });
   mocks.demoPair = null;
+  sessionStorage.clear();
   Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: () => {} });
   Object.defineProperty(HTMLElement.prototype, "hasPointerCapture", { configurable: true, value: () => false });
   Object.defineProperty(HTMLElement.prototype, "releasePointerCapture", { configurable: true, value: () => {} });
@@ -82,6 +90,46 @@ describe("Bezlai – materiál a režimy", () => {
     expect(screen.getByText("První odpověď")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Zkusit znovu" }));
     await waitFor(() => expect(screen.getByLabelText("Název tématu")).toHaveValue("Téma"));
+  });
+
+  it("zelený štítek použije serverová sources a odkáže na skutečnou lekci", async () => {
+    mocks.invoke.mockResolvedValueOnce({ data: {
+      reply: "Podle lekce dělíme maso na přední a zadní.",
+      grounded: true,
+      sources: [{ title: "Hovězí maso", kind: "Lekce z učebnice", href: "/ucebnice/gastronomie/1/topic-1/lesson-1" }],
+    }, error: null });
+    render(<MemoryRouter><BezlaiTutorChat mode="free" question="" open hideTrigger /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Otázka pro Bezlai"), { target: { value: "Jak se maso dělí?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Odeslat" }));
+    const link = await screen.findByRole("link", { name: "Hovězí maso – otevřít zdroj" });
+    expect(link).toHaveAttribute("href", "/ucebnice/gastronomie/1/topic-1/lesson-1");
+    expect(screen.getByText("Z tvých materiálů:")).toBeInTheDocument();
+    expect(screen.queryByText(BEZLAI_GENERAL_SOURCE_LABEL)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ověřit s učitelem" })).not.toBeInTheDocument();
+  });
+
+  it("žlutá odpověď má pevný návod a učitel dostane jen kontrolovaný koncept bez odeslání", async () => {
+    mocks.invoke.mockResolvedValueOnce({ data: { reply: "Obecná odpověď bez ověřeného zdroje.", grounded: false, sources: [] }, error: null });
+    render(<MemoryRouter><BezlaiTutorChat mode="free" question="" open hideTrigger /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Otázka pro Bezlai"), { target: { value: "Jak můžu vědět, že je to správné?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Odeslat" }));
+    expect(await screen.findByText(BEZLAI_GENERAL_SOURCE_LABEL)).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Jak si to ověřit" }).at(-1)!);
+    expect(screen.getByText("Porovnej aspoň dva nezávislé zdroje, které od sebe informaci neopsaly.")).toBeInTheDocument();
+    expect(screen.getByText("Nevím to jistě. Jsem AI a můžu se mýlit. Ověř si to v lekci nebo se zeptej učitele.")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
+
+    fireEvent.click(screen.getByRole("button", { name: "Ověřit s učitelem" }));
+    const textarea = await screen.findByLabelText("Text pro učitele");
+    expect((textarea as HTMLTextAreaElement).value).toContain("Moje otázka:\nJak můžu vědět, že je to správné?");
+    expect((textarea as HTMLTextAreaElement).value).toContain("Odpověď Bezlai:\nObecná odpověď bez ověřeného zdroje.");
+    const continueButton = screen.getByRole("button", { name: "Pokračovat do zpráv" });
+    await waitFor(() => expect(continueButton).toBeEnabled());
+    fireEvent.click(continueButton);
+    expect(readBezlaiMessengerDraft()).toEqual({ teacherId: "teacher-1", text: expect.stringContaining("Odpověď Bezlai:") });
+    expect(mocks.rpc).toHaveBeenCalledWith("messenger_contacts");
+    expect(mocks.invoke).toHaveBeenCalledTimes(1);
   });
 
   it("v demu u fotografií ukáže limit pěti AI přepisů", () => {
