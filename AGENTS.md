@@ -75,3 +75,4 @@
 - License inquiries: inserted only by `send-license-inquiry` before e-mail; admin-only read, trigger locks personal/consent fields.
 - Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
 - Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
+- Student subject 'new' counters are computed client-side in `subject-news.ts` from the single assignments read in `fetchStudentCourses` (last visit per device in localStorage until a visits table is approved), so no per-card queries or schema changes.

@@ -11,6 +11,7 @@ import {
 import { loadStudentAssignmentAttempts } from "@/lib/student-assignment-attempts";
 import { fetchStudentScheduleData, type StudentClassSlot, type StudentScheduleData } from "@/lib/student-schedule";
 import { getSubjectName } from "@/lib/subject-appearance";
+import { countSubjectNews, EMPTY_NEWS, getSubjectSeen, type SubjectNews } from "@/lib/subject-news";
 
 interface SubjectAppearance {
   name?: string | null;
@@ -41,6 +42,8 @@ interface AssignmentRow {
   deadline: string | null;
   exam_type: string | null;
   settings?: unknown;
+  created_at?: string | null;
+  scheduled_publish_at?: string | null;
 }
 
 export interface StudentCourse {
@@ -56,6 +59,7 @@ export interface StudentCourse {
   openAssignments: number;
   hasUpcomingExam: boolean;
   nextLesson: Date | null;
+  news: SubjectNews;
 }
 
 const subjectIdentity = (subjectId: string | null, name: string) =>
@@ -103,6 +107,7 @@ export function buildStudentCourses(
       target: `/student/predmet/${subjectParam}/${input.groupId ? "skupina" : "trida"}/${targetId}`,
       slots: input.slot ? [input.slot] : [],
       openAssignments: 0,
+      news: EMPTY_NEWS,
       hasUpcomingExam: false,
       nextLesson: null,
     });
@@ -165,7 +170,7 @@ export async function fetchStudentCourses(userId: string, now = new Date()): Pro
     schedule.groupIds.length
       ? supabase.from("subject_groups").select("id, name, subject_id, archived, subjects(name, color, abbreviation, archived)").in("id", schedule.groupIds)
       : Promise.resolve({ data: [] as any[] }),
-    supabase.from("assignments").select("id, class_id, group_id, subject_id, deadline, exam_type, settings").eq("status", "published"),
+    supabase.from("assignments").select("id, class_id, group_id, subject_id, deadline, exam_type, settings, created_at, scheduled_publish_at").eq("status", "published"),
   ]);
 
   const courses = buildStudentCourses(
@@ -176,7 +181,8 @@ export async function fetchStudentCourses(userId: string, now = new Date()): Pro
   );
   if (courses.length === 0) return [];
 
-  const assignments = ((assignmentsRes.data ?? []) as AssignmentRow[]).filter((row) => assignmentKind(row.settings) === "task");
+  const allAssignments = (assignmentsRes.data ?? []) as AssignmentRow[];
+  const assignments = allAssignments.filter((row) => assignmentKind(row.settings) === "task");
   const attempts = await loadStudentAssignmentAttempts(userId, assignments.map((row) => row.id));
   const from = startOfDay(now);
   const to = endOfDay(addDays(now, 56));
@@ -190,13 +196,15 @@ export async function fetchStudentCourses(userId: string, now = new Date()): Pro
     const next = lessons
       .filter((event) => event.type === "lesson" && event.start >= now && !isLessonNotHeld(event) && event.scheduleSource?.slotId && slotIds.has(event.scheduleSource.slotId))
       .sort((a, b) => a.start.getTime() - b.start.getTime())[0] ?? null;
-    const relevant = assignments.filter((assignment) => {
+    const matches = (assignment: AssignmentRow) => {
       const sameAudience = course.groupId ? assignment.group_id === course.groupId : assignment.class_id === course.classId;
       const sameSubject = course.subjectId
         ? assignment.subject_id === course.subjectId || assignment.subject_id == null
         : assignment.subject_id == null;
       return sameAudience && sameSubject;
-    });
+    };
+    const relevant = assignments.filter(matches);
+    const news = countSubjectNews(allAssignments.filter(matches), getSubjectSeen(userId, course.target), now);
     const openAssignments = relevant.filter((assignment) =>
       assignmentStatus(assignment, attempts.filter((attempt) => attempt.assignment_id === assignment.id), now).group === "pending").length;
     const hasUpcomingExam = relevant.some((assignment) => {
@@ -204,6 +212,6 @@ export async function fetchStudentCourses(userId: string, now = new Date()): Pro
       const deadline = new Date(assignment.deadline);
       return deadline >= startOfDay(now) && deadline <= examLimit;
     });
-    return { ...course, openAssignments, hasUpcomingExam, nextLesson: next?.start ?? null };
+    return { ...course, openAssignments, hasUpcomingExam, nextLesson: next?.start ?? null, news };
   });
 }

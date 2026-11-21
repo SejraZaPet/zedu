@@ -25,7 +25,8 @@ const course = (overrides: Partial<StudentCourse>): StudentCourse => ({
   id: "course-1", subjectId: "subject-1", subjectName: "Matematika", audienceName: "8. A",
   audienceKind: "class", classId: "class-1", groupId: null,
   target: "/student/predmet/Matematika/trida/class-1", slots: [], openAssignments: 0,
-  hasUpcomingExam: false, nextLesson: null, ...overrides,
+  hasUpcomingExam: false, nextLesson: null,
+  news: { wall: 0, material: 0, task: 0, test: 0, total: 0 }, ...overrides,
 });
 
 async function renderPage(rows: StudentCourse[]) {
@@ -70,5 +71,12 @@ describe("Žákovská stránka Moje předměty", () => {
   it("barevná paleta je stabilní pro stejné id a mění se podle předmětu", () => {
     expect(coursePalette(course({}))).toEqual(coursePalette(course({ subjectName: "Přejmenovaný předmět" })));
     expect(coursePalette(course({ subjectId: "subject-1" }))).not.toEqual(coursePalette(course({ subjectId: "subject-2" })));
+  });
+  it("karta ukazuje štítky novinek s přístupným popisem", async () => {
+    await renderPage([course({ news: { wall: 2, material: 0, task: 3, test: 1, total: 6 } })]);
+    expect(screen.getByLabelText("3 nové úkoly")).toBeInTheDocument();
+    expect(screen.getByLabelText("2 nové příspěvky na zdi")).toBeInTheDocument();
+    expect(screen.getByLabelText("1 nový test")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/materiál/)).not.toBeInTheDocument();
   });
 });

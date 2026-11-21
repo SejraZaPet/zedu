@@ -9,7 +9,8 @@ import ClassWall from "@/components/class-wall/ClassWall";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams , useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams , useSearchParams } from "react-router-dom";
+import { markSubjectSeen } from "@/lib/subject-news";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
@@ -156,6 +157,9 @@ export default function StudentSubjectClass() {
   const [, setWallParams] = useSearchParams();
   const showAllAnnouncements = () => { setWallParams((p) => { const n = new URLSearchParams(p); n.set("sekce", "oznameni"); return n; }, { replace: true }); setMainTab("assignments"); };
   const { user, loading: authLoading } = useAuth();
+  const { pathname } = useLocation();
+  // Otevření předmětu vynuluje jeho počítadlo novinek (jen v tomto zařízení).
+  useEffect(() => { if (user?.id) markSubjectSeen(user.id, pathname); }, [user?.id, pathname]);
 
   const rawSubjectParam = useMemo(() => decodeSubject(subjectId), [subjectId]);
   useEffect(() => { if (user) void ensureMyCourseNotebooks(); }, [user]);

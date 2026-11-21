@@ -57,7 +57,7 @@ export const DashboardTile = forwardRef<HTMLAnchorElement, DashboardTileProps>(f
         <span className="dashboard-tile-title">{title}</span>
         <span className="dashboard-tile-description">{description}</span>
       </span>
-      {hasCount && <span className="dashboard-tile-count" aria-hidden="true">{count}</span>}
+      {hasCount && <span className="dashboard-tile-count" aria-hidden="true">{count! > 99 ? "99+" : count}</span>}
     </Link>
   );
 });
@@ -93,7 +93,7 @@ export const DashboardCompactTile = forwardRef<HTMLAnchorElement, DashboardCompa
     >
       <Icon aria-hidden="true" strokeWidth={1.8} />
       <span>{title}</span>
-      {hasCount && <span className="dashboard-compact-tile-count" aria-hidden="true">{count}</span>}
+      {hasCount && <span className="dashboard-compact-tile-count" aria-hidden="true">{count! > 99 ? "99+" : count}</span>}
     </Link>
   );
 });

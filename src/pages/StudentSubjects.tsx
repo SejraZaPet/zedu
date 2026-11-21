@@ -1,6 +1,9 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Flag, Library, SquareCheckBig } from "lucide-react";
+import { ArrowLeft, Book, Clock, Flag, Library, MessageSquare, SquareCheckBig, type LucideIcon } from "lucide-react";
+import { formatNewsCount, newsLabel, type NewsKind } from "@/lib/subject-news";
+
+const NEWS_ICONS: [NewsKind, LucideIcon][] = [["wall", MessageSquare], ["material", Book], ["task", SquareCheckBig], ["test", Flag]];
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -36,7 +39,7 @@ function StudentCourseCard({ course, now }: { course: StudentCourse; now: Date }
       to={course.target}
       className="student-course-card"
       style={style}
-      aria-label={`Předmět ${course.subjectName}, ${audienceLabel} ${course.audienceName}`}
+      aria-label={`Předmět ${course.subjectName}, ${audienceLabel} ${course.audienceName}${course.news.total ? `, ${course.news.total} nových` : ""}`}
       data-testid="student-course-card"
     >
       <div className="student-course-card-top">
@@ -44,6 +47,15 @@ function StudentCourseCard({ course, now }: { course: StudentCourse; now: Date }
         <p>{course.audienceKind === "group" ? "Skupina" : "Třída"} {course.audienceName}</p>
       </div>
       <div className="student-course-card-body">
+        {course.news.total > 0 && (
+          <ul className="student-course-card-badges" aria-label="Novinky" data-testid="student-course-news">
+            {NEWS_ICONS.filter(([kind]) => course.news[kind] > 0).map(([kind, Icon]) => (
+              <li key={kind} className="student-course-badge" aria-label={newsLabel(kind, course.news[kind])}>
+                <Icon aria-hidden="true" /> {formatNewsCount(course.news[kind])} nov{course.news[kind] === 1 ? "é" : "ých"}
+              </li>
+            ))}
+          </ul>
+        )}
         {(course.openAssignments > 0 || course.hasUpcomingExam) && (
           <div className="student-course-card-badges">
             {course.openAssignments > 0 && (

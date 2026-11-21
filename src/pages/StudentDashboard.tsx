@@ -29,6 +29,7 @@ import RecognitionWidget from "@/components/behavior/RecognitionWidget";
 import UpcomingExamsCard from "@/components/student/UpcomingExamsCard";
 import { StudentDashboardCompactTile, StudentDashboardTile } from "@/components/dashboard/StudentDashboardTile";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchStudentCourses } from "@/lib/student-courses";
 
 interface Profile {
   first_name: string;
@@ -49,6 +50,17 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [upcomingCount, setUpcomingCount] = useState<number | null>(null);
   const [assignmentsCount, setAssignmentsCount] = useState<number | null>(null);
+  const [subjectNewsCount, setSubjectNewsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    // Jeden souhrnný výpočet přes všechny předměty (žádné dotazy po kartách).
+    fetchStudentCourses(user.id)
+      .then((rows) => { if (!cancelled) setSubjectNewsCount(rows.reduce((sum, c) => sum + c.news.total, 0) || null); })
+      .catch(() => { if (!cancelled) setSubjectNewsCount(null); });
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -111,6 +123,8 @@ const StudentDashboard = () => {
       description: "Třídy a kurzy",
       to: "/student/predmety",
       tone: "subjects" as const,
+      count: subjectNewsCount,
+      countLabel: "počet novinek",
     },
     {
       id: "notebook",
