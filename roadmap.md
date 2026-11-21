@@ -174,3 +174,9 @@
 - [x] Moje cesta podle zvládnutí lekcí, mobilní vzhled, kontrast a reduced motion.
 - [x] 62 testů, typy a build; živě 1360/390 px, kvíz, chat, techniky, skutečná data, bez přetečení a chyb. Bez DB, SQL, edge funkcí a nasazení.
 - XP odměny misí nejsou přidány: dokončené procvičování dnes XP nepřipisuje a bezpečná serverová odměna by vyžadovala samostatnou změnu. Živé AI volání nebylo spuštěno; kartičky/shrnutí ověřují komponentové testy, chat bylo ověřeno pouze otevření.
+
+## Klikací karty učebnic – učitel a žák
+- [x] Sjednotit otevření celé karty myší, Enterem i Mezerníkem bez spouštění z vnořených akcí.
+- [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
+- [x] Ověřit testy, typy a mobilní vzhled; bez DB, SQL, edge funkcí a nasazení.
+- Živě při 390 px: 6 učitelských a 7 žákovských karet, bez vodorovného přetečení; kopírování a ⋮ nemění stránku, klik/Enter/Space otevírají detail, 0 chyb stránky. Skutečný iPhone Safari neověřen.

@@ -1,4 +1,5 @@
 import TextbookCover from "@/components/textbooks/TextbookCover";
+import TextbookCard from "@/components/textbooks/TextbookCard";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -252,7 +253,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
   ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label={`Nabídka učebnice ${tb.title}`}>
           <MoreVertical className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -284,56 +285,69 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
   const GridCard = ({ tb, dragHandleProps, setNodeRef, style }: any) => {
     const matchedSubject = subjects?.find(s => s.slug === tb.subject);
     return (
-      <div ref={setNodeRef} style={style} className="textbook-card bg-card border border-border rounded-2xl overflow-hidden relative flex flex-col">
-        <button
-          type="button"
-          onClick={() => onOpen(tb)}
-          className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-          aria-label={`Otevřít učebnici ${tb.title}`}
-        >
-          <TextbookCover subjectId={tb.subject_id} subject={matchedSubject?.label ?? tb.subject} title={tb.title} className="aspect-[16/7]" />
-        </button>
-        <div className="p-6 pt-2 relative flex-1 flex flex-col">
-        {isManual && (
-          <button {...dragHandleProps} className="absolute top-2 left-2 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Přesunout">
-            <GripVertical className="w-4 h-4" />
-          </button>
-        )}
-        <div className="absolute top-2 right-2">{renderActions(tb)}</div>
-        <div className="flex items-start justify-between mb-3 mt-4">
-          <div className="flex-1 min-w-0 pr-8">
-            <div className="flex items-center gap-2 flex-wrap">
-              {matchedSubject && (
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: matchedSubject.color }} />
-              )}
-              <h3 className="font-heading font-semibold text-lg truncate">{tb.title}</h3>
-              {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
-              {tb.is_demo_seed ? <Badge variant="secondary">Ukázková učebnice</Badge> : <VisibilityBadge visibility={tb.visibility} />}
-            </div>
-            {matchedSubject && (
-              <div className="flex gap-1 mt-1 flex-wrap">
-                {matchedSubject.grades.map((g: any) => (
-                  <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0">{g.label}</Badge>
-                ))}
+      <TextbookCard
+        ref={setNodeRef}
+        style={style}
+        onOpen={() => onOpen(tb)}
+        openLabel={`Otevřít učebnici ${tb.title}`}
+        className="bg-card border border-border rounded-2xl overflow-hidden relative flex h-full flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <TextbookCover subjectId={tb.subject_id} subject={matchedSubject?.label ?? tb.subject} title={tb.title} className="aspect-[16/7]" />
+        <div className="p-4 sm:p-6 pt-2 sm:pt-2 relative flex-1 flex flex-col">
+          {isManual && (
+            <button
+              {...dragHandleProps}
+              className="absolute top-2 left-2 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+              aria-label="Přesunout"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          )}
+          <div className="absolute top-2 right-2">{renderActions(tb)}</div>
+          <div className="flex items-start justify-between mb-3 mt-4">
+            <div className="flex-1 min-w-0 pr-8">
+              <div className="flex items-start gap-2">
+                {matchedSubject && (
+                  <div className="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: matchedSubject.color }} />
+                )}
+                <h3 className="min-w-0 flex-1 break-words font-heading text-base font-semibold leading-tight line-clamp-2 sm:text-lg" title={tb.title}>{tb.title}</h3>
               </div>
-            )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
+                {tb.is_demo_seed ? <Badge variant="secondary">Ukázková učebnice</Badge> : <VisibilityBadge visibility={tb.visibility} />}
+              </div>
+              {matchedSubject && (
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {matchedSubject.grades.map((g: any) => (
+                    <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0">{g.label}</Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {tb.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{tb.description}</p>}
+          <div className="mt-auto flex max-w-full flex-wrap items-center gap-2 pt-2">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1 rounded-md bg-primary/10 px-2 py-1">
+              <span className="text-xs text-muted-foreground">Kód:</span>
+              <span className="min-w-0 break-all font-mono text-sm font-bold text-primary">{tb.access_code}</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 p-0"
+                aria-label={`Kopírovat kód učebnice ${tb.title}`}
+                title="Kopírovat kód"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  copyCode(tb.access_code);
+                }}
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
         </div>
-        {tb.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{tb.description}</p>}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-1 bg-primary/10 rounded-md px-2 py-1">
-            <span className="text-xs text-muted-foreground">Kód:</span>
-            <span className="font-mono text-sm font-bold text-primary">{tb.access_code}</span>
-            <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => copyCode(tb.access_code)}>
-              <Copy className="w-3 h-3" />
-            </Button>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => onOpen(tb)} className="gap-1">
-            <Eye className="w-4 h-4" /> Detail
-          </Button>
-        </div>
-        </div>
-      </div>
+      </TextbookCard>
     );
   };
 

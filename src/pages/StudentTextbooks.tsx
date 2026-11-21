@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import TextbookCover from "@/components/textbooks/TextbookCover";
+import TextbookCard from "@/components/textbooks/TextbookCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,15 +252,15 @@ const StudentTextbooks = () => {
         ) : (
           <ul className="textbook-card-grid" role="list">
             {items.map((it) => (
-              <li key={it.key}>
-                <Link
-                  to={it.href}
-                  className="textbook-card group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label={`Otevřít učebnici ${it.title}${it.subject ? `, ${it.subject}` : ""}`}
+              <li key={it.key} className="h-full">
+                <TextbookCard
+                  onOpen={() => navigate(it.href)}
+                  openLabel={`Otevřít učebnici ${it.title}${it.subject ? `, ${it.subject}` : ""}`}
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <TextbookCover subjectId={it.subjectId} subject={it.subject} title={it.title} />
                   <div className="flex flex-1 flex-col gap-1 p-4">
-                    <h3 className="font-heading text-base font-semibold leading-tight line-clamp-2">{it.title}</h3>
+                    <h3 className="font-heading text-base font-semibold leading-tight line-clamp-2 break-words" title={it.title}>{it.title}</h3>
                     {it.subject && <p className="text-sm text-muted-foreground">{it.subject}</p>}
                     <div className="mt-auto flex flex-wrap gap-1 pt-2">
                       {it.sources.map((s, i) => (
@@ -273,7 +274,7 @@ const StudentTextbooks = () => {
                       ))}
                     </div>
                   </div>
-                </Link>
+                </TextbookCard>
               </li>
             ))}
           </ul>
