@@ -76,3 +76,4 @@
 - Teacher games/activities only at `/ucitel/studio` (`studio-routes.ts`); old paths redirect.
 - Studio sets: `studio-step.ts` adapters; non-live steps skipped at launch.
 - List filters: shared FilterBar+useStoredFilters; logic per page, data/access unchanged.
+- Presentation activity slides keep `activitySpec` as the single source; an activity block only mirrors it via `presentation-activity.ts`, and launches go through `preparePresentationForLive`, so editor, projector and live game never diverge.

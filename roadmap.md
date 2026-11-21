@@ -308,3 +308,9 @@
 - [x] Odkazy: cloudové školní odkazy odmítnuty předem, české hlášky s návodem pro všechny kódy
 - [x] Fotky s náhledem, limity zobrazeny předem, stav načítá se/hotovo/chyba
 - [ ] Ruční průchod v náhledu s přihlášeným učitelem a ostrou AI (neověřeno)
+
+## Editor prezentací – etapy 0 a 1 (plán prezentace-editor-canva-2026-11-21)
+- [x] Etapa 0: knihovna her v „Přidat snímek“, jeden zdroj pravdy aktivity, AI aktivita podle typu, náhled aktivity na plátně, vložení do slidu, Z lekcí (vnořené, stránkování) + Ze Studia, spuštění jako Studio (rozložení kvízu, body, týmy, hlášení), varování před zavřením, testy toku
+- [x] Etapa 1: Spustit v seznamu, horní lišta promítání (Předchozí/číslo/Další, klávesy), Nástroje do hodiny v každém promítání, úprava propojené prezentace přes kopii s odkazem na lekci
+- [ ] Ruční průchod klikáním v editoru a živá hra s telefony (neověřeno)
+- [ ] Etapy 2–5 čekají na zadání
