@@ -272,3 +272,9 @@
 - [x] Odstranit Detail z patky, zachovat kopírování kódu a menu; zalomit patku i dvouřádkový název.
 - [x] Ověřit testy, typy a mobilní vzhled; bez DB, SQL, edge funkcí a nasazení.
 - Živě při 390 px: 6 učitelských a 7 žákovských karet, bez vodorovného přetečení; kopírování a ⋮ nemění stránku, klik/Enter/Space otevírají detail, 0 chyb stránky. Skutečný iPhone Safari neověřen.
+
+## Sdílené rozbalovací seznamy – rolování v dialozích
+- [x] Reprodukováno v „Chci si to zapamatovat“: seznam 1 324/300 px se po wheel nepohnul (`scrollTop` 0 → 0). Příčinou byl portálový popover mimo povolenou posuvnou vrstvu dialogu.
+- [x] `SearchableSelect`, SubjectPicker, témata ŠVP, výběr člena v pracovním úkolu a oba výběry publikace lekce používají `Popover modal`; výška, `overscroll-contain` a datové chování zůstávají beze změny. Radix Select už je ve výchozím stavu modální, proto zůstal beze změny. Informační popovery a seznamy mimo dialog se nemění.
+- [x] Trvalý `e2e/popover_dialog_wheel.py` ověřil Shrnutí, Chci si to zapamatovat i Procvičit metodou: wheel 0 → 500 px, klik mimo, Escape jen popover, klávesnicový výběr a návrat fokusu. Dotyk při 390 px 0 → 135 px, bez vodorovného přetečení.
+- [x] 12 souvisejících testů, typy, diff check a build prošly; nový lint problém nepřibyl (cílený lint hlásí jen dřívější `any`/Fast Refresh v legacy částech). Bez DB/RLS/SQL a nasazení.

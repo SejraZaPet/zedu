@@ -362,7 +362,7 @@ const StaffTaskDialog = ({
           {(allowPickAssignee || editing) && (
             <div className="space-y-1">
               <Label>Přiřadit komu</Label>
-              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <Popover modal open={pickerOpen} onOpenChange={setPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" disabled={readOnlyBrief} aria-expanded={pickerOpen} className="w-full justify-between font-normal">
                     {targetName}

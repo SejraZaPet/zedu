@@ -100,7 +100,7 @@ export function SearchableSelect({
   }
 
   return <>
-    <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(""); }}>
+    <Popover modal open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(""); }}>
       <PopoverTrigger asChild><Button ref={triggerRef} id={id} type="button" variant="outline" disabled={disabled} role="combobox" aria-label={triggerLabel ?? label} aria-expanded={open}
         className="h-auto min-h-11 w-full min-w-0 justify-between whitespace-normal text-left font-normal">
         <span className="min-w-0 break-words">{selected?.label || placeholder}{showSelectedSubtitle && selected?.subtitle && <span className="block text-xs text-muted-foreground">{selected.subtitle}</span>}</span>

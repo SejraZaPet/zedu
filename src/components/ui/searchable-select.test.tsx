@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { SearchableSelect } from "./searchable-select";
+import { Dialog, DialogContent, DialogTitle } from "./dialog";
 import { practiceLessonSelectOptions } from "@/lib/student-practice-lessons";
 import type { PracticeLessonGroup } from "@/lib/student-practice-lessons";
 
@@ -106,12 +107,21 @@ describe("Sdílený SearchableSelect pro lekce", () => {
     const makeOptions = (count: number) => Array.from({ length: count }, (_, index) => ({ value: `${index}`, label: `Volba ${index + 1}` }));
     const { unmount } = render(<SearchableSelect value="" onValueChange={() => {}} options={makeOptions(8)} label="Hledat volbu" />);
     fireEvent.click(screen.getByRole("combobox", { name: "Hledat volbu" }));
-    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.getAllByRole("combobox", { hidden: true })).toHaveLength(2);
     expect(document.querySelectorAll("[cmdk-group-heading]")).toHaveLength(0);
     unmount();
 
     render(<SearchableSelect value="" onValueChange={() => {}} options={makeOptions(7)} label="Hledat volbu" />);
     fireEvent.click(screen.getByRole("combobox", { name: "Hledat volbu" }));
-    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    expect(screen.getAllByRole("combobox", { hidden: true })).toHaveLength(1);
+  });
+
+  it("Escape v dialogu zavře jen popover", () => {
+    render(<Dialog open><DialogContent aria-describedby={undefined}><DialogTitle>Studijní pomůcka</DialogTitle><Host /></DialogContent></Dialog>);
+    const trigger = screen.getByRole("combobox", { name: "Lekce pro studijní pomůcku" });
+    fireEvent.click(trigger);
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Hledat lekci" }), { key: "Escape" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

@@ -195,7 +195,7 @@ const AssignmentRow = ({
         {audience !== "grade" && (
           <div>
             <Label className="text-[10px] text-muted-foreground">{audience === "class" ? "Třída" : "Skupina"}</Label>
-            <Popover open={targetPickerOpen} onOpenChange={onTargetPickerOpenChange}>
+            <Popover modal open={targetPickerOpen} onOpenChange={onTargetPickerOpenChange}>
               <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" className="mt-0.5 h-8 w-full justify-between px-3 text-xs font-normal">
                   <span className="truncate">{selectedTarget?.name ?? `Vybrat ${audience === "class" ? "třídu" : "skupinu"}…`}</span>

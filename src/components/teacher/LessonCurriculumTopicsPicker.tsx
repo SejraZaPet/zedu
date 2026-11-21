@@ -258,7 +258,7 @@ export default function LessonCurriculumTopicsPicker({
             )}
           </div>
 
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover modal open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
                 type="button"
