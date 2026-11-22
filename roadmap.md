@@ -340,3 +340,10 @@
 - [x] Doplnit bezpečné specializované editory a tisk aktivity/slide.
 - [x] Testy, klikací průchod včetně živé odpovědi a bodování, úklid [TEST] dat a commit.
 - Ověřeno: typy, 291 souvisejících testů; skutečná AI z materiálu, kopie slidu mezi prezentacemi, PDF, živá odpověď, 100 % správně a 985 b. Vlastní [TEST] prezentace, hra, hráč i odpověď odstraněny; bez DB/RLS a nasazení.
+
+## Prezentace – etapa 4: věrný import a export
+- [x] PPTX: pozadí/motivy, textové styly, tvary, obrázky, pozice, skupiny a poznámky; záložní textový import při chybě.
+- [x] PDF: stránky jako pozadí, volitelná upravitelná textová vrstva a srozumitelné limity.
+- [x] PPTX export: slidy, prvky, aktivity, poznámky; společná nabídka PPTX/PDF/tisk.
+- [x] Testy vzorových souborů, round-trip, 20slidová deka, editor a PDF, úklid [TEST] dat.
+- [ ] Projekci importovaného slidu ověřit po úspěšném připojení testovacího hráče (v tomto průchodu zůstala v lobby).

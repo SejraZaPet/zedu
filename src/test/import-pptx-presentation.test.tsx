@@ -29,11 +29,10 @@ async function mkFile(): Promise<File> {
 }
 
 describe("Import .pptx do prezentace", () => {
-  it("zobrazí upozornění o nepřenositelném rozvržení", () => {
+  it("nabídne PPTX i PDF a vysvětlí zásadní omezení", () => {
     render(<ImportPptxToPresentationDialog open onOpenChange={() => {}} onImported={() => {}} />);
-    expect(
-      screen.getByText(/Rozvržení, fonty\s+a animace nelze přenést/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/PPTX zůstane upravitelný/i)).toBeTruthy();
+    expect(screen.getByText(/Animace se nepřenášejí/i)).toBeTruthy();
   });
 
   it("vytvoří přesně N slidů pro N snímků PPTX se správnými texty", async () => {
@@ -55,11 +54,12 @@ describe("Import .pptx do prezentace", () => {
     const slides = onImported.mock.calls[0][0];
 
     expect(slides).toHaveLength(3);
-    expect(slides.map((s: any) => s.projector.headline)).toEqual([
+    expect(slides.map((s: any) => s.blocks.find((b: any) => b.type === "heading")?.props.text.replace(/<[^>]+>/g, ""))).toEqual([
       "První snímek",
       "Druhý snímek",
       "Třetí snímek",
     ]);
+    expect(slides.every((s: any) => s.blocks.every((b: any) => b.frame && typeof b.zIndex === "number"))).toBe(true);
     expect(slides.every((s: any) => s.type === "content")).toBe(true);
     expect(slides.every((s: any) => s.themeId === "nature")).toBe(true);
     expect(slides.every((s: any) => typeof s.slideId === "string")).toBe(true);

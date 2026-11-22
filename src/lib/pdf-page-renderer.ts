@@ -30,6 +30,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+export { pdfjsLib };
 
 
 export async function renderPdfPagesToImages(file: File): Promise<string[]> {

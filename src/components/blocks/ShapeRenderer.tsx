@@ -4,6 +4,7 @@ import { normalizeGradient, type SlideGradient } from "@/lib/slide-gradient";
 export type ShapeKind =
   | "rectangle"
   | "rounded-rect"
+  | "pill"
   | "circle"
   | "triangle"
   | "diamond"
@@ -15,7 +16,8 @@ export type ShapeKind =
 export const SHAPE_KINDS: { value: ShapeKind; label: string }[] = [
   { value: "rectangle", label: "Čtyřúhelník" },
   { value: "rounded-rect", label: "Zaoblený obdélník" },
-  { value: "circle", label: "Kruh" },
+  { value: "pill", label: "Pilulka" },
+  { value: "circle", label: "Kruh / elipsa" },
   { value: "triangle", label: "Trojúhelník" },
   { value: "diamond", label: "Kosočtverec" },
   { value: "pentagon", label: "Pětiúhelník" },
@@ -31,6 +33,10 @@ interface Props {
   strokeWidth?: number;
   /** Barevný přechod výplně; má přednost před `fillColor`. */
   fillGradient?: SlideGradient | null;
+  fillOpacity?: number;
+  strokeOpacity?: number;
+  /** Poloměr rohů v jednotkách SVG viewBoxu (0–50). */
+  borderRadius?: number;
   /** Výška vykreslené plochy v px. */
   height?: number;
   /** Vyplnit celý rodičovský box (100 % × 100 %) – pro volně umístěné tvary. */
@@ -73,6 +79,9 @@ const ShapeRenderer = ({
   strokeColor = "#9B6CFF",
   strokeWidth = 2,
   fillGradient,
+  fillOpacity,
+  strokeOpacity,
+  borderRadius,
   height = 160,
   fill,
   style,
@@ -96,7 +105,7 @@ const ShapeRenderer = ({
               ? { x1: "0%", y1: "100%", x2: "100%", y2: "0%" }
               : { x1: "0%", y1: "0%", x2: "100%", y2: "100%" };
   const paint = gradient ? `url(#${gradientId})` : fillColor;
-  const polyProps = { fill: paint, stroke: strokeColor, strokeWidth: sw };
+  const polyProps = { fill: paint, fillOpacity, stroke: strokeColor, strokeOpacity, strokeWidth: sw };
 
   return (
     <svg
@@ -117,17 +126,19 @@ const ShapeRenderer = ({
         </defs>
       )}
       {shapeKind === "circle" && (
-        <ellipse cx={100} cy={50} rx={95 - sw} ry={45 - sw} fill={paint} stroke={strokeColor} strokeWidth={sw} />
+        <ellipse cx={100} cy={50} rx={95 - sw} ry={45 - sw} fill={paint} fillOpacity={fillOpacity} stroke={strokeColor} strokeOpacity={strokeOpacity} strokeWidth={sw} />
       )}
-      {(shapeKind === "rectangle" || shapeKind === "rounded-rect") && (
+      {(shapeKind === "rectangle" || shapeKind === "rounded-rect" || shapeKind === "pill") && (
         <rect
           x={sw}
           y={sw}
           width={200 - sw * 2}
           height={100 - sw * 2}
-          rx={shapeKind === "rounded-rect" ? 30 : 6}
+          rx={shapeKind === "pill" ? 50 : shapeKind === "rounded-rect" ? Math.max(0, Math.min(50, borderRadius ?? 30)) : 6}
           fill={paint}
+          fillOpacity={fillOpacity}
           stroke={strokeColor}
+          strokeOpacity={strokeOpacity}
           strokeWidth={sw}
         />
       )}

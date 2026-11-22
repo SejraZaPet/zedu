@@ -417,14 +417,19 @@ function ResizableSlideImage({
         {imgFailed ? (
           <SlideImageFallback className="min-h-0 w-full flex-1" />
         ) : (
-          <img
-            src={p.url}
-            alt={p.alt || p.caption || ""}
-            className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
-            style={{ objectFit: fit }}
-            draggable={false}
-            onError={() => setImgFailed(true)}
-          />
+          <span className="relative block min-h-0 w-full flex-1 overflow-hidden rounded-[var(--slide-radius,0.75rem)]">
+            <img
+              src={p.url}
+              alt={p.alt || p.caption || ""}
+              className={p.crop ? "absolute max-w-none" : "h-full w-full"}
+              style={p.crop ? (() => {
+                const c = p.crop; const visibleW = Math.max(1, 100 - Number(c.left || 0) - Number(c.right || 0)); const visibleH = Math.max(1, 100 - Number(c.top || 0) - Number(c.bottom || 0));
+                return { width: `${10000 / visibleW}%`, height: `${10000 / visibleH}%`, left: `${-Number(c.left || 0) * 100 / visibleW}%`, top: `${-Number(c.top || 0) * 100 / visibleH}%`, objectFit: "fill" as const, opacity: p.opacity, transform: `${p.flipH ? "scaleX(-1)" : ""} ${p.flipV ? "scaleY(-1)" : ""}` };
+              })() : { objectFit: fit, opacity: p.opacity, transform: `${p.flipH ? "scaleX(-1)" : ""} ${p.flipV ? "scaleY(-1)" : ""}` }}
+              draggable={false}
+              onError={() => setImgFailed(true)}
+            />
+          </span>
         )}
         {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
       </figure>
@@ -1168,16 +1173,20 @@ function EditableBlockInner({
 
     const p = (block.props || {}) as Record<string, any>;
     return (
-      <div className={framed ? "h-full w-full" : ""}>
+      <div className={framed ? "relative h-full w-full" : "relative"}>
         <ShapeRenderer
           shapeKind={p.shapeKind}
           fillColor={p.fillColor}
+          fillOpacity={p.fillOpacity}
           strokeColor={p.strokeColor}
+          strokeOpacity={p.strokeOpacity}
           strokeWidth={p.strokeWidth}
+          borderRadius={p.borderRadius}
           fillGradient={p.fillGradient}
           height={Number(p.height) || 160}
           fill={framed}
         />
+        {p.text && <div className="absolute inset-0 flex items-center overflow-hidden p-[8%]"><EditableText editable={editable} multiline html={/<[^>]+>/.test(p.text)} value={p.text} placeholder="Text tvaru" className="w-full text-[2rem] leading-relaxed [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6" style={slideTextStyle(p)} onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))} /></div>}
       </div>
     );
   }

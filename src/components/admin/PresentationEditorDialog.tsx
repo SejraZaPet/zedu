@@ -41,6 +41,7 @@ import {
 
 import { Switch } from "@/components/ui/switch";
 import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
+import PresentationExportDialog from "@/components/admin/PresentationExportDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides, themeStageStyle } from "@/lib/presentation-themes";
 import { LayoutTemplate, Shapes, Pencil, Eraser } from "lucide-react";
@@ -229,6 +230,7 @@ export const PresentationEditorDialog = ({
   const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
   const history = useValueHistory(pendingSlides, setPendingSlides);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
   const selectedBlockId = selectedBlockIds[0] ?? null;
@@ -936,8 +938,8 @@ export const PresentationEditorDialog = ({
             exporting={exportingPdf}
             canSave={!!onSave}
             onBack={lessonBackUrl ? () => requestClose(() => navigate(lessonBackUrl)) : () => requestClose()}
-            onImport={() => { setImportPptxOpen(true); toast({ title: "Import PowerPointu", description: "PPTX můžete vložit nyní. Věrný import PDF připravujeme v etapě 4." }); }}
-            onExport={handleExportPdf}
+            onImport={() => setImportPptxOpen(true)}
+            onExport={() => setExportOpen(true)}
             onAssign={() => toast({ title: "Zadání žákům připravujeme", description: "Prezentaci zatím můžete spustit živě nebo exportovat do PDF." })}
             onSave={() => void handleSave()}
             onLaunch={launchWithCheck}
@@ -1251,7 +1253,8 @@ export const PresentationEditorDialog = ({
 
           <PresentationThumbnails slides={pendingSlides} activeIndex={editingSlideIndex} themeId={themeId} onSelect={selectSlide} onMove={moveSlide} onAdd={() => openAddSlideAt(editingSlideIndex + 1)} />
 
-          <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
+          <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} userId={user?.id} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
+          <PresentationExportDialog open={exportOpen} onOpenChange={setExportOpen} slides={pendingSlides} title={presentationLesson?.title || "prezentace"} onExportPdf={handleExportPdf} />
           <AddSlideSheet open={addSlideOpen} onOpenChange={setAddSlideOpen} slides={pendingSlides} layoutsOnly showLibrary onAddSlides={(newSlides) => { insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides); setInsertAtIndex(null); }} />
           <InsertActivityDialog open={insertActivityOpen} onOpenChange={setInsertActivityOpen} themeId={themeId} onInsert={(slide, target) => insertBuiltActivity(slide, activityTypeLabel(slide.activitySpec?.activityType), target)} />
           <InsertSlidesDialog open={insertSlidesOpen} onOpenChange={setInsertSlidesOpen} themeId={themeId} currentPresentationId={source?.type === "standalone" ? source.presentationId : undefined} onInsert={(slides, position) => { const at = position === "end" ? pendingSlides.length : editingSlideIndex + (position === "after" ? 1 : 0); insertSlidesAt(at, slides.map((slide) => markSlideEditedByTeacher(slide, linkedToLesson))); }} />
