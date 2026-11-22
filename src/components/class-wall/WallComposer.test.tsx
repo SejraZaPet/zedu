@@ -7,7 +7,7 @@ afterEach(cleanup);
 describe("wall compose decisions", () => {
   it("passes default email off and comments on to publication", async () => {
     const publish = vi.fn().mockResolvedValue(undefined);
-    render(<WallComposer teacherId="t" targetName="[TEST]" onCreate={()=>{}} onPublish={publish} />);
+    render(<WallComposer draftKey="test-key" teacherId="t" targetName="[TEST]" onCreate={()=>{}} onPublish={publish} />);
     fireEvent.click(screen.getByRole("button",{name:"Sdílej něco s třídou…"}));
     fireEvent.change(screen.getByRole("textbox"), {target:{value:"[TEST] Text"}});
     fireEvent.click(screen.getByRole("button",{name:"Zveřejnit"}));
@@ -16,7 +16,7 @@ describe("wall compose decisions", () => {
   });
   it("retries using saved draft ID, never creates another on retry", async () => {
     const publish = vi.fn(async (_draft, id, saved) => { if (!id) { saved("draft-id"); throw new Error("[TEST] unavailable"); } });
-    render(<WallComposer teacherId="t" targetName="[TEST]" onCreate={()=>{}} onPublish={publish} />);
+    render(<WallComposer draftKey="test-key" teacherId="t" targetName="[TEST]" onCreate={()=>{}} onPublish={publish} />);
     fireEvent.click(screen.getByRole("button",{name:"Sdílej něco s třídou…"}));
     fireEvent.change(screen.getByRole("textbox"), {target:{value:"[TEST] Text"}});
     fireEvent.click(screen.getByRole("button",{name:"Zveřejnit"}));

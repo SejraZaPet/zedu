@@ -1,5 +1,6 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import WallComposer from "@/components/class-wall/WallComposer";
+import { isWallAuthError, wallErrorReason, wallDraftKey } from "@/lib/wall-composer";
 import { wallCreateUrl, wallDraftRow, isWallPost, type WallDraft } from "@/lib/wall-composer";
 import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { Pin as PinnedIcon } from "lucide-react";
@@ -10,7 +11,7 @@ import ClassWall from "@/components/class-wall/ClassWall";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams , useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -279,6 +280,7 @@ export default function TeacherSubjectClass() {
   const targetsOf = (aid: string) => effectiveRecipients(members.map((m) => m.user_id), recipientsMap[aid]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedOnceRef = useRef(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   /** Propojení učebnice na úrovni Výuky (class_subjects / subject_groups) – fallback bez rozvrhu */
@@ -314,7 +316,8 @@ export default function TeacherSubjectClass() {
 
 
     let cancelled = false;
-    setLoading(true);
+    // Opakované načtení (např. po obnově přihlášení) běží na pozadí, aby se neodmontovaly rozepsané formuláře.
+    if (!loadedOnceRef.current) setLoading(true);
     (async () => {
       let assignQuery = supabase
         .from("assignments")
@@ -502,12 +505,14 @@ export default function TeacherSubjectClass() {
         setAttempts([]);
       }
 
+      loadedOnceRef.current = true;
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, groupId, isGroup, subjectLabel, isUuidSubject, catalogLoading, resolvedSubjectId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- jen id, ne objekt (mění se při obnově tokenu)
+  }, [authLoading, user?.id, navigate, classId, groupId, isGroup, subjectLabel, isUuidSubject, catalogLoading, resolvedSubjectId]);
 
   const matchedSubject = useMemo(
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
@@ -1179,23 +1184,43 @@ export default function TeacherSubjectClass() {
   }
 
   const wallContext = { classId: isGroup ? null : classId, groupId: isGroup ? groupId : null, subjectId: resolvedSubjectId, subject: subjectLabel, targetName: klass?.name ?? "Třída/skupina" };
-  async function publishWallPost(draft: WallDraft, previousId: string | null, onDraftSaved: (id: string) => void) {
+  const ASSIGN_COLS = "id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings";
+  async function withAuthRetry<T extends { error: any }>(run: () => PromiseLike<T>): Promise<T> {
+    let res = await run();
+    if (isWallAuthError(res.error)) { await supabase.auth.refreshSession(); res = await run(); }
+    return res;
+  }
+  function wallFail(stage: string, error: any, fallback: string): never {
+    // Bez obsahu příspěvku – jen technický důvod.
+    console.error(`[wall] ${stage} selhalo`, { code: error?.code, message: error?.message, hint: error?.hint, status: error?.status });
+    throw new Error(`${fallback} ${wallErrorReason(error)}`);
+  }
+  async function publishWallPost(draft: WallDraft, previousId: string | null, onDraftSaved: (id: string) => void, publishAt: string | null = null) {
     if (!user) throw new Error("Pro zveřejnění se přihlaste.");
     const row = wallDraftRow(wallContext, draft, user.id);
     let id = previousId;
     if (id) {
-      const { error } = await supabase.from("assignments").update(row as any).eq("id", id).eq("teacher_id", user.id).eq("status", "draft");
-      if (error) throw new Error("Koncept se nepodařilo uložit. Zkuste to znovu.");
+      const { error } = await withAuthRetry(() => supabase.from("assignments").update(row as any).eq("id", id!).eq("teacher_id", user.id).eq("status", "draft"));
+      if (error) wallFail("uložení konceptu", error, "Koncept se nepodařilo uložit.");
     } else {
-      const { data, error } = await supabase.from("assignments").insert(row as any).select("id").single();
-      if (error || !data) throw new Error("Příspěvek se nepodařilo uložit. Zkuste to znovu.");
+      const { data, error } = await withAuthRetry(() => supabase.from("assignments").insert(row as any).select("id").single());
+      if (error || !data) wallFail("vložení", error, "Příspěvek se nepodařilo uložit.");
       id = data.id;
       onDraftSaved(id);
     }
-    const { data, error } = await supabase.from("assignments").update({ status: "published" }).eq("id", id).eq("teacher_id", user.id).eq("status", "draft").select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings").single();
-    if (error || !data) throw new Error("Koncept je uložený, ale zveřejnění se nepodařilo. Zkuste to znovu.");
+    const patch = publishAt ? { status: "scheduled", scheduled_publish_at: publishAt } : { status: "published" };
+    const { data, error } = await withAuthRetry(() => supabase.from("assignments").update(patch as any).eq("id", id!).eq("teacher_id", user.id).eq("status", "draft").select(ASSIGN_COLS).single());
+    if (error || !data) wallFail("zveřejnění", error, "Koncept je uložený, ale zveřejnění se nepodařilo.");
     setAssignments(list => [data as AssignmentRow, ...list.filter(a => a.id !== data.id)]);
-    toast({ title: "Příspěvek zveřejněn" });
+    toast({ title: publishAt ? `Příspěvek naplánován na ${format(new Date(publishAt), "d. M. yyyy H:mm")}` : "Příspěvek zveřejněn" });
+  }
+  async function changeScheduledWallPost(id: string, action: "now" | "cancel") {
+    if (!user) return;
+    const patch = action === "now" ? { status: "published", scheduled_publish_at: null } : { status: "draft", scheduled_publish_at: null };
+    const { data, error } = await withAuthRetry(() => supabase.from("assignments").update(patch as any).eq("id", id).eq("teacher_id", user.id).eq("status", "scheduled").select(ASSIGN_COLS).single());
+    if (error || !data) { console.error("[wall] změna plánu selhala", { code: error?.code, message: error?.message }); toast({ title: "Změna se nepodařila", description: wallErrorReason(error), variant: "destructive" }); return; }
+    setAssignments(list => list.map(a => a.id === id ? data as AssignmentRow : a));
+    toast({ title: action === "now" ? "Příspěvek zveřejněn" : "Plán zrušen – příspěvek je uložený jako koncept v Úkolech" });
   }
 
 
@@ -1469,8 +1494,15 @@ export default function TeacherSubjectClass() {
 
           {/* STREAM */}
           <TabsContent value="stream" className="mt-4 space-y-6">
+            {assignments.some(a => a.status === "scheduled" && isWallPost(a.settings)) && <section aria-label="Naplánované příspěvky" className="space-y-2 rounded-md border border-border p-3">
+              <h2 className="text-sm font-semibold">Naplánované příspěvky (žáci je zatím nevidí)</h2>
+              {assignments.filter(a => a.status === "scheduled" && isWallPost(a.settings)).map(a => <div key={a.id} className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <span className="min-w-0 break-words"><strong>{a.title}</strong> · Naplánováno na {a.scheduled_publish_at ? format(new Date(a.scheduled_publish_at), "d. M. yyyy H:mm") : "—"}</span>
+                <div className="flex gap-2"><Button size="sm" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "now")}>Zveřejnit hned</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "cancel")}>Zrušit plán</Button></div>
+              </div>)}
+            </section>}
             <ClassWall items={assignments as any} teacher
-              composer={user && <WallComposer teacherId={user.id} targetName={wallContext.targetName} onPublish={publishWallPost} onCreate={kind => navigate(wallCreateUrl(wallContext, kind, location.pathname))} />}
+              composer={user && <WallComposer teacherId={user.id} draftKey={wallDraftKey(user.id, wallContext)} targetName={wallContext.targetName} onPublish={publishWallPost} onCreate={kind => navigate(wallCreateUrl(wallContext, kind, location.pathname))} />}
               openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements} />
             <div className="grid md:grid-cols-2 gap-6">
               {/* Past */}

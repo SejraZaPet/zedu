@@ -25,3 +25,38 @@ export function wallCreateUrl(context: WallContext, kind: "task" | "material" | 
   return `/ucitel/ulohy?${params}`;
 }
 export const safeWallReturn = (path: string | null): string | null => path?.startsWith("/ucitel/") && !path.includes("\\") && !path.includes("//") ? path : null;
+/** Srozumitelný důvod chyby zápisu; nikdy nevrací obsah příspěvku. */
+export function wallErrorReason(error: { code?: string; message?: string; status?: number } | null | undefined): string {
+  const code = error?.code ?? ""; const msg = (error?.message ?? "").toLowerCase();
+  if (code === "42501" || msg.includes("row-level security")) return "Nemáte oprávnění psát do této třídy nebo skupiny.";
+  if (code === "PGRST301" || code === "PGRST303" || error?.status === 401 || msg.includes("jwt")) return "Přihlášení vypršelo. Obnovte stránku – rozepsaný příspěvek zůstane uložený.";
+  if (msg.includes("failed to fetch") || msg.includes("network")) return "Nejste připojeni k internetu. Zkuste to znovu.";
+  return code ? `Zkuste to znovu (kód ${code}).` : "Zkuste to znovu.";
+}
+export const isWallAuthError = (error: { code?: string; message?: string; status?: number } | null | undefined) =>
+  !!error && (error.code === "PGRST301" || error.code === "PGRST303" || error.status === 401 || (error.message ?? "").toLowerCase().includes("jwt"));
+
+const hasDraftText = (html: string) => html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length > 0;
+export const wallDraftKey = (teacherId: string, context: Pick<WallContext, "classId" | "groupId">) =>
+  `bezli:wall-draft:${teacherId}:${context.groupId ? `g:${context.groupId}` : `c:${context.classId}`}`;
+export function loadWallDraft(storage: Pick<Storage, "getItem">, key: string): WallDraft | null {
+  try {
+    const d = JSON.parse(storage.getItem(key) ?? "null");
+    if (!d || typeof d.description !== "string" || !Array.isArray(d.materials)) return null;
+    if (!hasDraftText(d.description) && !d.materials.length) return null;
+    return { description: d.description, materials: d.materials, pinned: !!d.pinned, commentsEnabled: d.commentsEnabled !== false, notifyEmail: !!d.notifyEmail };
+  } catch { return null; }
+}
+export function saveWallDraft(storage: Pick<Storage, "setItem" | "removeItem">, key: string, draft: WallDraft) {
+  try {
+    if (!hasDraftText(draft.description) && !draft.materials.length) storage.removeItem(key);
+    else storage.setItem(key, JSON.stringify(draft));
+  } catch { /* plné úložiště – koncept jen v paměti */ }
+}
+/** Hodnota z <input type="datetime-local"> (čas zařízení, u nás Praha) → ISO; jen budoucí čas. */
+export function wallScheduleIso(local: string, now = new Date()): string {
+  const d = new Date(local);
+  if (!local || isNaN(d.getTime())) throw new Error("Zadejte datum a čas zveřejnění.");
+  if (d.getTime() <= now.getTime() + 60_000) throw new Error("Čas zveřejnění musí být v budoucnosti.");
+  return d.toISOString();
+}
