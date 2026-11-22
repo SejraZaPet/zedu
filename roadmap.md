@@ -372,6 +372,12 @@
 - Přesun drag-and-drop už se neukládá automaticky; všechny změny slidů čekají na Uložit. `lessonRef` se přenáší na první slide. Skryté slidy vynechává živá příprava.
 - Ověřeno 34 testů, typecheck, build a přihlášený průchod: aktivita+Zpět, hromadná duplikace/mazání, zrušení/potvrzení 5 slidů, Delete, kontext, oba přesuny, skrytí, koš po sbalení, uložení/znovuotevření. Bez chyb prohlížeče; vlastní `[TEST]` data odstraněna.
 
+## Promítání – rozvržení dialogů s QR kódem
+- [x] Příčina: dlouhý nezalomený odkaz rozšířil automatickou mřížku obsahu z 334 na 628 px; dialog zůstal 384 px, takže popis i QR přetekly doprava.
+- [x] Opravena minimální šířka mřížky a flex položek, mobilní okraje, zalamování popisu, centrovaný QR, truncate odkazu a pevné tlačítko kopírování.
+- [x] Audit BezliStart, připojení do hry/live, sdílení a listů: další QR nejsou v tomto dialogu ani problémové mřížce; bez dalších změn.
+- [x] Trvalý `e2e/remote_control_dialog_layout.py` měří hranice, zalomení, centrování a ellipsis při 1366/390 px; reálné přihlášené promítání při 1366 px, 17 regresních testů, typy a build prošly. Bez testovacích dat, DB/RLS, nasazení a AGENTS.md.
+
 ## Prezentace – přechody mezi slidy a návrh animací prvků
 - [x] Přechody na jednotlivých slidech: katalog, směr, délka, použití na všechny a zpětná kompatibilita.
 - [x] Akce + a přechod mezi miniatury, existující cesty vložení a ovládání při skrytém pásu.

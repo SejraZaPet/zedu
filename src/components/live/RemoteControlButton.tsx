@@ -33,20 +33,27 @@ export default function RemoteControlButton({ sessionId, iconOnly = false }: { s
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm grid-cols-[minmax(0,1fr)] overflow-hidden">
+        <DialogHeader className="min-w-0">
           <DialogTitle>Ovládání z mobilu</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="whitespace-normal break-words">
             Naskenujte QR kód telefonem. Musíte být přihlášeni jako učitel této prezentace.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col items-center gap-4 py-2">
-          <div className="p-3 bg-white rounded-md border border-border">
-            <QRCodeSVG value={url} size={208} />
+        <div className="flex w-full min-w-0 flex-col items-center gap-4 py-2">
+          <div className="max-w-full rounded-md border border-border bg-white p-3">
+            <QRCodeSVG value={url} size={208} className="block h-auto max-w-full" />
           </div>
-          <div className="w-full flex items-center gap-2">
-            <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 truncate">{url}</code>
-            <Button size="sm" variant="outline" onClick={copy} className="gap-1">
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs" title={url}>{url}</code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copy}
+              className="shrink-0 gap-1"
+              aria-label={copied ? "Odkaz zkopírován" : "Kopírovat odkaz"}
+              title="Kopírovat odkaz"
+            >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
