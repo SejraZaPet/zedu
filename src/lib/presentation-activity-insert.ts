@@ -22,6 +22,8 @@ export function buildPresetIntoSlide(current: any, activitySlide: any, opts: { w
     projector: { ...(current?.projector ?? {}), headline, body: "" },
     device: { ...(current?.device ?? {}), instructions: activitySlide?.device?.instructions ?? current?.device?.instructions ?? "" },
     activitySpec: { ...(activitySlide?.activitySpec ?? {}), question: activitySlide?.activitySpec?.question ?? headline },
+    ...(activitySlide?.ai_generated ? { ai_generated: true } : {}),
+    ...(activitySlide?.ai_modified_at ? { ai_modified_at: activitySlide.ai_modified_at } : {}),
     blocks: activityBlocks,
     structureEditedByTeacher: true,
   };

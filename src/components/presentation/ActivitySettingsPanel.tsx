@@ -7,6 +7,7 @@ import { activityMissing } from "@/lib/activity-completeness";
 import ActivityEditor from "@/components/activities/editor/ActivityEditor";
 import { ActivityContentEditor } from "@/components/admin/block-editors/ActivityBlock";
 import { activityModelFromSlide, applyActivityModelToSlide, type ActivityModel } from "@/lib/activity-model";
+import { stepTypeInfo } from "@/lib/studio-step";
 
 /** Pravý panel prezentace: sdílený editor + akce a poznámky specifické pro slide. */
 export default function ActivitySettingsPanel({
@@ -44,7 +45,7 @@ export default function ActivitySettingsPanel({
           onChange={changeModel}
           context="presentation"
           autoFocus={autoFocus}
-          scored={["mcq", "quiz", "true_false", "matching", "fill_blanks", "fill_choice", "ordering", "sorting"].includes(at)}
+          scored={stepTypeInfo(at).scored || at === "quiz"}
           renderLegacyContent={(content, onChange) => <ActivityContentEditor activityType={at} props={content} onChange={onChange} />}
         />
       </div>

@@ -3,6 +3,7 @@ import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+import { correctResponsePercent, formatResponsePoints } from "@/lib/live-question-results";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
@@ -1256,8 +1257,7 @@ const LiveTeacherScreen = () => {
                         {(() => {
                           const relevant = responses.filter(r => r.question_index === currentIndex);
                           if (relevant.length === 0) return 0;
-                          const avgScore = relevant.reduce((sum, r) => sum + (r.score ?? 0), 0) / relevant.length;
-                          return Math.round(avgScore);
+                          return correctResponsePercent(relevant);
                         })()}%
                       </p>
                       <p className="text-xs text-muted-foreground">správně</p>
@@ -1278,7 +1278,7 @@ const LiveTeacherScreen = () => {
                             <div key={r.id} className="flex items-center justify-between text-sm">
                               <span className="text-foreground">{player?.nickname || "Žák"}</span>
                               <span className={r.is_correct ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                                {r.score ?? 0} %
+                                {formatResponsePoints(r.score)}
                               </span>
                             </div>
                           );

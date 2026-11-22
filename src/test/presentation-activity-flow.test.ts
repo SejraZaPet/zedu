@@ -56,6 +56,14 @@ describe("vložit → upravit → uložit → znovu otevřít → spustit", () =
     expect(mcqs(live.slides).every((s) => s.activitySpec.points === 2 && s.gameSettings?.teamMode === "random")).toBe(true);
   });
 
+  it("víceotázkový kvíz přenese do živé hry barvy, obrázek i AI označení", () => {
+    const slide = { slideId: "q", type: "activity", ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z", activitySpec: { activityType: "quiz", colors: { card: "#F3F1E6" }, imageUrl: "https://img.test/q.png", quiz: { questions: [{ question: "Q", answers: [{ text: "A", correct: true }] }] } } };
+    const [liveSlide] = preparePresentationForLive([slide]).slides;
+    expect(liveSlide.activitySpec.colors).toEqual({ card: "#F3F1E6" });
+    expect(liveSlide.activitySpec.imageUrl).toBe("https://img.test/q.png");
+    expect(liveSlide).toMatchObject({ ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z" });
+  });
+
   it("slovní mrak: zůstane jedním slidem a hlášení řekne, že je bez bodování", () => {
     let slide = preset("wordcloud");
     slide = applySlidePatch(slide, { activitySpec: { ...slide.activitySpec, question: "Co vás napadne u slova voda?" } });
@@ -72,6 +80,7 @@ describe("vložit → upravit → uložit → znovu otevřít → spustit", () =
     ]);
     expect(live.skipped).toHaveLength(1);
     expect(live.incomplete).toEqual(["Prázdný"]);
+    expect(launchReportMessage(live)).toMatch(/Přeskočeno.*Křížovka/);
   });
 });
 
@@ -121,6 +130,11 @@ describe("vložení do slidu a zdroje aktivit", () => {
     expect(host.projector.headline).toBe("Úvod");
     expect(canHostActivity({ type: "content", blocks: [{ type: "paragraph", props: { text: "Výklad" } }] })).toBe(false);
     expect(canHostActivity(host)).toBe(false);
+  });
+  it("vložení AI aktivity na aktuální slide zachová označení AI i lidské úpravy", () => {
+    const current = { slideId: "s", type: "content", projector: { headline: "Úvod" }, blocks: [] };
+    const activity = { type: "activity", projector: { headline: "AI otázka" }, activitySpec: { activityType: "mcq", question: "AI otázka" }, ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z" };
+    expect(buildPresetIntoSlide(current, activity)).toMatchObject({ ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z" });
   });
   it("najde i vnořené aktivity ve sloupcích a skupinách", () => {
     const blocks = [

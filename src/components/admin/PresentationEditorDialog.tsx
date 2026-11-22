@@ -48,6 +48,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ActivitySettingsPanel from "@/components/presentation/ActivitySettingsPanel";
+import ActivityCatalog from "@/components/presentation/ActivityCatalog";
+import InsertActivityDialog, { type ActivityInsertTarget } from "@/components/presentation/InsertActivityDialog";
+import InsertSlidesDialog from "@/components/presentation/InsertSlidesDialog";
 import { presentationMissingReport } from "@/lib/activity-completeness";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import ColorPicker from "@/components/admin/ColorPicker";
@@ -56,7 +59,6 @@ import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
-import * as LucideIcons from "lucide-react";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { activityTypeLabel, applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
 import { buildPresetIntoSlide, canHostActivity } from "@/lib/presentation-activity-insert";
@@ -243,6 +245,8 @@ export const PresentationEditorDialog = ({
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
   const [activityCreatorOpen, setActivityCreatorOpen] = useState(true);
+  const [insertActivityOpen, setInsertActivityOpen] = useState(false);
+  const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
@@ -306,7 +310,7 @@ export const PresentationEditorDialog = ({
     setExportingPdf(true);
     try {
       await exportSlidesToPdf([currentSlide], themeId, `${presentationLesson?.title || "prezentace"} – aktivita`);
-      toast({ title: "List vytvořen", description: "Aktivita byla stažena jako PDF k tisku." });
+      toast({ title: "List vytvořen", description: "Aktuální slide byl stažen jako PDF k tisku." });
     } catch (e: any) {
       toast({ title: "Tisk se nepodařil", description: e?.message ?? String(e), variant: "destructive" });
     } finally {
@@ -736,16 +740,15 @@ export const PresentationEditorDialog = ({
 
   /** ČÁST 4a – vložení předpřipravené aktivity za aktuální slide. */
   const [activityTarget, setActivityTarget] = useState<"slide" | "new">("slide");
-  const insertActivityPreset = (preset: ActivityPreset) => {
-    const built = preset.build();
-    if (activityTarget === "slide" && currentSlide && canHostActivity(currentSlide)) {
+  const insertBuiltActivity = (built: any, label: string, target: ActivityInsertTarget = activityTarget) => {
+    if (target === "slide" && currentSlide && canHostActivity(currentSlide)) {
       // Aktivita jako prvek aktuálního slidu – texty a obrázky slidu zůstanou.
       const updated = [...pendingSlides];
       updated[editingSlideIndex] = markSlideEditedByTeacher(buildPresetIntoSlide(currentSlide, built), linkedToLesson);
       setPendingSlides(updated);
       setSelectedBlockId(null);
       openActivityEditor(updated[editingSlideIndex], editingSlideIndex);
-      toast({ title: "Aktivita přidána", description: `„${preset.label}" je teď součástí tohoto slidu.` });
+      toast({ title: "Aktivita přidána", description: `„${label}" je teď součástí tohoto slidu.` });
       return;
     }
     const updated = [...pendingSlides];
@@ -756,11 +759,12 @@ export const PresentationEditorDialog = ({
     openActivityEditor(built, editingSlideIndex + 1);
     toast({
       title: "Aktivita přidána",
-      description: activityTarget === "slide"
-        ? `Slide už má obsah nebo aktivitu, „${preset.label}" je proto na novém slidu, aby se v promítání nic neztratilo.`
-        : `„${preset.label}" byla vložena jako nový slide.`,
+      description: target === "slide"
+        ? `Slide už má obsah nebo aktivitu, „${label}" je proto na novém slidu, aby se v promítání nic neztratilo.`
+        : `„${label}" byla vložena jako nový slide.`,
     });
   };
+  const insertActivityPreset = (preset: ActivityPreset) => insertBuiltActivity(preset.build(), preset.label);
 
 
   /** B3 – dogenerování interaktivní aktivity z textového slidu pomocí AI. */
@@ -1050,22 +1054,19 @@ export const PresentationEditorDialog = ({
 
                 {sidebarSection === "activities" && (
                   <div className="space-y-4">
-                    <Button className="h-11 w-full rounded-xl bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={() => setActivityCreatorOpen((v) => !v)} aria-expanded={activityCreatorOpen}>
-                      <Plus className="mr-2 h-5 w-5" /> Vytvořit novou aktivitu
+                    <Button className="h-11 w-full rounded-xl bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={() => setInsertActivityOpen(true)}>
+                      <Plus className="mr-2 h-5 w-5" /> Vložit aktivitu
                     </Button>
+                    <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setActivityCreatorOpen((v) => !v)} aria-expanded={activityCreatorOpen}>
+                      <Puzzle className="mr-2 h-5 w-5" /> Vytvořit novou aktivitu
+                    </Button>
+                    <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setInsertSlidesOpen(true)}><Copy className="mr-2 h-4 w-4" />Vložit slidy z lekce / prezentace</Button>
                     <div role="radiogroup" aria-label="Kam vložit aktivitu" className="grid grid-cols-2 gap-1 rounded-lg bg-deck-soft p-1">
                       {([["slide", "Do tohoto slidu"], ["new", "Jako nový slide"]] as const).map(([value, label]) => (
                         <button key={value} type="button" role="radio" aria-checked={activityTarget === value} onClick={() => setActivityTarget(value)} className={`rounded-md px-2 py-2 text-[11px] font-semibold ${activityTarget === value ? "bg-deck-violet text-deck-on-violet" : "text-deck-violet-deep"}`}>{label}</button>
                       ))}
                     </div>
-                    {activityCreatorOpen && (
-                      <div className="grid grid-cols-2 gap-2" aria-label="Všechny typy aktivit">
-                        {ACTIVITY_PRESETS.map((preset) => {
-                          const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
-                          return <button key={preset.id} type="button" onClick={() => insertActivityPreset(preset)} title={preset.hint} className="flex min-h-[70px] flex-col items-start gap-1 rounded-xl border border-deck-line bg-deck-panel p-2.5 text-left hover:border-deck-violet hover:bg-deck-soft"><Icon className="h-4 w-4 text-deck-violet" /><span className="text-[11px] font-semibold leading-tight">{preset.label}</span></button>;
-                        })}
-                      </div>
-                    )}
+                    {activityCreatorOpen && <ActivityCatalog compact onPick={insertActivityPreset} />}
                     <section className="space-y-2 border-t border-deck-line pt-4">
                       <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Oblíbené typy</h2>
                       {[
@@ -1235,6 +1236,7 @@ export const PresentationEditorDialog = ({
                   onClose={() => setPropertiesOpen(false)}
                 >
                   {!selectedBlock && <>
+                    <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Digi i offline</h3><Button size="sm" variant="outline" className="w-full gap-1.5 text-xs" onClick={handlePrintActivity} disabled={exportingPdf}><FileDown className="h-3.5 w-3.5" />Vytisknout tento slide jako list</Button></section>
                     <section className="space-y-3 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Přechod a písmo</h3><Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SLIDE_TRANSITIONS.map((item) => <SelectItem key={item.value} value={item.value} title={item.hint}>{item.label}</SelectItem>)}</SelectContent></Select><Label className="text-xs" htmlFor="slide-font-scale">Velikost písma slidu</Label><input id="slide-font-scale" type="range" min={0.7} max={1.6} step={0.05} value={(currentSlide?.projector?.fontScale as number) || 1} onChange={(e) => updateProjector({ fontScale: parseFloat(e.target.value) })} className="w-full accent-deck-violet" /></section>
                     <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Obrázek pozadí</h3><MediaPickerDialog imageOnly onPick={(url, item) => { void insertPersistentImage(url, item, (finalUrl) => updateSlide({ backgroundOverride: { image: finalUrl } })); }} trigger={<Button variant="outline" size="sm" className="w-full"><ImageIcon className="mr-1 h-3.5 w-3.5" />Vybrat obrázek</Button>} /><GameBackgroundPickerDialog onPick={(url) => updateSlide({ backgroundOverride: { image: url } })} trigger={<Button variant="outline" size="sm" className="w-full"><Gamepad2 className="mr-1 h-3.5 w-3.5" />Herní pozadí</Button>} />{(currentSlide as any).backgroundOverride?.image && <Button variant="ghost" size="sm" onClick={() => updateSlide({ backgroundOverride: null })}>Odebrat obrázek pozadí</Button>}</section>
                     {isZoomableSlide(currentSlide) && <Collapsible className="rounded-lg border border-deck-line"><CollapsibleTrigger className="flex w-full items-center justify-between p-2 text-xs"><span>Zóny přiblížení ({(currentSlide.zoomZones || []).length})</span><ChevronDown className="h-4 w-4" /></CollapsibleTrigger><CollapsibleContent className="p-2"><ZoomZonesEditor slide={currentSlide} darkMode={darkPreview} onChange={(zoomZones: ZoomZone[]) => updateSlide({ zoomZones })} /></CollapsibleContent></Collapsible>}
@@ -1251,6 +1253,8 @@ export const PresentationEditorDialog = ({
 
           <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
           <AddSlideSheet open={addSlideOpen} onOpenChange={setAddSlideOpen} slides={pendingSlides} layoutsOnly showLibrary onAddSlides={(newSlides) => { insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides); setInsertAtIndex(null); }} />
+          <InsertActivityDialog open={insertActivityOpen} onOpenChange={setInsertActivityOpen} themeId={themeId} onInsert={(slide, target) => insertBuiltActivity(slide, activityTypeLabel(slide.activitySpec?.activityType), target)} />
+          <InsertSlidesDialog open={insertSlidesOpen} onOpenChange={setInsertSlidesOpen} themeId={themeId} currentPresentationId={source?.type === "standalone" ? source.presentationId : undefined} onInsert={(slides, position) => { const at = position === "end" ? pendingSlides.length : editingSlideIndex + (position === "after" ? 1 : 0); insertSlidesAt(at, slides.map((slide) => markSlideEditedByTeacher(slide, linkedToLesson))); }} />
         </DialogContent>
       </Dialog>
 

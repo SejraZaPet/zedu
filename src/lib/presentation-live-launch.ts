@@ -28,7 +28,12 @@ const carry = (parent: any, child: any) => {
     ...child,
     ...(parent?.gameSettings ? { gameSettings: parent.gameSettings } : {}),
     ...(parent?.studioStepType ? { studioStepType: parent.studioStepType } : {}),
-    activitySpec: { ...child.activitySpec, ...(pts === 0 || pts === 2 ? { points: pts } : {}) },
+    activitySpec: {
+      ...child.activitySpec,
+      ...(parent?.activitySpec?.colors ? { colors: parent.activitySpec.colors } : {}),
+      ...(parent?.activitySpec?.imageUrl ? { imageUrl: parent.activitySpec.imageUrl } : {}),
+      ...(pts === 0 || pts === 2 ? { points: pts } : {}),
+    },
   };
 };
 
@@ -41,6 +46,7 @@ function quizToMcqSlides(s: any): any[] | null {
     slideId: `${s.slideId || "slide"}-q${i + 1}`,
     type: "activity",
     ...(s.ai_generated ? { ai_generated: true } : {}),
+    ...(s.ai_modified_at ? { ai_modified_at: s.ai_modified_at } : {}),
     ...(s.backgroundOverride ? { backgroundOverride: s.backgroundOverride } : {}),
     ...(s.themeId ? { themeId: s.themeId } : {}),
     projector: { headline: q.question, body: "" },

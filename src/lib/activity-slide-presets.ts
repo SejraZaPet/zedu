@@ -10,6 +10,12 @@ const newId = () => crypto.randomUUID();
 
 export type ActivityPresetId =
   | "mcq"
+  | "quiz"
+  | "open"
+  | "short_answer"
+  | "word_search"
+  | "exit"
+  | "bezlistart"
   | "wordcloud"
   | "wall"
   | "poll"
@@ -68,6 +74,48 @@ export const ACTIVITY_PRESETS: ActivityPreset[] = [
         ],
         correctIndex: 0,
       }),
+  },
+  {
+    id: "quiz",
+    label: "Kvíz s více otázkami",
+    hint: "Několik otázek v jedné aktivitě",
+    icon: "ListChecks",
+    build: () => activitySlide("quiz", "Nový kvíz", "Odpovězte na otázky.", { quiz: { questions: [{ question: "", answers: [{ text: "", correct: true }, { text: "", correct: false }] }] } }),
+  },
+  {
+    id: "open",
+    label: "Otevřená otázka",
+    hint: "Vlastní textová odpověď",
+    icon: "MessageSquareText",
+    build: () => activitySlide("wall", "Nová otevřená otázka", "Napište svou odpověď.", { anonymous: true, allowMultiple: false }),
+  },
+  {
+    id: "short_answer",
+    label: "Krátká odpověď",
+    hint: "Krátký text a vzorové řešení",
+    icon: "TextCursorInput",
+    build: () => activitySlide("short_answer", "Nová otázka", "Napište krátkou odpověď.", { correctAnswer: "" }),
+  },
+  {
+    id: "word_search",
+    label: "Osmisměrka",
+    hint: "Hledání slov v mřížce",
+    icon: "Grid3X3",
+    build: () => activitySlide("word_search", "Osmisměrka", "Najděte všechna slova.", { wordSearchWords: ["PRAHA", "BRNO"], wordSearchSize: 12 }),
+  },
+  {
+    id: "exit",
+    label: "Exit ticket",
+    hint: "Krátká reflexe na závěr",
+    icon: "DoorOpen",
+    build: () => activitySlide("wall", "Co sis dnes odnesl/a?", "Napište krátkou reflexi.", { anonymous: true, allowMultiple: false }),
+  },
+  {
+    id: "bezlistart",
+    label: "BezliStart",
+    hint: "Krátká aktivita na úvod hodiny",
+    icon: "Zap",
+    build: () => activitySlide("bezlistart", "BezliStart", "Splňte krátkou úvodní aktivitu.", { prompt: "" }),
   },
   {
     id: "wordcloud",

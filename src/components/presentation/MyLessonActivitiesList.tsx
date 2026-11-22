@@ -24,11 +24,13 @@ export const LESSONS_PAGE_SIZE = 30;
 export const MyLessonActivitiesList = ({
   onPick,
   onPickStudio,
+  defaultTab = "lessons",
 }: {
   onPick: (item: MyActivityItem) => void;
   onPickStudio?: (item: StudioActivity) => void;
+  defaultTab?: "lessons" | "studio";
 }) => {
-  const [tab, setTab] = useState<"lessons" | "studio">("lessons");
+  const [tab, setTab] = useState<"lessons" | "studio">(defaultTab);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

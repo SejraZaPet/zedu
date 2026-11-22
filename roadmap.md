@@ -333,3 +333,10 @@
 - [x] Klikací průchod Studia a prezentace, uložení/znovuotevření, živá hra a PDF pokud dostupné.
 - [x] Finální regresní testy, typy, build, úklid vlastních [TEST] dat a commit.
 - Ověřeno: 214 testů, typy/build; Studio i prezentace uloženy a znovu otevřeny, PDF vizuálně čitelné, živá hra a otázka na telefonu. Odpověď žáka po vypršení limitu neověřena. Vlastní [TEST] data a hra odstraněny; bez DB/RLS a nasazení.
+
+## Prezentace – etapa 3 a dokončení editoru aktivit
+- [x] Seskupený katalog všech aktivit a dialog Vložit aktivitu se čtyřmi cestami, AI schválením a živým náhledem.
+- [x] Výběr a bezeztrátové vložení více slidů z lekcí a vlastních prezentací.
+- [x] Doplnit bezpečné specializované editory a tisk aktivity/slide.
+- [x] Testy, klikací průchod včetně živé odpovědi a bodování, úklid [TEST] dat a commit.
+- Ověřeno: typy, 291 souvisejících testů; skutečná AI z materiálu, kopie slidu mezi prezentacemi, PDF, živá odpověď, 100 % správně a 985 b. Vlastní [TEST] prezentace, hra, hráč i odpověď odstraněny; bez DB/RLS a nasazení.
