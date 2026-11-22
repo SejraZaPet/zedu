@@ -1,3 +1,4 @@
+import { globalScheduleIso, resolveTargetSchedule, scheduleBlocker } from "@/lib/assignment-schedule";
 import { assignmentStatus, assignmentClassProgress, type ClassProgress } from "@/lib/assignment-status";
 import { cheatSheetAllowed } from "@/lib/cheatsheet";
 import { unpublishedWorksheet } from "@/lib/worksheet-assignment-link";
@@ -563,21 +564,16 @@ const TeacherAssignments = () => {
       // publikaci pak provede appka na pozadí.
       let scheduledPublishAt: string | null = null;
       if (mode === "scheduled") {
-        if (!scheduleDate) {
-          throw new Error("Vyberte datum zveřejnění.");
+        const globalIso = scheduleEnabled || editingId ? globalScheduleIso(scheduleDate, scheduleTime) : null;
+        const unchangedIso = editingId ? assignments.find((a) => a.id === editingId)?.scheduled_publish_at ?? null : null;
+        if (editingId) {
+          if (!globalIso) throw new Error(scheduleBlocker(null, [], true)!);
+          resolveTargetSchedule(globalIso, [], Date.now(), unchangedIso);
+          if (new Date(globalIso).getTime() <= Date.now() && globalIso !== unchangedIso) throw new Error("Čas zveřejnění musí být v budoucnosti.");
+        } else {
+          resolveTargetSchedule(globalIso, newTargets, Date.now());
         }
-        const [h, m] = scheduleTime.split(":").map((n) => parseInt(n, 10));
-        const when = new Date(scheduleDate);
-        when.setHours(Number.isFinite(h) ? h : 8, Number.isFinite(m) ? m : 0, 0, 0);
-        const unchanged =
-          !!editingId &&
-          assignments.find((a) => a.id === editingId)?.scheduled_publish_at ===
-            when.toISOString();
-        if (when.getTime() <= Date.now() && !unchanged) {
-          throw new Error("Čas zveřejnění musí být v budoucnosti.");
-        }
-        scheduledPublishAt = when.toISOString();
-
+        scheduledPublishAt = globalIso;
       }
 
       // Předmět (Výuka) — použije se pro sdílení se spoluučiteli dané Výuky.
@@ -2004,7 +2000,8 @@ const TeacherAssignments = () => {
               <AssignmentFormActions
                 isEditingPublished={isEditingPublished}
                 creating={creating}
-                canSchedule={!!scheduleDate && !!scheduleTime}
+                canSchedule={!scheduleBlocker(scheduleEnabled || editingId ? globalScheduleIso(scheduleDate, scheduleTime) : null, editingId ? [] : newTargets, !!editingId)}
+                scheduleHint={scheduleBlocker(scheduleEnabled || editingId ? globalScheduleIso(scheduleDate, scheduleTime) : null, editingId ? [] : newTargets, !!editingId) ?? undefined}
                 onSaveDraft={handleSaveDraft}
                 onSchedule={handleSchedule}
                 onPublish={handlePublishForm}

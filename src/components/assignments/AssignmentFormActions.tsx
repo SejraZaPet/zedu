@@ -11,6 +11,7 @@ interface Props {
   isEditingPublished: boolean;
   creating: boolean;
   canSchedule: boolean;
+  scheduleHint?: string;
   onSaveDraft: () => void;
   onSchedule: () => void;
   onPublish: () => void;
@@ -21,6 +22,7 @@ const AssignmentFormActions = ({
   isEditingPublished,
   creating,
   canSchedule,
+  scheduleHint,
   onSaveDraft,
   onSchedule,
   onPublish,
@@ -41,7 +43,7 @@ const AssignmentFormActions = ({
         <TooltipTrigger asChild>
           <span className="inline-block">{scheduleBtn}</span>
         </TooltipTrigger>
-        <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
+        <TooltipContent>{scheduleHint ?? "Nejdřív vyberte datum a čas zveřejnění."}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
