@@ -10,6 +10,11 @@ export interface SlideGradient {
   from: string;
   /** Koncová barva (HEX). */
   to: string;
+  /** Volitelná prostřední barva tříbarevného přechodu. */
+  via?: string;
+  /** Jemný barevný filtr pro čitelnost textu na celém přechodu. */
+  overlay?: string;
+  overlayOpacity?: number;
   /** Směr v CSS zápisu, např. "135deg" nebo "to right". */
   direction?: string;
 }
@@ -51,17 +56,39 @@ export function normalizeGradient(value: any): SlideGradient | null {
   const from = typeof value.from === "string" ? value.from.trim() : "";
   const to = typeof value.to === "string" ? value.to.trim() : "";
   if (!HEX_RE.test(from) || !HEX_RE.test(to)) return null;
+  const via = typeof value.via === "string" && HEX_RE.test(value.via.trim()) ? value.via.trim() : undefined;
+  const overlay = typeof value.overlay === "string" && HEX_RE.test(value.overlay.trim()) ? value.overlay.trim() : undefined;
+  const overlayOpacity = typeof value.overlayOpacity === "number" ? Math.max(0, Math.min(1, value.overlayOpacity)) : 0;
   const direction =
     typeof value.direction === "string" && value.direction.trim()
       ? value.direction.trim()
       : DEFAULT_GRADIENT_DIRECTION;
-  return { from, to, direction };
+  return { from, to, ...(via ? { via } : {}), ...(overlay ? { overlay, overlayOpacity } : {}), direction };
 }
 
 /** CSS hodnota `linear-gradient(...)`, nebo null. */
 export function gradientCss(value: any): string | null {
   const g = normalizeGradient(value);
-  return g ? `linear-gradient(${g.direction}, ${g.from}, ${g.to})` : null;
+  if (!g) return null;
+  const base = `linear-gradient(${g.direction}, ${[g.from, g.via, g.to].filter(Boolean).join(", ")})`;
+  if (!g.overlay || !g.overlayOpacity) return base;
+  const alpha = Math.round(g.overlayOpacity * 255).toString(16).padStart(2, "0");
+  return `linear-gradient(${g.overlay}${alpha}, ${g.overlay}${alpha}), ${base}`;
+}
+
+/** Skutečné barvy po překrytí – pro export a kontrolu kontrastu. */
+export function gradientVisibleStops(value: any): string[] {
+  const g = normalizeGradient(value); if (!g) return [];
+  const mix = (color: string) => {
+    if (!g.overlay || !g.overlayOpacity) return color;
+    const channel = (offset: number) => {
+      const base = parseInt(color.slice(offset, offset + 2), 16);
+      const over = parseInt(g.overlay!.slice(offset, offset + 2), 16);
+      return Math.round(base * (1 - g.overlayOpacity!) + over * g.overlayOpacity!).toString(16).padStart(2, "0");
+    };
+    return `#${channel(1)}${channel(3)}${channel(5)}`.toUpperCase();
+  };
+  return [g.from, g.via, g.to].filter((x): x is string => !!x).map(mix);
 }
 
 /** Styl pro plochu s přechodem (pozadí bloku, snímku, náhledu). */

@@ -20,6 +20,7 @@ export interface SlideFontOption {
  * podporují českou diakritiku (á č ď é ě í ň ó ř š ť ú ů ý ž).
  */
 export const SLIDE_FONTS: SlideFontOption[] = [
+  { value: '"Oswald", "Arial Narrow", sans-serif', label: "Oswald" },
   { value: '"Poppins", system-ui, sans-serif', label: "Poppins" },
   { value: '"Nunito", system-ui, sans-serif', label: "Nunito" },
   { value: '"Baloo 2", system-ui, sans-serif', label: "Baloo 2" },

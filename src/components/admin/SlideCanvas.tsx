@@ -533,6 +533,10 @@ function EditableBlockInner({
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
 
+  if (block.type === "activity" && (block as any).renderAs === "activity-preview") {
+    return <div className="h-full w-full overflow-hidden"><ActivitySpecPreview spec={block.props} /></div>;
+  }
+
   // Skupina spojených prvků – potomci mají rámce relativní k rámci skupiny,
   // takže se s ní posouvají, scalují i otáčejí jako jeden celek.
   if (block.type === ("group" as Block["type"])) {
@@ -1741,7 +1745,7 @@ export function SlideBody({
   const fontScale = combinedProjectorFontScale(slide?.projector?.fontScale, projectorFontScale);
   const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
-  const hideEmptyEditorPlaceholders = slide?.hideEmptyEditorPlaceholders === true && rawBlocks.length === 0;
+  const hideEmptyEditorPlaceholders = slide?.hideEmptyEditorPlaceholders === true;
 
   // Apply progressive-reveal transformation when not editing.
   const allBlocks: Block[] = !editable && typeof revealStep === "number"

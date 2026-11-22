@@ -16,7 +16,7 @@ const StartFromTemplateDialog = ({ open, onOpenChange, onPick }: Props) => (
           <LayoutTemplate className="w-4 h-4" /> Začít od šablony
         </DialogTitle>
         <DialogDescription>
-          Vyberte startovní strukturu prezentace. Slidy se vytvoří prázdné, obsah doplníte sami.
+          Vyberte startovní strukturu prezentace. Všechny texty, tvary i aktivity můžete dále upravit.
         </DialogDescription>
       </DialogHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

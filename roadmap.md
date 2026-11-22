@@ -347,3 +347,11 @@
 - [x] PPTX export: slidy, prvky, aktivity, poznámky; společná nabídka PPTX/PDF/tisk.
 - [x] Testy vzorových souborů, round-trip, 20slidová deka, editor a PDF, úklid [TEST] dat.
 - [ ] Projekci importovaného slidu ověřit po úspěšném připojení testovacího hráče (v tomto průchodu zůstala v lobby).
+
+## Prezentace – etapa 5: šablony a motivy
+- [x] Jednáct živě náhledených upravitelných šablon slidů a tři nové Bezli sady; původní sady zachovány.
+- [x] Bezli gradient, tmavý, světlý a krémově pruhovaný motiv; kontrast a barvy aktivit.
+- [x] Vlastní slide/prezentace jako šablona v existujícím lokálním úložišti konkrétního učitele; bez DB/RLS.
+- [x] Vložení za aktuální slide, potvrzení náhrady celé prezentace, historie a zachování obsahu.
+- [x] Finální regresní testy, vizuální průchod, úklid [TEST] dat a commit.
+- Ověřeno v přihlášeném náhledu: 11 šablon, 7 celých sad, nové motivy, kvíz, vlastní šablona, zrušení/potvrzení náhrady a uložení. Vlastní [TEST] prezentace odstraněny; bez DB/RLS a nasazení.

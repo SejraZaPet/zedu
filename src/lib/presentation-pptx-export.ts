@@ -1,6 +1,7 @@
 import pptxgen from "pptxgenjs";
 import { activityToCoreQuestions } from "@/lib/live-game-core";
 import { activitySummary } from "@/lib/activity-meta";
+import { getPresentationTheme } from "@/lib/presentation-themes";
 
 const PAGE_W = 13.333, PAGE_H = 7.5;
 const hex = (value: any, fallback = "2B1A3F") => String(value || fallback).replace("#", "").slice(0, 6).toUpperCase();
@@ -72,7 +73,8 @@ async function gradientData(gradient: any): Promise<string | null> {
     const ctx = canvas.getContext("2d"); if (!ctx) return null;
     const direction = String(gradient.direction || "135deg");
     const g = direction === "to right" ? ctx.createLinearGradient(0, 0, 1600, 0) : direction === "to bottom" ? ctx.createLinearGradient(0, 0, 0, 900) : ctx.createLinearGradient(0, 0, 1600, 900);
-    g.addColorStop(0, gradient.from); g.addColorStop(1, gradient.to); ctx.fillStyle = g; ctx.fillRect(0, 0, 1600, 900);
+    g.addColorStop(0, gradient.from); if (gradient.via) g.addColorStop(0.5, gradient.via); g.addColorStop(1, gradient.to); ctx.fillStyle = g; ctx.fillRect(0, 0, 1600, 900);
+    if (gradient.overlay && gradient.overlayOpacity) { ctx.globalAlpha = gradient.overlayOpacity; ctx.fillStyle = gradient.overlay; ctx.fillRect(0, 0, 1600, 900); ctx.globalAlpha = 1; }
     return canvas.toDataURL("image/png");
   } catch { return null; }
 }
@@ -82,7 +84,13 @@ async function applyBackground(slide: any, source: any) {
   if (bg.image) { try { slide.background = { data: await imageData(bg.image) }; return; } catch { slide.background = { color: "FFFFFF" }; return; } }
   if (bg.gradient) { const data = await gradientData(bg.gradient); if (data) { slide.background = { data }; return; } slide.background = { color: hex(bg.gradient.from) }; return; }
   if (bg.color) { slide.background = { color: hex(bg.color) }; return; }
-  slide.background = { color: "1A1A2E" };
+  const theme = getPresentationTheme(source?.themeId);
+  if (theme.gradient) { const data = await gradientData(theme.gradient); if (data) { slide.background = { data }; return; } }
+  slide.background = { color: hex(theme.backgroundStyle.match(/#[0-9a-fA-F]{6}/)?.[0], "1A1A2E") };
+  if (theme.footerBandColor && theme.footerBandHeightRatio) {
+    const h = PAGE_H * theme.footerBandHeightRatio;
+    slide.addShape("rect", { x: 0, y: PAGE_H - h, w: PAGE_W, h, fill: { color: hex(theme.footerBandColor) }, line: { transparency: 100 } });
+  }
 }
 
 export async function createPresentationPptx(slides: any[], title = "Prezentace") {

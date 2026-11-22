@@ -43,7 +43,7 @@ import { Switch } from "@/components/ui/switch";
 import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
 import PresentationExportDialog from "@/components/admin/PresentationExportDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
-import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides, themeStageStyle } from "@/lib/presentation-themes";
+import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides } from "@/lib/presentation-themes";
 import { LayoutTemplate, Shapes, Pencil, Eraser } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
@@ -89,7 +89,8 @@ import PresentationLeftPanel, { type EditorLeftTab } from "@/components/presenta
 import PresentationThumbnails from "@/components/presentation/editor/PresentationThumbnails";
 import SelectionPropertiesPanel from "@/components/presentation/editor/SelectionPropertiesPanel";
 import { PRESENTATION_THEMES } from "@/lib/presentation-themes";
-import { PRESENTATION_TEMPLATES } from "@/lib/presentation-templates";
+import { insertTemplateSlidesAfter } from "@/lib/presentation-templates";
+import PresentationTemplatesPanel from "@/components/presentation/PresentationTemplatesPanel";
 import { Settings2 as PropertiesIcon } from "lucide-react";
 
 export interface PresentationLessonRef {
@@ -1097,24 +1098,24 @@ export const PresentationEditorDialog = ({
                 )}
 
                 {sidebarSection === "templates" && (
-                  <div className="space-y-5">
-                    <section>
-                      <h2 className="mb-1 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Šablony prezentace</h2>
-                      <p className="mb-3 text-xs text-deck-muted">Vyberte strukturu. Aktuální slidy nahradí až váš výběr šablony.</p>
-                      <div className="space-y-3">
-                        {PRESENTATION_TEMPLATES.map((template) => (
-                          <button key={template.id} type="button" className="deck-template-card w-full" onClick={() => { setPendingSlides(applyThemeToSlides(template.build(), themeId)); setEditingSlideIndex(0); setSelectedBlockId(null); }}>
-                            <span className="flex h-20 flex-col justify-between p-3" style={themeStageStyle(theme)}><span className="font-deck-heading text-lg text-deck-on-violet">{template.name}</span><span className="h-2 w-16 rounded-full bg-deck-teal" /></span>
-                            <span className="block p-3"><span className="block text-xs font-semibold text-deck-ink">{template.name}</span><span className="mt-1 block text-[11px] text-deck-muted">{template.description}</span></span>
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-                    <section className="border-t border-deck-line pt-4">
-                      <h2 className="mb-3 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Motivy</h2>
-                      <div className="grid grid-cols-2 gap-2">{PRESENTATION_THEMES.map((item) => <button key={item.id} type="button" onClick={() => setThemeId(item.id)} className={`rounded-lg border-2 p-1 text-left text-[11px] ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}><span className="mb-1 block h-12 rounded" style={{ background: item.backgroundStyle }} /><span className="px-1">{item.name}</span></button>)}</div>
-                    </section>
-                  </div>
+                  <PresentationTemplatesPanel
+                    userId={user?.id}
+                    currentSlide={currentSlide}
+                    allSlides={pendingSlides}
+                    hasContent={!isEmptyNewPresentation}
+                    themeId={themeId}
+                    onThemeChange={setThemeId}
+                    onInsertSlide={(slides) => {
+                      setPendingSlides((current) => insertTemplateSlidesAfter(current, slides, editingSlideIndex));
+                      setEditingSlideIndex(editingSlideIndex + 1);
+                      setSelectedBlockId(null);
+                    }}
+                    onApplyDeck={(slides) => {
+                      setPendingSlides(slides);
+                      setEditingSlideIndex(0);
+                      setSelectedBlockId(null);
+                    }}
+                  />
                 )}
               </PresentationLeftPanel>
 

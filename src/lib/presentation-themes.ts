@@ -1,3 +1,5 @@
+import { gradientCss, type SlideGradient } from "@/lib/slide-gradient";
+
 /**
  * Vizuální témata prezentací.
  *
@@ -16,6 +18,11 @@ export interface PresentationTheme {
   secondaryColor: string;
   /** CSS `background` hodnota (barva nebo gradient). */
   backgroundStyle: string;
+  /** Strojově čitelný gradient pro export a kontrolu kontrastu. */
+  gradient?: SlideGradient;
+  /** Krémový pruh se do PPTX exportuje jako samostatný tvar. */
+  footerBandColor?: string;
+  footerBandHeightRatio?: number;
   fontFamily: string;
   cornerStyle: CornerStyle;
   /** Tmavé pozadí → světlý text. */
@@ -23,6 +30,11 @@ export interface PresentationTheme {
 }
 
 export const DEFAULT_THEME_ID = "zedu-classic";
+
+export const BEZLI_TEMPLATE_GRADIENT: SlideGradient = {
+  from: "#5D2A8C", via: "#7A4BB0", to: "#4FB3BE",
+  overlay: "#2B1A3F", overlayOpacity: 0.56, direction: "135deg",
+};
 
 export const PRESENTATION_THEMES: PresentationTheme[] = [
   {
@@ -90,6 +102,54 @@ export const PRESENTATION_THEMES: PresentationTheme[] = [
     fontFamily: '"Inter", system-ui, sans-serif',
     cornerStyle: "sharp",
     isDark: false,
+  },
+  {
+    id: "bezli-gradient",
+    name: "Bezli gradient",
+    description: "Fialová, světlejší fialová a tyrkys s čitelným textem",
+    primaryColor: "#FFFFFF",
+    secondaryColor: "#F3F1E6",
+    backgroundStyle: gradientCss(BEZLI_TEMPLATE_GRADIENT)!,
+    gradient: BEZLI_TEMPLATE_GRADIENT,
+    fontFamily: '"DM Sans", system-ui, sans-serif',
+    cornerStyle: "rounded",
+    isDark: true,
+  },
+  {
+    id: "bezli-dark",
+    name: "Bezli noc",
+    description: "Tmavá fialová pro projekci a večerní výuku",
+    primaryColor: "#FFFFFF",
+    secondaryColor: "#63C7CF",
+    backgroundStyle: "linear-gradient(135deg, #2B1A3F, #5D3D7F)",
+    gradient: { from: "#2B1A3F", to: "#5D3D7F", direction: "135deg" },
+    fontFamily: '"DM Sans", system-ui, sans-serif',
+    cornerStyle: "rounded",
+    isDark: true,
+  },
+  {
+    id: "bezli-cream",
+    name: "Bezli krém",
+    description: "Světlá plocha, fialové nadpisy a tyrkysové akcenty",
+    primaryColor: "#5D3D7F",
+    secondaryColor: "#663196",
+    backgroundStyle: "#F3F1E6",
+    fontFamily: '"DM Sans", system-ui, sans-serif',
+    cornerStyle: "rounded",
+    isDark: false,
+  },
+  {
+    id: "bezli-cream-band",
+    name: "Bezli krémový pruh",
+    description: "Fialová plocha s krémovou patičkou prezentace",
+    primaryColor: "#FFFFFF",
+    secondaryColor: "#63C7CF",
+    backgroundStyle: "linear-gradient(to bottom, #5D3D7F 0%, #663196 86%, #F3F1E6 86%, #F3F1E6 100%)",
+    footerBandColor: "#F3F1E6",
+    footerBandHeightRatio: 0.14,
+    fontFamily: '"DM Sans", system-ui, sans-serif',
+    cornerStyle: "rounded",
+    isDark: true,
   },
 ];
 
