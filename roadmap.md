@@ -381,3 +381,11 @@
 - Deset přechodů včetně cut; směr push/wipe, délka 0,2–2 s. Vstup patří na N+1, globální volba zůstala. Rozložené otázky animují jen první vstup.
 - Ověřeno 188 souvisejících testů, typecheck a přihlášený průchod: + mezi slidy, všechny čtyři cesty vložení v testu, posun dolů 1,2 s, použít na všechny, uložit/znovu otevřít, kompaktní lišta, tablet 1024, PPTX XML. Projektor i telefon 1,2 s a reduced-motion `none`; slide 2/3 synchronizovaný; bez chyb prohlížeče.
 - Vlastní `[TEST]` prezentace a všechny relace s týmž označením odstraněny. Nativní PowerPoint/LibreOffice a fyzický telefon nebyly spuštěny; některé efekty se v PPTX nahrazují nejbližší variantou a délka rychlostí fast/med/slow.
+
+## Prezentace – přesný panel přechodů podle Canvy
+- [x] Nahradit katalog přesnými 10 dlaždicemi ve 3 sloupcích, ikonami, zavřením a Bezli výběrem.
+- [x] Implementovat circle/color/line/match/flow/stack/slice v editoru, projekci a telefonu; zachovat cut/fade/push a reduced motion.
+- [x] Match & move pro shodné pojmenované prvky s fallbackem na prolnutí.
+- [x] Rozšířit PPTX mapování a souhrn aproximací a doplnit testy.
+- [x] Přihlášený průchod editoru ověřil všech 10 voleb, uložení a znovuotevření. Živá projekce/telefon zůstávají neověřené kvůli opakovanému vypršení testovací relace.
+- [x] Odstraněno přesně 9 vlastních [TEST] prezentací a 4 relace; bez DB/RLS změn, nasazení a změny AGENTS.md. Část B zůstává jen plánem.

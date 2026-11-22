@@ -30,7 +30,7 @@ describe("PPTX export editoru a zpětný import", () => {
   it("zapíše přechody i na aktivitě a zpětný import je rozpozná", async () => {
     const source = [
       { slideId: "a", type: "content", projector: { headline: "" }, transitionStyle: "push", transitionDirection: "down", transitionDuration: 1.4, blocks: [] },
-      { slideId: "b", type: "activity", projector: { headline: "Kvíz" }, transitionStyle: "blur", transitionDuration: 0.6, activitySpec: { activityType: "mcq", question: "Otázka", options: [{ text: "A" }, { text: "B" }], correctIndex: 0 }, blocks: [] },
+      { slideId: "b", type: "activity", projector: { headline: "Kvíz" }, transitionStyle: "color-wipe", transitionDuration: 0.6, activitySpec: { activityType: "mcq", question: "Otázka", options: [{ text: "A" }, { text: "B" }], correctIndex: 0 }, blocks: [] },
       { slideId: "c", type: "content", projector: { headline: "" }, transitionStyle: "cut", blocks: [] },
     ];
     const pptx = await createPresentationPptx(source, "[TEST] transitions");
@@ -39,11 +39,11 @@ describe("PPTX export editoru a zpětný import", () => {
     const JSZip = (await import("jszip")).default;
     const packed = await JSZip.loadAsync(output);
     expect(await packed.file("ppt/slides/slide1.xml")!.async("string")).toContain('<p:push dir="d"/>');
-    expect(await packed.file("ppt/slides/slide2.xml")!.async("string")).toContain("<p:fade/>");
+    expect(await packed.file("ppt/slides/slide2.xml")!.async("string")).toContain('<p:cover dir="d"/>');
     expect(await packed.file("ppt/slides/slide3.xml")!.async("string")).toContain("<p:cut/>");
     const imported = await importRichPptx(new Blob([new Uint8Array(output)]));
     expect(imported.slides[0]).toMatchObject({ transitionStyle: "push", transitionDirection: "down" });
-    expect(imported.slides[1].transitionStyle).toBe("fade");
+    expect(imported.slides[1].transitionStyle).toBe("color-wipe");
     expect(imported.slides[2].transitionStyle).toBe("cut");
   }, 30000);
 });

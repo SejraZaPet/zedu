@@ -6,8 +6,8 @@ import type { CSSProperties } from "react";
  * slidech; první slide proto nadále slouží jako výchozí globální volba.
  */
 export type SlideTransition =
-  | "cut" | "fade" | "push" | "zoom" | "rotate"
-  | "wipe" | "blur" | "flip" | "mirror" | "focus";
+  | "cut" | "fade" | "push" | "circle-wipe" | "color-wipe"
+  | "line-wipe" | "match-move" | "flow" | "stack" | "slice";
 
 export type SlideTransitionDirection = "left" | "right" | "up" | "down";
 
@@ -25,16 +25,16 @@ export const MIN_TRANSITION_DURATION = 0.2;
 export const MAX_TRANSITION_DURATION = 2;
 
 export const SLIDE_TRANSITIONS: { value: SlideTransition; label: string; hint: string }[] = [
-  { value: "cut", label: "Bez přechodu", hint: "Slide se okamžitě vymění" },
-  { value: "fade", label: "Prolnutí", hint: "Nový slide se jemně objeví" },
-  { value: "push", label: "Posun", hint: "Nový slide přijede zvoleným směrem" },
-  { value: "zoom", label: "Přiblížení", hint: "Nový slide se jemně zvětší na plnou velikost" },
-  { value: "rotate", label: "Otočení", hint: "Nový slide se mírně otočí do roviny" },
-  { value: "wipe", label: "Odkrytí", hint: "Nový slide se odkryje zvoleným směrem" },
-  { value: "blur", label: "Rozmazání", hint: "Nový slide se zaostří" },
-  { value: "flip", label: "Převrácení", hint: "Nový slide se převrhne do roviny" },
-  { value: "mirror", label: "Zrcadlení", hint: "Nový slide se rozvine ze zrcadleného náhledu" },
-  { value: "focus", label: "Lupa", hint: "Detail se plynule přiblíží a zaostří" },
+  { value: "cut", label: "Žádný", hint: "Slide se okamžitě vymění" },
+  { value: "fade", label: "Rozpuštění", hint: "Nový slide se jemně objeví" },
+  { value: "push", label: "Posunutí", hint: "Nový slide přijede zvoleným směrem" },
+  { value: "circle-wipe", label: "Kruhové stírání", hint: "Kruh se od středu rozšíří na celý slide" },
+  { value: "color-wipe", label: "Stírání barev", hint: "Barevný pruh přejede přes slide a odhalí další" },
+  { value: "line-wipe", label: "Čárové stírání", hint: "Svislá hrana odhalí další slide" },
+  { value: "match-move", label: "Porovnat a přesunout", hint: "Shodně pojmenované prvky se přesunou a změní velikost" },
+  { value: "flow", label: "Proudění", hint: "Rychlé čáry doprovázejí posun dalšího slidu" },
+  { value: "stack", label: "Skládání", hint: "Nový slide se položí zespodu na starý" },
+  { value: "slice", label: "Rozseknutí", hint: "Slide se odhalí v diagonálních pruzích" },
 ];
 
 export const SLIDE_TRANSITION_DIRECTIONS: { value: SlideTransitionDirection; label: string }[] = [
@@ -44,10 +44,26 @@ export const SLIDE_TRANSITION_DIRECTIONS: { value: SlideTransitionDirection; lab
   { value: "down", label: "Dolů" },
 ];
 
+const LEGACY_TRANSITIONS: Record<string, SlideTransition> = {
+  wipe: "line-wipe",
+  zoom: "fade",
+  rotate: "fade",
+  blur: "fade",
+  flip: "fade",
+  mirror: "fade",
+  focus: "fade",
+};
+
 const isTransition = (value: unknown): value is SlideTransition =>
   SLIDE_TRANSITIONS.some((item) => item.value === value);
 const isDirection = (value: unknown): value is SlideTransitionDirection =>
   SLIDE_TRANSITION_DIRECTIONS.some((item) => item.value === value);
+
+export function normalizeSlideTransition(value: unknown, fallback: SlideTransition = DEFAULT_TRANSITION): SlideTransition {
+  if (isTransition(value)) return value;
+  if (typeof value === "string" && LEGACY_TRANSITIONS[value]) return LEGACY_TRANSITIONS[value];
+  return fallback;
+}
 
 export function normalizeTransitionDuration(value: unknown, fallback = DEFAULT_TRANSITION_DURATION): number {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -56,9 +72,8 @@ export function normalizeTransitionDuration(value: unknown, fallback = DEFAULT_T
 }
 
 export function transitionConfigFromSlide(slide: any, fallback: SlideTransition = DEFAULT_TRANSITION): SlideTransitionConfig {
-  const style = isTransition(slide?.transitionStyle) ? slide.transitionStyle : fallback;
   return {
-    style,
+    style: normalizeSlideTransition(slide?.transitionStyle, fallback),
     direction: isDirection(slide?.transitionDirection) ? slide.transitionDirection : DEFAULT_TRANSITION_DIRECTION,
     duration: normalizeTransitionDuration(slide?.transitionDuration),
   };
@@ -66,8 +81,8 @@ export function transitionConfigFromSlide(slide: any, fallback: SlideTransition 
 
 /** Výchozí volba v pravém panelu; u starých prezentací čte původní globální hodnotu. */
 export function transitionFromSlides(slides: any[]): SlideTransition {
-  const found = slides?.find((slide) => isTransition(slide?.transitionStyle))?.transitionStyle;
-  return isTransition(found) ? found : DEFAULT_TRANSITION;
+  const found = slides?.find((slide) => slide?.transitionStyle != null)?.transitionStyle;
+  return normalizeSlideTransition(found, DEFAULT_TRANSITION);
 }
 
 function withTransition(slide: any, config: SlideTransitionConfig) {
@@ -103,12 +118,30 @@ export function slideTransitionClass(
   transition?: string | null,
   direction?: string | null,
 ): string {
-  if (!isTransition(transition) || transition === "cut") return "";
-  const directional = transition === "push" || transition === "wipe";
-  const suffix = directional && isDirection(direction) ? ` slide-trans-dir-${direction}` : directional ? " slide-trans-dir-left" : "";
-  return `slide-trans-${transition}${suffix}`;
+  const style = normalizeSlideTransition(transition, "cut");
+  if (style === "cut") return "";
+  const suffix = style === "push" ? ` slide-trans-dir-${isDirection(direction) ? direction : "left"}` : "";
+  return `slide-trans-${style}${suffix}`;
 }
 
 export function slideTransitionStyle(config: SlideTransitionConfig): CSSProperties {
   return config.style === "cut" ? {} : { animationDuration: `${normalizeTransitionDuration(config.duration)}s` };
+}
+
+function plainText(value: unknown): string {
+  return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Stabilní pár pro Match & move. Stejný typ a učitelův název (případně text)
+ * stačí i po zkopírování slidu, kdy se mění interní ID bloků.
+ */
+export function slideTransitionMatchKey(block: any): string {
+  const props = block?.props || {};
+  const spec = block?.activitySpec || props?.activitySpec || {};
+  const name = props.transitionName || props.name || props.alt || props.caption
+    || props.iconName || props.text || props.html || props.title
+    || spec.question || spec.title || "";
+  const normalized = plainText(name).toLocaleLowerCase("cs").slice(0, 160);
+  return normalized ? `${String(block?.type || "block")}:${normalized}` : "";
 }

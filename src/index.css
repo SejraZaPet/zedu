@@ -591,41 +591,40 @@ body.a11y-line-height main .whitespace-pre-wrap {
 
 /* --- Vstupní přechody slidů; délku nastavuje inline styl z modelu slidu. --- */
 @keyframes slideTransFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideTransPushLeft { from { opacity: .25; transform: translateX(12%); } to { opacity: 1; transform: translateX(0); } }
-@keyframes slideTransPushRight { from { opacity: .25; transform: translateX(-12%); } to { opacity: 1; transform: translateX(0); } }
-@keyframes slideTransPushUp { from { opacity: .25; transform: translateY(12%); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideTransPushDown { from { opacity: .25; transform: translateY(-12%); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideTransZoom { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
-@keyframes slideTransRotate { from { opacity: 0; transform: perspective(1200px) rotateZ(-4deg) scale(.94); } to { opacity: 1; transform: perspective(1200px) rotateZ(0) scale(1); } }
-@keyframes slideTransWipeLeft { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
-@keyframes slideTransWipeRight { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
-@keyframes slideTransWipeUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
-@keyframes slideTransWipeDown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
-@keyframes slideTransBlur { from { opacity: 0; filter: blur(18px); } to { opacity: 1; filter: blur(0); } }
-@keyframes slideTransFlip { from { opacity: 0; transform: perspective(1200px) rotateY(70deg); } to { opacity: 1; transform: perspective(1200px) rotateY(0); } }
-@keyframes slideTransMirror { from { opacity: 0; transform: perspective(1200px) rotateY(-65deg) scaleX(.75); } to { opacity: 1; transform: perspective(1200px) rotateY(0) scaleX(1); } }
-@keyframes slideTransFocus { from { opacity: 0; filter: blur(8px); transform: scale(1.12); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
-.slide-trans-fade { animation-name: slideTransFade; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
+@keyframes slideTransPushLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slideTransPushRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes slideTransPushUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideTransPushDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes slideTransCircleWipe { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
+@keyframes slideTransLineWipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes slideTransColorWipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes slideTransColorBand { from { transform: translateX(-110%); } to { transform: translateX(110%); } }
+@keyframes slideTransFlow { from { opacity: .25; transform: translateX(24%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideTransFlowLines { from { transform: translateX(35%); opacity: .8; } to { transform: translateX(-45%); opacity: 0; } }
+@keyframes slideTransStack { from { transform: translateY(100%); box-shadow: 0 -24px 70px hsl(var(--deck-ink) / .35); } to { transform: translateY(0); box-shadow: 0 0 0 hsl(var(--deck-ink) / 0); } }
+@keyframes slideTransSlice {
+  from { opacity: .25; transform: translateX(-9%); clip-path: polygon(0 0, 28% 0, 72% 100%, 0 100%); mask-image: repeating-linear-gradient(135deg, #000 0 9%, transparent 9% 18%); }
+  to { opacity: 1; transform: translateX(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); mask-image: repeating-linear-gradient(135deg, #000 0 50%, transparent 50% 100%); }
+}
+.slide-trans-fade, .slide-trans-match-move { animation-name: slideTransFade; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
 .slide-trans-push { animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
 .slide-trans-push.slide-trans-dir-left { animation-name: slideTransPushLeft; }
 .slide-trans-push.slide-trans-dir-right { animation-name: slideTransPushRight; }
 .slide-trans-push.slide-trans-dir-up { animation-name: slideTransPushUp; }
 .slide-trans-push.slide-trans-dir-down { animation-name: slideTransPushDown; }
-.slide-trans-zoom { animation-name: slideTransZoom; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
-.slide-trans-rotate { animation-name: slideTransRotate; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
-.slide-trans-wipe { animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
-.slide-trans-wipe.slide-trans-dir-left { animation-name: slideTransWipeLeft; }
-.slide-trans-wipe.slide-trans-dir-right { animation-name: slideTransWipeRight; }
-.slide-trans-wipe.slide-trans-dir-up { animation-name: slideTransWipeUp; }
-.slide-trans-wipe.slide-trans-dir-down { animation-name: slideTransWipeDown; }
-.slide-trans-blur { animation-name: slideTransBlur; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
-.slide-trans-flip { animation-name: slideTransFlip; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
-.slide-trans-mirror { animation-name: slideTransMirror; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
-.slide-trans-focus { animation-name: slideTransFocus; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
+.slide-trans-circle-wipe { animation-name: slideTransCircleWipe; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-line-wipe { animation-name: slideTransLineWipe; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-color-wipe { position: relative; overflow: hidden; animation-name: slideTransColorWipe; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-color-wipe::after { content: ""; position: absolute; inset: 0; z-index: 80; pointer-events: none; background: linear-gradient(90deg, hsl(var(--deck-violet) / .15), hsl(var(--deck-violet) / .9), hsl(var(--deck-teal) / .9), hsl(var(--deck-teal) / .1)); animation: slideTransColorBand .45s cubic-bezier(.2,.7,.3,1) both; animation-duration: inherit; }
+.slide-trans-flow { position: relative; overflow: hidden; animation-name: slideTransFlow; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-flow::after { content: ""; position: absolute; inset: 0; z-index: 80; pointer-events: none; background: repeating-linear-gradient(100deg, transparent 0 9%, hsl(var(--deck-teal) / .35) 9% 9.5%, transparent 9.5% 18%); animation: slideTransFlowLines .45s ease-out both; animation-duration: inherit; }
+.slide-trans-stack { animation-name: slideTransStack; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-slice { animation-name: slideTransSlice; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
-  .slide-trans-fade, .slide-trans-push, .slide-trans-push[class], .slide-trans-zoom, .slide-trans-rotate,
-  .slide-trans-wipe, .slide-trans-wipe[class], .slide-trans-blur, .slide-trans-flip, .slide-trans-mirror,
-  .slide-trans-focus { animation: none; }
+  .slide-trans-fade, .slide-trans-match-move, .slide-trans-push, .slide-trans-push[class],
+  .slide-trans-circle-wipe, .slide-trans-color-wipe, .slide-trans-line-wipe, .slide-trans-flow,
+  .slide-trans-stack, .slide-trans-slice { animation: none; }
+  .slide-trans-color-wipe::after, .slide-trans-flow::after { animation: none; display: none; }
 }
 
 /* Čitelnost textu na fotografickém pozadí (TextScrim) */
@@ -1070,15 +1069,16 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
 .deck-transition-gap-button:focus-visible { outline: 3px solid hsl(var(--deck-teal)); outline-offset: 1px; }
 .deck-transition-gap-button--active { border-color: hsl(var(--deck-violet) / .55); background: hsl(var(--deck-soft)); }
 .deck-transition-active-dot { position: absolute; right: 2px; top: 2px; width: 5px; height: 5px; border-radius: 999px; background: hsl(var(--deck-violet)); }
-.deck-transition-option { display: flex; min-width: 0; flex-direction: column; gap: 5px; border: 2px solid hsl(var(--deck-line)); border-radius: 9px; background: hsl(var(--deck-panel)); padding: 5px; color: hsl(var(--deck-ink)); text-align: left; }
+.deck-transition-option { display: flex; min-width: 0; min-height: 92px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px solid hsl(var(--deck-line)); border-radius: 9px; background: hsl(var(--deck-panel)); padding: 5px 3px; color: hsl(var(--deck-ink)); text-align: center; }
 .deck-transition-option:hover { border-color: hsl(var(--deck-teal)); }
 .deck-transition-option:focus-visible { outline: 3px solid hsl(var(--deck-teal)); outline-offset: 1px; }
 .deck-transition-option--selected { border-color: hsl(var(--deck-violet)); background: hsl(var(--deck-soft)); }
-.deck-transition-mini { position: relative; display: block; height: 42px; overflow: hidden; border-radius: 5px; background: hsl(var(--deck-canvas)); perspective: 300px; }
-.deck-transition-mini-before, .deck-transition-mini-after { position: absolute; inset: 5px 22px; display: block; border-radius: 3px; }
+.deck-transition-mini { position: relative; display: block; width: 100%; height: 46px; overflow: hidden; border-radius: 5px; background: hsl(var(--deck-canvas)); perspective: 300px; }
+.deck-transition-mini-before, .deck-transition-mini-after { position: absolute; inset: 7px 16px; display: block; border-radius: 3px; }
 .deck-transition-mini-before { background: hsl(var(--deck-violet) / .35); }
 .deck-transition-mini-after { border: 1px solid hsl(var(--deck-teal)); background: linear-gradient(135deg, hsl(var(--deck-teal) / .55), hsl(var(--deck-violet) / .5)); animation-play-state: paused; animation-delay: -999s; }
-.deck-transition-option:hover .deck-transition-mini-after, .deck-transition-option:focus-visible .deck-transition-mini-after { animation-play-state: running; animation-delay: 0s; }
+.deck-transition-mini-icon { position: absolute; left: 50%; top: 50%; z-index: 90; width: 22px; height: 22px; transform: translate(-50%, -50%); color: hsl(var(--deck-ink)); filter: drop-shadow(0 1px 0 hsl(var(--deck-panel) / .85)); pointer-events: none; }
+.deck-transition-option:hover .deck-transition-mini-after, .deck-transition-option:focus-visible .deck-transition-mini-after, .deck-transition-option--selected .deck-transition-mini-after { animation-play-state: running; animation-delay: 0s; }
 .deck-insert-tile { display: flex; min-height: 60px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid hsl(var(--deck-line)); border-radius: 9px; background: hsl(var(--deck-panel)); padding: 6px 2px; color: hsl(var(--deck-muted)); font-size: 10px; }
 .deck-insert-tile:hover { border-color: hsl(var(--deck-violet) / .55); background: hsl(var(--deck-soft)); color: hsl(var(--deck-violet-deep)); }
 .deck-template-card { overflow: hidden; border: 1px solid hsl(var(--deck-line)); border-radius: 12px; background: hsl(var(--deck-panel)); text-align: left; }

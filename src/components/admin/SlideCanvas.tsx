@@ -41,6 +41,7 @@ import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
 import { blockContrastClass, headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
 import { blockBackgroundSlideColor, blockBackgroundStyle } from "@/lib/block-backgrounds";
 import { getGroupChildHeight } from "@/lib/slide-groups";
+import { slideTransitionMatchKey } from "@/lib/slide-transitions";
 
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
@@ -1583,6 +1584,7 @@ function FreeFrameBlock({
     <div
       ref={rootRef}
       data-slide-block-id={block.id}
+      data-slide-transition-match={slideTransitionMatchKey(block) || undefined}
       data-free-frame="true"
       data-rotation={rotation || undefined}
       className={`pointer-events-auto absolute rounded-lg ${
@@ -2119,7 +2121,7 @@ export function SlideBody({
       </BlockShell>
     );
 
-    if (!editable) return <div key={b.id} className={contrastClass} style={{ ...(manualHeight ? { minHeight: manualHeight } : {}), opacity: Math.max(0.1, Math.min(1, Number((b.props as any)?.opacity ?? 100) / 100)) }}>{shell}</div>;
+    if (!editable) return <div key={b.id} className={contrastClass} data-slide-transition-match={slideTransitionMatchKey(b) || undefined} style={{ ...(manualHeight ? { minHeight: manualHeight } : {}), opacity: Math.max(0.1, Math.min(1, Number((b.props as any)?.opacity ?? 100) / 100)) }}>{shell}</div>;
 
     return (
       <div

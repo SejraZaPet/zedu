@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { exportPresentationToPptx } from "@/lib/presentation-pptx-export";
 import { FileDown, FileText, Loader2, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SLIDE_TRANSITIONS } from "@/lib/slide-transitions";
 
 interface Props { open: boolean; onOpenChange: (open: boolean) => void; slides: any[]; title: string; onExportPdf: () => Promise<void> }
 
@@ -19,10 +20,13 @@ export default function PresentationExportDialog({ open, onOpenChange, slides, t
           : report.approximateCount < 5
             ? `${report.approximateCount} přechody byly nahrazeny`
             : `${report.approximateCount} přechodů bylo nahrazeno`;
+        const approximateLabels = report.approximateStyles
+          .map((style) => SLIDE_TRANSITIONS.find((item) => item.value === style)?.label || style)
+          .join(", ");
         toast({
           title: "PPTX je stažený",
           description: report.approximateCount
-            ? `${approximateText} nejbližší PowerPoint variantou. Délka je převedená na rychlost rychle / středně / pomalu.`
+            ? `${approximateText} nejbližší PowerPoint variantou (${approximateLabels}). Délka je převedená na rychlost rychle / středně / pomalu.`
             : "Přechody jsou zapsané jako PowerPoint přechody; délka je převedená na rychlost rychle / středně / pomalu.",
         });
       } else await onExportPdf();

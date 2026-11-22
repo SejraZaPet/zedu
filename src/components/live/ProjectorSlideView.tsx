@@ -25,7 +25,8 @@ import SoloRoundProjector from "@/components/live/SoloRoundProjector";
 import { isSoloRoundSlide } from "@/lib/solo-round";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
-import { slideTransitionClass, slideTransitionStyle, transitionConfigFromSlide } from "@/lib/slide-transitions";
+import SlideTransitionScene from "@/components/live/SlideTransitionScene";
+import { transitionConfigFromSlide } from "@/lib/slide-transitions";
 import { slideWithFallbackBlocks, slideImageUrls } from "@/lib/slide-canvas-fallback";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
@@ -245,11 +246,11 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
           <div className="relative h-full w-full overflow-hidden">
             {/* Zoom a přechod mají oddělené transformace, aby se navzájem nepřepsaly. */}
             <div className="h-full w-full" style={zoomStageStyle(zoom)}>
-            {/* Přechod animuje CELOU vstupní scénu; explicitní „cut“ zůstane bez animace. */}
-            <div
-              key={currentIndex}
-              className={`flex h-full flex-col overflow-hidden relative ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`}
-              style={slideTransitionStyle(incomingTransition)}
+            {/* Přechod animuje CELOU vstupní scénu; Match & move navíc spáruje bloky. */}
+            <SlideTransitionScene
+              transitionKey={currentIndex}
+              config={incomingTransition}
+              className="flex h-full flex-col overflow-hidden relative"
             >
               <div className="h-2 bg-white/10 shrink-0">
                 <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
@@ -349,7 +350,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               </div>
 
               {overlayContent}
-            </div>
+            </SlideTransitionScene>
             </div>
           </div>
         </div>

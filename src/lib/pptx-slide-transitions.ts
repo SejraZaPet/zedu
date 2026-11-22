@@ -33,17 +33,21 @@ export function pptxTransitionFromDocument(doc: Document): PptxTransitionRead {
   const direction = DIRECTIONS[effect.getAttribute("dir") || "l"] || "left";
   const duration = durationFromXml(transition);
   const base = { direction, duration } as const;
+  const approximate = (style: SlideTransitionConfig["style"], target: string): PptxTransitionRead => ({
+    config: { ...base, style }, approximation: `PowerPoint efekt ${name} byl převeden na ${target}.`,
+  });
 
   if (name === "cut" || name === "none") return { config: { ...base, style: "cut" } };
   if (name === "fade" || name === "dissolve") return { config: { ...base, style: "fade" } };
   if (name === "push" || name === "pull") return { config: { ...base, style: "push" } };
-  if (name === "wipe" || name === "cover" || name === "uncover" || name === "strips") return { config: { ...base, style: "wipe" } };
-  if (name === "zoom") return { config: { ...base, style: "zoom" } };
-  if (["circle", "diamond", "plus", "wedge", "wheel", "split", "comb", "checker", "blinds", "randombar"].includes(name)) {
-    return { config: { ...base, style: "zoom" }, approximation: `PowerPoint efekt ${name} byl převeden na Přiblížení.` };
-  }
-  if (name === "newsflash") return { config: { ...base, style: "rotate" }, approximation: "PowerPoint efekt newsflash byl převeden na Otočení." };
-  return { config: { ...base, style: "fade" }, approximation: `Nepodporovaný PowerPoint přechod ${name} byl převeden na Prolnutí.` };
+  if (name === "circle") return { config: { ...base, style: "circle-wipe" } };
+  if (name === "wipe") return { config: { ...base, style: "line-wipe" } };
+  if (name === "cover" || name === "uncover") return approximate("color-wipe", "Stírání barev");
+  if (name === "split" || name === "strips" || name === "blinds") return approximate("slice", "Rozseknutí");
+  if (["diamond", "plus", "wedge", "wheel", "zoom"].includes(name)) return approximate("circle-wipe", "Kruhové stírání");
+  if (["comb", "checker", "randombar"].includes(name)) return approximate("flow", "Proudění");
+  if (name === "newsflash") return approximate("flow", "Proudění");
+  return { config: { ...base, style: "fade" }, approximation: `Nepodporovaný PowerPoint přechod ${name} byl převeden na Rozpuštění.` };
 }
 
 function speed(config: SlideTransitionConfig): string {
@@ -55,10 +59,12 @@ export function pptxTransitionXmlForSlide(slide: any): string {
   const config = transitionConfigFromSlide(slide);
   const attrs = ` spd="${speed(config)}"`;
   if (config.style === "cut") return `<p:transition${attrs}><p:cut/></p:transition>`;
-  if (config.style === "push") return `<p:transition${attrs}><p:push dir="${DIRECTION_XML[config.direction]}"/></p:transition>`;
-  if (config.style === "wipe") return `<p:transition${attrs}><p:wipe dir="${DIRECTION_XML[config.direction]}"/></p:transition>`;
-  if (config.style === "zoom" || config.style === "rotate" || config.style === "focus") return `<p:transition${attrs}><p:zoom/></p:transition>`;
-  // blur / flip / mirror nemají spolehlivý ekvivalent v základním OOXML.
+  if (config.style === "push" || config.style === "flow") return `<p:transition${attrs}><p:push dir="${DIRECTION_XML[config.direction]}"/></p:transition>`;
+  if (config.style === "circle-wipe") return `<p:transition${attrs}><p:circle/></p:transition>`;
+  if (config.style === "line-wipe") return `<p:transition${attrs}><p:wipe dir="${DIRECTION_XML[config.direction]}"/></p:transition>`;
+  if (config.style === "color-wipe" || config.style === "stack") return `<p:transition${attrs}><p:cover dir="d"/></p:transition>`;
+  if (config.style === "slice") return `<p:transition${attrs}><p:split orient="horz" dir="out"/></p:transition>`;
+  // Match & move nemá přenositelný ekvivalent bez stejných interních ID prvků.
   return `<p:transition${attrs}><p:fade/></p:transition>`;
 }
 
@@ -68,7 +74,7 @@ export function pptxTransitionExportReport(slides: any[]) {
   let approximateCount = 0;
   for (const slide of slides || []) {
     const style = transitionConfigFromSlide(slide).style;
-    if (["rotate", "blur", "flip", "mirror", "focus"].includes(style)) {
+    if (["color-wipe", "match-move", "flow", "slice"].includes(style)) {
       approximateStyles.add(style);
       approximateCount++;
     } else nativeCount++;

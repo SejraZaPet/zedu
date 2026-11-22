@@ -36,6 +36,7 @@ import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import SoloRoundActivityPlayer from "@/components/live/SoloRoundActivityPlayer";
 import { isSoloRoundSlide } from "@/lib/solo-round";
+import SlideTransitionScene from "@/components/live/SlideTransitionScene";
 import { slideTransitionClass, slideTransitionStyle, transitionConfigFromSlide } from "@/lib/slide-transitions";
 
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
@@ -436,9 +437,9 @@ const StudentGamePlay = () => {
           ) : <div className="px-3 pt-3">
             <div className="relative overflow-hidden rounded-xl aspect-video w-full">
               <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
-                <div key={qi} className={`h-full w-full ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`} style={slideTransitionStyle(incomingTransition)}>
-                  <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
-                </div>
+                <SlideTransitionScene transitionKey={qi} config={incomingTransition} className="h-full w-full">
+                   <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
+                </SlideTransitionScene>
               </div>
               {(() => {
                 const allowSync = !!liveSettings?.allowStudentDrawSync;
