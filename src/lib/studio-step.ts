@@ -218,9 +218,10 @@ export function stepToSlide(step: ActivityStep): any {
   }
   if (step.type === "mcq") {
     const opts: string[] = Array.isArray(step.content.options) ? step.content.options : [];
-    const kept = opts.map((x, i) => ({ text: String(x ?? "").trim(), correct: i === step.content.correctIndex })).filter((x) => x.text);
-    spec.options = kept.map((x) => ({ text: x.text, correct: x.correct, isCorrect: x.correct }));
-    spec.correctIndex = Math.max(0, kept.findIndex((x) => x.correct));
+    const correctIndex = Math.min(Math.max(0, Number(step.content.correctIndex) || 0), Math.max(0, opts.length - 1));
+    // Prázdná pole jsou rozpracovaný obsah editoru – při převodu se nesmí zahodit.
+    spec.options = opts.map((text, i) => ({ text: String(text ?? "").trim(), correct: i === correctIndex, isCorrect: i === correctIndex }));
+    spec.correctIndex = correctIndex;
   }
   if (step.settings.timeLimitSec !== null) spec.timeLimitSec = step.settings.timeLimitSec;
   if (step.settings.points !== 1) spec.points = step.settings.points;
@@ -307,10 +308,14 @@ export function stepToBlock(step: ActivityStep): { id: string; type: "activity";
   if (!t.solo || t.editor === "slide") return null;
   const extra = step._extra ?? {};
   const props: Record<string, any> = { ...(extra.blockProps ?? {}), title: step.title.trim() };
+  if (step.settings.timeLimitSec !== null && (!extra.blockId || extra.blockTimeExplicit === true)) props.timeLimitSec = step.settings.timeLimitSec;
+  if (step.settings.points !== 1) props.points = step.settings.points;
+  if (step.content.colors !== undefined) props.colors = step.content.colors;
+  if (step.imageUrl.trim()) props.imageUrl = step.imageUrl.trim();
   if (step.type === "mcq") {
     const opts: string[] = step.content.options ?? [];
     props.activityType = "quiz";
-    props.quiz = { questions: [{ question: step.title.trim(), answers: opts.filter((o) => String(o).trim()).map((text) => ({ text: String(text).trim(), correct: opts.indexOf(text) === step.content.correctIndex })), ...(step.explanation.trim() ? { explanation: step.explanation.trim() } : {}) }] };
+    props.quiz = { questions: [{ question: step.title.trim(), answers: opts.map((text, index) => ({ text: String(text ?? "").trim(), correct: index === step.content.correctIndex })), ...(step.explanation.trim() ? { explanation: step.explanation.trim() } : {}) }] };
   } else {
     Object.assign(props, step.content, { activityType: t.activityType ?? step.type });
     if (t.editor === "wall") props.question = step.title.trim();
@@ -321,23 +326,28 @@ export function stepToBlock(step: ActivityStep): { id: string; type: "activity";
   return { id: String(extra.blockId ?? step.id), type: "activity", props };
 }
 
-const BLOCK_SKIP = ["activityType", "title", "question", "explanation", "ai_generated", "ai_modified_at", "quiz"];
+const BLOCK_SKIP = ["activityType", "title", "question", "explanation", "ai_generated", "ai_modified_at", "quiz", "colors", "imageUrl", "timeLimitSec", "points", "soloRound", "showSolution", "timeAuto"];
 /** Blok lekce → kroky (kvíz s více otázkami = víc kroků Kvíz). Neznámý blok → []. */
 export function blockToSteps(block: any): ActivityStep[] {
   if (block?.type !== "activity") return [];
   const p = block.props ?? {};
   const at = String(p.activityType ?? "");
   const ai = { generated: p.ai_generated === true, ...(p.ai_modified_at ? { modifiedAt: p.ai_modified_at } : {}) };
-  const settings: StepSettings = { timeLimitSec: null, points: 1, individual: false };
+  const settings: StepSettings = {
+    timeLimitSec: clampStepTime(p.timeLimitSec), points: normalizePoints(p.points), individual: false,
+    ...(p.soloRound === true ? { liveMode: "solo" as const } : {}),
+    ...(p.showSolution !== undefined ? { showSolution: p.showSolution !== false } : {}),
+    ...(p.timeAuto !== undefined ? { timeAuto: p.timeAuto === true } : {}),
+  };
   if (at === "quiz") {
     const qs: any[] = Array.isArray(p.quiz?.questions) ? p.quiz.questions : [];
     return qs.map((q, i) => {
       const answers: any[] = Array.isArray(q?.answers) ? q.answers : [];
       return {
         id: qs.length === 1 ? String(block.id ?? newStepId()) : `${block.id ?? newStepId()}-q${i + 1}`, type: "mcq" as const,
-        title: String(q?.question ?? ""), content: { options: answers.map((a) => String(a?.text ?? "")), correctIndex: Math.max(0, answers.findIndex((a) => a?.correct)) },
-        settings: { ...settings }, explanation: String(q?.explanation ?? ""), imageUrl: "", ai,
-        _extra: qs.length === 1 ? { blockId: block.id, blockProps: omit(p, BLOCK_SKIP) } : {},
+        title: String(q?.question ?? ""), content: { options: answers.map((a) => String(a?.text ?? "")), correctIndex: Math.max(0, answers.findIndex((a) => a?.correct)), ...(p.colors !== undefined ? { colors: p.colors } : {}) },
+        settings: { ...settings }, explanation: String(q?.explanation ?? ""), imageUrl: String(q?.imageUrl ?? p.imageUrl ?? ""), ai,
+        _extra: qs.length === 1 ? { blockId: block.id, blockProps: omit(p, BLOCK_SKIP), blockTimeExplicit: p.timeLimitSec !== undefined } : {},
       };
     });
   }
@@ -347,9 +357,10 @@ export function blockToSteps(block: any): ActivityStep[] {
   const content: Record<string, any> = {};
   const blockProps: Record<string, any> = {};
   for (const [k, v] of Object.entries(omit(p, BLOCK_SKIP))) (contentKeys.includes(k) ? content : blockProps)[k] = v;
+  if (p.colors !== undefined) content.colors = p.colors;
   const imported: ActivityStep = {
     id: String(block.id ?? newStepId()), type, title: String(p.title ?? p.question ?? ""), content,
-    settings: { ...newStep(type).settings }, explanation: String(p.explanation ?? ""), imageUrl: "", ai, _extra: { blockId: block.id, blockProps },
+    settings: { ...newStep(type).settings, ...settings }, explanation: String(p.explanation ?? ""), imageUrl: String(p.imageUrl ?? ""), ai, _extra: { blockId: block.id, blockProps, blockTimeExplicit: p.timeLimitSec !== undefined },
   };
   if (supportsSoloRoundType(type)) imported.settings.timeLimitSec = suggestedSoloRoundTimeSec(stepToSlide(imported).activitySpec);
   return [imported];

@@ -116,6 +116,26 @@ describe("Studio – adaptér krok ↔ blok lekce", () => {
   });
 });
 
+describe("Studio – rozpracovaný kvíz a sdílená nastavení", () => {
+  it("prázdné odpovědi a správný index přežijí převod na slide i blok", () => {
+    const step = newStep("mcq");
+    step.content.options = ["", "Druhá", ""];
+    step.content.correctIndex = 2;
+    expect(stepToSlide(step).activitySpec.options.map((o: any) => o.text)).toEqual(["", "Druhá", ""]);
+    expect(stepToSlide(step).activitySpec.correctIndex).toBe(2);
+    expect(stepToBlock(step)?.props.quiz.questions[0].answers.map((a: any) => a.text)).toEqual(["", "Druhá", ""]);
+  });
+
+  it("čas, body, barvy a obrázek přežijí blok lekce → Studio → blok", () => {
+    const block = { id: "shared", type: "activity", props: {
+      activityType: "quiz", title: "Q", timeLimitSec: 35, points: 2,
+      colors: { card: "#F3F1E6", accent: "#663196" }, imageUrl: "https://example.test/q.png",
+      quiz: { questions: [{ question: "Q", answers: [{ text: "", correct: true }, { text: "B", correct: false }] }] },
+    } };
+    expect(stepToBlock(blockToSteps(block)[0])).toEqual(block);
+  });
+});
+
 describe("Studio – čas a body", () => {
   it("čas: null = výchozí, 0 a méně = bez limitu, jinak 5–600 s", () => {
     expect(clampStepTime(null)).toBeNull();

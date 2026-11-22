@@ -45,3 +45,16 @@ Jeden `ActivityEditor` = adaptéry (Studio krok / lekční blok / slide) → spo
 Záměna mcq/quiz; přepsání výchozích hodnot explicitními; patch vs. náhrada props; tři úrovně týmů; renderer neumí zobrazit vše, co editor uloží (poll/mcq v lekčním rendereru); velké soubory editorů. Zmírnění: testy adaptérů, postupná výměna, bez změn DB.
 
 Odhad: etapa 1 ~1 den, 2 ~2 dny, 3 ~1 den, 4 ~2 dny, 5 ~2 dny.
+
+## Stav po provedení etap 1–3 (22. 11. 2026)
+- Hotovo: `ActivityModel`, líné adaptéry pro `activitySpec`, blok a `ActivityStep`; round-trip testy všech typů; prázdné odpovědi se při převodu nezahazují.
+- Hotovo: sdílený `ActivityEditor` používají Studio, lekce i pravý panel prezentace. Obsah, čas, body, účast, obrázek, vysvětlení a barvy mají společné ovládání; kontrast zůstává v `activity-colors.ts`.
+- Hotovo i jako součást obsahové etapy: mcq, quiz s více otázkami, poll, wall, wordcloud, short_answer, word_search; teams/differentiated/escape/bezlistart mají aspoň textový obsah. Specializované editory doplňování, dvojic, obrázků, křížovek a karet se znovu používají.
+- Stará pole se slévají s původním objektem a zapisují až po akci učitele. Žádná DB/RLS migrace není součástí.
+
+### Co zbývá (etapy 4–5 a pozdější doplnění)
+- Starší vedlejší editor `GameTemplateEditorDialog` a historické cesty zatím nejsou převedeny pod příznak; hlavní formuláře Studia, lekce a prezentace už sdílený editor používají.
+- Pro pokročilé herní typy doplnit plné vizuální/průvodcovské editory a validace (zejména BezliStart a složitější nastavení týmů); stávající `AddSlideSheet` zůstává dostupný.
+- Sjednotit dostupnost rendererů: mcq/poll/wordcloud/short_answer/word_search a herní typy nemají všude stejné žákovské zobrazení. Editor obsah uloží, ale nezaručuje novou herní podporu.
+- Doplnit obrázek jednotlivé otázky u víceotázkového kvízu a hloubkovou validaci všech typů.
+- Samostatně ověřit všechny typy v živé hře; tato etapa mění editor a adaptéry, ne herní scoring ani RLS.

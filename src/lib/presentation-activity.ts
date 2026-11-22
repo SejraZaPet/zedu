@@ -175,5 +175,6 @@ export const ACTIVITY_TYPE_LABEL: Record<string, string> = {
   wall: "Zeď odpovědí", poll: "Anketa", teams: "Týmy", escape: "Úniková hra", differentiated: "Diferencovaná aktivita",
   crossword: "Křížovka", flashcards: "Kartičky", reveal_cards: "Odkrývací kartičky", memory_game: "Pexeso",
   image_label: "Popis obrázku", image_hotspot: "Hotspot", exit_ticket: "Exit ticket", open: "Otevřená otázka",
+  short_answer: "Krátká odpověď", word_search: "Osmisměrka", bezlistart: "BezliStart",
 };
 export const activityTypeLabel = (t: unknown) => ACTIVITY_TYPE_LABEL[String(t ?? "")] ?? "Aktivita";

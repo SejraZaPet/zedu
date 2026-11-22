@@ -1,4 +1,5 @@
 import type { Block } from "@/lib/textbook-config";
+import { activityCardStyle, hasActivityColors } from "@/lib/activity-colors";
 import MindMapView from "@/components/mind-map/MindMapView";
 import { normalizeMindMap } from "@/lib/mind-map";
 import { getQuizQuestions } from "@/lib/quiz-questions";
@@ -594,7 +595,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
       const workModeLabel = workModeLabels[workMode] || workModeLabels.individual;
 
       const activityInner = (
-        <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
+        <div data-activity-surface={hasActivityColors(p.colors) ? "" : undefined} className="rounded-lg border border-primary/20 bg-card p-5 space-y-3" style={hasActivityColors(p.colors) ? activityCardStyle(p.colors) : undefined}>
           <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 rounded-full px-2.5 py-1">
               {workModeLabel}

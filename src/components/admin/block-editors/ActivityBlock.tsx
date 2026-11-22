@@ -34,6 +34,9 @@ import { Plus, Trash2, Upload, Sparkles, Loader2, BookOpen } from "lucide-react"
 import LessonSourcePickerDialog, { MAX_AI_SOURCE_CHARS } from "@/components/admin/block-editors/LessonSourcePickerDialog";
 
 import { Slider } from "@/components/ui/slider";
+import ActivityEditor from "@/components/activities/editor/ActivityEditor";
+import { activityModelFromBlock, activityModelToBlockProps } from "@/lib/activity-model";
+import { uploadWorksheetImage } from "@/lib/worksheet-images";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -163,92 +166,6 @@ const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
       ))}
       <Button variant="outline" size="sm" onClick={() => onChange({ ...props, flashcards: [...cards, { front: "", back: "" }] })}>
         <Plus className="w-3 h-3 mr-1" />Přidat kartičku
-      </Button>
-    </div>
-  );
-};
-
-const QuizEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const existing = getQuizQuestions(props.quiz);
-  const questions = existing.length > 0 ? existing : [emptyQuizQuestion()];
-
-  const commit = (next: QuizQuestion[]) => onChange({ ...props, quiz: setQuizQuestions(next) });
-
-  const updateQuestion = (qi: number, patch: Partial<QuizQuestion>) =>
-    commit(questions.map((q, i) => (i === qi ? { ...q, ...patch } : q)));
-
-  const updateAnswer = (qi: number, ai: number, field: "text" | "correct", val: any) =>
-    updateQuestion(qi, {
-      answers: questions[qi].answers.map((a, j) => (j === ai ? { ...a, [field]: val } : a)),
-    });
-
-  return (
-    <div className="space-y-4">
-      {questions.map((quiz, qi) => (
-        <div key={qi} className="space-y-3 rounded-lg border border-border p-3">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs font-semibold">Otázka {qi + 1}</Label>
-            {questions.length > 1 && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-destructive"
-                aria-label={`Smazat otázku ${qi + 1}`}
-                onClick={() => commit(questions.filter((_, i) => i !== qi))}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
-          <Input
-            value={quiz.question}
-            placeholder="Text otázky"
-            onChange={(e) => updateQuestion(qi, { question: e.target.value })}
-          />
-          <div className="space-y-2">
-            <Label className="text-xs">Odpovědi</Label>
-            {quiz.answers.map((a, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Checkbox checked={a.correct} onCheckedChange={(v) => updateAnswer(qi, i, "correct", !!v)} />
-                <Input
-                  className="flex-1"
-                  placeholder={`Odpověď ${i + 1}`}
-                  value={a.text}
-                  onChange={(e) => updateAnswer(qi, i, "text", e.target.value)}
-                />
-                {quiz.answers.length > 1 && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-destructive"
-                    aria-label={`Smazat odpověď ${i + 1}`}
-                    onClick={() => updateQuestion(qi, { answers: quiz.answers.filter((_, j) => j !== i) })}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateQuestion(qi, { answers: [...quiz.answers, { text: "", correct: false }] })}
-            >
-              <Plus className="w-3 h-3 mr-1" />Přidat odpověď
-            </Button>
-          </div>
-          <div>
-            <Label className="text-xs">Vysvětlení (volitelné)</Label>
-            <Textarea
-              value={quiz.explanation ?? ""}
-              onChange={(e) => updateQuestion(qi, { explanation: e.target.value })}
-              rows={2}
-            />
-          </div>
-        </div>
-      ))}
-      <Button variant="outline" size="sm" onClick={() => commit([...questions, emptyQuizQuestion()])}>
-        <Plus className="w-3 h-3 mr-1" />Přidat otázku
       </Button>
     </div>
   );
@@ -1769,54 +1686,17 @@ const ActivityBlockForm = ({
         />
       </div>
 
-      {activityType === "flashcards" && <FlashcardsEditor props={p} onChange={onChange} />}
-      {activityType === "quiz" && <QuizEditor props={p} onChange={onChange} />}
-      {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
-      {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
-      {activityType === "ordering" && <OrderingEditor props={p} onChange={onChange} />}
-      {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
-      {activityType === "image_hotspot" && <ImageHotspotEditor props={p} onChange={onChange} />}
-      {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
-      {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
-      {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
-      {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
-      {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
-      {activityType === "crossword" && <CrosswordEditor props={p} onChange={onChange} />}
-      {activityType === "wall" && (
-        <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Otázka pro žáky</Label>
-            <Textarea
-              value={p.question || ""}
-              onChange={(e) => onChange({ ...p, question: e.target.value })}
-              placeholder="Co si myslíte o...?"
-              rows={2}
-              className="mt-1"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={p.anonymous === true}
-              onCheckedChange={(v) => onChange({ ...p, anonymous: !!v })}
-              id="wall-anonymous"
-            />
-            <Label htmlFor="wall-anonymous" className="text-xs cursor-pointer">
-              Anonymní odpovědi
-            </Label>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Checkbox
-              checked={p.allowMultiple === true}
-              onCheckedChange={(v) => onChange({ ...p, allowMultiple: !!v })}
-              id="wall-multiple"
-            />
-            <Label htmlFor="wall-multiple" className="text-xs cursor-pointer">
-              Povolit více odpovědí od jednoho žáka
-            </Label>
-          </div>
-        </div>
-      )}
-      {activityType === "poll" && <PollEditor props={p} onChange={onChange} />}
+      <ActivityEditor
+        model={activityModelFromBlock(block)}
+        onChange={(model) => onChange(activityModelToBlockProps(model, p))}
+        context="lesson"
+        scored={["quiz", "mcq", "true_false", "matching", "fill_blanks", "fill_choice", "ordering", "sorting"].includes(activityType)}
+        onUploadImage={async (file) => {
+          const { data: { user } } = await supabase.auth.getUser();
+          return uploadWorksheetImage(file, user?.id);
+        }}
+        renderLegacyContent={(content, onContentChange) => <ActivityContentEditor activityType={activityType} props={content} onChange={onContentChange} />}
+      />
 
       <div className="flex items-center gap-2 pt-3 border-t border-border mt-3">
         <Checkbox

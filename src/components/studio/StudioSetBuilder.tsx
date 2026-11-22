@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -25,12 +25,13 @@ import { moveSource } from "@/lib/source-bundle";
 import { GAME_MODES } from "@/lib/game-modes";
 import { fetchGameTemplates, launchTemplateSession, type GameTemplate } from "@/lib/game-templates";
 import {
-  AI_STEP_TYPES, STEP_GROUPS, STEP_POINTS_LABEL, STEP_TIME_MAX, STEP_TIME_MIN, STEP_TYPES,
+  AI_STEP_TYPES, STEP_GROUPS, STEP_TYPES,
   activityTemplateToSteps, aiStepsToSteps, blockToSteps, canGoLive, gameTemplateToSet, newStep,
   prepareSlidesForLiveLaunch, slideToStep, stepBadges, stepProblem, stepToBlock, stepToSlide, stepTypeInfo, studioSetLiveSummary,
-  type ActivityStep, type StepPoints, type StepTypeId,
+  type ActivityStep, type StepTypeId,
 } from "@/lib/studio-step";
-import { suggestedSoloRoundTimeSec, supportsSoloRoundType } from "@/lib/solo-round";
+import ActivityEditor from "@/components/activities/editor/ActivityEditor";
+import { activityModelFromStep, activityModelToStep } from "@/lib/activity-step-adapter";
 
 export type StudioStart = "blank" | "template" | "material" | "lesson";
 type Phase = "zdroj" | "kroky" | "nahled" | "pouzit";
@@ -405,19 +406,10 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
 }) {
   const info = stepTypeInfo(s.type);
   const problem = stepProblem(s);
-  const [uploading, setUploading] = useState(false);
-  const live = canGoLive(s.type);
-  const solo = supportsSoloRoundType(s.type) && s.settings.liveMode !== "expand";
-  const convertible = ["matching", "ordering", "fill_blanks", "fill_choice"].includes(s.type);
-  const tl = s.settings.timeLimitSec;
-  const timeMode = tl === null ? "default" : tl === 0 ? "none" : "custom";
-  const setSettings = (p: Partial<ActivityStep["settings"]>) => onChange({ settings: { ...s.settings, ...p } });
-  const pickImage = async (file?: File) => {
-    if (!file) return;
-    setUploading(true);
-    try { const { data: { user } } = await supabase.auth.getUser(); onChange({ imageUrl: await uploadWorksheetImage(file, user?.id) }); }
-    catch (e: any) { toast.error(e?.message || "Obrázek se nepodařilo nahrát."); }
-    finally { setUploading(false); }
+  const model = activityModelFromStep(s);
+  const uploadImage = async (file: File) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return uploadWorksheetImage(file, user?.id);
   };
   return (
     <li className={cn("rounded-lg border p-3", problem ? "border-destructive/60" : "border-border")}>
@@ -435,112 +427,17 @@ function StepCard({ step: s, index: i, total, open, teamsOn, onToggle, onChange,
       </div>
       {open && (
         <div className="mt-2 space-y-3">
-          {info.editor !== "slide" && (
-            <div className="space-y-1">
-              <Label htmlFor={`t-${s.id}`} className="text-xs">{s.type === "explain" ? "Nadpis" : s.type === "mcq" || info.editor === "wall" || s.type === "wordcloud" ? "Otázka" : "Zadání"}</Label>
-              <Textarea id={`t-${s.id}`} rows={2} value={s.title} onChange={(e) => onChange({ title: e.target.value })} />
-            </div>
-          )}
-          {s.type === "explain" && (
-            <Textarea rows={3} aria-label="Text výkladu" value={s.content.body ?? ""} onChange={(e) => onChange({ content: { ...s.content, body: e.target.value } })} />
-          )}
-          {s.type === "mcq" && (
-            <fieldset className="space-y-1">
-              <legend className="text-xs text-muted-foreground">Možnosti (vyberte správnou)</legend>
-              {(s.content.options ?? []).map((o: string, oi: number) => (
-                <div key={oi} className="flex items-center gap-2">
-                  <input type="radio" name={`c-${s.id}`} className="h-5 w-5 accent-primary" checked={s.content.correctIndex === oi} onChange={() => onChange({ content: { ...s.content, correctIndex: oi } })} aria-label={`Správná je možnost ${oi + 1}`} />
-                  <Input value={o} aria-label={`Možnost ${oi + 1}`} onChange={(e) => onChange({ content: { ...s.content, options: s.content.options.map((x: string, xi: number) => (xi === oi ? e.target.value : x)) } })} />
-                </div>
-              ))}
-              {(s.content.options ?? []).length < 6 && <Button type="button" size="sm" variant="ghost" onClick={() => onChange({ content: { ...s.content, options: [...(s.content.options ?? []), ""] } })}>+ Možnost</Button>}
-            </fieldset>
-          )}
-          {(info.editor === "wall" || s.type === "wordcloud") && (
-            <label className="flex items-center gap-2 text-sm"><Checkbox checked={s.content.anonymous === true} onCheckedChange={(v) => onChange({ content: { ...s.content, anonymous: !!v } })} />Anonymní odpovědi</label>
-          )}
-          {info.editor === "lesson" && <ActivityContentEditor activityType={info.activityType ?? s.type} props={s.content} onChange={(c) => onChange({ content: c })} />}
-          {info.editor === "slide" && <p className="text-sm text-muted-foreground">Obsah tohoto živého snímku jste nastavili v nabídce živých snímků; tady upravíte čas, body a týmy.</p>}
-
-          <fieldset className="space-y-2 rounded-md border border-border p-2" aria-label="Nastavení kroku">
-            <legend className="px-1 text-xs font-medium">Nastavení kroku</legend>
-            {solo && (
-              <div className="rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
-                <strong className="text-foreground">Samostatné kolo.</strong> Celá aktivita se odevzdá jako jedna odpověď; rychlost neboduje.
-              </div>
-            )}
-            {convertible && (
-              <div className="space-y-1">
-                <Label className="text-xs">Způsob živé hry</Label>
-                <Select value={solo ? "solo" : "expand"} onValueChange={(v) => setSettings({ liveMode: v === "solo" ? "solo" : "expand" })}>
-                  <SelectTrigger aria-label="Způsob živé hry"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="solo">Hrát jako samostatné kolo</SelectItem>
-                    <SelectItem value="expand">Rozložit na otázky</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Čas na krok</Label>
-                <Select value={timeMode} disabled={s.type === "explain"} onValueChange={(v) => setSettings({ timeLimitSec: v === "default" ? null : v === "none" ? 0 : 30, timeAuto: false })}>
-                  <SelectTrigger aria-label="Čas na krok"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Výchozí čas hry</SelectItem>
-                    <SelectItem value="none">Bez limitu</SelectItem>
-                    <SelectItem value="custom">Vlastní čas</SelectItem>
-                  </SelectContent>
-                </Select>
-                {s.type === "explain" && <p className="text-[11px] text-muted-foreground">Výklad nemá odpověď, čas se neměří.</p>}
-                {timeMode === "custom" && s.type !== "explain" && (
-                  <Input type="number" min={STEP_TIME_MIN} max={STEP_TIME_MAX} inputMode="numeric" aria-label="Sekund (5–600)" value={tl ?? ""}
-                    onChange={(e) => setSettings({ timeLimitSec: Number(e.target.value), timeAuto: false })} />
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Body</Label>
-                <Select value={String(s.settings.points)} disabled={!info.scored} onValueChange={(v) => setSettings({ points: Number(v) as StepPoints })}>
-                  <SelectTrigger aria-label="Body"><SelectValue /></SelectTrigger>
-                  <SelectContent>{([1, 2, 0] as StepPoints[]).map((p) => <SelectItem key={p} value={String(p)}>{STEP_POINTS_LABEL[p]}</SelectItem>)}</SelectContent>
-                </Select>
-                {!info.scored && <p className="text-[11px] text-muted-foreground">Krok nemá správnou odpověď, neboduje se.</p>}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Jednotlivě / v týmech</Label>
-                <label className="flex min-h-10 items-center gap-2 text-sm">
-                  <Checkbox checked={s.settings.individual} disabled={!live || !teamsOn} onCheckedChange={(v) => setSettings({ individual: !!v })} />Tento krok jednotlivě
-                </label>
-                <p className="text-[11px] text-muted-foreground">{!live ? "Typ zatím živě nejde – týmy se neuplatní." : !teamsOn ? "Sada se hraje bez týmů." : "Jinak platí týmy celé sady."}</p>
-              </div>
-            </div>
-            {!live && <p className="text-[11px] text-muted-foreground">Čas a body se uplatní až v živé hře; tento typ se zatím hraje jen samostatně nebo tiskne.</p>}
-            {solo && (
-              <>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={s.settings.showSolution !== false} onCheckedChange={(v) => setSettings({ showSolution: !!v })} />
-                  Po skončení kola ukázat správné řešení
-                </label>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setSettings({ timeLimitSec: suggestedSoloRoundTimeSec(stepToSlide(s).activitySpec), timeAuto: true })}>
-                  Přednastavit čas podle počtu položek
-                </Button>
-              </>
-            )}
-            <Textarea rows={2} placeholder="Vysvětlení (zobrazí se po odpovědi)" aria-label="Vysvětlení" value={s.explanation} onChange={(e) => onChange({ explanation: e.target.value })} />
-            <div className="flex flex-wrap items-center gap-2">
-              {s.imageUrl ? (
-                <>
-                  <img src={s.imageUrl} alt="" className="h-14 w-20 rounded object-cover" />
-                  <Button size="sm" variant="ghost" onClick={() => onChange({ imageUrl: "" })}><X className="mr-1 h-3 w-3" />Odebrat obrázek</Button>
-                </>
-              ) : (
-                <label className="inline-flex min-h-10 cursor-pointer items-center gap-1 text-sm text-primary">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}Přidat obrázek
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void pickImage(f); }} />
-                </label>
-              )}
-            </div>
-          </fieldset>
+          <ActivityEditor
+            model={model}
+            onChange={(next) => onChange(activityModelToStep(next, s))}
+            context="studio"
+            scored={info.scored}
+            live={canGoLive(s.type)}
+            teamsOn={teamsOn}
+            autoFocus={s.type === "mcq"}
+            onUploadImage={uploadImage}
+            renderLegacyContent={(content, onContentChange) => <ActivityContentEditor activityType={info.activityType ?? s.type} props={content} onChange={onContentChange} />}
+          />
           {problem && <p className="text-xs text-destructive">{problem}</p>}
         </div>
       )}

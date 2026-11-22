@@ -325,3 +325,11 @@
 - [x] Testy rozvržení a regresní testy editoru.
 - [x] Proklikat hlavní tok v náhledu, zkontrolovat sestavení a commitnout.
 - Ověřeno: 76 testů, typy a build; desktop 1440×900, tablet 1024 px včetně dnd a mobil 390 px. Vlastní [TEST] prezentace smazány; bez DB/RLS a nasazení.
+
+## Jednotný editor aktivit – etapy 1–3
+- [x] Kanonický ActivityModel a bezeztrátové adaptéry Studio / blok / slide.
+- [x] Sdílený obsahový editor včetně prázdného kvízu, více otázek, mraku a textového obsahu herních typů.
+- [x] Sdílený čas, body, jednotlivě/týmy, obrázek, vysvětlení a barvy ve Studiu, lekci i prezentaci.
+- [x] Klikací průchod Studia a prezentace, uložení/znovuotevření, živá hra a PDF pokud dostupné.
+- [x] Finální regresní testy, typy, build, úklid vlastních [TEST] dat a commit.
+- Ověřeno: 214 testů, typy/build; Studio i prezentace uloženy a znovu otevřeny, PDF vizuálně čitelné, živá hra a otázka na telefonu. Odpověď žáka po vypršení limitu neověřena. Vlastní [TEST] data a hra odstraněny; bez DB/RLS a nasazení.
