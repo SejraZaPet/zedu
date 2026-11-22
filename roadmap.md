@@ -378,6 +378,12 @@
 - [x] Audit BezliStart, připojení do hry/live, sdílení a listů: další QR nejsou v tomto dialogu ani problémové mřížce; bez dalších změn.
 - [x] Trvalý `e2e/remote_control_dialog_layout.py` měří hranice, zalomení, centrování a ellipsis při 1366/390 px; reálné přihlášené promítání při 1366 px, 17 regresních testů, typy a build prošly. Bez testovacích dat, DB/RLS, nasazení a AGENTS.md.
 
+## Promítání – kompaktní lišta a poznámky vpravo
+- [ ] Zachovat všechny akce, swipe a klávesy; sjednotit horní ovládání a čísla slidů bez zbytečné výšky.
+- [ ] Zvětšit plátno a doplnit sbalitelný panel poznámek vpravo, autosave a náhled dalšího slidu; mobilní výsuvný panel.
+- [ ] Ověřit nedostupnost poznámek žákům, nástroje a jejich podmíněné zobrazení.
+- [ ] Testy akcí, editace/uložení/sbalení poznámek, žákovského UI a náhledu 1366/390 px; úklid vlastních [TEST] dat, bez DB/RLS, nasazení a AGENTS.md.
+
 ## Prezentace – přechody mezi slidy a návrh animací prvků
 - [x] Přechody na jednotlivých slidech: katalog, směr, délka, použití na všechny a zpětná kompatibilita.
 - [x] Akce + a přechod mezi miniatury, existující cesty vložení a ovládání při skrytém pásu.
