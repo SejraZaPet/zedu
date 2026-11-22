@@ -389,3 +389,12 @@
 - [x] Rozšířit PPTX mapování a souhrn aproximací a doplnit testy.
 - [x] Přihlášený průchod editoru ověřil všech 10 voleb, uložení a znovuotevření. Živá projekce/telefon zůstávají neověřené kvůli opakovanému vypršení testovací relace.
 - [x] Odstraněno přesně 9 vlastních [TEST] prezentací a 4 relace; bez DB/RLS změn, nasazení a změny AGENTS.md. Část B zůstává jen plánem.
+
+## Prezentace – animace prvků podle Canvy, etapy 1–3
+- [x] Nejprve aktualizovat `.lovable/plan/animace-prvku-2026-11-22.md`, potom implementovat po krocích s testy.
+- [x] Etapa 1: zpětně kompatibilní model, 10 základních presetů, editor/projekce/telefon a reduced motion.
+- [x] Etapa 2: panel Animace se záložkami Strana a Text/Prvek, náhledy a Přehrát.
+- [x] Etapa 3: Zobrazit při kliknutí, pořadí, bezpečné aktivity a zobrazení kvízu před časem.
+- [ ] Etapy 4–5 jako další plán: všechny presety/balíčky stránek a PPTX import/export.
+- [x] 51 cílených testů, typecheck, build, přihlášený živý průchod a úklid [TEST] dat; bez DB/RLS, nasazení a AGENTS.md.
+- Živý průchod potvrdil skrytí/odhalení v projekci i telefonu, zachování prvního slidu, reduced-motion `none`, další slide a úklid. Editorovo plátno ověřují přímé testy; opakované vizuální spouštění bylo nestabilní kvůli načítání seznamu, ne kvůli chybě aplikace. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.

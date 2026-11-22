@@ -31,7 +31,6 @@ import {
 
 
 import {
-  slideAnimationClass,
   slideBackgroundOverrideStyle,
 
   slideTextStyle,
@@ -42,6 +41,8 @@ import { blockContrastClass, headlineColorsForBackground, resolveSlideIsDark } f
 import { blockBackgroundSlideColor, blockBackgroundStyle } from "@/lib/block-backgrounds";
 import { getGroupChildHeight } from "@/lib/slide-groups";
 import { slideTransitionMatchKey } from "@/lib/slide-transitions";
+import SlideBlockAnimationView from "@/components/presentation/editor/SlideBlockAnimationView";
+import { slideClickAnimations } from "@/lib/slide-block-animations";
 
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
@@ -74,6 +75,12 @@ interface BodyProps {
   editable?: boolean;
   darkMode?: boolean;
   revealStep?: number;
+  /** Editor: 0 = klidná úprava; vyšší číslo spustí nový náhled. */
+  animationPreviewKey?: number;
+  /** Projekce/telefon: počet odhalených klikacích skupin. Bez hodnoty je všechen obsah vidět. */
+  animationRevealCount?: number;
+  /** Vypnutí pro tisk, PDF a miniatury. Výchozí je true mimo editor. */
+  animateBlocks?: boolean;
   /** Relační A+/A− v procentech; násobí vlastní fontScale snímku. */
   projectorFontScale?: number;
   /** Přeplněný obsah se na projekci posouvá místo dalšího zmenšování. */
@@ -1692,6 +1699,9 @@ export function SlideBody({
   editable,
   darkMode = true,
   revealStep,
+  animationPreviewKey = 0,
+  animationRevealCount,
+  animateBlocks,
   projectorFontScale = 100,
   allowContentScroll = false,
   contentScrollTop,
@@ -1746,6 +1756,21 @@ export function SlideBody({
   const headline: string = slide?.projector?.headline || "";
   const fontScale = combinedProjectorFontScale(slide?.projector?.fontScale, projectorFontScale);
   const rawBlocks: Block[] = slide?.blocks || [];
+  const clickAnimations = slideClickAnimations(rawBlocks);
+  const shouldAnimateBlocks = animateBlocks ?? true;
+  const animationForBlock = (block: Block, children: React.ReactNode, className = "") => {
+    const index = rawBlocks.findIndex((item) => item.id === block.id);
+    const clickPosition = clickAnimations.findIndex((item) => item.id === block.id);
+    const revealed = clickPosition < 0 || typeof animationRevealCount !== "number" || clickPosition < animationRevealCount;
+    return <SlideBlockAnimationView
+      block={block}
+      index={Math.max(0, index)}
+      play={shouldAnimateBlocks && (!editable || animationPreviewKey > 0)}
+      playbackKey={editable ? animationPreviewKey : `${slide?.slideId ?? "slide"}-${index}`}
+      revealed={revealed}
+      className={className}
+    >{children}</SlideBlockAnimationView>;
+  };
   const heroImage: string | undefined = slide?.heroImage;
   const hideEmptyEditorPlaceholders = slide?.hideEmptyEditorPlaceholders === true;
 
@@ -2106,18 +2131,14 @@ export function SlideBody({
         onMove={(dir) => onMoveBlock?.(b.id, dir)}
         onDelete={() => onDeleteBlock?.(b.id)}
       >
-        {editable ? (
+        {animationForBlock(b, editable ? (
           <EditableBlock
             block={b}
             editable={!(b as any).locked}
             asCard={asCard}
             onChange={(patch) => onChangeBlock?.(b.id, patch)}
           />
-        ) : (
-          <div className={slideAnimationClass((b.props as any)?.animation)}>
-            <EditableBlock block={b} asCard={asCard} />
-          </div>
-        )}
+        ) : <EditableBlock block={b} asCard={asCard} />)}
       </BlockShell>
     );
 
@@ -2361,19 +2382,14 @@ export function SlideBody({
               endGesture={endGesture}
 
             >
-              {editable ? (
+              {animationForBlock(block, editable ? (
                 <EditableBlock
                   block={block}
                   editable={!(block as any).locked}
                   framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />
-
-              ) : (
-                <div className={`${slideAnimationClass((block.props as any)?.animation)} h-full w-full`}>
-                  <EditableBlock block={block} framed />
-                </div>
-              )}
+              ) : <EditableBlock block={block} framed />, "h-full w-full")}
             </FreeFrameBlock>
             </div>
           ))}

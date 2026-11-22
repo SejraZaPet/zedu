@@ -10,6 +10,7 @@ import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs 
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import StartActivityPanel from "@/components/live/StartActivityPanel";
 import { isAwaitingStart, isManualStart, isRespondableSlide, settingsForSlideEnter, settingsForStart } from "@/lib/live-timing";
+import { nextAnimationRevealCount, pendingClickActivity, slideClickAnimations } from "@/lib/slide-block-animations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair, Play } from "lucide-react";
@@ -140,7 +141,10 @@ const LiveTeacherScreen = () => {
   }, [sessionId]);
 
   // ---- MCQ: zveřejnění výsledků otázky (ručně / všichni odpověděli / vypršel čas) ----
-  const awaitingStart = session?.status === "playing" && isAwaitingStart(settings, currentSlide, currentIndex);
+  const clickAnimations = slideClickAnimations(currentSlide);
+  const animationRevealCount = typeof settings?.animationRevealCount === "number" ? settings.animationRevealCount : 0;
+  const animationAwaitingReveal = pendingClickActivity(currentSlide, animationRevealCount);
+  const awaitingStart = session?.status === "playing" && (isAwaitingStart(settings, currentSlide, currentIndex) || animationAwaitingReveal);
   const mcqActive = isLiveMcqSlide(currentSlide) && session?.status === "playing" && !awaitingStart;
   const mcqRevealed = isMcqRevealed(settings, currentIndex);
   const revealMcq = useCallback(async () => {
@@ -243,18 +247,27 @@ const LiveTeacherScreen = () => {
 
   /** Reset posunu/odhalení/přiblížení, posílaný ve stejném zápisu jako změna snímku. */
   const slideResetPatch = useCallback((target: number) => ({
-    settings: { ...settingsForSlideEnter(settings, slides, target), projectorScrollTop: 0, revealStep: 1 },
+    settings: { ...settingsForSlideEnter(settings, slides, target), projectorScrollTop: 0, revealStep: 1, animationRevealCount: 0 },
     zoom_state: null,
   }), [settings, slides]);
 
   const handleNext = useCallback(() => {
     if (!session) return;
+    if (animationRevealCount < clickAnimations.length) {
+      const next = nextAnimationRevealCount(currentSlide, animationRevealCount);
+      const revealsActivity = clickAnimations.slice(animationRevealCount, next).some((item) => item.isActivity);
+      void supabase.from("game_sessions").update({
+        settings: { ...(settings || {}), animationRevealCount: next },
+        ...(revealsActivity && !isManualStart(settings) ? { question_started_at: new Date().toISOString() } : {}),
+      }).eq("id", sessionId).then(({ error }) => { if (error) console.error("Odhalení animace se neuložilo:", error.message); });
+      return;
+    }
     if (currentIndex >= slides.length - 1) {
       endGame();
     } else {
       nextQuestion(currentIndex, slideResetPatch(currentIndex + 1));
     }
-  }, [session, currentIndex, slides.length, nextQuestion, endGame, slideResetPatch]);
+  }, [session, sessionId, settings, currentSlide, animationRevealCount, clickAnimations, currentIndex, slides.length, nextQuestion, endGame, slideResetPatch]);
 
   const goToIndex = useCallback(async (target: number) => {
     if (!sessionId) return;
@@ -273,8 +286,12 @@ const LiveTeacherScreen = () => {
   });
 
   const goPrevSlide = useCallback(() => {
+    if (animationRevealCount > 0 && clickAnimations.length > 0) {
+      void supabase.from("game_sessions").update({ settings: { ...(settings || {}), animationRevealCount: Math.max(0, animationRevealCount - 1) } }).eq("id", sessionId);
+      return;
+    }
     if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1));
-  }, [currentIndex, nextQuestion, slideResetPatch]);
+  }, [sessionId, settings, animationRevealCount, clickAnimations.length, currentIndex, nextQuestion, slideResetPatch]);
   const goNextSlide = useCallback(() => {
     if (currentIndex < slides.length - 1) handleNext();
   }, [currentIndex, slides.length, handleNext]);

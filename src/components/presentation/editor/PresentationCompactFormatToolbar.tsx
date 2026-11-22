@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,8 @@ import { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
 import type { Block } from "@/lib/textbook-config";
 import type { AlignMode } from "@/lib/block-frame";
 import { gradientCss } from "@/lib/slide-gradient";
-import { SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS } from "@/lib/slide-typography";
+import { SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS } from "@/lib/slide-typography";
+import BlockAnimationPanel from "@/components/presentation/editor/BlockAnimationPanel";
 import {
   AlignCenter, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart,
   AlignHorizontalSpaceBetween, AlignLeft, AlignRight, AlignVerticalJustifyCenter,
@@ -38,6 +39,11 @@ interface Props {
   onDistribute?: (axis: "h" | "v") => void;
   onGroup?: () => void;
   onUngroup?: () => void;
+  slide?: any;
+  onSlideBlocksChange?: (blocks: Block[]) => void;
+  onPreviewAnimation?: () => void;
+  onPlaySlide?: () => void;
+  onSelectBlock?: (id: string) => void;
 }
 
 const TEXT_TYPES = new Set(["heading", "paragraph", "callout", "quote", "bullet_list", "summary", "two_column", "formula"]);
@@ -63,6 +69,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /** Jednořádká statická lišta. Původní plovoucí lišta zůstává samostatně zachovaná. */
 export default function PresentationCompactFormatToolbar(props: Props) {
   const { block, selectedCount = 1 } = props;
+  const [animationOpen, setAnimationOpen] = useState(false);
   const values = (block.props || {}) as Record<string, any>;
   const set = (patch: Record<string, any>) => props.onChangeProps({ ...values, ...patch });
   const isText = TEXT_TYPES.has(block.type);
@@ -74,7 +81,7 @@ export default function PresentationCompactFormatToolbar(props: Props) {
 
   const layers = props.framed && props.onChangeLayer ? <Popover><PopoverTrigger asChild><Button type="button" size="icon" variant="ghost" className="deck-tool-icon" aria-label="Vrstvy" title="Vrstvy"><Layers /></Button></PopoverTrigger><PopoverContent className="w-48 p-2"><div className="grid grid-cols-2 gap-1">{([["front", "Na popředí", ChevronsUp], ["forward", "Dopředu", ChevronUp], ["backward", "Dozadu", ChevronDown], ["back", "Na pozadí", ChevronsDown]] as const).map(([action, label, Icon]) => <Button key={action} variant="ghost" size="sm" className="justify-start gap-2" onClick={() => props.onChangeLayer?.(action)}><Icon className="h-4 w-4" />{label}</Button>)}</div></PopoverContent></Popover> : null;
 
-  const animation = <Popover><PopoverTrigger asChild><Button type="button" size="icon" variant={values.animation ? "default" : "ghost"} className="deck-tool-icon" aria-label="Animace" title="Animace"><Sparkles /></Button></PopoverTrigger><PopoverContent className="w-56 p-3"><Label className="text-xs">Animace vstupu</Label><Select value={values.animation || "none"} onValueChange={(animation) => set({ animation: animation === "none" ? null : animation })}><SelectTrigger className="mt-2" aria-label="Animace vstupu"><SelectValue /></SelectTrigger><SelectContent>{SLIDE_ANIMATIONS.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></PopoverContent></Popover>;
+  const animation = <Popover open={animationOpen} onOpenChange={setAnimationOpen}><PopoverTrigger asChild><Button type="button" size="icon" variant={values.animation && values.animation !== "none" ? "default" : "ghost"} className="deck-tool-icon" aria-label="Animace" title="Animace"><Sparkles /></Button></PopoverTrigger><PopoverContent className="max-h-[min(76vh,680px)] w-[380px] overflow-y-auto p-4"><BlockAnimationPanel slide={props.slide || { blocks: [block] }} block={block} onChange={(nextAnimation) => set({ animation: nextAnimation })} onPreview={() => props.onPreviewAnimation?.()} onPlaySlide={() => props.onPlaySlide?.()} onReorder={(nextBlocks) => props.onSlideBlocksChange?.(nextBlocks)} onSelectBlock={(id) => { props.onSelectBlock?.(id); setAnimationOpen(false); }} onClose={() => setAnimationOpen(false)} /></PopoverContent></Popover>;
 
   const boxBackground = !isShape ? <Popover><PopoverTrigger asChild><Button type="button" size="icon" variant="ghost" className="deck-tool-icon" aria-label="Pozadí boxu" title="Pozadí boxu"><Square style={{ color: values.boxBackground || undefined }} /></Button></PopoverTrigger><PopoverContent className="w-auto space-y-3 p-3"><ColorPicker value={values.boxBackground === "none" ? null : values.boxBackground} onChange={(boxBackground) => set({ boxBackground: boxBackground ?? "none", boxGradient: null })} allowNull nullLabel="Bez pozadí" /><div className="border-t border-deck-line pt-2"><p className="mb-2 text-xs text-deck-muted">Barevný přechod pozadí</p><GradientPicker value={values.boxGradient} onChange={(boxGradient) => set({ boxGradient })} /></div><div className="border-t border-deck-line pt-2"><p className="mb-2 text-xs text-deck-muted">Rámeček boxu</p><ColorPicker value={values.boxBorderColor ?? null} onChange={(boxBorderColor) => set({ boxBorderColor: boxBorderColor ?? null })} allowNull nullLabel="Bez rámečku" /></div></PopoverContent></Popover> : null;
 

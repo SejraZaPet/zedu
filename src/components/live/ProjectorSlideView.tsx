@@ -43,6 +43,7 @@ const ProjectorCanvasStage = ({
   slide,
   currentIndex,
   revealStep,
+  animationRevealCount,
   isLessonPresentation,
   gameBackground = false,
   projectorFontScale,
@@ -51,6 +52,7 @@ const ProjectorCanvasStage = ({
   slide: any;
   currentIndex: number;
   revealStep?: number;
+  animationRevealCount?: number;
   isLessonPresentation: boolean;
   gameBackground?: boolean;
   projectorFontScale: number;
@@ -94,6 +96,7 @@ const ProjectorCanvasStage = ({
           themeId={slide?.themeId}
           darkMode={!isLessonPresentation}
           revealStep={revealStep}
+          animationRevealCount={animationRevealCount}
           projectorFontScale={projectorFontScale}
           allowContentScroll
           contentScrollTop={scrollTop}
@@ -272,6 +275,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       slide={canvasSlide}
                       currentIndex={currentIndex}
                       revealStep={(session?.settings as any)?.revealStep}
+                      animationRevealCount={(session?.settings as any)?.animationRevealCount ?? 0}
                       isLessonPresentation={isLessonPresentation}
                       gameBackground={useGameBg}
                       projectorFontScale={projectorFontScale}

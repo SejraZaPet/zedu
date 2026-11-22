@@ -60,12 +60,13 @@ describe("per-block typography a animace", () => {
 
   it("přehraje animace jen v needitovatelném (živém) režimu", () => {
     const live = render(<SlideBody slide={slide} themeId="minimal" />);
-    expect(live.container.querySelectorAll(".slide-anim-scale").length).toBe(1);
-    expect(live.container.querySelectorAll(".slide-anim-from-bottom").length).toBe(1);
-    expect(live.container.querySelectorAll(".slide-anim-from-top").length).toBe(1);
+    expect(live.container.querySelectorAll(".slide-block-anim-scale").length).toBe(1);
+    expect(live.container.querySelectorAll(".slide-block-anim-rise").length).toBe(2);
+    expect(live.container.querySelectorAll('[data-direction="up"]').length).toBe(1);
+    expect(live.container.querySelectorAll('[data-direction="down"]').length).toBe(1);
 
     const editor = render(<SlideBody slide={slide} themeId="minimal" editable />);
-    expect(editor.container.querySelectorAll('[class*="slide-anim-"]').length).toBe(0);
+    expect(editor.container.querySelectorAll('[class*="slide-block-anim-"]').length).toBe(0);
   });
 
   it("vlastní pozadí slidu přepíše téma", () => {

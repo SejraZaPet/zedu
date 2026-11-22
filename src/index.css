@@ -589,6 +589,37 @@ body.a11y-line-height main .whitespace-pre-wrap {
   .slide-anim-scale, .slide-anim-from-bottom, .slide-anim-from-top { animation: none; }
 }
 
+/* Vstupní animace bloků: transform/opacity, bez změny rozložení a výběru. */
+@keyframes slideBlockAppear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideBlockRise { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideBlockRiseDown { from { opacity: 0; transform: translateY(-48px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideBlockShift { from { opacity: 0; transform: translateX(56px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideBlockShiftRight { from { opacity: 0; transform: translateX(-56px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideBlockPop { 0% { opacity: 0; transform: scale(.65); } 72% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes slideBlockScale { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes slideBlockBlur { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: blur(0); } }
+@keyframes slideBlockDrift { from { opacity: 0; transform: translate3d(32px, 20px, 0) rotate(2deg); } to { opacity: 1; transform: translate3d(0, 0, 0) rotate(0); } }
+@keyframes slideBlockTypewriter { from { opacity: 1; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0); } }
+.slide-block-anim {
+  animation-duration: var(--slide-block-animation-duration, .6s);
+  animation-delay: var(--slide-block-animation-delay, 0s);
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(.2,.75,.25,1);
+}
+.slide-block-anim-appear, .slide-block-anim-fade { animation-name: slideBlockAppear; }
+.slide-block-anim-rise { animation-name: slideBlockRise; }
+.slide-block-anim-rise[data-direction="down"] { animation-name: slideBlockRiseDown; }
+.slide-block-anim-shift { animation-name: slideBlockShift; }
+.slide-block-anim-shift[data-direction="right"] { animation-name: slideBlockShiftRight; }
+.slide-block-anim-pop { animation-name: slideBlockPop; }
+.slide-block-anim-scale { animation-name: slideBlockScale; }
+.slide-block-anim-blur { animation-name: slideBlockBlur; }
+.slide-block-anim-drift { animation-name: slideBlockDrift; }
+.slide-block-anim-typewriter { animation-name: slideBlockTypewriter; animation-timing-function: steps(18, end); }
+@media (prefers-reduced-motion: reduce) {
+  .slide-block-anim { animation: none !important; }
+}
+
 /* --- Vstupní přechody slidů; délku nastavuje inline styl z modelu slidu. --- */
 @keyframes slideTransFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideTransPushLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }

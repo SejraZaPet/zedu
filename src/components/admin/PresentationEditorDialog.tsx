@@ -13,7 +13,7 @@ import {
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
   Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp, ClipboardPaste, Paintbrush,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Sparkles,
 
 } from "lucide-react";
 
@@ -61,6 +61,8 @@ import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import PresentationCompactFormatToolbar from "@/components/presentation/editor/PresentationCompactFormatToolbar";
+import BlockAnimationPanel from "@/components/presentation/editor/BlockAnimationPanel";
+import { slideClickAnimations } from "@/lib/slide-block-animations";
 import { loadPresentationEditorPreferences, savePresentationEditorPreferences } from "@/lib/presentation-editor-preferences";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { activityTypeLabel, applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
@@ -247,6 +249,8 @@ export const PresentationEditorDialog = ({
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
   const [selectedSlideIndices, setSelectedSlideIndices] = useState<number[]>([0]);
+  const [animationPreviewKey, setAnimationPreviewKey] = useState(0);
+  const [animationPanelOpen, setAnimationPanelOpen] = useState(false);
   const slideSelectionAnchorRef = useRef(0);
   const selectedBlockId = selectedBlockIds[0] ?? null;
   const setSelectedBlockId = (id: string | null) => setSelectedBlockIds(id ? [id] : []);
@@ -1239,6 +1243,7 @@ export const PresentationEditorDialog = ({
                     <Button variant={drawMode ? "default" : "ghost"} size="icon" className="deck-tool-icon" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-label="Tužka" title="Tužka" aria-pressed={drawMode}><Pencil /></Button>
                     {drawMode && <Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="deck-tool-icon" aria-label="Nastavení tužky" title="Nastavení tužky"><Settings2 /></Button></PopoverTrigger><PopoverContent className="w-64 space-y-3 p-3"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /><div><Label className="text-xs" htmlFor="draw-width">Tloušťka čáry</Label><Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger id="draw-width" className="mt-1"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select></div><Button variant="outline" size="sm" className="w-full" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-2 h-4 w-4" />Guma – poslední tah</Button><Button variant="ghost" size="sm" className="w-full text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button></PopoverContent></Popover>}
                     <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => setDarkPreview((v) => !v)} aria-label={darkPreview ? "Světlý náhled" : "Tmavý náhled"} title={darkPreview ? "Světlý náhled" : "Tmavý náhled"}>{darkPreview ? <Sun /> : <Moon />}</Button>
+                    <Popover open={animationPanelOpen} onOpenChange={setAnimationPanelOpen}><PopoverTrigger asChild><Button variant="ghost" size="icon" className="deck-tool-icon" aria-label="Animace stránky" title="Animace stránky"><Sparkles /></Button></PopoverTrigger><PopoverContent className="max-h-[min(76vh,680px)] w-[380px] overflow-y-auto p-4"><BlockAnimationPanel slide={currentSlide} block={null} onChange={() => undefined} onPreview={() => setAnimationPreviewKey((key) => key + 1)} onPlaySlide={() => setAnimationPreviewKey((key) => key + 1)} onReorder={(nextBlocks) => updateSlide({ blocks: nextBlocks })} onSelectBlock={(id) => { setSelectedBlockId(id); setAnimationPanelOpen(false); }} onClose={() => setAnimationPanelOpen(false)} /></PopoverContent></Popover>
                     {!thumbnailsOpen && <>
                       <SlideInsertMenu index={editingSlideIndex + 1} onPick={insertFromGap} trigger={<Button variant="ghost" size="icon" className="deck-tool-icon" aria-label="Vložit slide za aktuální" title="Vložit slide za aktuální"><Plus /></Button>} />
                       <SlideTransitionPopover slides={pendingSlides} index={Math.min(editingSlideIndex + 1, pendingSlides.length - 1)} onChange={changeSlideTransition} onApplyAll={applyTransitionEverywhere} compact trigger={<Button variant="ghost" size="icon" className="deck-tool-icon" disabled={editingSlideIndex >= pendingSlides.length - 1} aria-label="Přechod na další slide" title="Přechod na další slide"><ArrowLeftRight /></Button>} />
@@ -1272,6 +1277,11 @@ export const PresentationEditorDialog = ({
                       onDistribute={distributeSelection}
                       onGroup={groupSelection}
                       onUngroup={ungroupSelection}
+                      slide={currentSlide}
+                      onSlideBlocksChange={(nextBlocks) => updateSlide({ blocks: nextBlocks })}
+                      onPreviewAnimation={() => setAnimationPreviewKey((key) => key + 1)}
+                      onPlaySlide={() => setAnimationPreviewKey((key) => key + 1)}
+                      onSelectBlock={setSelectedBlockId}
                       onDelete={() => { if (selectedBlockIds.length > 1) deleteSelection(); else if (selectedBlockId) { deleteBlock(selectedBlockId); setSelectedBlockId(null); } }}
                     />
                   </div>}
@@ -1283,6 +1293,8 @@ export const PresentationEditorDialog = ({
                     themeId={themeId}
                     editable
                     darkMode={darkPreview}
+                    animationPreviewKey={animationPreviewKey}
+                    animationRevealCount={slideClickAnimations(blocks).length}
                     onChangeHeadline={(v) => updateProjector({ headline: v })}
                     onChangeBlock={updateBlock}
                     onMoveBlock={moveBlock}

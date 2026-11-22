@@ -438,7 +438,7 @@ const StudentGamePlay = () => {
             <div className="relative overflow-hidden rounded-xl aspect-video w-full">
               <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
                 <SlideTransitionScene transitionKey={qi} config={incomingTransition} className="h-full w-full">
-                   <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
+                   <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode animationRevealCount={(liveSettings as any)?.animationRevealCount ?? 0} />
                 </SlideTransitionScene>
               </div>
               {(() => {
