@@ -1,3 +1,4 @@
+import { htmlToPlainText } from "../_shared/html-to-text.ts";
 // Send Web Push notifications to all subscriptions of a recipient.
 // Triggered by the DB trigger `notifications_send_push` after a new row in `notifications`,
 // or invoked manually with `{ test: true }` from the client.
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
 
     let recipient_id = body.recipient_id;
     let title = body.title || "Bezli";
-    let text = body.body || "";
+    let text = htmlToPlainText(body.body || "", 200);
     let link = body.link || "/";
 
     if (body.test) {

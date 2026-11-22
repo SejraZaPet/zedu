@@ -1,3 +1,4 @@
+import { htmlToPlainText } from "@/lib/html-to-text";
 import { useNavigate } from "react-router-dom";
 import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, MessageSquare, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,7 @@ const NotificationBell = () => {
                       {n.title}
                     </div>
                     {n.body && (
-                      <div className="text-xs text-muted-foreground truncate mt-0.5">{n.body}</div>
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">{htmlToPlainText(n.body)}</div>
                     )}
                     <div className="text-[11px] text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: cs })}

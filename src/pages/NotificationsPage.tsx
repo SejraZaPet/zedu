@@ -1,3 +1,4 @@
+import { htmlToPlainText } from "@/lib/html-to-text";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
@@ -106,7 +107,7 @@ const NotificationsPage = () => {
                       {n.title}
                     </div>
                     {n.body && (
-                      <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{n.body}</div>
+                      <div className="text-sm text-muted-foreground mt-1 line-clamp-3 break-words">{htmlToPlainText(n.body)}</div>
                     )}
                     <div className="text-xs text-muted-foreground mt-2">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: cs })}

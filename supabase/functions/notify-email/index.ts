@@ -1,3 +1,4 @@
+import { htmlToPlainText } from "../_shared/html-to-text.ts";
 import { loadRecipients } from "../_shared/assignment-recipients.ts";
 // notify-email: e-mailová kopie in-app notifikace pro žáky a učitele.
 // Volá se asynchronně z DB triggeru na `notifications` (pg_net) s X-Internal-Secret.
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
 
   const link = n.link ? (String(n.link).startsWith("http") ? String(n.link) : `${APP_URL}${String(n.link).startsWith("/") ? "" : "/"}${n.link}`) : null;
   let title = String(n.title ?? "Nová notifikace");
-  let text = String(n.body ?? "");
+  let text = htmlToPlainText(String(n.body ?? ""));
   let subject = title;
   let button = "Otevřít v Bezli";
 
