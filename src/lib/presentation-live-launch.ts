@@ -8,6 +8,7 @@ import { normalizePresentationSlides, activityTypeLabel } from "@/lib/presentati
 import { activityToCoreQuestions, isLiveGameActivity } from "@/lib/live-game-core";
 import { expandSlide } from "@/lib/live-game-expand";
 import { prepareSlidesForLiveLaunch } from "@/lib/studio-step";
+import { visiblePresentationSlides } from "@/lib/presentation-slide-actions";
 
 /** Typy, které projektor/telefon umí jako aktivitu bez bodování. */
 const UNSCORED_LIVE = new Set(["wordcloud", "wall", "poll", "teams", "escape", "differentiated"]);
@@ -65,7 +66,7 @@ function quizToMcqSlides(s: any): any[] | null {
 }
 
 export function preparePresentationForLive(input: any[] | null | undefined): PresentationLaunchReport {
-  const normalized = normalizePresentationSlides(input ?? []);
+  const normalized = normalizePresentationSlides(visiblePresentationSlides(input));
   const unscored = new Set<string>();
   const incomplete: string[] = [];
   const pre: any[] = [];

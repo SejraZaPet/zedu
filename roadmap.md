@@ -362,3 +362,12 @@
 - [x] PPTX pozadí ze slidu/layoutu/masteru (solidFill, blipFill, bgRef) a věrný přepočet písma/cap.
 - [x] Testy, notebook 1366×768 a tablet 1024, vlastní 20slidový PPTX, úklid [TEST] dat a commit.
 - Ověřeno 28 testů, typecheck a přihlášený průchod: 34 pt = 57 px, 12 plných a 8 obrázkových pozadí, poznámky, zaoblené tvary, jednořádková lišta, miniatury, trvalé volby a 44px dotyk. Plátno po sbalení 1081×608 px; tablet 964×542 px. Vlastní prezentace a importované obrázky odstraněny; bez DB/RLS a nasazení.
+
+## Prezentace – viditelné a bezpečné ovládání slidů
+- [x] Diagnostikovat neviditelné smazání v současné a starší verzi editoru.
+- [x] Akce miniatur: smazat, duplikovat, přesunout, skrýt; kontext, dotyk, klávesy a vícenásobný výběr.
+- [x] Smazání se Zpět, ochrana posledního slidu, potvrzení hromadného mazání, varování aktivity a koš při skrytých miniaturách.
+- [x] Zachovat lessonRef a lokální změny až do uložení; testy, přihlášený průchod, úklid a commit.
+- Smazání existovalo jako `deleteCurrentSlide`, ale až v sbaleném panelu „Další prvky a akce“; funkce vznikla při etapě 2 (`743e1de9`), nešlo o odstranění staršího tlačítka.
+- Přesun drag-and-drop už se neukládá automaticky; všechny změny slidů čekají na Uložit. `lessonRef` se přenáší na první slide. Skryté slidy vynechává živá příprava.
+- Ověřeno 34 testů, typecheck, build a přihlášený průchod: aktivita+Zpět, hromadná duplikace/mazání, zrušení/potvrzení 5 slidů, Delete, kontext, oba přesuny, skrytí, koš po sbalení, uložení/znovuotevření. Bez chyb prohlížeče; vlastní `[TEST]` data odstraněna.

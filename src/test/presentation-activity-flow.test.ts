@@ -64,6 +64,14 @@ describe("vložit → upravit → uložit → znovu otevřít → spustit", () =
     expect(liveSlide).toMatchObject({ ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z" });
   });
 
+  it("slide skrytý při promítání se do živé projekce nedostane", () => {
+    const live = preparePresentationForLive([
+      { slideId: "shown", projector: { headline: "Viditelný" }, blocks: [] },
+      { slideId: "hidden", hiddenInPresentation: true, projector: { headline: "Skrytý" }, blocks: [] },
+    ]);
+    expect(live.slides.map((slide) => slide.slideId)).toEqual(["shown"]);
+  });
+
   it("slovní mrak: zůstane jedním slidem a hlášení řekne, že je bez bodování", () => {
     let slide = preset("wordcloud");
     slide = applySlidePatch(slide, { activitySpec: { ...slide.activitySpec, question: "Co vás napadne u slova voda?" } });

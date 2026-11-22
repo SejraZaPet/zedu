@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
@@ -73,6 +74,11 @@ import MyLessonActivitiesList from "@/components/presentation/MyLessonActivities
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import { DEFAULT_NEW_QUIZ_TIME_SEC } from "@/lib/live-timing";
 import { markSlideEditedByTeacher, restoreSlideFromLesson } from "@/lib/presentation-merge";
+import { attachLessonRef, readLessonRef } from "@/lib/presentation-lesson-ref";
+import {
+  deletePresentationSlides, duplicatePresentationSlides, isActivitySlide as slideContainsActivity,
+  movePresentationSlidesToEdge, setPresentationSlidesHidden, type SlideEditResult,
+} from "@/lib/presentation-slide-actions";
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
@@ -182,9 +188,12 @@ export const PresentationEditorDialog = ({
   const openKey = editorOpen ? `${presentationLesson?.id ?? ""}` : "";
   const baselineRef = useRef<string | null>(null);
   const [confirmClose, setConfirmClose] = useState<null | { after?: () => void }>(null);
+  const [pendingBulkDelete, setPendingBulkDelete] = useState<number[] | null>(null);
   useEffect(() => {
     if (!openKey) { baselineRef.current = null; return; }
     setSavedOnce(false);
+    setSelectedSlideIndices([editingSlideIndex]);
+    slideSelectionAnchorRef.current = editingSlideIndex;
     const normalized = normalizePresentationSlides(pendingSlides);
     if (normalized !== pendingSlides) setPendingSlides(normalized);
     baselineRef.current = JSON.stringify(normalized);
@@ -235,6 +244,8 @@ export const PresentationEditorDialog = ({
   const [exportOpen, setExportOpen] = useState(false);
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
+  const [selectedSlideIndices, setSelectedSlideIndices] = useState<number[]>([0]);
+  const slideSelectionAnchorRef = useRef(0);
   const selectedBlockId = selectedBlockIds[0] ?? null;
   const setSelectedBlockId = (id: string | null) => setSelectedBlockIds(id ? [id] : []);
 
@@ -259,12 +270,9 @@ export const PresentationEditorDialog = ({
   const [zoom, setZoom] = useState<number | "fit">("fit");
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
-  const reorderSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSlidesRef = useRef(pendingSlides);
-  const onSaveRef = useRef(onSave);
   const toastRef = useRef(toast);
   pendingSlidesRef.current = pendingSlides;
-  onSaveRef.current = onSave;
   toastRef.current = toast;
 
 
@@ -695,40 +703,50 @@ export const PresentationEditorDialog = ({
 
 
 
-  /** Přesun snímku na jinou pozici (drag & drop i šipky). */
-  const moveSlide = useCallback((from: number, to: number) => {
-    const previous = pendingSlidesRef.current;
-    if (from === to || from < 0 || to < 0 || from >= previous.length || to >= previous.length) return;
-    const updated = [...previous];
+  /** Přesun je pouze rozdělaná změna. Trvale se zapíše až učitelovým Uložit. */
+  const moveSlide = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= pendingSlides.length || to >= pendingSlides.length) return;
+    const updated = [...pendingSlides];
     const [moved] = updated.splice(from, 1);
     if (!moved) return;
     updated.splice(to, 0, moved);
-    pendingSlidesRef.current = updated;
-    setPendingSlides(updated);
-
-    // Pořadí je v UI změněné okamžitě. Uložení běží sériově na pozadí,
-    // aby rychlé přesuny nemohla starší odpověď přepsat novějším pořadím.
-    const save = onSaveRef.current;
-    if (save) {
-      reorderSaveQueueRef.current = reorderSaveQueueRef.current
-        .catch(() => undefined)
-        .then(() => save(updated))
-        .catch((error: unknown) => {
-          toastRef.current({
-            title: "Pořadí snímků se nepodařilo uložit",
-            description: error instanceof Error ? error.message : "Zkuste přesun zopakovat.",
-            variant: "destructive",
-          });
-        });
-    }
+    setPendingSlides(attachLessonRef(updated, readLessonRef(pendingSlides)));
     setEditingSlideIndex(to);
+    setSelectedSlideIndices([to]);
+    slideSelectionAnchorRef.current = to;
     setSelectedBlockId(null);
-  }, [setEditingSlideIndex, setPendingSlides]);
+  };
 
-  const selectSlide = useCallback((index: number) => {
+  const selectSlide = (index: number, event?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }) => {
+    if (index < 0 || index >= pendingSlides.length) return;
     setEditingSlideIndex(index);
     setSelectedBlockId(null);
-  }, [setEditingSlideIndex]);
+    if (event?.shiftKey) {
+      const anchor = slideSelectionAnchorRef.current;
+      const from = Math.min(anchor, index);
+      const to = Math.max(anchor, index);
+      setSelectedSlideIndices(Array.from({ length: to - from + 1 }, (_, offset) => from + offset));
+      return;
+    }
+    slideSelectionAnchorRef.current = index;
+    if (event?.ctrlKey || event?.metaKey) {
+      setSelectedSlideIndices((previous) => previous.includes(index)
+        ? previous.filter((item) => item !== index)
+        : [...previous, index].sort((a, b) => a - b));
+      return;
+    }
+    setSelectedSlideIndices([index]);
+  };
+
+  const applySlideEdit = (result: SlideEditResult | null) => {
+    if (!result) return false;
+    setPendingSlides(result.slides);
+    setEditingSlideIndex(result.activeIndex);
+    setSelectedSlideIndices(result.selectedIndices);
+    slideSelectionAnchorRef.current = result.activeIndex;
+    setSelectedBlockId(null);
+    return true;
+  };
 
   /** Vložení snímků na konkrétní pozici (index = kam se vloží první z nich). */
   const insertSlidesAt = (index: number, newSlides: any[]) => {
@@ -738,6 +756,8 @@ export const PresentationEditorDialog = ({
     updated.splice(at, 0, ...newSlides);
     setPendingSlides(updated);
     setEditingSlideIndex(at);
+    setSelectedSlideIndices([at]);
+    slideSelectionAnchorRef.current = at;
     setSelectedBlockId(null);
   };
 
@@ -899,23 +919,56 @@ export const PresentationEditorDialog = ({
     }
   };
 
-  const duplicateCurrentSlide = () => {
-    const src = pendingSlides[editingSlideIndex];
-    if (!src) return;
-    const copy = JSON.parse(JSON.stringify(src));
-    copy.slideId = crypto.randomUUID();
-    if (Array.isArray(copy.blocks)) copy.blocks = copy.blocks.map((b: any) => ({ ...b, id: crypto.randomUUID() }));
-    const updated = [...pendingSlides];
-    updated.splice(editingSlideIndex + 1, 0, copy);
-    setPendingSlides(updated);
-    setEditingSlideIndex(editingSlideIndex + 1);
+  const duplicateSlides = (indices: number[]) => {
+    const result = duplicatePresentationSlides(pendingSlides, indices, editingSlideIndex);
+    if (!applySlideEdit(result)) return;
+    toast({ title: indices.length > 1 ? "Slidy duplikovány" : "Slide duplikován", description: "Kopie jsou zatím pouze v rozdělané prezentaci." });
   };
 
-  const deleteCurrentSlide = () => {
-    if (pendingSlides.length <= 1) return;
-    const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
-    setPendingSlides(updated);
-    setEditingSlideIndex(Math.min(editingSlideIndex, updated.length - 1));
+  const duplicateCurrentSlide = () => duplicateSlides([editingSlideIndex]);
+
+  const performDeleteSlides = (selected: number[]) => {
+    const activityCount = selected.filter((index) => slideContainsActivity(pendingSlides[index])).length;
+    const previousActive = editingSlideIndex;
+    const previousSelection = selectedSlideIndices;
+    const result = deletePresentationSlides(pendingSlides, selected, editingSlideIndex);
+    if (!applySlideEdit(result)) return;
+    toast({
+      title: selected.length > 1 ? `${selected.length} ${selected.length < 5 ? "slidy" : "slidů"} smazáno` : activityCount ? "Slide s aktivitou smazán" : "Slide smazán",
+      description: activityCount
+        ? `Odebraný obsah zahrnoval ${activityCount === 1 ? "aktivitu" : "aktivity"}. Včetně ní ji můžete vrátit zpět.`
+        : "Změna je zatím jen v rozdělané prezentaci.",
+      action: <ToastAction altText="Vrátit smazání slidů" onClick={() => {
+        history.undo();
+        setEditingSlideIndex(previousActive);
+        setSelectedSlideIndices(previousSelection);
+        slideSelectionAnchorRef.current = previousActive;
+      }}>Zpět</ToastAction>,
+    });
+  };
+
+  const deleteSlides = (indices: number[]) => {
+    const selected = [...new Set(indices)].filter((index) => index >= 0 && index < pendingSlides.length);
+    if (!selected.length) return;
+    if (pendingSlides.length <= 1 || selected.length >= pendingSlides.length) {
+      toast({ title: "Poslední slide musí zůstat", description: "Přidejte nejprve nový slide, nebo upravte stávající.", variant: "destructive" });
+      return;
+    }
+    if (selected.length > 3) { setPendingBulkDelete(selected); return; }
+    performDeleteSlides(selected);
+  };
+
+  const deleteCurrentSlide = () => deleteSlides([editingSlideIndex]);
+
+  const moveSlidesToEdge = (indices: number[], edge: "start" | "end") => {
+    if (!applySlideEdit(movePresentationSlidesToEdge(pendingSlides, indices, edge, editingSlideIndex))) return;
+    toast({ title: edge === "start" ? "Slidy přesunuty na začátek" : "Slidy přesunuty na konec" });
+  };
+
+  const toggleSlidesHidden = (indices: number[]) => {
+    const hide = !indices.every((index) => pendingSlides[index]?.hiddenInPresentation === true);
+    if (!applySlideEdit(setPresentationSlidesHidden(pendingSlides, indices, hide, editingSlideIndex))) return;
+    toast({ title: hide ? "Skryto při promítání" : "Znovu zobrazeno při promítání", description: "Obsah zůstává v editoru a změna se uloží až tlačítkem Uložit." });
   };
 
   const aiActivityButton = (
@@ -1146,6 +1199,7 @@ export const PresentationEditorDialog = ({
                     <Button variant={drawMode ? "default" : "ghost"} size="icon" className="deck-tool-icon" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-label="Tužka" title="Tužka" aria-pressed={drawMode}><Pencil /></Button>
                     {drawMode && <Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="deck-tool-icon" aria-label="Nastavení tužky" title="Nastavení tužky"><Settings2 /></Button></PopoverTrigger><PopoverContent className="w-64 space-y-3 p-3"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /><div><Label className="text-xs" htmlFor="draw-width">Tloušťka čáry</Label><Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger id="draw-width" className="mt-1"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select></div><Button variant="outline" size="sm" className="w-full" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-2 h-4 w-4" />Guma – poslední tah</Button><Button variant="ghost" size="sm" className="w-full text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button></PopoverContent></Popover>}
                     <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => setDarkPreview((v) => !v)} aria-label={darkPreview ? "Světlý náhled" : "Tmavý náhled"} title={darkPreview ? "Světlý náhled" : "Tmavý náhled"}>{darkPreview ? <Sun /> : <Moon />}</Button>
+                    {!thumbnailsOpen && <Button variant="ghost" size="icon" className="deck-tool-icon text-destructive" onClick={deleteCurrentSlide} disabled={pendingSlides.length <= 1} aria-label="Smazat aktuální slide" title={pendingSlides.length <= 1 ? "Poslední slide nelze smazat" : "Smazat aktuální slide"}><Trash2 /></Button>}
                   </div>
                   {selectedBlock && <div className="deck-floating-bar">
                     <PresentationCompactFormatToolbar
@@ -1251,7 +1305,23 @@ export const PresentationEditorDialog = ({
             </div>
           )}
 
-          <PresentationThumbnails slides={pendingSlides} activeIndex={editingSlideIndex} themeId={themeId} onSelect={selectSlide} onMove={moveSlide} onAdd={() => openAddSlideAt(editingSlideIndex + 1)} open={thumbnailsOpen} onToggle={() => setThumbnailsOpen((value) => !value)} onPrevious={() => selectSlide(Math.max(0, editingSlideIndex - 1))} onNext={() => selectSlide(Math.min(pendingSlides.length - 1, editingSlideIndex + 1))} />
+          <PresentationThumbnails
+            slides={pendingSlides}
+            activeIndex={editingSlideIndex}
+            selectedIndices={selectedSlideIndices}
+            themeId={themeId}
+            onSelect={selectSlide}
+            onMove={moveSlide}
+            onAdd={() => openAddSlideAt(editingSlideIndex + 1)}
+            onDelete={deleteSlides}
+            onDuplicate={duplicateSlides}
+            onMoveEdge={moveSlidesToEdge}
+            onToggleHidden={toggleSlidesHidden}
+            open={thumbnailsOpen}
+            onToggle={() => setThumbnailsOpen((value) => !value)}
+            onPrevious={() => selectSlide(Math.max(0, editingSlideIndex - 1))}
+            onNext={() => selectSlide(Math.min(pendingSlides.length - 1, editingSlideIndex + 1))}
+          />
 
           <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} userId={user?.id} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
           <PresentationExportDialog open={exportOpen} onOpenChange={setExportOpen} slides={pendingSlides} title={presentationLesson?.title || "prezentace"} onExportPdf={handleExportPdf} />
@@ -1268,6 +1338,23 @@ export const PresentationEditorDialog = ({
             <AlertDialogCancel>Pokračovat v úpravách</AlertDialogCancel>
             {onSave && <AlertDialogAction className="bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={async () => { const after = confirmClose?.after; try { await onSave(pendingSlides); baselineRef.current = JSON.stringify(pendingSlides); setConfirmClose(null); onClose(); after?.(); } catch (e: any) { toast({ title: "Uložení se nepodařilo", description: e?.message ?? String(e), variant: "destructive" }); } }}>Uložit a zavřít</AlertDialogAction>}
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { const after = confirmClose?.after; setConfirmClose(null); baselineRef.current = null; onClose(); after?.(); }}>Zavřít bez uložení</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pendingBulkDelete} onOpenChange={(open) => { if (!open) setPendingBulkDelete(null); }}>
+        <AlertDialogContent className="font-deck-body">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-deck-heading uppercase tracking-wide text-deck-violet-deep">Smazat {pendingBulkDelete?.length ?? 0} slidů?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Slidy se odeberou z rozdělané prezentace a změna se trvale zapíše až po Uložit.
+              {(pendingBulkDelete ?? []).some((index) => slideContainsActivity(pendingSlides[index])) && " Smazáním zmizí i aktivity na vybraných slidech."}
+              {" Ihned po smazání můžete celou akci vrátit zpět."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ponechat slidy</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { const selected = pendingBulkDelete ?? []; setPendingBulkDelete(null); performDeleteSlides(selected); }}>Smazat slidy</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

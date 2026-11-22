@@ -7,6 +7,7 @@ import SelectionPropertiesPanel from "@/components/presentation/editor/Selection
 import type { Block } from "@/lib/textbook-config";
 
 const slide = { slideId: "s1", projector: { headline: "Voda", body: "" }, blocks: [] };
+const thumbnailActions = { onDelete: vi.fn(), onDuplicate: vi.fn(), onMoveEdge: vi.fn(), onToggleHidden: vi.fn() };
 
 describe("Etapa 2 – rozvržení editoru", () => {
   it("levý panel nabízí přesně čtyři záložky a přepíná jejich obsah", () => {
@@ -46,7 +47,7 @@ describe("Etapa 2 – rozvržení editoru", () => {
 
   it("miniatury označí aktivitu a nad 30 slidů vykreslí jen okno", () => {
     const slides = Array.from({ length: 35 }, (_, index) => ({ ...slide, slideId: `s${index}`, projector: { headline: `Slide ${index + 1}` }, ...(index === 0 ? { type: "activity", activitySpec: { activityType: "mcq" } } : {}) }));
-    const { container } = render(<PresentationThumbnails slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} />);
+    const { container } = render(<PresentationThumbnails slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
     expect(screen.getByText("Aktivita")).toBeTruthy();
     expect(container.querySelectorAll("[data-testid^='slide-thumbnail-']").length).toBeLessThan(30);
     expect(screen.getByRole("button", { name: "Přidat slide" })).toBeTruthy();
@@ -54,16 +55,45 @@ describe("Etapa 2 – rozvržení editoru", () => {
 
   it("miniatura použije importované pozadí slidu, ne výchozí motiv", () => {
     const imported = { ...slide, backgroundOverride: { color: "#5D3D7F" } };
-    render(<PresentationThumbnails slides={[imported]} activeIndex={0} themeId="nature" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} />);
+    render(<PresentationThumbnails slides={[imported]} activeIndex={0} themeId="nature" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
     const thumbnail = screen.getByRole("button", { name: /Otevřít slide 1/ }) as HTMLButtonElement;
     expect(thumbnail.style.backgroundColor).toBe("rgb(93, 61, 127)");
+  });
+
+  it("miniatury předají hromadnou duplikaci, Delete a výběr kontextové nabídky", () => {
+    const onDelete = vi.fn();
+    const onDuplicate = vi.fn();
+    const onToggleHidden = vi.fn();
+    const onSelect = vi.fn();
+    const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
+    render(<PresentationThumbnails slides={slides} activeIndex={0} selectedIndices={[0, 1]} themeId="minimal" onSelect={onSelect} onMove={vi.fn()} onAdd={vi.fn()} onDelete={onDelete} onDuplicate={onDuplicate} onMoveEdge={vi.fn()} onToggleHidden={onToggleHidden} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Duplikovat 2 slidy" })[0]);
+    expect(onDuplicate).toHaveBeenCalledWith([0, 1]);
+    fireEvent.keyDown(screen.getByRole("button", { name: /Otevřít slide 1/ }), { key: "Delete" });
+    expect(onDelete).toHaveBeenCalledWith([0, 1]);
+    fireEvent.contextMenu(screen.getByRole("button", { name: /Otevřít slide 2/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Skrýt při promítání" }));
+    expect(onToggleHidden).toHaveBeenCalledWith([0, 1]);
+  });
+
+  it("kontext cizí miniatury ji nejprve vybere", () => {
+    const onSelect = vi.fn();
+    const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
+    render(<PresentationThumbnails slides={slides} activeIndex={0} selectedIndices={[0]} themeId="minimal" onSelect={onSelect} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
+    fireEvent.contextMenu(screen.getByRole("button", { name: /Otevřít slide 2/ }));
+    expect(onSelect).toHaveBeenCalledWith(1);
+  });
+
+  it("poslední slide má smazání zablokované", () => {
+    render(<PresentationThumbnails slides={[slide]} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
+    expect(screen.getByRole("button", { name: "Smazat slide 1" })).toBeDisabled();
   });
 
   it("skryté miniatury ponechají číslo slidu, šipky a opětovné zobrazení", () => {
     const onNext = vi.fn();
     const onToggle = vi.fn();
     const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
-    render(<PresentationThumbnails slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} open={false} onToggle={onToggle} onPrevious={vi.fn()} onNext={onNext} />);
+    render(<PresentationThumbnails slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} open={false} onToggle={onToggle} onPrevious={vi.fn()} onNext={onNext} />);
     expect(screen.getByText("1 / 2")).toBeTruthy();
     expect(screen.queryByTestId("slide-thumbnail-0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Další slide" }));
