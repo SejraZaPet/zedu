@@ -47,3 +47,33 @@ describe("wallDraftRow matches assignments schema", () => {
     expect(wallErrorReason({ code: "PGRST204" })).toMatch(/chybí pole v databázi.*PGRST204/);
   });
 });
+
+import { canManageWallPost, wallEditPatch } from "@/lib/wall-composer";
+describe("wall post edit/delete", () => {
+  const draft = { description: "Opraveno", materials: [], pinned: true, commentsEnabled: false, notifyEmail: true };
+  const own = { id: "p1", teacher_id: "t1", status: "published", settings: { kind: "announcement", wallPost: true, notifyEmail: true } };
+  it("only own announcements in teacher view", () => {
+    expect(canManageWallPost(own, "t1", true)).toBe(true);
+    expect(canManageWallPost(own, "t2", true)).toBe(false);
+    expect(canManageWallPost(own, "t1", false)).toBe(false);
+    expect(canManageWallPost({ ...own, settings: { kind: "task" } }, "t1", true)).toBe(false);
+  });
+  it("edit never touches status (no notifications) and marks editedAt", () => {
+    const p = wallEditPatch(own, draft, { now: new Date("2026-11-22T10:00:00Z") });
+    expect("status" in p).toBe(false);
+    expect(p.settings).toMatchObject({ kind: "announcement", wallPost: true, pinned: true, commentsEnabled: false, editedAt: "2026-11-22T10:00:00.000Z", notifyEmail: true });
+    expect("scheduled_publish_at" in p).toBe(false);
+  });
+  it("scheduled post can change publish time, no editedAt", () => {
+    const p = wallEditPatch({ ...own, status: "scheduled" }, draft, { publishAt: "2026-12-01T07:00:00.000Z" });
+    expect(p.scheduled_publish_at).toBe("2026-12-01T07:00:00.000Z");
+    expect((p.settings as any).editedAt).toBeUndefined();
+  });
+  it("edit patch keys exist in assignments", () => {
+    const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
+    const block = types.slice(types.indexOf("      assignments: {")).split("Update: {")[1].split("}")[0];
+    const cols = new Set([...block.matchAll(/^\s+(\w+)\??:/gm)].map((m) => m[1]));
+    const p = wallEditPatch({ ...own, status: "scheduled" }, draft, { publishAt: "2026-12-01T07:00:00.000Z" });
+    expect(Object.keys(p).filter((k) => !cols.has(k))).toEqual([]);
+  });
+});

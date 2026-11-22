@@ -1,6 +1,7 @@
 import { fetchRecipientsMap } from "@/lib/assignment-recipients";
 import type { ReactNode } from "react";
-import { isWallPost } from "@/lib/wall-composer";
+import { isWallPost, canManageWallPost, wallEditedAt } from "@/lib/wall-composer";
+import { WallPostEditDialog, WallPostDeleteDialog } from "@/components/class-wall/WallPostEditDialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -31,6 +32,8 @@ interface Props {
   composer?: ReactNode;
   openPath: (a: WallPost) => string;
   onShowAllAnnouncements: () => void;
+  onPostSaved?: (row: WallPost) => void;
+  onPostDeleted?: (id: string) => void;
 }
 
 const db = supabase as any;
@@ -38,7 +41,7 @@ const ICON: Record<AssignmentKind, typeof ClipboardList> = { task: ClipboardList
 const shortName = (n?: string) => { const p = (n ?? "").trim().split(/\s+/).filter(Boolean); return p.length >= 2 ? `${p[0]} ${p[p.length - 1][0]}.` : p[0] ?? ""; };
 const fmt = (v?: string | null) => (v ? format(new Date(v), "d. M. yyyy HH:mm", { locale: cs }) : "");
 
-export default function ClassWall({ items, teacher, composer, openPath, onShowAllAnnouncements }: Props) {
+export default function ClassWall({ items, teacher, composer, openPath, onShowAllAnnouncements, onPostSaved, onPostDeleted }: Props) {
   const { user } = useAuth();
   const uid = user?.id;
   const navigate = useNavigate();
@@ -55,6 +58,8 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<{ id: string; body: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editPost, setEditPost] = useState<WallPost | null>(null);
+  const [deletePost, setDeletePost] = useState<WallPost | null>(null);
   const [ask, setAsk] = useState<{ post: WallPost; text: string } | null>(null);
 
   const ids = useMemo(() => page.filter((p) => commentsEnabled(p.settings)).map((p) => p.id), [page]);
@@ -200,7 +205,7 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
                   <div className="flex flex-wrap items-start gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground"><Icon className="h-4 w-4" aria-hidden /></span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">{isWallPost(post.settings) ? "Příspěvek" : KIND_LABELS[kind]} · {fmt(post.created_at)}</p>
+                      <p className="text-xs text-muted-foreground">{isWallPost(post.settings) ? "Příspěvek" : KIND_LABELS[kind]} · {fmt(post.created_at)}{wallEditedAt(post.settings) && ` · upraveno ${fmt(wallEditedAt(post.settings))}`}</p>
                       <p className="break-words font-medium">{post.title}</p>
                       {teacher && (recipients[post.id]?.length ?? 0) > 0 && <p className="text-xs text-muted-foreground">Jen vybraní žáci ({recipients[post.id].length})</p>}
                       {post.description && <p className="line-clamp-3 break-words text-sm text-muted-foreground">{assignmentDescriptionToText(post.description)}</p>}
@@ -214,6 +219,10 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
                         Povolit komentáře
                       </label>
                     )}
+                    {canManageWallPost(post, uid, !!teacher) && <>
+                      <Button size="sm" variant="ghost" className="min-h-11 sm:min-h-9" onClick={() => setEditPost(post)}><Pencil className="mr-1 h-3 w-3" />Upravit</Button>
+                      <Button size="sm" variant="ghost" className="min-h-11 sm:min-h-9" onClick={() => setDeletePost(post)}><Trash2 className="mr-1 h-3 w-3" />Smazat</Button>
+                    </>}
                     {!teacher && !enabled && kind === "task" && post.teacher_id && (
                       <Button size="sm" variant="ghost" className="min-h-11 sm:min-h-9" onClick={() => setAsk({ post, text: `Dotaz k úkolu „${post.title}“: ` })}>
                         <MessageCircle className="mr-1 h-4 w-4" />Zeptat se učitele
@@ -279,6 +288,10 @@ export default function ClassWall({ items, teacher, composer, openPath, onShowAl
         <Button variant="ghost" className="min-h-11 w-full" onClick={() => setWallOpen(false)}>Sbalit</Button>
       )}
 
+      {teacher && uid && <>
+        <WallPostEditDialog post={editPost} teacherId={uid} onClose={() => setEditPost(null)} onSaved={(row) => { setLocal((l) => { const n = { ...l }; delete n[row.id]; return n; }); onPostSaved?.(row); }} />
+        <WallPostDeleteDialog post={deletePost} teacherId={uid} onClose={() => setDeletePost(null)} onDeleted={(id) => onPostDeleted?.(id)} />
+      </>}
       <Dialog open={!!ask} onOpenChange={(o) => !o && setAsk(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Zeptat se učitele</DialogTitle></DialogHeader>

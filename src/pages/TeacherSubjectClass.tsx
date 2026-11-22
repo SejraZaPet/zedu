@@ -8,6 +8,7 @@ import { isPinned } from "@/lib/assignment-kind";
 import { assignmentStatus, assignmentClassProgress } from "@/lib/assignment-status";
 import LessonPlanActions from "@/components/subject-class/LessonPlanActions";
 import ClassWall from "@/components/class-wall/ClassWall";
+import { WallPostEditDialog, WallPostDeleteDialog } from "@/components/class-wall/WallPostEditDialog";
 import AssignmentKindTabs from "@/components/assignments/AssignmentKindTabs";
 import type { AssignmentKind } from "@/lib/assignment-kind";
 import { AssignmentStatusGroups, AssignmentStatusCard } from "@/components/assignments/AssignmentStatusGroups";
@@ -281,6 +282,8 @@ export default function TeacherSubjectClass() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const loadedOnceRef = useRef(false);
+  const [scheduledEdit, setScheduledEdit] = useState<AssignmentRow | null>(null);
+  const [scheduledDelete, setScheduledDelete] = useState<AssignmentRow | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   /** Propojení učebnice na úrovni Výuky (class_subjects / subject_groups) – fallback bez rozvrhu */
@@ -321,7 +324,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       let assignQuery = supabase
         .from("assignments")
-        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings")
+        .select("id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings, teacher_id")
         .eq("teacher_id", user.id);
       if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
       else assignQuery = assignQuery.eq("class_id", classId);
@@ -1184,7 +1187,7 @@ export default function TeacherSubjectClass() {
   }
 
   const wallContext = { classId: isGroup ? null : classId, groupId: isGroup ? groupId : null, subjectId: resolvedSubjectId, subject: subjectLabel, targetName: klass?.name ?? "Třída/skupina" };
-  const ASSIGN_COLS = "id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings";
+  const ASSIGN_COLS = "id, title, description, status, deadline, created_at, lesson_id, worksheet_id, exam_type, scheduled_publish_at, settings, teacher_id";
   async function withAuthRetry<T extends { error: any }>(run: () => PromiseLike<T>): Promise<T> {
     let res = await run();
     if (isWallAuthError(res.error)) { await supabase.auth.refreshSession(); res = await run(); }
@@ -1498,12 +1501,18 @@ export default function TeacherSubjectClass() {
               <h2 className="text-sm font-semibold">Naplánované příspěvky (žáci je zatím nevidí)</h2>
               {assignments.filter(a => a.status === "scheduled" && isWallPost(a.settings)).map(a => <div key={a.id} className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="min-w-0 break-words"><strong>{a.title}</strong> · Naplánováno na {a.scheduled_publish_at ? format(new Date(a.scheduled_publish_at), "d. M. yyyy H:mm") : "—"}</span>
-                <div className="flex gap-2"><Button size="sm" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "now")}>Zveřejnit hned</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "cancel")}>Zrušit plán</Button></div>
+                <div className="flex gap-2"><Button size="sm" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "now")}>Zveřejnit hned</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => changeScheduledWallPost(a.id, "cancel")}>Zrušit plán</Button><Button size="sm" variant="ghost" className="min-h-11" onClick={() => setScheduledEdit(a)}>Upravit</Button><Button size="sm" variant="ghost" className="min-h-11" onClick={() => setScheduledDelete(a)}>Smazat</Button></div>
               </div>)}
             </section>}
             <ClassWall items={assignments as any} teacher
               composer={user && <WallComposer teacherId={user.id} draftKey={wallDraftKey(user.id, wallContext)} targetName={wallContext.targetName} onPublish={publishWallPost} onCreate={kind => navigate(wallCreateUrl(wallContext, kind, location.pathname))} />}
-              openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements} />
+              openPath={(a) => `/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`} onShowAllAnnouncements={showAllAnnouncements}
+              onPostSaved={(row) => setAssignments(list => list.map(a => a.id === row.id ? { ...a, ...(row as any) } : a))}
+              onPostDeleted={(id) => setAssignments(list => list.filter(a => a.id !== id))} />
+            {user && <>
+              <WallPostEditDialog post={scheduledEdit as any} teacherId={user.id} onClose={() => setScheduledEdit(null)} onSaved={(row) => setAssignments(list => list.map(a => a.id === row.id ? { ...a, ...row } : a))} />
+              <WallPostDeleteDialog post={scheduledDelete as any} teacherId={user.id} onClose={() => setScheduledDelete(null)} onDeleted={(id) => setAssignments(list => list.filter(a => a.id !== id))} />
+            </>}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Past */}
               <section className="order-2" data-testid="section-past">

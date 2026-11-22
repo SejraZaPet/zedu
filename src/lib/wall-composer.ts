@@ -61,3 +61,28 @@ export function wallScheduleIso(local: string, now = new Date()): string {
   if (d.getTime() <= now.getTime() + 60_000) throw new Error("Čas zveřejnění musí být v budoucnosti.");
   return d.toISOString();
 }
+
+export interface WallManagedPost { id: string; teacher_id?: string | null; status?: string | null; settings?: unknown }
+/** Upravit/smazat smí jen učitelský pohled a jen vlastní oznámení/příspěvek. */
+export const canManageWallPost = (post: WallManagedPost, uid: string | null | undefined, teacher: boolean): boolean =>
+  teacher && !!uid && post.teacher_id === uid && assignmentKind(post.settings) === "announcement";
+
+/** Patch úpravy – nikdy nemění `status`, takže triggery notifikací/e-mailů se nespustí. */
+export function wallEditPatch(post: WallManagedPost, draft: WallDraft, opts: { now?: Date; publishAt?: string | null } = {}) {
+  const text = assignmentDescriptionToText(draft.description);
+  if (!text) throw new Error("Napište text příspěvku.");
+  if (text.length > ANNOUNCEMENT_MAX) throw new Error(`Příspěvek může mít nejvýše ${ANNOUNCEMENT_MAX} znaků.`);
+  const prev = (post.settings && typeof post.settings === "object" ? post.settings : {}) as Record<string, unknown>;
+  const patch: Record<string, unknown> = {
+    title: text.split("\n")[0].slice(0, 100),
+    description: sanitizeAssignmentDescription(draft.description),
+    materials: draft.materials,
+    settings: { ...prev, pinned: draft.pinned, commentsEnabled: draft.commentsEnabled, ...(post.status === "published" ? { editedAt: (opts.now ?? new Date()).toISOString() } : {}) },
+  };
+  if (post.status === "scheduled" && opts.publishAt) patch.scheduled_publish_at = opts.publishAt;
+  return patch;
+}
+export const wallEditedAt = (settings: unknown): string | null => {
+  const v = settings && typeof settings === "object" ? (settings as Record<string, unknown>).editedAt : null;
+  return typeof v === "string" ? v : null;
+};
