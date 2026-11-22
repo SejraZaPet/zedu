@@ -5,7 +5,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { correctResponsePercent, formatResponsePoints } from "@/lib/live-question-results";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isLiveMcqSlide, isMcqRevealed, mcqRevealPatch, liveQuestionTimeLimitMs } from "@/lib/live-mcq";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import StartActivityPanel from "@/components/live/StartActivityPanel";
@@ -13,7 +13,7 @@ import { isAwaitingStart, isManualStart, isRespondableSlide, settingsForSlideEnt
 import { nextAnimationRevealCount, pendingClickActivity, slideClickAnimations } from "@/lib/slide-block-animations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair, Play } from "lucide-react";
+import { Smartphone, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Plus, Eye, ZoomIn, ZoomOut, Crosshair, Copy, MoreHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
@@ -51,10 +51,14 @@ import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
 import LiveDraftsPanel from "@/components/live/LiveDraftsPanel";
 import LessonPlanPacing from "@/components/live/LessonPlanPacing";
 import LiveSlideTopNav, { isTypingTarget, slideKeyDirection } from "@/components/live/LiveSlideTopNav";
+import LiveTeacherActions from "@/components/live/LiveTeacherActions";
+import TeacherNotesPanel from "@/components/live/TeacherNotesPanel";
+import type { ClassroomToolRequest } from "@/components/classroom/ClassroomToolsOverlay";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
-import ProjectorFontScaleControls from "@/components/live/ProjectorFontScaleControls";
 import { clampProjectorFontScale, loadProjectorFontScale, saveProjectorFontScale, settingsWithProjectorFontScale } from "@/lib/projector-font-scale";
 import { isSoloRoundSlide } from "@/lib/solo-round";
+import { loadTeacherNotesCollapsed, patchTeacherNotes, saveTeacherNotesCollapsed, teacherNotesForSlide, type TeacherNoteTarget } from "@/lib/live-teacher-notes";
+import { useToast } from "@/hooks/use-toast";
 
 interface SlideData {
   slideId: string;
@@ -72,6 +76,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
 const LiveTeacherScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const { startGame, nextQuestion, showResults, endGame } = useTeacherGameControls(sessionId);
@@ -81,6 +86,12 @@ const LiveTeacherScreen = () => {
   const [progressGridOpen, setProgressGridOpen] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const [teamsDialogOpen, setTeamsDialogOpen] = useState(false);
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+  const [notesMobileOpen, setNotesMobileOpen] = useState(false);
+  const [notesCollapsed, setNotesCollapsed] = useState(false);
+  const [classroomTool, setClassroomTool] = useState<ClassroomToolRequest | null>(null);
+  const [compactActions, setCompactActions] = useState(() => typeof window !== "undefined" && window.innerWidth < 1280);
+  const notesSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   useTeamAutoAssign(session as any, players as any);
   const projectorPreviewRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -91,12 +102,30 @@ const LiveTeacherScreen = () => {
   const isLobby = session?.status === "lobby";
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
+  const teacherId = (session as any)?.teacher_id as string | undefined;
   const [projectorFontScale, setProjectorFontScale] = useState(loadProjectorFontScale);
   const fontScaleInitializedFor = useRef<string | null>(null);
   const gameCode = session?.game_code || "";
   const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1279px)");
+    const update = () => setCompactActions(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    setNotesCollapsed(loadTeacherNotesCollapsed(teacherId));
+  }, [teacherId]);
+
+  const changeNotesCollapsed = useCallback((collapsed: boolean) => {
+    setNotesCollapsed(collapsed);
+    saveTeacherNotesCollapsed(teacherId, collapsed);
+  }, [teacherId]);
 
   const changeProjectorFontScale = useCallback(async (value: number) => {
     const next = saveProjectorFontScale(value);
@@ -106,6 +135,62 @@ const LiveTeacherScreen = () => {
       settings: settingsWithProjectorFontScale(settings, next) as any,
     }).eq("id", sessionId);
   }, [sessionId, settings]);
+
+  const updateSessionSettings = useCallback(async (patch: Record<string, any>) => {
+    if (!sessionId) return;
+    const next = { ...(settings || {}), ...patch };
+    // Původní chování ručního spouštění: vypnutí klíč odstraní, nikoli ukládá null.
+    if (patch.armedQuestion === null) delete next.armedQuestion;
+    await supabase.from("game_sessions").update({ settings: next }).eq("id", sessionId);
+  }, [sessionId, settings]);
+
+  const requestEndGame = useCallback(() => {
+    if (!window.confirm("Opravdu chcete ukončit výuku? Žákům se zobrazí závěrečná obrazovka.")) return;
+    void endGame();
+  }, [endGame]);
+
+  const copyGameCode = useCallback(async () => {
+    if (!gameCode) return;
+    try {
+      await navigator.clipboard.writeText(gameCode);
+      toast({ title: "Kód zkopírován", description: gameCode });
+    } catch {
+      toast({ title: "Kód se nepodařilo zkopírovat", description: "Označte jej a zkopírujte ručně.", variant: "destructive" });
+    }
+  }, [gameCode, toast]);
+
+  const noteTarget = useMemo<TeacherNoteTarget>(() => ({
+    slideId: currentSlide?.slideId,
+    index: Math.max(0, currentIndex),
+  }), [currentSlide?.slideId, currentIndex]);
+
+  /** Čte čerstvou řadu a mění jen poznámku cílového slidu; souběžný zápis se nepřepíše. */
+  const saveTeacherNotes = useCallback((target: TeacherNoteTarget, notes: string) => {
+    const run = async () => {
+      if (!sessionId) throw new Error("Chybí relace");
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data: fresh, error: readError } = await supabase
+          .from("game_sessions")
+          .select("activity_data, updated_at")
+          .eq("id", sessionId)
+          .single();
+        if (readError) throw readError;
+        const latestSlides = Array.isArray(fresh?.activity_data) ? fresh.activity_data as any[] : [];
+        const activityData = patchTeacherNotes(latestSlides, target, notes);
+        if (!activityData) throw new Error("Slide už v prezentaci není");
+        let update = supabase.from("game_sessions").update({ activity_data: activityData as any }).eq("id", sessionId);
+        if (fresh?.updated_at) update = update.eq("updated_at", fresh.updated_at);
+        const { data: saved, error: updateError } = await update.select("id");
+        if (updateError) throw updateError;
+        if (saved && saved.length === 0 && fresh?.updated_at) continue;
+        return;
+      }
+      throw new Error("Prezentace se právě změnila, zkuste uložení znovu");
+    };
+    const queued = notesSaveQueueRef.current.catch(() => {}).then(run);
+    notesSaveQueueRef.current = queued;
+    return queued;
+  }, [sessionId]);
 
   // Starší relace bez hodnoty dostanou uloženou učitelovu volbu; novější
   // projektor i učitel sdílí jedinou hodnotu v existujícím settings JSON.
@@ -263,11 +348,11 @@ const LiveTeacherScreen = () => {
       return;
     }
     if (currentIndex >= slides.length - 1) {
-      endGame();
+      requestEndGame();
     } else {
       nextQuestion(currentIndex, slideResetPatch(currentIndex + 1));
     }
-  }, [session, sessionId, settings, currentSlide, animationRevealCount, clickAnimations, currentIndex, slides.length, nextQuestion, endGame, slideResetPatch]);
+  }, [session, sessionId, settings, currentSlide, animationRevealCount, clickAnimations, currentIndex, slides.length, nextQuestion, requestEndGame, slideResetPatch]);
 
   const goToIndex = useCallback(async (target: number) => {
     if (!sessionId) return;
@@ -363,6 +448,11 @@ const LiveTeacherScreen = () => {
     ch.subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [sessionId, handleNext, nextQuestion, endGame, currentIndex, goToIndex, settings, slideResetPatch]);
+
+  // Čekárna bývá dlouhá; po zahájení nesmí staré rolování zakrýt vrchol plátna.
+  useEffect(() => {
+    if (session?.status === "playing") window.scrollTo({ top: 0, left: 0 });
+  }, [session?.status]);
 
   // Refetch session data if slides arrive empty (race with DB write)
   useEffect(() => {
@@ -629,288 +719,88 @@ const LiveTeacherScreen = () => {
     );
   }
 
+  const renderTeacherActions = (compact: boolean) => sessionId ? (
+    <LiveTeacherActions
+      sessionId={sessionId}
+      settings={settings || {}}
+      currentIndex={currentIndex}
+      slidesCount={slides.length}
+      projectorFontScale={projectorFontScale}
+      onProjectorFontScaleChange={changeProjectorFontScale}
+      whiteboardVisible={whiteboardVisible}
+      onToggleWhiteboard={toggleWhiteboard}
+      zoomable={zoomable}
+      zoomZones={zoomZones}
+      activeZoom={activeZoom}
+      drawZoomMode={drawZoomMode}
+      onDrawZoomModeChange={setDrawZoomMode}
+      onApplyZoom={applyZoom}
+      unansweredCount={unansweredCount}
+      onAdaptiveOpen={() => setAdaptiveOpen(true)}
+      onResultsOpen={() => setResultsPanelOpen(true)}
+      onProgressOpen={() => setProgressGridOpen(true)}
+      onQuestionsOpen={() => setQuestionsOpen(true)}
+      classroomTool={classroomTool}
+      onClassroomToolChange={setClassroomTool}
+      onNotesOpen={() => {
+        setMoreActionsOpen(false);
+        if (compact) window.setTimeout(() => setNotesMobileOpen(true), 300);
+        else changeNotesCollapsed(!notesCollapsed);
+      }}
+      onUpdateSettings={updateSessionSettings}
+      compact={compact}
+    />
+  ) : null;
+
   // Playing: show current slide
   return (
     <>
     <RaisedHandsIndicator players={players as any} />
     <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-    <div className="min-h-screen bg-background p-6 pt-0 max-w-4xl mx-auto space-y-6" {...swipeHandlers}>
-      <LiveSlideTopNav index={currentIndex} total={slides.length} onPrev={goPrevSlide} onNext={goNextSlide} />
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={() => navigate("/ucitel/ucebnice")} className="gap-1.5">
-            <ArrowLeft className="w-4 h-4" /> Učebnice
+    <div className="min-h-dvh bg-deck-cream/25 font-deck-body" {...swipeHandlers}>
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 shadow-sm backdrop-blur">
+        <div className="flex h-[55px] items-center gap-1.5 px-2 sm:px-3">
+          <Button size="icon" variant="ghost" onClick={() => navigate("/ucitel/ucebnice")} className="h-11 w-11 shrink-0 lg:h-9 lg:w-9" aria-label="Zpět do učebnice" title="Zpět do učebnice">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-lg font-bold">{session.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              Kód: <span className="font-mono font-bold">{gameCode}</span> · <Users className="w-3.5 h-3.5 inline" /> {players.length}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Badge variant="outline">Slide {currentIndex + 1} / {slides.length}</Badge>
-          {sessionId && <LiveDraftsPanel sessionId={sessionId} currentIndex={currentIndex} slidesCount={slides.length} />}
-
-          {/* Zobrazení */}
-          <TooltipProvider delayDuration={200}>
-            <div className="flex items-center gap-1">
-              <ProjectorFontScaleControls value={projectorFontScale} onChange={changeProjectorFontScale} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-9 w-9"
-                    aria-label="Projektor"
-                    onClick={() => window.open(`/live/projektor/${sessionId}`, '_blank')}
-                  >
-                    <Monitor className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Projektor</TooltipContent>
-              </Tooltip>
-              {sessionId && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span><RemoteControlButton sessionId={sessionId} iconOnly /></span>
-                  </TooltipTrigger>
-                  <TooltipContent>Ovládání z mobilu</TooltipContent>
-                </Tooltip>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant={whiteboardVisible ? "default" : "outline"}
-                    className="h-9 w-9"
-                    onClick={toggleWhiteboard}
-                    aria-label={whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{whiteboardVisible ? "Skrýt tabuli" : "Živá tabule"}</TooltipContent>
-              </Tooltip>
-
-              {zoomable && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant={activeZoom ? "default" : "outline"}
-                      className="h-9 w-9"
-                      aria-label="Přiblížit"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-80 space-y-3">
-                    <p className="text-sm font-semibold">Přiblížení</p>
-                    {zoomZones.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {zoomZones.map((z, i) => {
-                          const isActive =
-                            !!activeZoom &&
-                            Math.abs(activeZoom.x - z.x) < 0.5 &&
-                            Math.abs(activeZoom.y - z.y) < 0.5 &&
-                            Math.abs(activeZoom.width - z.width) < 0.5;
-                          return (
-                            <button
-                              key={z.id}
-                              type="button"
-                              onClick={() => applyZoom({ x: z.x, y: z.y, width: z.width, height: z.height })}
-                              className={`w-full flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 text-left text-xs transition-colors ${
-                                isActive ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
-                              }`}
-                            >
-                              <span className="h-5 w-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                                {i + 1}
-                              </span>
-                              <span className="truncate">{z.label || `Zóna ${i + 1}`}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Tento slide nemá uložené zóny přiblížení. Můžete nakreslit výřez přímo teď.
-                      </p>
-                    )}
-                    <Button
-                      size="sm"
-                      variant={drawZoomMode ? "default" : "outline"}
-                      className="w-full gap-1.5"
-                      onClick={() => setDrawZoomMode((v) => !v)}
-                    >
-                      <Crosshair className="w-4 h-4" />
-                      {drawZoomMode ? "Ukončit kreslení výřezu" : "Nakreslit výřez"}
-                    </Button>
-                    {activeZoom && (
-                      <Button size="sm" variant="secondary" className="w-full gap-1.5" onClick={() => applyZoom(null)}>
-                        <ZoomOut className="w-4 h-4" /> Zpět na celý slide
-                      </Button>
-                    )}
-                  </PopoverContent>
-                </Popover>
-              )}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep lg:text-base" title={session.title}>{session.title}</h1>
+            <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+              <button type="button" onClick={() => void copyGameCode()} className="flex min-h-6 items-center gap-1 rounded px-1 font-mono font-semibold text-foreground hover:bg-muted" title="Kopírovat kód" aria-label={`Kopírovat kód ${gameCode}`}>
+                {gameCode}<Copy className="h-3 w-3" />
+              </button>
+              <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{players.length}</span>
             </div>
-          </TooltipProvider>
-
-          {/* Nastavení */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <Settings className="w-4 h-4" />
-                Nastavení
+          </div>
+          <LiveSlideTopNav
+            index={currentIndex}
+            total={slides.length}
+            onPrev={goPrevSlide}
+            onNext={goNextSlide}
+            typeLabel={currentSlide ? (SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type) : undefined}
+          />
+          {!compactActions ? (
+            <div className="ml-1 flex shrink-0 items-center">{renderTeacherActions(false)}</div>
+          ) : (
+            <>
+              <Button type="button" size="icon" variant="outline" className="h-11 w-11 shrink-0" onClick={() => setMoreActionsOpen(true)} aria-label="Více akcí" title="Více akcí">
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 space-y-3">
-              <p className="text-sm font-semibold">Nastavení prezentace</p>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                <span>Kreslení žáků do streamu</span>
-                <Switch
-                  checked={!!settings?.allowStudentDrawSync}
-                  onCheckedChange={async (checked) => {
-                    if (!sessionId) return;
-                    await supabase
-                      .from("game_sessions")
-                      .update({ settings: { ...(settings || {}), allowStudentDrawSync: checked } })
-                      .eq("id", sessionId);
-                  }}
-                  aria-label="Povolit kreslení žáků do streamu"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                <span>Anonymní odpovědi</span>
-                <Switch
-                  checked={!!settings?.anonymousAnswers}
-                  onCheckedChange={async (checked) => {
-                    if (!sessionId) return;
-                    await supabase
-                      .from("game_sessions")
-                      .update({ settings: { ...(settings || {}), anonymousAnswers: checked } })
-                      .eq("id", sessionId);
-                  }}
-                  aria-label="Anonymní odpovědi na projektoru"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                <span>Spouštět aktivity: {isManualStart(settings) ? "ručně" : "automaticky"}</span>
-                <Switch
-                  checked={isManualStart(settings)}
-                  onCheckedChange={async (checked) => {
-                    if (!sessionId) return;
-                    const next: Record<string, any> = { ...(settings || {}), activityStartMode: checked ? "manual" : "auto" };
-                    // Vypnutí ručního režimu nesmí nechat žáky čekat na právě připraveném slidu.
-                    if (!checked) delete next.armedQuestion;
-                    await supabase.from("game_sessions").update({ settings: next }).eq("id", sessionId);
-                  }}
-                  aria-label="Spouštět aktivity ručně tlačítkem Spustit"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                <span>Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}</span>
-                <Switch
-                  checked={settings?.pacingMode === "student"}
-                  onCheckedChange={async (checked) => {
-                    if (!sessionId) return;
-                    await supabase
-                      .from("game_sessions")
-                      .update({
-                        settings: { ...(settings || {}), pacingMode: checked ? "student" : "teacher" },
-                      })
-                      .eq("id", sessionId);
-                  }}
-                  aria-label="Vlastní tempo žáka"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-sm">
-                <span>Závodní dráha</span>
-                <Switch
-                  checked={!!settings?.showRaceTrack}
-                  onCheckedChange={async (checked) => {
-                    if (!sessionId) return;
-                    await supabase
-                      .from("game_sessions")
-                      .update({ settings: { ...(settings || {}), showRaceTrack: checked } })
-                      .eq("id", sessionId);
-                  }}
-                  aria-label="Zobrazit závodní dráhu na projektoru"
-                />
-              </label>
-              <GameBackgroundSelect
-                value={sessionBackgroundUrl(settings)}
-                subjectKey={settings?.subjectKey ?? null}
-                onChange={async (url) => {
-                  if (!sessionId) return;
-                  await supabase
-                    .from("game_sessions")
-                    .update({ settings: { ...(settings || {}), backgroundUrl: url } })
-                    .eq("id", sessionId);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Nástroje */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5 relative">
-                <Wrench className="w-4 h-4" />
-                Nástroje
-                {unansweredCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] px-1">
-                    {unansweredCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-60 p-1">
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
-                onClick={() => setAdaptiveOpen(true)}
-              >
-                <Brain className="w-4 h-4" /> Adaptivní závěr
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
-                onClick={() => setResultsPanelOpen(true)}
-              >
-                <BarChart3 className="w-4 h-4" /> Výsledky třídy
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
-                onClick={() => setProgressGridOpen(true)}
-              >
-                <LayoutGrid className="w-4 h-4" /> Přehled třídy
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
-                onClick={() => setQuestionsOpen(true)}
-              >
-                <MessageCircleQuestion className="w-4 h-4" /> Dotazy
-                {unansweredCount > 0 && (
-                  <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1">
-                    {unansweredCount}
-                  </span>
-                )}
-              </button>
-            </PopoverContent>
-          </Popover>
-
-          <Button size="sm" variant="destructive" onClick={endGame}>
-            <StopCircle className="w-4 h-4 mr-1" /> Ukončit
+              <Sheet open={moreActionsOpen} onOpenChange={setMoreActionsOpen}>
+                <SheetContent side="right" className="w-[min(92vw,22rem)] overflow-y-auto sm:max-w-sm">
+                  <SheetHeader><SheetTitle>Více akcí</SheetTitle></SheetHeader>
+                  <div className="mt-4">{renderTeacherActions(true)}</div>
+                </SheetContent>
+              </Sheet>
+            </>
+          )}
+          <Button type="button" size="icon" variant="destructive" onClick={requestEndGame} className="h-11 w-11 shrink-0 lg:h-9 lg:w-9" aria-label="Ukončit výuku" title="Ukončit výuku">
+            <StopCircle className="h-4 w-4" />
           </Button>
         </div>
-
-      </div>
-
+      </header>
+      <main className="mx-auto flex w-full max-w-[1800px] items-stretch gap-4 p-3 lg:p-4">
+        <div className="min-w-0 flex-1 space-y-4">
       {sessionId && (
         <AdaptiveReviewDialog
           open={adaptiveOpen}
@@ -1124,36 +1014,8 @@ const LiveTeacherScreen = () => {
       </Dialog>
 
 
-      {/* Slide strip */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goToIndex(i)}
-            className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center text-xs font-medium cursor-pointer transition-colors ${
-              i === currentIndex
-                ? "bg-primary text-primary-foreground"
-                : i < currentIndex
-                ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-muted/50 text-muted-foreground/50 hover:bg-muted/70"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
-
       {currentSlide && (
         <div className="space-y-4">
-          <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
-
-          {/* Časování a poznámky podle plánu hodiny – jen pro učitele */}
-          <LessonPlanPacing
-            teacherId={(session as any)?.teacher_id}
-            sessionTitle={session?.title}
-            currentIndex={currentIndex}
-            slideCount={slides.length}
-          />
 
           {/* Živé přiblížení – náhled výřezu + kreslení */}
           {zoomable && (drawZoomMode || activeZoom) && (
@@ -1199,19 +1061,9 @@ const LiveTeacherScreen = () => {
             </div>
           )}
 
-          {/* Projector */}
-          <div
-            ref={projectorPreviewRef}
-            onScroll={handleProjectorScroll}
-            className="border border-border rounded-lg p-4 bg-background max-h-[60vh] overflow-hidden"
-          >
-            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
-              <Monitor className="w-4 h-4" /> PROJEKTOR
-            </div>
-            {/* Stejný renderer jako v editoru i na projekci – zachová pozice,
-                pozadí, gradienty, sazbu i „scale-to-fit“ chování. Snímky bez
-                bloků dostanou bloky dopočítané z textu / tabulky / karet. */}
-            <div className="rounded-lg overflow-hidden">
+          {/* Plátno využije dostupnou šířku i výšku okna; na mobilu drží 16:9. */}
+          <div className="aspect-video w-full lg:aspect-auto lg:h-[calc(100dvh-7.5rem)] lg:min-h-[320px]">
+            <div ref={projectorPreviewRef} onScroll={handleProjectorScroll} className="h-full w-full overflow-hidden rounded-xl border border-border bg-background">
               <SlideCanvas
                 slide={slideWithFallbackBlocks(currentSlide)}
                 themeId={(currentSlide as any)?.themeId}
@@ -1223,6 +1075,31 @@ const LiveTeacherScreen = () => {
               />
             </div>
           </div>
+
+          <nav aria-label="Přejít na slide" className="flex gap-1 overflow-x-auto pb-1">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goToIndex(i)}
+                aria-label={`Přejít na slide ${i + 1}`}
+                aria-current={i === currentIndex ? "page" : undefined}
+                className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded text-xs font-medium transition-colors lg:h-9 lg:w-9 ${
+                  i === currentIndex ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </nav>
+
+          {/* Časování podle plánu hodiny zůstává učiteli pod plátnem. */}
+          <LessonPlanPacing
+            teacherId={teacherId}
+            sessionTitle={session?.title}
+            currentIndex={currentIndex}
+            slideCount={slides.length}
+          />
 
 
           {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType === "teams" && (
@@ -1535,18 +1412,6 @@ const LiveTeacherScreen = () => {
           )}
 
 
-          {/* Teacher notes (blokový model: teacherNotes, AI plány: speakerNotes) */}
-          {(currentSlide.teacherNotes || (currentSlide as any).speakerNotes) && (
-            <div className="border border-dashed border-border rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1 text-xs font-medium text-muted-foreground">
-                <StickyNote className="w-3.5 h-3.5" /> POZNÁMKY
-              </div>
-              <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                {currentSlide.teacherNotes || (currentSlide as any).speakerNotes}
-              </p>
-            </div>
-          )}
-
           {awaitingStart && (
             <StartActivityPanel slide={currentSlide} playerCount={players.length} onStart={startActivity} />
           )}
@@ -1587,6 +1452,22 @@ const LiveTeacherScreen = () => {
           </div>
         </div>
       )}
+        </div>
+        {currentSlide && (
+          <TeacherNotesPanel
+            key={`${noteTarget.slideId ?? "slide"}-${noteTarget.index}`}
+            target={noteTarget}
+            initialValue={teacherNotesForSlide(currentSlide)}
+            nextTitle={currentIndex + 1 < slides.length ? (slides[currentIndex + 1]?.projector?.headline || `Slide ${currentIndex + 2}`) : undefined}
+            collapsed={notesCollapsed}
+            onCollapsedChange={changeNotesCollapsed}
+            mobileOpen={notesMobileOpen}
+            onMobileOpenChange={setNotesMobileOpen}
+            onNext={goNextSlide}
+            onSave={saveTeacherNotes}
+          />
+        )}
+      </main>
     </div>
 
     {sessionId && whiteboardVisible && currentSlide && (

@@ -1,8 +1,6 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Wrench } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ClassroomToolsOverlay, classroomTools, type ClassroomToolRequest } from "@/components/classroom/ClassroomToolsOverlay";
+import { Badge } from "@/components/ui/badge";
 
 /** Kláves/cíl, který nemá posouvat slidy (psaní do polí, editory). */
 export function isTypingTarget(t: EventTarget | null): boolean {
@@ -19,48 +17,36 @@ export function slideKeyDirection(key: string): -1 | 1 | 0 {
   return 0;
 }
 
-/**
- * Horní lišta promítání: Předchozí / číslo slidu / Další a nástroje do hodiny.
- * Stejná pro každou prezentaci (vytvořenou i generovanou z lekce).
- */
+/** Stále dostupná navigace v jediné horní liště promítání. */
 export default function LiveSlideTopNav({
-  index, total, onPrev, onNext,
-}: { index: number; total: number; onPrev: () => void; onNext: () => void }) {
-  const [tool, setTool] = useState<ClassroomToolRequest | null>(null);
+  index,
+  total,
+  onPrev,
+  onNext,
+  typeLabel,
+}: {
+  index: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+  typeLabel?: string;
+}) {
   const atStart = index <= 0;
   const atEnd = index >= total - 1;
   return (
-    <div
-      role="toolbar"
-      aria-label="Ovládání promítání"
-      className="sticky top-0 z-30 -mx-6 flex items-center gap-2 border-b border-border bg-background/95 px-6 py-2 font-deck-body backdrop-blur"
-    >
-      <Button size="sm" variant="outline" className="min-h-11 gap-1" disabled={atStart} onClick={onPrev} aria-label="Předchozí slide">
-        <ChevronLeft className="h-4 w-4" /> Předchozí
+    <div role="toolbar" aria-label="Ovládání promítání" className="flex shrink-0 items-center gap-1 font-deck-body">
+      <Button size="icon" variant="ghost" className="h-11 w-11 lg:h-9 lg:w-9" disabled={atStart} onClick={onPrev} aria-label="Předchozí slide" title="Předchozí slide">
+        <ChevronLeft className="h-5 w-5" />
       </Button>
-      <span className="min-w-[5.5rem] rounded-full bg-deck-cream px-3 py-1 text-center font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep" aria-live="polite">
-        {Math.max(1, index + 1)} / {total}
-      </span>
-      <Button size="sm" className="min-h-11 gap-1 border-0 bg-deck-violet text-primary-foreground hover:bg-deck-violet-deep" disabled={atEnd} onClick={onNext} aria-label="Další slide">
-        Další <ChevronRight className="h-4 w-4" />
-      </Button>
-      <div className="ml-auto">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="min-h-11 gap-1.5 border-deck-teal">
-              <Wrench className="h-4 w-4" /> Nástroje do hodiny
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {classroomTools.map((t) => (
-              <DropdownMenuItem key={t.id} onSelect={() => setTool({ id: t.id })} className="gap-2">
-                <t.icon className="h-4 w-4" /> {t.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex min-w-[4.25rem] flex-col items-center justify-center leading-none">
+        <span className="px-1 text-center font-deck-heading text-sm tabular-nums text-deck-violet-deep" aria-live="polite">
+          {Math.max(1, index + 1)} / {total}
+        </span>
+        {typeLabel && <Badge variant="outline" className="mt-1 hidden px-1.5 py-0 text-[9px] font-normal md:inline-flex">{typeLabel}</Badge>}
       </div>
-      <ClassroomToolsOverlay request={tool} onClose={() => setTool(null)} />
+      <Button size="icon" variant="ghost" className="h-11 w-11 lg:h-9 lg:w-9" disabled={atEnd} onClick={onNext} aria-label="Další slide" title="Další slide">
+        <ChevronRight className="h-5 w-5" />
+      </Button>
     </div>
   );
 }

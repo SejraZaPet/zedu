@@ -28,9 +28,10 @@ interface Props {
   sessionId: string;
   currentIndex: number;
   slidesCount: number;
+  iconOnly?: boolean;
 }
 
-export default function LiveDraftsPanel({ sessionId, currentIndex, slidesCount }: Props) {
+export default function LiveDraftsPanel({ sessionId, currentIndex, slidesCount, iconOnly = false }: Props) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -153,9 +154,16 @@ export default function LiveDraftsPanel({ sessionId, currentIndex, slidesCount }
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)} className="gap-1.5 border-dashed">
-        <FilePenLine className="w-4 h-4" /> Koncepty
-        {drafts.length > 0 && <Badge variant="secondary" className="ml-1">{drafts.length}</Badge>}
+      <Button
+        variant="outline"
+        size={iconOnly ? "icon" : "sm"}
+        onClick={() => setOpen(true)}
+        className={iconOnly ? "relative h-9 w-9 border-dashed" : "relative min-h-11 w-full justify-start gap-1.5 border-dashed px-3"}
+        aria-label="Koncepty"
+        title="Koncepty"
+      >
+        <FilePenLine className="w-4 h-4" />{!iconOnly && "Koncepty"}
+        {drafts.length > 0 && <Badge variant="secondary" className={iconOnly ? "absolute -right-1.5 -top-1.5 h-[18px] min-w-[18px] px-1 text-[10px]" : "ml-auto"}>{drafts.length}</Badge>}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">

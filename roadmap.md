@@ -379,10 +379,11 @@
 - [x] Trvalý `e2e/remote_control_dialog_layout.py` měří hranice, zalomení, centrování a ellipsis při 1366/390 px; reálné přihlášené promítání při 1366 px, 17 regresních testů, typy a build prošly. Bez testovacích dat, DB/RLS, nasazení a AGENTS.md.
 
 ## Promítání – kompaktní lišta a poznámky vpravo
-- [ ] Zachovat všechny akce, swipe a klávesy; sjednotit horní ovládání a čísla slidů bez zbytečné výšky.
-- [ ] Zvětšit plátno a doplnit sbalitelný panel poznámek vpravo, autosave a náhled dalšího slidu; mobilní výsuvný panel.
-- [ ] Ověřit nedostupnost poznámek žákům, nástroje a jejich podmíněné zobrazení.
-- [ ] Testy akcí, editace/uložení/sbalení poznámek, žákovského UI a náhledu 1366/390 px; úklid vlastních [TEST] dat, bez DB/RLS, nasazení a AGENTS.md.
+- [x] Zachovat všechny akce, swipe a klávesy; jedna 56px lišta, zvětšení v popoveru, čísla slidů pod plátnem a „Více“ pod 1280 px.
+- [x] Plátno využívá okno; vpravo sbalitelné poznámky 320/336 px s pamatovanou volbou, autosave po 700 ms, čerstvým cíleným zápisem a náhledem dalšího slidu; mobilní výsuvný panel.
+- [x] „Nástroje do hodiny“ a „Nástroje“ obsahovaly odlišné funkce; jsou sloučeny v jedné nabídce bez odebrání akce. Projektor/student poznámky nevykreslují.
+- [x] 30 cílených/regresních testů, typy a build; přihlášený průchod 1366/390 px ověřil všechny akce, uložení/znovuotevření, trvalé sbalení, projektor a žákovský telefon bez poznámky či vodorovného přetečení. Vlastní [TEST] prezentace, relace a žák odstraněni; bez DB/RLS, nasazení a AGENTS.md.
+- Fyzický telefon/tablet a nativní swipe nebyly spuštěny; dotykové cíle a mobilní panel ověřeny v Chromiu při 390 px.
 
 ## Prezentace – přechody mezi slidy a návrh animací prvků
 - [x] Přechody na jednotlivých slidech: katalog, směr, délka, použití na všechny a zpětná kompatibilita.
