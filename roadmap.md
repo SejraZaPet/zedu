@@ -411,3 +411,8 @@
 - [ ] Etapy 4–5 jako další plán: všechny presety/balíčky stránek a PPTX import/export.
 - [x] 51 cílených testů, typecheck, build, přihlášený živý průchod a úklid [TEST] dat; bez DB/RLS, nasazení a AGENTS.md.
 - Živý průchod potvrdil skrytí/odhalení v projekci i telefonu, zachování prvního slidu, reduced-motion `none`, další slide a úklid. Editorovo plátno ověřují přímé testy; opakované vizuální spouštění bylo nestabilní kvůli načítání seznamu, ne kvůli chybě aplikace. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.
+
+## Úvodní stránka – editace pouze z administrace
+- [x] Odebráno plovoucí „Upravit stránku“ z běžné veřejné adresy `/`.
+- [x] Adminům přidán vstup „Upravit úvodní stránku“ v administraci a chráněné automatické zapnutí editace.
+- [x] Zachováno `realRole === "admin"`; ukončení nabízí návrat do administrace. Ověřeny 4 testy admin/učitel/veřejnost, typy a přihlášený průchod bez chyb stránky; bez DB/RLS, nasazení a AGENTS.md.

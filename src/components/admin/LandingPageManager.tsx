@@ -10,19 +10,22 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Plus, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, ExternalLink, Loader2, Pencil } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
 import { DEFAULT_PROPS_BY_TYPE } from "@/lib/landing-defaults";
+import { useAuth } from "@/contexts/AuthContext";
 import { SortableSectionCard } from "./landing/SortableSectionCard";
 import { LandingSectionEditorDialog } from "./landing/LandingSectionEditorDialog";
 import { AddSectionDialog } from "./landing/AddSectionDialog";
 
 export default function LandingPageManager() {
   const qc = useQueryClient();
+  const { realRole } = useAuth();
   const { data, isLoading, isError } = useAllLandingSections();
   const sections = useMemo(() => data ?? [], [data]);
 
@@ -135,7 +138,14 @@ export default function LandingPageManager() {
             Přetáhněte sekce pro přeuspořádání. Změny pořadí a viditelnosti se ukládají okamžitě.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          {realRole === "admin" && (
+            <Button size="sm" asChild>
+              <Link to="/?edit=1&from=admin">
+                <Pencil className="w-4 h-4 mr-1" /> Upravit úvodní stránku
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <a href="/" target="_blank" rel="noreferrer">
               <ExternalLink className="w-4 h-4 mr-1" /> Zobrazit landing

@@ -1,9 +1,13 @@
-import { Save, X, Undo2, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, X, Undo2, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLandingEditMode } from "@/contexts/LandingEditModeContext";
 import { Button } from "@/components/ui/button";
 
 export default function EditModeFloatingBar() {
   const { isEditMode, exitEditMode, dirtyCount, saveAll, discardAll, saving } = useLandingEditMode();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromAdmin = searchParams.get("edit") === "1" && searchParams.get("from") === "admin";
 
   if (!isEditMode) return null;
 
@@ -14,10 +18,11 @@ export default function EditModeFloatingBar() {
       discardAll();
     }
     exitEditMode();
+    if (fromAdmin) navigate("/admin?tab=landing");
   };
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl bg-background/95 backdrop-blur border border-border shadow-2xl px-3 py-2">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 rounded-2xl bg-background/95 backdrop-blur border border-border shadow-2xl px-3 py-2">
       <div className="text-sm px-2">
         {dirtyCount === 0 ? (
           <span className="text-muted-foreground">Režim úprav</span>
@@ -35,7 +40,11 @@ export default function EditModeFloatingBar() {
         Uložit změny
       </Button>
       <Button size="sm" variant="outline" onClick={handleExit} disabled={saving}>
-        <X className="w-4 h-4 mr-1" /> Ukončit
+        {fromAdmin ? (
+          <><ArrowLeft className="w-4 h-4 mr-1" /> Ukončit a zpět do administrace</>
+        ) : (
+          <><X className="w-4 h-4 mr-1" /> Ukončit</>
+        )}
       </Button>
     </div>
   );

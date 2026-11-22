@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -27,7 +28,7 @@ import SiteFooter from "@/components/SiteFooter";
 import Seo from "@/components/Seo";
 import { useLandingSections, useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
 import { LandingEditModeProvider, useLandingEditMode } from "@/contexts/LandingEditModeContext";
-import AdminEditToggle from "@/components/landing-edit/AdminEditToggle";
+import { useAuth } from "@/contexts/AuthContext";
 import EditModeFloatingBar from "@/components/landing-edit/EditModeFloatingBar";
 import EditableSectionWrapper from "@/components/landing-edit/EditableSectionWrapper";
 import SortableSection from "@/components/landing-edit/SortableSection";
@@ -240,10 +241,26 @@ function LandingSections() {
   );
 }
 
+function LandingEditModeEntry() {
+  const { realRole, loading: authLoading } = useAuth();
+  const { isEditMode, enterEditMode } = useLandingEditMode();
+  const [searchParams] = useSearchParams();
+  const requestedFromAdmin = searchParams.get("edit") === "1" && searchParams.get("from") === "admin";
+
+  useEffect(() => {
+    if (!authLoading && requestedFromAdmin && realRole === "admin" && !isEditMode) {
+      enterEditMode();
+    }
+  }, [authLoading, requestedFromAdmin, realRole, isEditMode, enterEditMode]);
+
+  return null;
+}
+
 const Index = () => {
 
   return (
     <LandingEditModeProvider>
+      <LandingEditModeEntry />
       <div className="min-h-screen bg-background">
         <Seo
           title="Bezli – digitální nástroje pro moderní výuku"
@@ -275,7 +292,6 @@ const Index = () => {
           <PwaInstallSection />
         </main>
         <SiteFooter />
-        <AdminEditToggle />
         <EditModeFloatingBar />
       </div>
     </LandingEditModeProvider>
