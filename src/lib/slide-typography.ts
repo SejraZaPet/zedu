@@ -60,8 +60,9 @@ export const SLIDE_TEXT_COLORS = [
   "#6EC6D9",
 ];
 
-/** 1 bod ≈ 1.333 px při nativním měřítku scény 1600×900. */
-export const PT_TO_PX = 4 / 3;
+// Kanonické plátno 1600 px odpovídá šířce 13,333 in, tedy 120 px/in.
+// 1 pt = 1/72 in = 120/72 px = 5/3 px (stejně jako PowerPoint LAYOUT_WIDE).
+const PT_TO_PX = 5 / 3;
 
 export interface SlideTextStyleProps {
   fontSize?: number | null;
@@ -73,6 +74,8 @@ export interface SlideTextStyleProps {
   bold?: boolean | null;
   /** Kurzíva celého bloku. */
   italic?: boolean | null;
+  /** Podtržení celého bloku. */
+  underline?: boolean | null;
   /** Zarovnání textu (výchozí = left). */
   align?: "left" | "center" | "right" | null;
   /** Řádkování (násobek, např. 1.2 / 1.5 / 2). */
@@ -105,6 +108,7 @@ export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSPro
   if (props.fontFamily) style.fontFamily = props.fontFamily;
   if (props.bold) style.fontWeight = 700;
   if (props.italic) style.fontStyle = "italic";
+  if (props.underline) style.textDecoration = "underline";
   if (props.align) style.textAlign = props.align;
   if (typeof props.lineHeight === "number" && props.lineHeight > 0) {
     style.lineHeight = props.lineHeight;

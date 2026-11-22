@@ -12,7 +12,7 @@ const num = (v: string | null | undefined, fallback = 0) => { const n = Number(v
 const xml = (source: string) => new DOMParser().parseFromString(source, "application/xml");
 
 interface RawFrame { x: number; y: number; w: number; h: number; rot: number; flipH?: boolean; flipV?: boolean }
-interface ThemeData { colors: Record<string, string>; fonts: string[] }
+interface ThemeData { colors: Record<string, string>; fonts: string[]; backgroundFills: Element[] }
 interface Rel { type: string; target: string }
 interface ReadText { text: string; html: string; isTitle: boolean; props: Record<string, any>; fonts: string[] }
 
@@ -130,16 +130,22 @@ function readText(owner: Element): ReadText | null {
   const ph = first(first(owner, "p:nvSpPr"), "p:nvPr");
   const placeholder = first(ph, "p:ph");
   const isTitle = ["title", "ctrTitle"].includes(placeholder?.getAttribute("type") || "");
-  const size = num(firstRpr?.getAttribute("sz") || first(first(body, "a:lstStyle"), "a:defRPr")?.getAttribute("sz"), 1800) / 100;
-  const color = readColor(first(firstRpr, "a:solidFill"), { colors: {}, fonts: [] }).color;
+  // pptxgenjs běžně ukládá velikost do rPr, PowerPoint často do pPr/defRPr.
+  // Nespoléhat jen na první běh: jinak se reálný text vrátí k výchozím 18 pt.
+  const paragraphDefault = first(firstPpr, "a:defRPr");
+  const listDefault = first(first(body, "a:lstStyle"), "a:defRPr");
+  const defaultRpr = paragraphDefault || listDefault;
+  const size = num(firstRpr?.getAttribute("sz") || defaultRpr?.getAttribute("sz"), 1800) / 100;
+  const color = readColor(first(firstRpr, "a:solidFill") || first(defaultRpr, "a:solidFill"), { colors: {}, fonts: [], backgroundFills: [] }).color;
   const alignValue = firstPpr?.getAttribute("algn");
   const align = alignValue === "ctr" ? "center" : alignValue === "r" ? "right" : "left";
   const linePct = num(first(first(firstPpr, "a:lnSpc"), "a:spcPct")?.getAttribute("val"), 120000) / 100000;
   const props: Record<string, any> = {
     fontSize: size,
-    fontFamily: fontFamily(fonts[0]),
-    bold: firstRpr?.getAttribute("b") === "1" || undefined,
-    italic: firstRpr?.getAttribute("i") === "1" || undefined,
+    fontFamily: fontFamily(fonts[0] || first(defaultRpr, "a:latin")?.getAttribute("typeface")),
+    bold: (firstRpr || defaultRpr)?.getAttribute("b") === "1" || undefined,
+    italic: (firstRpr || defaultRpr)?.getAttribute("i") === "1" || undefined,
+    underline: (firstRpr || defaultRpr)?.getAttribute("u") && (firstRpr || defaultRpr)?.getAttribute("u") !== "none" || undefined,
     align,
     lineHeight: linePct > 0 ? linePct : undefined,
   };
@@ -198,22 +204,37 @@ class Parser {
     catch (error: any) { this.warn(`${path.split("/").pop()}: ${error?.message || "obrázek se nepodařilo nahrát"}`); return null; }
   }
 
-  private async background(part: string, doc: Document): Promise<Record<string, any> | null> {
-    const bg = first(first(doc.documentElement, "p:cSld"), "p:bg");
-    if (!bg) return null;
-    const props = first(bg, "p:bgPr") || first(bg, "p:bgRef");
-    const solid = first(props, "a:solidFill");
+  private async fillBackground(part: string, props: Element | null): Promise<Record<string, any> | null> {
+    if (!props) return null;
+    const solid = props.tagName === "a:solidFill" ? props : first(props, "a:solidFill");
     if (solid) { const { color } = readColor(solid, this.theme); if (color) return { color }; }
-    const gradient = first(props, "a:gradFill");
+    const gradient = props.tagName === "a:gradFill" ? props : first(props, "a:gradFill");
     if (gradient) {
-      const stops = direct(first(gradient, "a:gsLst"), "a:gs").map((gs) => readColor(direct(gs, "a:srgbClr")[0] || direct(gs, "a:schemeClr")[0] ? gs : null, this.theme).color).filter(Boolean) as string[];
+      const stops = direct(first(gradient, "a:gsLst"), "a:gs").map((gs) => readColor(gs, this.theme).color).filter(Boolean) as string[];
       if (stops.length > 2) this.warn("Přechod se třemi a více barvami byl zjednodušen na dvě.");
       if (stops.length) { const ang = num(first(gradient, "a:lin")?.getAttribute("ang"), 0) / 60000; return { gradient: { from: stops[0], to: stops[1] || stops[0], direction: `${(ang + 90) % 360}deg` } }; }
     }
-    const blipFill = first(props, "a:blipFill");
+    const blipFill = props.tagName === "a:blipFill" ? props : first(props, "a:blipFill");
     const embed = first(blipFill, "a:blip")?.getAttribute("r:embed");
     const url = await this.image(part, await this.relationships(part), embed);
     return url ? { image: url } : null;
+  }
+
+  private async background(part: string, doc: Document): Promise<Record<string, any> | null> {
+    const bg = first(first(doc.documentElement, "p:cSld"), "p:bg");
+    if (!bg) return null;
+    const properties = first(bg, "p:bgPr");
+    if (properties) return this.fillBackground(part, properties);
+    const reference = first(bg, "p:bgRef");
+    if (!reference) return null;
+    // bgRef idx=1001+ odkazuje do a:bgFillStyleLst motivu, nikoli přímo na barvu.
+    // PowerPoint tak může mít v referenci bílé schemeClr, zatímco skutečná výplň je v motivu.
+    const index = num(reference.getAttribute("idx"), 0) - 1001;
+    const themed = await this.fillBackground(part, this.theme.backgroundFills[index] || null);
+    if (themed) return themed;
+    // Některé generátory zapisují barvu přímo do bgRef bez položky v motivu.
+    const directColor = readColor(reference, this.theme).color;
+    return directColor ? { color: directColor } : null;
   }
 
   private placeholderTransforms(doc: Document | null) {
@@ -333,7 +354,8 @@ async function themeAndSize(zip: JSZip): Promise<{ theme: ThemeData; size: { cx:
   }
   const fonts = themeDoc ? all(themeDoc, "a:latin").map((e) => e.getAttribute("typeface") || "").filter(Boolean) : [];
   const presentation = await read("ppt/presentation.xml"); const sldSz = presentation ? all(presentation, "p:sldSz")[0] : null;
-  return { theme: { colors, fonts }, size: { cx: num(sldSz?.getAttribute("cx"), 13.333 * EMU), cy: num(sldSz?.getAttribute("cy"), 7.5 * EMU) } };
+  const backgroundFills = themeDoc ? Array.from(all(themeDoc, "a:bgFillStyleLst")[0]?.children || []) : [];
+  return { theme: { colors, fonts, backgroundFills }, size: { cx: num(sldSz?.getAttribute("cx"), 13.333 * EMU), cy: num(sldSz?.getAttribute("cy"), 7.5 * EMU) } };
 }
 
 export async function importRichPptx(file: Blob, options: RichPptxImportOptions = {}): Promise<PresentationImportResult> {

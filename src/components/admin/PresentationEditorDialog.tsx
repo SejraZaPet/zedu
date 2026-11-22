@@ -44,7 +44,7 @@ import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPrese
 import PresentationExportDialog from "@/components/admin/PresentationExportDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides } from "@/lib/presentation-themes";
-import { LayoutTemplate, Shapes, Pencil, Eraser } from "lucide-react";
+import { LayoutTemplate, Shapes, Pencil, Eraser, Maximize2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
@@ -59,7 +59,8 @@ import ActivityAppearanceControls from "@/components/admin/ActivityAppearanceCon
 import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
-import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
+import PresentationCompactFormatToolbar from "@/components/presentation/editor/PresentationCompactFormatToolbar";
+import { loadPresentationEditorPreferences, savePresentationEditorPreferences } from "@/lib/presentation-editor-preferences";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { activityTypeLabel, applySlidePatch, buildAiActivitySpec, normalizePresentationSlides, syncSpecFromBlock } from "@/lib/presentation-activity";
 import { buildPresetIntoSlide, canHostActivity } from "@/lib/presentation-activity-insert";
@@ -245,8 +246,10 @@ export const PresentationEditorDialog = ({
   const [savedOnce, setSavedOnce] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [sidebarSection, setSidebarSection] = useState<EditorLeftTab>("elements");
-  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [propertiesOpen, setPropertiesOpen] = useState(true);
+  const [initialLayout] = useState(() => loadPresentationEditorPreferences(typeof window === "undefined" ? null : window.localStorage, typeof window === "undefined" ? undefined : window.innerWidth));
+  const [leftPanelOpen, setLeftPanelOpen] = useState(initialLayout.leftPanelOpen);
+  const [propertiesOpen, setPropertiesOpen] = useState(initialLayout.propertiesOpen);
+  const [thumbnailsOpen, setThumbnailsOpen] = useState(initialLayout.thumbnailsOpen);
   const [activityCreatorOpen, setActivityCreatorOpen] = useState(true);
   const [insertActivityOpen, setInsertActivityOpen] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
@@ -277,11 +280,22 @@ export const PresentationEditorDialog = ({
     setPan({ x: 0, y: 0 });
   }, [editingSlideIndex]);
 
-  // Klávesové zkratky Ctrl/Cmd+Z a Ctrl/Cmd+Shift+Z pro Zpět/Vpřed.
+  useEffect(() => {
+    savePresentationEditorPreferences({ leftPanelOpen, propertiesOpen, thumbnailsOpen }, window.localStorage);
+    setZoom("fit");
+    setPan({ x: 0, y: 0 });
+  }, [leftPanelOpen, propertiesOpen, thumbnailsOpen]);
+
+  // Klávesové zkratky historie a Alt+M pro miniatury.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
       const key = e.key.toLowerCase();
+      if (e.altKey && key === "m") {
+        e.preventDefault();
+        setThumbnailsOpen((value) => !value);
+        return;
+      }
+      if (!(e.ctrlKey || e.metaKey)) return;
       if (key === "z") {
         e.preventDefault();
         if (e.shiftKey) history.redo();
@@ -1121,66 +1135,51 @@ export const PresentationEditorDialog = ({
 
               <main className="deck-center">
                 <div className="deck-canvas-toolbar" data-slide-toolbar="true">
-                  <div className="deck-floating-bar">
-                    {selectedBlock ? (
-                      <>
-                        <span className="shrink-0 whitespace-nowrap px-1 text-[11px] font-semibold text-deck-violet-deep">{selectedBlock.type === "activity" ? `Aktivita · ${activityTypeLabel((currentSlide as any).activitySpec?.activityType)}` : blockLabel(selectedBlock, blocks.indexOf(selectedBlock)).replace(/^\d+\.\s*/, "")}</span>
-                        <SlideFloatingFormatToolbar
-                          staticBar
-                          containerRef={canvasWrapRef}
-                          block={selectedBlock}
-                          positionKey={`${editingSlideIndex}-${blocks.length}`}
-                          framed={!!getBlockFrame(selectedBlock)}
-                          onChangeProps={(props) => selectedBlockId && updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }))}
-                          onChangeLayer={(action) => {
-                            if (!selectedBlockId) return;
-                            const framed = blocks.filter((b: Block) => !!getBlockFrame(b));
-                            const idx = framed.findIndex((b: Block) => b.id === selectedBlockId);
-                            const maxZ = framed.reduce((m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0), 0);
-                            updateBlock(selectedBlockId, (b: Block) => {
-                              const current = typeof b.zIndex === "number" ? b.zIndex : idx + 1;
-                              const next = action === "front" ? maxZ + 1 : action === "forward" ? current + 1 : action === "backward" ? Math.max(1, current - 1) : 0;
-                              return { ...b, zIndex: next };
-                            });
-                          }}
-                          onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
-                          onCopyBlock={copyBlock}
-                          onCopyStyle={copyStyle}
-                          styleCopied={!!copiedStyle}
-                          selectedCount={selectedBlockIds.length}
-                          onAlign={alignSelectedToStage}
-                          onFillStage={fillStageWithSelected}
-                          onAlignGroup={alignSelectionTogether}
-                          onDistribute={distributeSelection}
-                          onGroup={groupSelection}
-                          onUngroup={ungroupSelection}
-                          onDelete={() => { if (selectedBlockIds.length > 1) deleteSelection(); else if (selectedBlockId) { deleteBlock(selectedBlockId); setSelectedBlockId(null); } }}
-                        />
-                      </>
-                    ) : <p className="px-2 text-[11px] text-deck-muted">Vyberte prvek na plátně. Shift+klik vybere více prvků.</p>}
+                  <div className="deck-global-tools">
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => history.undo()} disabled={!history.canUndo} aria-label="Zpět" title="Zpět (Ctrl/Cmd+Z)"><Undo2 /></Button>
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => history.redo()} disabled={!history.canRedo} aria-label="Znovu" title="Znovu (Ctrl/Cmd+Shift+Z)"><Redo2 /></Button>
+                    <span className="deck-tool-separator" />
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => stepZoom(-25)} aria-label="Oddálit" title="Oddálit"><ZoomOut /></Button>
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => stepZoom(25)} aria-label="Přiblížit" title="Přiblížit"><ZoomIn /></Button>
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => { setZoom("fit"); setPan({ x: 0, y: 0 }); }} aria-label="Přizpůsobit velikost" title="Přizpůsobit velikost"><Maximize2 /></Button>
+                    <span className="deck-tool-separator" />
+                    <Button variant={drawMode ? "default" : "ghost"} size="icon" className="deck-tool-icon" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-label="Tužka" title="Tužka" aria-pressed={drawMode}><Pencil /></Button>
+                    {drawMode && <Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="deck-tool-icon" aria-label="Nastavení tužky" title="Nastavení tužky"><Settings2 /></Button></PopoverTrigger><PopoverContent className="w-64 space-y-3 p-3"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /><div><Label className="text-xs" htmlFor="draw-width">Tloušťka čáry</Label><Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger id="draw-width" className="mt-1"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select></div><Button variant="outline" size="sm" className="w-full" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-2 h-4 w-4" />Guma – poslední tah</Button><Button variant="ghost" size="sm" className="w-full text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button></PopoverContent></Popover>}
+                    <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => setDarkPreview((v) => !v)} aria-label={darkPreview ? "Světlý náhled" : "Tmavý náhled"} title={darkPreview ? "Světlý náhled" : "Tmavý náhled"}>{darkPreview ? <Sun /> : <Moon />}</Button>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1 rounded-xl border border-deck-line bg-deck-panel p-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => history.undo()} disabled={!history.canUndo} aria-label="Zpět" title="Zpět (Ctrl/Cmd+Z)"><Undo2 className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => history.redo()} disabled={!history.canRedo} aria-label="Znovu" title="Znovu (Ctrl/Cmd+Shift+Z)"><Redo2 className="h-4 w-4" /></Button>
-                    <span className="h-6 w-px bg-deck-line" />
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => stepZoom(-25)} aria-label="Oddálit"><ZoomOut className="h-4 w-4" /></Button>
-                    <button type="button" className="min-w-[48px] text-xs font-semibold tabular-nums text-deck-muted" onClick={() => { setZoom("fit"); setPan({ x: 0, y: 0 }); }} title="Přizpůsobit oknu">{zoom === "fit" ? "100 %" : `${zoom} %`}</button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => stepZoom(25)} aria-label="Přiblížit"><ZoomIn className="h-4 w-4" /></Button>
-                  </div>
+                  {selectedBlock && <div className="deck-floating-bar">
+                    <PresentationCompactFormatToolbar
+                      block={selectedBlock}
+                      framed={!!getBlockFrame(selectedBlock)}
+                      onChangeProps={(nextProps) => selectedBlockId && updateBlock(selectedBlockId, (b: Block) => ({ ...b, props: nextProps }))}
+                      onChangeLayer={(action) => {
+                        if (!selectedBlockId) return;
+                        const framed = blocks.filter((b: Block) => !!getBlockFrame(b));
+                        const idx = framed.findIndex((b: Block) => b.id === selectedBlockId);
+                        const maxZ = framed.reduce((m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0), 0);
+                        updateBlock(selectedBlockId, (b: Block) => {
+                          const current = typeof b.zIndex === "number" ? b.zIndex : idx + 1;
+                          const next = action === "front" ? maxZ + 1 : action === "forward" ? current + 1 : action === "backward" ? Math.max(1, current - 1) : 0;
+                          return { ...b, zIndex: next };
+                        });
+                      }}
+                      onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
+                      onCopyBlock={copyBlock}
+                      onCopyStyle={copyStyle}
+                      styleCopied={!!copiedStyle}
+                      selectedCount={selectedBlockIds.length}
+                      onAlign={alignSelectedToStage}
+                      onFillStage={fillStageWithSelected}
+                      onAlignGroup={alignSelectionTogether}
+                      onDistribute={distributeSelection}
+                      onGroup={groupSelection}
+                      onUngroup={ungroupSelection}
+                      onDelete={() => { if (selectedBlockIds.length > 1) deleteSelection(); else if (selectedBlockId) { deleteBlock(selectedBlockId); setSelectedBlockId(null); } }}
+                    />
+                  </div>}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-y border-deck-line/70 bg-deck-panel/50 px-3 py-1">
-                  <Button variant={drawMode ? "default" : "ghost"} size="sm" className="h-8" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-pressed={drawMode}><Pencil className="mr-1 h-3.5 w-3.5" />Tužka</Button>
-                  {drawMode && <>
-                    <Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="h-8"><span className="mr-2 h-3 w-3 rounded-full border border-deck-line" style={{ background: drawColor }} />Barva</Button></PopoverTrigger><PopoverContent className="w-auto p-2"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /></PopoverContent></Popover>
-                    <Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger className="h-8 w-[76px]"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select>
-                    <Button variant="ghost" size="sm" className="h-8" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-1 h-3.5 w-3.5" />Guma</Button>
-                    <Button variant="ghost" size="sm" className="h-8 text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button>
-                  </>}
-                  <Button variant="ghost" size="sm" className="ml-auto h-8" onClick={() => setDarkPreview((v) => !v)}>{darkPreview ? <Sun className="mr-1 h-3.5 w-3.5" /> : <Moon className="mr-1 h-3.5 w-3.5" />}{darkPreview ? "Světlý náhled" : "Tmavý náhled"}</Button>
-                </div>
-
-                <div ref={canvasWrapRef} className={`relative flex min-h-0 flex-1 items-center justify-center p-5 ${zoom === "fit" ? "overflow-hidden" : "overflow-auto"}`}>
+                <div ref={canvasWrapRef} className={`relative flex min-h-0 flex-1 items-center justify-center p-3 ${zoom === "fit" ? "overflow-hidden" : "overflow-auto"}`}>
                   <SlideCanvas
                     slide={currentSlide}
                     themeId={themeId}
@@ -1252,7 +1251,7 @@ export const PresentationEditorDialog = ({
             </div>
           )}
 
-          <PresentationThumbnails slides={pendingSlides} activeIndex={editingSlideIndex} themeId={themeId} onSelect={selectSlide} onMove={moveSlide} onAdd={() => openAddSlideAt(editingSlideIndex + 1)} />
+          <PresentationThumbnails slides={pendingSlides} activeIndex={editingSlideIndex} themeId={themeId} onSelect={selectSlide} onMove={moveSlide} onAdd={() => openAddSlideAt(editingSlideIndex + 1)} open={thumbnailsOpen} onToggle={() => setThumbnailsOpen((value) => !value)} onPrevious={() => selectSlide(Math.max(0, editingSlideIndex - 1))} onNext={() => selectSlide(Math.min(pendingSlides.length - 1, editingSlideIndex + 1))} />
 
           <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} userId={user?.id} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
           <PresentationExportDialog open={exportOpen} onOpenChange={setExportOpen} slides={pendingSlides} title={presentationLesson?.title || "prezentace"} onExportPdf={handleExportPdf} />

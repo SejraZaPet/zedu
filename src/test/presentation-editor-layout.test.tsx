@@ -51,4 +51,24 @@ describe("Etapa 2 – rozvržení editoru", () => {
     expect(container.querySelectorAll("[data-testid^='slide-thumbnail-']").length).toBeLessThan(30);
     expect(screen.getByRole("button", { name: "Přidat slide" })).toBeTruthy();
   });
+
+  it("miniatura použije importované pozadí slidu, ne výchozí motiv", () => {
+    const imported = { ...slide, backgroundOverride: { color: "#5D3D7F" } };
+    render(<PresentationThumbnails slides={[imported]} activeIndex={0} themeId="nature" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} />);
+    const thumbnail = screen.getByRole("button", { name: /Otevřít slide 1/ }) as HTMLButtonElement;
+    expect(thumbnail.style.backgroundColor).toBe("rgb(93, 61, 127)");
+  });
+
+  it("skryté miniatury ponechají číslo slidu, šipky a opětovné zobrazení", () => {
+    const onNext = vi.fn();
+    const onToggle = vi.fn();
+    const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
+    render(<PresentationThumbnails slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} open={false} onToggle={onToggle} onPrevious={vi.fn()} onNext={onNext} />);
+    expect(screen.getByText("1 / 2")).toBeTruthy();
+    expect(screen.queryByTestId("slide-thumbnail-0")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Další slide" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zobrazit miniatury (Alt+M)" }));
+    expect(onNext).toHaveBeenCalledOnce();
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
 });

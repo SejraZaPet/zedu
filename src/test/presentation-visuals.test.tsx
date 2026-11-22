@@ -4,6 +4,7 @@ import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
 import StartFromTemplateDialog from "@/components/admin/StartFromTemplateDialog";
 import SlideCanvasDefault, { SlideBody } from "@/components/admin/SlideCanvas";
 import { PRESENTATION_TEMPLATES } from "@/lib/presentation-templates";
+import { slideTextStyle } from "@/lib/slide-typography";
 
 describe("presentation visual layer", () => {
   it("renders theme gallery trigger", () => {
@@ -39,15 +40,22 @@ describe("per-block typography a animace", () => {
     ],
   };
 
+  it("přepočítává body jako PowerPoint na plátně 1600×900", () => {
+    expect(slideTextStyle({ fontSize: 34 }).fontSize).toBe("57px");
+    expect(slideTextStyle({ fontSize: 54 }).fontSize).toBe("90px");
+    expect(slideTextStyle({ fontSize: 14 }).fontSize).toBe("23px");
+    expect(slideTextStyle({ underline: true }).textDecoration).toBe("underline");
+  });
+
   it("aplikuje velikost, barvu a font per blok", () => {
     const { container } = render(<SlideBody slide={slide} themeId="minimal" />);
     const html = container.innerHTML;
-    expect(html).toContain("font-size: 64px"); // 48pt * 1.333
+    expect(html).toContain("font-size: 80px"); // 48pt × 5/3 při 1600px / 13,333in
     expect(html).toContain("rgb(239, 68, 68)");
     expect(html).toContain("Playfair Display");
-    expect(html).toContain("font-size: 32px"); // 24pt
+    expect(html).toContain("font-size: 40px"); // 24pt × 5/3
     expect(html).toContain("Courier New");
-    expect(html).toContain("font-size: 43px"); // 32pt
+    expect(html).toContain("font-size: 53px"); // 32pt × 5/3, zaokrouhleno pro render
   });
 
   it("přehraje animace jen v needitovatelném (živém) režimu", () => {

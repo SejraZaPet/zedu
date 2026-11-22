@@ -355,3 +355,10 @@
 - [x] Vložení za aktuální slide, potvrzení náhrady celé prezentace, historie a zachování obsahu.
 - [x] Finální regresní testy, vizuální průchod, úklid [TEST] dat a commit.
 - Ověřeno v přihlášeném náhledu: 11 šablon, 7 celých sad, nové motivy, kvíz, vlastní šablona, zrušení/potvrzení náhrady a uložení. Vlastní [TEST] prezentace odstraněny; bez DB/RLS a nasazení.
+
+## Etapa 5 navazující: úspora místa a oprava importu PPTX
+- [x] Kompaktní horní lišta a jedna kontextová lišta nad plátnem bez zalomení.
+- [x] Užší sbalitelné panely s pamatovaným stavem; skrývací miniatury s navigací a autofitem.
+- [x] PPTX pozadí ze slidu/layoutu/masteru (solidFill, blipFill, bgRef) a věrný přepočet písma/cap.
+- [x] Testy, notebook 1366×768 a tablet 1024, vlastní 20slidový PPTX, úklid [TEST] dat a commit.
+- Ověřeno 28 testů, typecheck a přihlášený průchod: 34 pt = 57 px, 12 plných a 8 obrázkových pozadí, poznámky, zaoblené tvary, jednořádková lišta, miniatury, trvalé volby a 44px dotyk. Plátno po sbalení 1081×608 px; tablet 964×542 px. Vlastní prezentace a importované obrázky odstraněny; bez DB/RLS a nasazení.

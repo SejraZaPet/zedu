@@ -31,7 +31,7 @@ function addText(slide: any, value: any, props: Record<string, any>, frame: any)
   const lines = plainLines(value); if (!lines.length) return;
   const runs = lines.map((line, index) => ({ text: line.text, options: { bullet: line.bullet ? true : undefined, breakLine: index < lines.length - 1 } }));
   const hiddenPdfText = props.pdfTextLayer && props.color === "transparent";
-  slide.addText(runs, { ...frame, margin: 0.04, fontFace: font(props.fontFamily), fontSize: Math.max(6, Number(props.fontSize) || 20), color: hex(hiddenPdfText ? props.sourceTextColor : props.color), transparency: hiddenPdfText ? 100 : 0, bold: !!props.bold, italic: !!props.italic, align: props.align || "left", valign: "mid", breakLine: false, lineSpacingMultiple: Math.max(0.7, Number(props.lineHeight) || 1.1), fit: "shrink", rotate: Number(props.rotation) || 0 });
+  slide.addText(runs, { ...frame, margin: 0.04, fontFace: font(props.fontFamily), fontSize: Math.max(6, Number(props.fontSize) || 20), color: hex(hiddenPdfText ? props.sourceTextColor : props.color), transparency: hiddenPdfText ? 100 : 0, bold: !!props.bold, italic: !!props.italic, ...(props.underline ? { underline: { style: "sng" as const } } : {}), align: props.align || "left", valign: "mid", breakLine: false, lineSpacingMultiple: Math.max(0.7, Number(props.lineHeight) || 1.1), fit: "shrink", rotate: Number(props.rotation) || 0 });
 }
 
 function activityText(spec: any): string {

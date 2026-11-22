@@ -2,10 +2,12 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SlideBody, STAGE_H, STAGE_W } from "@/components/admin/SlideCanvas";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { activityTypeLabel } from "@/lib/presentation-activity";
+import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 
 const ITEM_W = 152;
 const VIRTUALIZE_AFTER = 30;
@@ -53,7 +55,7 @@ const Thumbnail = memo(function Thumbnail({ slide, index, themeId, active, onSel
         aria-label={`Otevřít slide ${index + 1}: ${title}`}
         aria-current={active ? "true" : undefined}
         className={`deck-thumbnail ${active ? "deck-thumbnail--active" : ""}`}
-        style={themeStageStyle(getPresentationTheme(themeId))}
+        style={{ ...themeStageStyle(getPresentationTheme(themeId)), ...slideBackgroundOverrideStyle(slide) }}
       >
         <LazySlidePreview slide={slide} themeId={themeId} />
         <span className="absolute bottom-1 left-1 rounded bg-deck-panel/90 px-1.5 text-[10px] font-bold text-deck-ink">{index + 1}</span>
@@ -75,10 +77,14 @@ interface Props {
   onSelect: (index: number) => void;
   onMove: (from: number, to: number) => void;
   onAdd: () => void;
+  open?: boolean;
+  onToggle?: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 /** Dolní pás miniatur: dnd-kit, líné náhledy a horizontální virtualizace nad 30 slidů. */
-export default function PresentationThumbnails({ slides, activeIndex, themeId, onSelect, onMove, onAdd }: Props) {
+export default function PresentationThumbnails({ slides, activeIndex, themeId, onSelect, onMove, onAdd, open = true, onToggle, onPrevious, onNext }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: Math.min(slides.length, VIRTUALIZE_AFTER) });
   const sensors = useSensors(
@@ -115,8 +121,20 @@ export default function PresentationThumbnails({ slides, activeIndex, themeId, o
   };
   const rendered = virtual ? slides.slice(range.start, range.end) : slides;
 
+  if (!open) return (
+    <footer className="deck-thumbnail-collapsed" aria-label="Navigace slidy" data-testid="presentation-thumbnails-collapsed">
+      {onToggle && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle} aria-label="Zobrazit miniatury (Alt+M)" title="Zobrazit miniatury (Alt+M)"><ChevronUp className="h-4 w-4" /></Button>}
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPrevious} disabled={activeIndex <= 0} aria-label="Předchozí slide" title="Předchozí slide"><ChevronLeft className="h-4 w-4" /></Button>
+        <span className="min-w-16 text-center text-xs font-semibold tabular-nums text-deck-muted" aria-live="polite">{activeIndex + 1} / {slides.length}</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onNext} disabled={activeIndex >= slides.length - 1} aria-label="Další slide" title="Další slide"><ChevronRight className="h-4 w-4" /></Button>
+      </div>
+    </footer>
+  );
+
   return (
     <footer className="deck-thumbnail-strip" aria-label="Slidy prezentace" data-testid="presentation-thumbnails">
+      {onToggle && <div className="flex h-full items-center border-r border-deck-line px-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle} aria-label="Skrýt miniatury (Alt+M)" title="Skrýt miniatury (Alt+M)"><ChevronDown className="h-4 w-4" /></Button></div>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
         <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
           <div ref={scrollRef} onScroll={updateRange} className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto px-4 py-2">

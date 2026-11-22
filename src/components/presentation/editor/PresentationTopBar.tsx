@@ -47,14 +47,14 @@ export default function PresentationTopBar({
         )}
       </div>
       <div className="deck-topbar-actions">
-        <Button variant="outline" className="deck-topbar-action" onClick={onImport}>
+        <Button variant="outline" className="deck-topbar-action deck-topbar-action--icon" onClick={onImport} aria-label="Import .pptx / PDF" title="Import .pptx / PDF">
           <FileUp className="h-4 w-4" /> <span>Import .pptx / PDF</span>
         </Button>
-        <Button variant="outline" className="deck-topbar-action" onClick={onExport} disabled={exporting}>
+        <Button variant="outline" className="deck-topbar-action deck-topbar-action--icon" onClick={onExport} disabled={exporting} aria-label="Export / Tisk" title="Export / Tisk">
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} <span>Export / Tisk</span>
         </Button>
-        <Button variant="outline" className="deck-topbar-action hidden lg:inline-flex" onClick={onAssign}>
-          <Send className="h-4 w-4" /> Zadat žákům
+        <Button variant="outline" className="deck-topbar-action deck-topbar-action--icon" onClick={onAssign} aria-label="Zadat žákům" title="Zadat žákům">
+          <Send className="h-4 w-4" /> <span>Zadat žákům</span>
         </Button>
         {canSave && (
           <Button variant="outline" className="deck-topbar-action" onClick={onSave} disabled={saving || !dirty}>
