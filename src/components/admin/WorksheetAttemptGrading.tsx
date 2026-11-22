@@ -1,5 +1,6 @@
 import { scoreMindMap } from "@/lib/mind-map";
 import { useEffect, useMemo, useState } from "react";
+import { worksheetItemLabel } from "@/lib/worksheet-item-label";
 import { hasEditableTableCells } from "@/lib/worksheet-table";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -168,7 +169,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
       const pts = Number(it.points);
       out.push({
         id: it.id,
-        prompt: String(it.prompt || `Úloha ${it.itemNumber ?? ""}`),
+        prompt: worksheetItemLabel(it, variant?.items ?? []),
         type: String(it.type),
         max: Number.isFinite(pts) && pts > 0 ? pts : null,
         answer: ans[it.id],

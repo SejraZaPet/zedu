@@ -1,3 +1,4 @@
+import { worksheetItemLabel } from "@/lib/worksheet-item-label";
 import { scoreMindMap } from "@/lib/mind-map";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -269,7 +270,7 @@ const AssignmentDifficultyStats = ({
             for (const key of keys) {
               const item = itemMap.get(key.itemId);
               if (!item) continue;
-              const label = truncate(String(item.prompt || `Úloha ${item.itemNumber ?? ""}`));
+              const label = truncate(worksheetItemLabel(item, variant.items ?? []));
                if (MANUAL_WORKSHEET_TYPES.has(item.type)) {
                 manual.push({ key: `w-${variant.variantId}-${key.itemId}`, label, pct: null, sampleCount: 0, learnerCount: 0, firstPct: null, bestPct: null, repeaters: 0, averageAttempts: 0, failedLearners: [], category: "other" });
                 continue;

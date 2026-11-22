@@ -1,3 +1,4 @@
+import { worksheetItemLabel } from "@/lib/worksheet-item-label";
 import { submittableOnly } from "@/lib/assignment-kind";
 import { effectiveRecipients, fetchRecipientsMap } from "@/lib/assignment-recipients";
 import { useEffect, useMemo, useState } from "react";
@@ -315,7 +316,7 @@ const TeacherResults = () => {
                   })),
                 }] : [];
               });
-              rows.push(summarizePerformance({ key: `${assignment.id}:worksheet:${variant.variantId}:${key.itemId}`, label: String(item.prompt || `Úloha ${item.itemNumber ?? ""}`), assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
+              rows.push(summarizePerformance({ key: `${assignment.id}:worksheet:${variant.variantId}:${key.itemId}`, label: worksheetItemLabel(item, variant.items ?? []), assignmentId: assignment.id, assignmentTitle: assignment.title }, learners));
             }
           }
         }
