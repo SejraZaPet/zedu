@@ -7,7 +7,7 @@ import SelectionPropertiesPanel from "@/components/presentation/editor/Selection
 import type { Block } from "@/lib/textbook-config";
 
 const slide = { slideId: "s1", projector: { headline: "Voda", body: "" }, blocks: [] };
-const thumbnailActions = { onDelete: vi.fn(), onDuplicate: vi.fn(), onMoveEdge: vi.fn(), onToggleHidden: vi.fn() };
+const thumbnailActions = { onDelete: vi.fn(), onDuplicate: vi.fn(), onMoveEdge: vi.fn(), onToggleHidden: vi.fn(), onInsert: vi.fn(), onTransitionChange: vi.fn(), onApplyTransitionAll: vi.fn() };
 
 describe("Etapa 2 – rozvržení editoru", () => {
   it("levý panel nabízí přesně čtyři záložky a přepíná jejich obsah", () => {
@@ -66,7 +66,7 @@ describe("Etapa 2 – rozvržení editoru", () => {
     const onToggleHidden = vi.fn();
     const onSelect = vi.fn();
     const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
-    render(<PresentationThumbnails slides={slides} activeIndex={0} selectedIndices={[0, 1]} themeId="minimal" onSelect={onSelect} onMove={vi.fn()} onAdd={vi.fn()} onDelete={onDelete} onDuplicate={onDuplicate} onMoveEdge={vi.fn()} onToggleHidden={onToggleHidden} />);
+    render(<PresentationThumbnails slides={slides} activeIndex={0} selectedIndices={[0, 1]} themeId="minimal" onSelect={onSelect} onMove={vi.fn()} onAdd={vi.fn()} onDelete={onDelete} onDuplicate={onDuplicate} onMoveEdge={vi.fn()} onToggleHidden={onToggleHidden} onInsert={vi.fn()} onTransitionChange={vi.fn()} onApplyTransitionAll={vi.fn()} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Duplikovat 2 slidy" })[0]);
     expect(onDuplicate).toHaveBeenCalledWith([0, 1]);
     fireEvent.keyDown(screen.getByRole("button", { name: /Otevřít slide 1/ }), { key: "Delete" });
@@ -82,6 +82,36 @@ describe("Etapa 2 – rozvržení editoru", () => {
     render(<PresentationThumbnails slides={slides} activeIndex={0} selectedIndices={[0]} themeId="minimal" onSelect={onSelect} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
     fireEvent.contextMenu(screen.getByRole("button", { name: /Otevřít slide 2/ }));
     expect(onSelect).toHaveBeenCalledWith(1);
+  });
+
+  it("plus mezi miniatury vloží obsah přesně na pozici druhého slidu", () => {
+    const onInsert = vi.fn();
+    const slides = [{ ...slide, slideId: "s1" }, { ...slide, slideId: "s2" }];
+    render(<PresentationThumbnails {...thumbnailActions} slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} onInsert={onInsert} />);
+    const insertTrigger = screen.getByRole("button", { name: "Vložit slide mezi 1 a 2" });
+    fireEvent.pointerDown(insertTrigger);
+    fireEvent.click(insertTrigger);
+    for (const [item, kind] of [["Prázdný slide", "blank"], ["Ze šablony", "template"], ["Aktivita", "activity"], ["Z lekce nebo prezentace", "lesson"]] as const) {
+      fireEvent.click(screen.getByRole("menuitem", { name: item }));
+      expect(onInsert).toHaveBeenLastCalledWith(kind, 1);
+      fireEvent.pointerDown(insertTrigger);
+      fireEvent.click(insertTrigger);
+    }
+  });
+
+  it("přechod mezi miniatury změní vstupní slide a použije stejné nastavení na všechny", () => {
+    const onTransitionChange = vi.fn();
+    const onApplyTransitionAll = vi.fn();
+    const slides = [{ ...slide, slideId: "s1", transitionStyle: "cut" }, { ...slide, slideId: "s2", transitionStyle: "cut" }];
+    render(<PresentationThumbnails {...thumbnailActions} slides={slides} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} onTransitionChange={onTransitionChange} onApplyTransitionAll={onApplyTransitionAll} />);
+    fireEvent.click(screen.getByRole("button", { name: "Přechod mezi slidem 1 a 2: Bez přechodu" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Posun" }));
+    expect(onTransitionChange).toHaveBeenLastCalledWith(1, { style: "push", direction: "left", duration: 0.45 });
+    fireEvent.click(screen.getByRole("radio", { name: "Bez přechodu" }));
+    expect(onTransitionChange).toHaveBeenLastCalledWith(1, { style: "cut", direction: "left", duration: 0.45 });
+    fireEvent.click(screen.getByRole("radio", { name: "Posun" }));
+    fireEvent.click(screen.getByRole("button", { name: "Použít na všechny přechody" }));
+    expect(onApplyTransitionAll).toHaveBeenCalledWith({ style: "push", direction: "left", duration: 0.45 });
   });
 
   it("poslední slide má smazání zablokované", () => {

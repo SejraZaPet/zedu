@@ -371,3 +371,13 @@
 - Smazání existovalo jako `deleteCurrentSlide`, ale až v sbaleném panelu „Další prvky a akce“; funkce vznikla při etapě 2 (`743e1de9`), nešlo o odstranění staršího tlačítka.
 - Přesun drag-and-drop už se neukládá automaticky; všechny změny slidů čekají na Uložit. `lessonRef` se přenáší na první slide. Skryté slidy vynechává živá příprava.
 - Ověřeno 34 testů, typecheck, build a přihlášený průchod: aktivita+Zpět, hromadná duplikace/mazání, zrušení/potvrzení 5 slidů, Delete, kontext, oba přesuny, skrytí, koš po sbalení, uložení/znovuotevření. Bez chyb prohlížeče; vlastní `[TEST]` data odstraněna.
+
+## Prezentace – přechody mezi slidy a návrh animací prvků
+- [x] Přechody na jednotlivých slidech: katalog, směr, délka, použití na všechny a zpětná kompatibilita.
+- [x] Akce + a přechod mezi miniatury, existující cesty vložení a ovládání při skrytém pásu.
+- [x] Projekce učitele i žáka, reduced motion, PPTX import/export a souhrn aproximací.
+- [x] Cílené testy, přihlášený průchod, úklid vlastních [TEST] dat a commit; bez DB/RLS a nasazení.
+- [x] Pouze návrh animací prvků uložen do `.lovable/plan/animace-prvku-2026-11-22.md`; neimplementován.
+- Deset přechodů včetně cut; směr push/wipe, délka 0,2–2 s. Vstup patří na N+1, globální volba zůstala. Rozložené otázky animují jen první vstup.
+- Ověřeno 188 souvisejících testů, typecheck a přihlášený průchod: + mezi slidy, všechny čtyři cesty vložení v testu, posun dolů 1,2 s, použít na všechny, uložit/znovu otevřít, kompaktní lišta, tablet 1024, PPTX XML. Projektor i telefon 1,2 s a reduced-motion `none`; slide 2/3 synchronizovaný; bez chyb prohlížeče.
+- Vlastní `[TEST]` prezentace a všechny relace s týmž označením odstraněny. Nativní PowerPoint/LibreOffice a fyzický telefon nebyly spuštěny; některé efekty se v PPTX nahrazují nejbližší variantou a délka rychlostí fast/med/slow.

@@ -23,10 +23,15 @@ export interface PresentationLaunchReport {
   incomplete: string[];
 }
 
-const carry = (parent: any, child: any) => {
+const carry = (parent: any, child: any, childIndex = 0) => {
   const pts = parent?.activitySpec?.points;
   return {
     ...child,
+    ...(childIndex === 0 && parent?.transitionStyle ? {
+      transitionStyle: parent.transitionStyle,
+      ...(parent.transitionDirection ? { transitionDirection: parent.transitionDirection } : {}),
+      ...(parent.transitionDuration !== undefined ? { transitionDuration: parent.transitionDuration } : {}),
+    } : childIndex > 0 ? { transitionStyle: "cut" } : {}),
     ...(parent?.gameSettings ? { gameSettings: parent.gameSettings } : {}),
     ...(parent?.studioStepType ? { studioStepType: parent.studioStepType } : {}),
     activitySpec: {
@@ -78,7 +83,7 @@ export function preparePresentationForLive(input: any[] | null | undefined): Pre
       pre.push(s);
       continue;
     }
-    pre.push(...quiz.map((q) => carry(s, q)));
+    pre.push(...quiz.map((q, index) => carry(s, q, index)));
   }
   const { slides: studio, skipped } = prepareSlidesForLiveLaunch(pre);
   const out: any[] = [];
@@ -91,7 +96,7 @@ export function preparePresentationForLive(input: any[] | null | undefined): Pre
       out.push(s);
       continue;
     }
-    out.push(...parts.map((p) => (p === s ? p : carry(s, p))));
+    out.push(...parts.map((p, index) => (p === s ? p : carry(s, p, index))));
   }
   return { slides: out, skipped, unscored: [...unscored], incomplete };
 }

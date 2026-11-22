@@ -25,7 +25,7 @@ import SoloRoundProjector from "@/components/live/SoloRoundProjector";
 import { isSoloRoundSlide } from "@/lib/solo-round";
 
 import SlideCanvas from "@/components/admin/SlideCanvas";
-import { slideTransitionClass } from "@/lib/slide-transitions";
+import { slideTransitionClass, slideTransitionStyle, transitionConfigFromSlide } from "@/lib/slide-transitions";
 import { slideWithFallbackBlocks, slideImageUrls } from "@/lib/slide-canvas-fallback";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
@@ -226,6 +226,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
   const awaitingStart = isAwaitingStart(session?.settings, currentSlide, currentIndex);
   const projectorFontScale = clampProjectorFontScale(projectorFontScaleProp ?? (session?.settings as any)?.projectorFontScale);
+  const incomingTransition = transitionConfigFromSlide(currentSlide);
 
   return (
     <div
@@ -242,14 +243,13 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
           }}
         >
           <div className="relative h-full w-full overflow-hidden">
-            {/* Přechod animuje CELOU scénu (lišta, hlavička, obsah i patička),
-                takže se při výměně snímku nic neblikne. */}
+            {/* Zoom a přechod mají oddělené transformace, aby se navzájem nepřepsaly. */}
+            <div className="h-full w-full" style={zoomStageStyle(zoom)}>
+            {/* Přechod animuje CELOU vstupní scénu; explicitní „cut“ zůstane bez animace. */}
             <div
               key={currentIndex}
-              className={`flex h-full flex-col overflow-hidden relative ${
-                slideTransitionClass((currentSlide as any)?.transitionStyle) || "slide-trans-fade"
-              }`}
-              style={zoomStageStyle(zoom)}
+              className={`flex h-full flex-col overflow-hidden relative ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`}
+              style={slideTransitionStyle(incomingTransition)}
             >
               <div className="h-2 bg-white/10 shrink-0">
                 <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
@@ -349,6 +349,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               </div>
 
               {overlayContent}
+            </div>
             </div>
           </div>
         </div>

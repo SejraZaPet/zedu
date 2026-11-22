@@ -12,7 +12,20 @@ export default function PresentationExportDialog({ open, onOpenChange, slides, t
   const run = async (kind: "pptx" | "pdf" | "print") => {
     setBusy(kind);
     try {
-      if (kind === "pptx") await exportPresentationToPptx(slides, title); else await onExportPdf();
+      if (kind === "pptx") {
+        const report = await exportPresentationToPptx(slides, title);
+        const approximateText = report.approximateCount === 1
+          ? "1 přechod byl nahrazen"
+          : report.approximateCount < 5
+            ? `${report.approximateCount} přechody byly nahrazeny`
+            : `${report.approximateCount} přechodů bylo nahrazeno`;
+        toast({
+          title: "PPTX je stažený",
+          description: report.approximateCount
+            ? `${approximateText} nejbližší PowerPoint variantou. Délka je převedená na rychlost rychle / středně / pomalu.`
+            : "Přechody jsou zapsané jako PowerPoint přechody; délka je převedená na rychlost rychle / středně / pomalu.",
+        });
+      } else await onExportPdf();
       if (kind === "print") toast({ title: "PDF pro tisk je stažené", description: "Otevřete jej a zvolte Tisk v prohlížeči nebo čtečce PDF." });
     } catch (error: any) { toast({ title: "Export se nepodařil", description: error?.message || String(error), variant: "destructive" }); }
     finally { setBusy(null); }

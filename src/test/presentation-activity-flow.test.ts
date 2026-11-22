@@ -64,6 +64,19 @@ describe("vložit → upravit → uložit → znovu otevřít → spustit", () =
     expect(liveSlide).toMatchObject({ ai_generated: true, ai_modified_at: "2026-11-22T01:00:00Z" });
   });
 
+  it("vstupní přechod zůstane na první rozložené otázce a další otázky jej neopakují", () => {
+    const slide = {
+      slideId: "q", type: "activity", transitionStyle: "push", transitionDirection: "down", transitionDuration: 1.2,
+      activitySpec: { activityType: "quiz", quiz: { questions: [
+        { question: "Q1", answers: [{ text: "A", correct: true }, { text: "X" }] },
+        { question: "Q2", answers: [{ text: "B", correct: true }, { text: "Y" }] },
+      ] } },
+    };
+    const live = preparePresentationForLive([slide]).slides;
+    expect(live[0]).toMatchObject({ transitionStyle: "push", transitionDirection: "down", transitionDuration: 1.2 });
+    expect(live[1].transitionStyle).toBe("cut");
+  });
+
   it("slide skrytý při promítání se do živé projekce nedostane", () => {
     const live = preparePresentationForLive([
       { slideId: "shown", projector: { headline: "Viditelný" }, blocks: [] },

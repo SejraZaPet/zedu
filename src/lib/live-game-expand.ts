@@ -19,6 +19,12 @@ function mcqSlide(base: any, idx: number, question: string, answers: string[], c
     ...(base?.backgroundOverride ? { backgroundOverride: base.backgroundOverride } : {}),
     ...(base?.timeLimit ? { timeLimit: base.timeLimit } : {}),
     ...(base?.gameMode ? { gameMode: base.gameMode } : {}),
+    // Původní vstupní přechod patří první rozložené otázce, ne každé další.
+    ...(idx === 0 && base?.transitionStyle ? {
+      transitionStyle: base.transitionStyle,
+      ...(base.transitionDirection ? { transitionDirection: base.transitionDirection } : {}),
+      ...(base.transitionDuration !== undefined ? { transitionDuration: base.transitionDuration } : {}),
+    } : idx > 0 ? { transitionStyle: "cut" } : {}),
     projector: { headline: question, body: "" },
     device: { instructions },
     teacherNotes: base?.teacherNotes || "",

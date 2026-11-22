@@ -2,6 +2,7 @@ import pptxgen from "pptxgenjs";
 import { activityToCoreQuestions } from "@/lib/live-game-core";
 import { activitySummary } from "@/lib/activity-meta";
 import { getPresentationTheme } from "@/lib/presentation-themes";
+import { pptxTransitionExportReport, pptxTransitionXmlForSlide } from "@/lib/pptx-slide-transitions";
 
 const PAGE_W = 13.333, PAGE_H = 7.5;
 const hex = (value: any, fallback = "2B1A3F") => String(value || fallback).replace("#", "").slice(0, 6).toUpperCase();
@@ -131,7 +132,7 @@ export async function createPresentationPptx(slides: any[], title = "Prezentace"
 }
 
 /** pptxgenjs 4 může vytvořit Override pro neexistující master a přehodit notesMaster za sldId. */
-export async function sanitizePresentationPptx(bytes: Uint8Array): Promise<Uint8Array> {
+export async function sanitizePresentationPptx(bytes: Uint8Array, sourceSlides?: any[]): Promise<Uint8Array> {
   const JSZip = (await import("jszip")).default;
   const zip = await JSZip.loadAsync(bytes);
   const typesPath = "[Content_Types].xml";
@@ -143,15 +144,31 @@ export async function sanitizePresentationPptx(bytes: Uint8Array): Promise<Uint8
   const notes = presentation.match(/<p:notesMasterIdLst>[\s\S]*?<\/p:notesMasterIdLst>/)?.[0];
   if (notes) presentation = presentation.replace(notes, "").replace(/(<p:sldMasterIdLst>[\s\S]*?<\/p:sldMasterIdLst>)/, `$1${notes}`);
   zip.file(presentationPath, presentation);
+  if (sourceSlides) {
+    for (let index = 0; index < sourceSlides.length; index++) {
+      const path = `ppt/slides/slide${index + 1}.xml`;
+      const entry = zip.file(path);
+      if (!entry) continue;
+      let slideXml = await entry.async("string");
+      // Idempotentní post-processing: případný dřívější přechod nejprve odebereme.
+      slideXml = slideXml.replace(/<p:transition\b[^>]*>[\s\S]*?<\/p:transition>/g, "").replace(/<p:transition\b[^>]*\/>/g, "");
+      const transition = pptxTransitionXmlForSlide(sourceSlides[index]);
+      slideXml = slideXml.includes("</p:clrMapOvr>")
+        ? slideXml.replace("</p:clrMapOvr>", `</p:clrMapOvr>${transition}`)
+        : slideXml.replace("</p:sld>", `${transition}</p:sld>`);
+      zip.file(path, slideXml);
+    }
+  }
   return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }
 
 export async function exportPresentationToPptx(slides: any[], title = "Prezentace") {
   const pptx = await createPresentationPptx(slides, title);
   const raw = await pptx.write({ outputType: "uint8array" }) as Uint8Array;
-  const sanitized = await sanitizePresentationPptx(new Uint8Array(raw));
+  const sanitized = await sanitizePresentationPptx(new Uint8Array(raw), slides);
   const blob = new Blob([new Uint8Array(sanitized)], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
   const url = URL.createObjectURL(blob); const anchor = document.createElement("a");
   const safe = title.replace(/[\\/:*?"<>|]/g, "-").trim() || "prezentace";
   anchor.href = url; anchor.download = `${safe}.pptx`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return pptxTransitionExportReport(slides);
 }

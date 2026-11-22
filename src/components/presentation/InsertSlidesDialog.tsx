@@ -14,12 +14,13 @@ import { cloneSlidesForInsertion, type SlideInsertPosition } from "@/lib/present
 
 interface SlideSource { id: string; title: string; kind: "lesson" | "presentation"; slides: any[] }
 
-export default function InsertSlidesDialog({ open, onOpenChange, onInsert, currentPresentationId, themeId }: {
+export default function InsertSlidesDialog({ open, onOpenChange, onInsert, currentPresentationId, themeId, fixedPlacement = false }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInsert: (slides: any[], position: SlideInsertPosition) => void;
   currentPresentationId?: string;
   themeId: string;
+  fixedPlacement?: boolean;
 }) {
   const [sources, setSources] = useState<SlideSource[] | null>(null);
   const [sourceId, setSourceId] = useState("");
@@ -82,7 +83,7 @@ export default function InsertSlidesDialog({ open, onOpenChange, onInsert, curre
             </> : <p className="text-sm text-deck-muted">Nejprve vyberte lekci nebo prezentaci.</p>}
           </main>
         </div>
-        <footer className="flex flex-col gap-3 border-t border-deck-line bg-deck-panel p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-3"><Label>Kam vložit:</Label>{([["before", "Před aktuální"], ["after", "Za aktuální"], ["end", "Na konec"]] as const).map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2 text-xs"><input type="radio" name="slide-position" checked={position === value} onChange={() => setPosition(value)} className="accent-deck-violet" />{label}</label>)}</div><Button className="min-h-11 bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" disabled={!selectedCount} onClick={insert}>Vložit {selectedCount || ""} {selectedCount === 1 ? "slide" : "slidy"}</Button></footer>
+        <footer className="flex flex-col gap-3 border-t border-deck-line bg-deck-panel p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-3">{fixedPlacement ? <Label>Na zvolené místo mezi slidy</Label> : <><Label>Kam vložit:</Label>{([["before", "Před aktuální"], ["after", "Za aktuální"], ["end", "Na konec"]] as const).map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2 text-xs"><input type="radio" name="slide-position" checked={position === value} onChange={() => setPosition(value)} className="accent-deck-violet" />{label}</label>)}</>}</div><Button className="min-h-11 bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" disabled={!selectedCount} onClick={insert}>Vložit {selectedCount || ""} {selectedCount === 1 ? "slide" : "slidy"}</Button></footer>
       </DialogContent>
     </Dialog>
   );

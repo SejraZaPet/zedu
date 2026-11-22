@@ -46,6 +46,25 @@ describe("věrný PPTX import", () => {
     expect(upload).toHaveBeenCalledTimes(1); expect(result.summary.images).toBe(1); // summary.images počítá obrázky prvků, ne pozadí
   }, 30000);
 
+  it("přečte nativní přechod, směr a délku; chybějící přechod zůstane bez animace", async () => {
+    const bytes = await makeDeck(3);
+    const zip = await JSZip.loadAsync(bytes);
+    const transitions = [
+      '<p:transition spd="slow"><p:push dir="d"/></p:transition>',
+      '<p:transition spd="fast"><p:prism/></p:transition>',
+    ];
+    for (const [index, transition] of transitions.entries()) {
+      const path = `ppt/slides/slide${index + 1}.xml`;
+      const source = await zip.file(path)!.async("string");
+      zip.file(path, source.replace("</p:clrMapOvr>", `</p:clrMapOvr>${transition}`));
+    }
+    const result = await importRichPptx(new Blob([new Uint8Array(await zip.generateAsync({ type: "uint8array" }))]));
+    expect(result.slides[0]).toMatchObject({ transitionStyle: "push", transitionDirection: "down", transitionDuration: 1.4 });
+    expect(result.slides[1]).toMatchObject({ transitionStyle: "fade", transitionDuration: 0.35 });
+    expect(result.slides[2].transitionStyle).toBe("cut");
+    expect(result.summary.warnings.some((warning) => warning.includes("prism"))).toBe(true);
+  }, 30000);
+
   it("přečte výplň z bgRef motivu a velikost písma z pPr/defRPr", async () => {
     const bytes = await makeDeck(2);
     const zip = await JSZip.loadAsync(bytes);

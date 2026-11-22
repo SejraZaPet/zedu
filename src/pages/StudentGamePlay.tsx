@@ -36,6 +36,7 @@ import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import SoloRoundActivityPlayer from "@/components/live/SoloRoundActivityPlayer";
 import { isSoloRoundSlide } from "@/lib/solo-round";
+import { slideTransitionClass, slideTransitionStyle, transitionConfigFromSlide } from "@/lib/slide-transitions";
 
 import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 import { useAuth } from "@/contexts/AuthContext";
@@ -303,6 +304,7 @@ const StudentGamePlay = () => {
   const qi = pacingMode === "student" ? studentQi : teacherQi;
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
+  const incomingTransition = transitionConfigFromSlide(currentSlideData);
   const rawZoom = (session as any).zoom_state;
   // Zoom follows the teacher only on the slide they are presenting (and only for
   // explanatory slides). Independent of whiteboard visibility.
@@ -423,9 +425,10 @@ const StudentGamePlay = () => {
               Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
           {isPhoneMcq ? (
             <section
+              key={qi}
               data-activity-surface
-              className={`mx-3 mt-28 rounded-lg p-4 space-y-3 ${hasActivityColors(currentSlideData.activitySpec?.colors) ? "border-4" : "live-game-surface"}`}
-              style={hasActivityColors(currentSlideData.activitySpec?.colors) ? activityCardStyle(currentSlideData.activitySpec.colors) : undefined}
+              className={`mx-3 mt-28 rounded-lg p-4 space-y-3 ${hasActivityColors(currentSlideData.activitySpec?.colors) ? "border-4" : "live-game-surface"} ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`}
+              style={{ ...(hasActivityColors(currentSlideData.activitySpec?.colors) ? activityCardStyle(currentSlideData.activitySpec.colors) : {}), ...slideTransitionStyle(incomingTransition) }}
             >
               <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">{currentSlideData.activitySpec?.question || currentSlideData.projector?.headline}</h1>
               {mcqImage && <img src={mcqImage} alt="Obrázek k otázce" className="max-h-64 w-full object-contain" />}
@@ -433,7 +436,9 @@ const StudentGamePlay = () => {
           ) : <div className="px-3 pt-3">
             <div className="relative overflow-hidden rounded-xl aspect-video w-full">
               <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
-                <SlideCanvas key={qi} slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
+                <div key={qi} className={`h-full w-full ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`} style={slideTransitionStyle(incomingTransition)}>
+                  <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
+                </div>
               </div>
               {(() => {
                 const allowSync = !!liveSettings?.allowStudentDrawSync;

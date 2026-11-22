@@ -1,6 +1,7 @@
 import type JSZip from "jszip";
 import { createPresentationImageUploader, PresentationImageImportCache, readBlobArrayBuffer, type PresentationImageUpload } from "@/lib/presentation-import-images";
 import type { PresentationImportProgress, PresentationImportResult } from "@/lib/presentation-import-types";
+import { pptxTransitionFromDocument } from "@/lib/pptx-slide-transitions";
 
 const EMU = 914400;
 const uid = () => crypto.randomUUID();
@@ -337,8 +338,10 @@ class Parser {
       const notesPart = await this.related(part, "/notesSlide"); const notesDoc = await this.document(notesPart);
       const notes = notesDoc ? all(notesDoc, "a:p").map((p) => all(p, "a:t").map((t) => t.textContent || "").join("").trim()).filter((t) => t && t !== String(i + 1)).join("\n").trim() : "";
       if (notes) this.counts.notes++;
-      if (all(doc, "p:timing").length) this.warn("Animace a časování se do editoru nepřenášejí.");
-      slides.push({ slideId: uid(), type: "content", projector: { headline: "", body: "" }, device: { instructions: "" }, blocks: [...masterBlocks, ...layoutBlocks, ...blocks].map((b, index) => ({ ...b, zIndex: index + 1 })), teacherNotes: notes, ...(background ? { backgroundOverride: background } : {}), ...(this.options.themeId ? { themeId: this.options.themeId } : {}), importSource: "pptx", sourceAspectRatio: this.size.cx / this.size.cy });
+      if (all(doc, "p:timing").length) this.warn("Animace a časování prvků se do editoru nepřenášejí.");
+      const transition = pptxTransitionFromDocument(doc);
+      if (transition.approximation) this.warn(transition.approximation);
+      slides.push({ slideId: uid(), type: "content", projector: { headline: "", body: "" }, device: { instructions: "" }, blocks: [...masterBlocks, ...layoutBlocks, ...blocks].map((b, index) => ({ ...b, zIndex: index + 1 })), teacherNotes: notes, transitionStyle: transition.config.style, transitionDirection: transition.config.direction, transitionDuration: transition.config.duration, ...(background ? { backgroundOverride: background } : {}), ...(this.options.themeId ? { themeId: this.options.themeId } : {}), importSource: "pptx", sourceAspectRatio: this.size.cx / this.size.cy });
     }
     return { slides, summary: { slideCount: slides.length, ...this.counts, warnings: [...this.warnings] } };
   }

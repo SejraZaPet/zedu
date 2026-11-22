@@ -10,8 +10,11 @@ import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes
 import { activityTypeLabel } from "@/lib/presentation-activity";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 import { isActivitySlide } from "@/lib/presentation-slide-actions";
+import SlideInsertMenu, { type SlideInsertKind } from "@/components/presentation/editor/SlideInsertMenu";
+import SlideTransitionPopover from "@/components/presentation/editor/SlideTransitionPopover";
+import type { SlideTransitionConfig } from "@/lib/slide-transitions";
 
-const ITEM_W = 152;
+const thumbnailStep = () => typeof window !== "undefined" && (window.innerWidth <= 1024 || window.matchMedia?.("(pointer: coarse)").matches) ? 232 : 184;
 const VIRTUALIZE_AFTER = 30;
 
 function LazySlidePreview({ slide, themeId }: { slide: any; themeId: string }) {
@@ -40,6 +43,7 @@ type SelectSlide = (index: number, event?: Pick<ReactMouseEvent, "shiftKey" | "c
 
 interface ThumbnailProps {
   slide: any;
+  slides: any[];
   index: number;
   slideCount: number;
   selectedIndices: number[];
@@ -51,11 +55,14 @@ interface ThumbnailProps {
   onDuplicate: (indices: number[]) => void;
   onMoveEdge: (indices: number[], edge: "start" | "end") => void;
   onToggleHidden: (indices: number[]) => void;
+  onInsert: (kind: SlideInsertKind, index: number) => void;
+  onTransitionChange: (index: number, config: SlideTransitionConfig) => void;
+  onApplyTransitionAll: (config: SlideTransitionConfig) => void;
 }
 
 const Thumbnail = memo(function Thumbnail({
-  slide, index, slideCount, selectedIndices, themeId, active, selected,
-  onSelect, onDelete, onDuplicate, onMoveEdge, onToggleHidden,
+  slide, slides, index, slideCount, selectedIndices, themeId, active, selected,
+  onSelect, onDelete, onDuplicate, onMoveEdge, onToggleHidden, onInsert, onTransitionChange, onApplyTransitionAll,
 }: ThumbnailProps) {
   const id = String(slide?.slideId || index);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -168,6 +175,12 @@ const Thumbnail = memo(function Thumbnail({
         </DropdownMenuContent>
       </DropdownMenu>
       <p className={`mt-1 truncate text-center text-[11px] ${selected ? "font-semibold text-deck-violet-deep" : "text-deck-muted"}`} title={title}>{index + 1}. {title}</p>
+      {index < slideCount - 1 && (
+        <div className={`deck-thumbnail-gap-actions ${slides[index + 1]?.transitionStyle && slides[index + 1]?.transitionStyle !== "cut" ? "deck-thumbnail-gap-actions--active" : ""}`}>
+          <SlideInsertMenu index={index + 1} onPick={onInsert} />
+          <SlideTransitionPopover slides={slides} index={index + 1} onChange={onTransitionChange} onApplyAll={onApplyTransitionAll} />
+        </div>
+      )}
     </div>
   );
 });
@@ -184,6 +197,9 @@ interface Props {
   onDuplicate: (indices: number[]) => void;
   onMoveEdge: (indices: number[], edge: "start" | "end") => void;
   onToggleHidden: (indices: number[]) => void;
+  onInsert: (kind: SlideInsertKind, index: number) => void;
+  onTransitionChange: (index: number, config: SlideTransitionConfig) => void;
+  onApplyTransitionAll: (config: SlideTransitionConfig) => void;
   open?: boolean;
   onToggle?: () => void;
   onPrevious?: () => void;
@@ -193,7 +209,8 @@ interface Props {
 /** Dolní pás miniatur: dnd-kit, líné náhledy a horizontální virtualizace nad 30 slidů. */
 export default function PresentationThumbnails({
   slides, activeIndex, selectedIndices = [activeIndex], themeId, onSelect, onMove, onAdd,
-  onDelete, onDuplicate, onMoveEdge, onToggleHidden, open = true, onToggle, onPrevious, onNext,
+  onDelete, onDuplicate, onMoveEdge, onToggleHidden, onInsert, onTransitionChange, onApplyTransitionAll,
+  open = true, onToggle, onPrevious, onNext,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: Math.min(slides.length, VIRTUALIZE_AFTER) });
@@ -207,8 +224,9 @@ export default function PresentationThumbnails({
   const updateRange = () => {
     if (!virtual || !scrollRef.current) return;
     const el = scrollRef.current;
-    const start = Math.max(0, Math.floor(el.scrollLeft / ITEM_W) - 3);
-    const count = Math.ceil(el.clientWidth / ITEM_W) + 7;
+    const step = thumbnailStep();
+    const start = Math.max(0, Math.floor(el.scrollLeft / step) - 3);
+    const count = Math.ceil(el.clientWidth / step) + 7;
     setRange({ start, end: Math.min(slides.length, start + count) });
   };
   useEffect(() => {
@@ -246,13 +264,13 @@ export default function PresentationThumbnails({
       {onToggle && <div className="flex h-full items-center border-r border-deck-line px-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle} aria-label="Skrýt miniatury (Alt+M)" title="Skrýt miniatury (Alt+M)"><ChevronDown className="h-4 w-4" /></Button></div>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
         <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
-          <div ref={scrollRef} onScroll={updateRange} className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto px-4 py-2" aria-label="Miniatury; Shift nebo Ctrl vybere více slidů">
-            {virtual && range.start > 0 && <div aria-hidden className="shrink-0" style={{ width: range.start * ITEM_W - 16 }} />}
+          <div ref={scrollRef} onScroll={updateRange} className="deck-thumbnail-list flex min-w-0 flex-1 items-start overflow-x-auto px-4 py-2" aria-label="Miniatury; Shift nebo Ctrl vybere více slidů">
+            {virtual && range.start > 0 && <div aria-hidden className="shrink-0" style={{ width: range.start * thumbnailStep() - (thumbnailStep() - 136) }} />}
             {rendered.map((slide, localIndex) => {
               const index = virtual ? range.start + localIndex : localIndex;
-              return <Thumbnail key={ids[index]} slide={slide} index={index} slideCount={slides.length} selectedIndices={selectedIndices} themeId={themeId} active={index === activeIndex} selected={selectedIndices.includes(index)} onSelect={onSelect} onDelete={onDelete} onDuplicate={onDuplicate} onMoveEdge={onMoveEdge} onToggleHidden={onToggleHidden} />;
+              return <Thumbnail key={ids[index]} slide={slide} slides={slides} index={index} slideCount={slides.length} selectedIndices={selectedIndices} themeId={themeId} active={index === activeIndex} selected={selectedIndices.includes(index)} onSelect={onSelect} onDelete={onDelete} onDuplicate={onDuplicate} onMoveEdge={onMoveEdge} onToggleHidden={onToggleHidden} onInsert={onInsert} onTransitionChange={onTransitionChange} onApplyTransitionAll={onApplyTransitionAll} />;
             })}
-            {virtual && range.end < slides.length && <div aria-hidden className="shrink-0" style={{ width: (slides.length - range.end) * ITEM_W - 16 }} />}
+            {virtual && range.end < slides.length && <div aria-hidden className="shrink-0" style={{ width: (slides.length - range.end) * thumbnailStep() - (thumbnailStep() - 136) }} />}
             <button type="button" onClick={onAdd} className="deck-add-slide" aria-label="Přidat slide">
               <Plus className="h-5 w-5" /> Slide
             </button>

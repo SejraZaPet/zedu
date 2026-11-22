@@ -47,7 +47,7 @@ import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides } from "@/lib/presentation-themes";
 import { LayoutTemplate, Shapes, Pencil, Eraser, Maximize2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
+import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, applyTransitionToSlide, type SlideTransition, type SlideTransitionConfig } from "@/lib/slide-transitions";
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ActivitySettingsPanel from "@/components/presentation/ActivitySettingsPanel";
 import ActivityCatalog from "@/components/presentation/ActivityCatalog";
@@ -94,9 +94,11 @@ import { persistSlideImageUrl } from "@/lib/slide-image-persist";
 import PresentationTopBar from "@/components/presentation/editor/PresentationTopBar";
 import PresentationLeftPanel, { type EditorLeftTab } from "@/components/presentation/editor/PresentationLeftPanel";
 import PresentationThumbnails from "@/components/presentation/editor/PresentationThumbnails";
+import SlideInsertMenu, { type SlideInsertKind } from "@/components/presentation/editor/SlideInsertMenu";
+import SlideTransitionPopover from "@/components/presentation/editor/SlideTransitionPopover";
 import SelectionPropertiesPanel from "@/components/presentation/editor/SelectionPropertiesPanel";
 import { PRESENTATION_THEMES } from "@/lib/presentation-themes";
-import { insertTemplateSlidesAfter } from "@/lib/presentation-templates";
+import { cloneTemplateSlides, PRESENTATION_TEMPLATES } from "@/lib/presentation-templates";
 import PresentationTemplatesPanel from "@/components/presentation/PresentationTemplatesPanel";
 import { Settings2 as PropertiesIcon } from "lucide-react";
 
@@ -264,6 +266,9 @@ export const PresentationEditorDialog = ({
   const [activityCreatorOpen, setActivityCreatorOpen] = useState(true);
   const [insertActivityOpen, setInsertActivityOpen] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
+  const [activityInsertAtIndex, setActivityInsertAtIndex] = useState<number | null>(null);
+  const [slidesInsertAtIndex, setSlidesInsertAtIndex] = useState<number | null>(null);
+  const [templateInsertAtIndex, setTemplateInsertAtIndex] = useState<number | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
@@ -326,6 +331,13 @@ export const PresentationEditorDialog = ({
   const transition = transitionFromSlides(pendingSlides);
   const setTransition = (next: SlideTransition) =>
     setPendingSlides(applyTransitionToSlides(pendingSlides, next));
+  const changeSlideTransition = (index: number, config: SlideTransitionConfig) => {
+    setPendingSlides((current) => applyTransitionToSlide(current, index, config));
+  };
+  const applyTransitionEverywhere = (config: SlideTransitionConfig) => {
+    setPendingSlides((current) => applyTransitionToSlides(current, config));
+    toast({ title: "Přechod použit na celou prezentaci", description: "Styl, směr i délka se projeví po uložení a spuštění projekce." });
+  };
 
   const isActivitySlide = currentSlide?.type === "activity" || (currentSlide as any)?.type === "studio_step";
   const [activityPanelOpen, setActivityPanelOpen] = useState(true);
@@ -719,6 +731,7 @@ export const PresentationEditorDialog = ({
 
   const selectSlide = (index: number, event?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }) => {
     if (index < 0 || index >= pendingSlides.length) return;
+    setTemplateInsertAtIndex(null);
     setEditingSlideIndex(index);
     setSelectedBlockId(null);
     if (event?.shiftKey) {
@@ -767,6 +780,30 @@ export const PresentationEditorDialog = ({
     setAddSlideOpen(true);
   };
 
+  /** Akční dvojice mezi miniatury používá stávající editory a vkládá přesně na zvolenou pozici. */
+  const insertFromGap = (kind: SlideInsertKind, index: number) => {
+    if (kind === "blank") {
+      const blank = PRESENTATION_TEMPLATES.find((template) => template.id === "blank")?.build() || [];
+      insertSlidesAt(index, cloneTemplateSlides(blank));
+      toast({ title: "Prázdný slide vložen", description: "Změna je zatím pouze v rozdělané prezentaci." });
+      return;
+    }
+    if (kind === "template") {
+      setTemplateInsertAtIndex(index);
+      setSidebarSection("templates");
+      setLeftPanelOpen(true);
+      return;
+    }
+    if (kind === "activity") {
+      setActivityInsertAtIndex(index);
+      setActivityTarget("new");
+      setInsertActivityOpen(true);
+      return;
+    }
+    setSlidesInsertAtIndex(index);
+    setInsertSlidesOpen(true);
+  };
+
 
   /** Po vložení aktivity se rovnou otevře její editor (pravý panel) s kurzorem v otázce. */
   const openActivityEditor = (slide: any, index: number) => {
@@ -789,11 +826,15 @@ export const PresentationEditorDialog = ({
       return;
     }
     const updated = [...pendingSlides];
-    updated.splice(editingSlideIndex + 1, 0, built);
+    const at = activityInsertAtIndex ?? editingSlideIndex + 1;
+    updated.splice(at, 0, built);
     setPendingSlides(updated);
-    setEditingSlideIndex(editingSlideIndex + 1);
+    setEditingSlideIndex(at);
+    setSelectedSlideIndices([at]);
+    slideSelectionAnchorRef.current = at;
+    setActivityInsertAtIndex(null);
     setSelectedBlockId(null);
-    openActivityEditor(built, editingSlideIndex + 1);
+    openActivityEditor(built, at);
     toast({
       title: "Aktivita přidána",
       description: target === "slide"
@@ -1173,9 +1214,8 @@ export const PresentationEditorDialog = ({
                     themeId={themeId}
                     onThemeChange={setThemeId}
                     onInsertSlide={(slides) => {
-                      setPendingSlides((current) => insertTemplateSlidesAfter(current, slides, editingSlideIndex));
-                      setEditingSlideIndex(editingSlideIndex + 1);
-                      setSelectedBlockId(null);
+                      insertSlidesAt(templateInsertAtIndex ?? editingSlideIndex + 1, cloneTemplateSlides(slides));
+                      setTemplateInsertAtIndex(null);
                     }}
                     onApplyDeck={(slides) => {
                       setPendingSlides(slides);
@@ -1199,7 +1239,11 @@ export const PresentationEditorDialog = ({
                     <Button variant={drawMode ? "default" : "ghost"} size="icon" className="deck-tool-icon" onClick={() => { setDrawMode((v) => !v); setSelectedBlockId(null); }} aria-label="Tužka" title="Tužka" aria-pressed={drawMode}><Pencil /></Button>
                     {drawMode && <Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="deck-tool-icon" aria-label="Nastavení tužky" title="Nastavení tužky"><Settings2 /></Button></PopoverTrigger><PopoverContent className="w-64 space-y-3 p-3"><ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} /><div><Label className="text-xs" htmlFor="draw-width">Tloušťka čáry</Label><Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}><SelectTrigger id="draw-width" className="mt-1"><SelectValue /></SelectTrigger><SelectContent>{[1, 3, 5, 8].map((width) => <SelectItem key={width} value={String(width)}>{width} px</SelectItem>)}</SelectContent></Select></div><Button variant="outline" size="sm" className="w-full" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1) })}><Eraser className="mr-2 h-4 w-4" />Guma – poslední tah</Button><Button variant="ghost" size="sm" className="w-full text-destructive" disabled={!((currentSlide as any)?.drawingStrokes || []).length} onClick={() => updateSlide({ drawingStrokes: [] })}>Vymazat vše</Button></PopoverContent></Popover>}
                     <Button variant="ghost" size="icon" className="deck-tool-icon" onClick={() => setDarkPreview((v) => !v)} aria-label={darkPreview ? "Světlý náhled" : "Tmavý náhled"} title={darkPreview ? "Světlý náhled" : "Tmavý náhled"}>{darkPreview ? <Sun /> : <Moon />}</Button>
-                    {!thumbnailsOpen && <Button variant="ghost" size="icon" className="deck-tool-icon text-destructive" onClick={deleteCurrentSlide} disabled={pendingSlides.length <= 1} aria-label="Smazat aktuální slide" title={pendingSlides.length <= 1 ? "Poslední slide nelze smazat" : "Smazat aktuální slide"}><Trash2 /></Button>}
+                    {!thumbnailsOpen && <>
+                      <SlideInsertMenu index={editingSlideIndex + 1} onPick={insertFromGap} trigger={<Button variant="ghost" size="icon" className="deck-tool-icon" aria-label="Vložit slide za aktuální" title="Vložit slide za aktuální"><Plus /></Button>} />
+                      <SlideTransitionPopover slides={pendingSlides} index={Math.min(editingSlideIndex + 1, pendingSlides.length - 1)} onChange={changeSlideTransition} onApplyAll={applyTransitionEverywhere} compact trigger={<Button variant="ghost" size="icon" className="deck-tool-icon" disabled={editingSlideIndex >= pendingSlides.length - 1} aria-label="Přechod na další slide" title="Přechod na další slide"><ArrowLeftRight /></Button>} />
+                      <Button variant="ghost" size="icon" className="deck-tool-icon text-destructive" onClick={deleteCurrentSlide} disabled={pendingSlides.length <= 1} aria-label="Smazat aktuální slide" title={pendingSlides.length <= 1 ? "Poslední slide nelze smazat" : "Smazat aktuální slide"}><Trash2 /></Button>
+                    </>}
                   </div>
                   {selectedBlock && <div className="deck-floating-bar">
                     <PresentationCompactFormatToolbar
@@ -1293,7 +1337,7 @@ export const PresentationEditorDialog = ({
                 >
                   {!selectedBlock && <>
                     <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Digi i offline</h3><Button size="sm" variant="outline" className="w-full gap-1.5 text-xs" onClick={handlePrintActivity} disabled={exportingPdf}><FileDown className="h-3.5 w-3.5" />Vytisknout tento slide jako list</Button></section>
-                    <section className="space-y-3 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Přechod a písmo</h3><Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SLIDE_TRANSITIONS.map((item) => <SelectItem key={item.value} value={item.value} title={item.hint}>{item.label}</SelectItem>)}</SelectContent></Select><Label className="text-xs" htmlFor="slide-font-scale">Velikost písma slidu</Label><input id="slide-font-scale" type="range" min={0.7} max={1.6} step={0.05} value={(currentSlide?.projector?.fontScale as number) || 1} onChange={(e) => updateProjector({ fontScale: parseFloat(e.target.value) })} className="w-full accent-deck-violet" /></section>
+                    <section className="space-y-3 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Výchozí přechod a písmo</h3><p className="text-[11px] text-deck-muted">Volba se použije na všechny slidy. Jednotlivé přechody nastavíte mezi miniaturami.</p><Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SLIDE_TRANSITIONS.map((item) => <SelectItem key={item.value} value={item.value} title={item.hint}>{item.label}</SelectItem>)}</SelectContent></Select><Label className="text-xs" htmlFor="slide-font-scale">Velikost písma slidu</Label><input id="slide-font-scale" type="range" min={0.7} max={1.6} step={0.05} value={(currentSlide?.projector?.fontScale as number) || 1} onChange={(e) => updateProjector({ fontScale: parseFloat(e.target.value) })} className="w-full accent-deck-violet" /></section>
                     <section className="space-y-2 border-t border-deck-line pt-4"><h3 className="font-deck-heading text-xs uppercase tracking-wide text-deck-violet-deep">Obrázek pozadí</h3><MediaPickerDialog imageOnly onPick={(url, item) => { void insertPersistentImage(url, item, (finalUrl) => updateSlide({ backgroundOverride: { image: finalUrl } })); }} trigger={<Button variant="outline" size="sm" className="w-full"><ImageIcon className="mr-1 h-3.5 w-3.5" />Vybrat obrázek</Button>} /><GameBackgroundPickerDialog onPick={(url) => updateSlide({ backgroundOverride: { image: url } })} trigger={<Button variant="outline" size="sm" className="w-full"><Gamepad2 className="mr-1 h-3.5 w-3.5" />Herní pozadí</Button>} />{(currentSlide as any).backgroundOverride?.image && <Button variant="ghost" size="sm" onClick={() => updateSlide({ backgroundOverride: null })}>Odebrat obrázek pozadí</Button>}</section>
                     {isZoomableSlide(currentSlide) && <Collapsible className="rounded-lg border border-deck-line"><CollapsibleTrigger className="flex w-full items-center justify-between p-2 text-xs"><span>Zóny přiblížení ({(currentSlide.zoomZones || []).length})</span><ChevronDown className="h-4 w-4" /></CollapsibleTrigger><CollapsibleContent className="p-2"><ZoomZonesEditor slide={currentSlide} darkMode={darkPreview} onChange={(zoomZones: ZoomZone[]) => updateSlide({ zoomZones })} /></CollapsibleContent></Collapsible>}
                     {blocks.length > 0 && <Collapsible className="rounded-lg border border-deck-line"><CollapsibleTrigger className="flex w-full items-center justify-between p-2 text-xs"><span>Volné umístění prvků</span><ChevronDown className="h-4 w-4" /></CollapsibleTrigger><CollapsibleContent className="space-y-1 p-2">{blocks.map((block, index) => { const free = !!getBlockFrame(block); return <div key={block.id} className="flex items-center gap-2"><button type="button" className="min-w-0 flex-1 truncate text-left text-[11px]" onClick={() => setSelectedBlockId(block.id)}>{blockLabel(block, index)}</button><Switch checked={free} aria-label={`Volné umístění bloku ${index + 1}`} onCheckedChange={(value) => updateBlock(block.id, (previous: Block) => { if (value) return { ...previous, frame: { ...DEFAULT_BLOCK_FRAME } }; const { frame, ...rest } = previous as any; return rest as Block; })} /></div>; })}</CollapsibleContent></Collapsible>}
@@ -1317,6 +1361,9 @@ export const PresentationEditorDialog = ({
             onDuplicate={duplicateSlides}
             onMoveEdge={moveSlidesToEdge}
             onToggleHidden={toggleSlidesHidden}
+            onInsert={insertFromGap}
+            onTransitionChange={changeSlideTransition}
+            onApplyTransitionAll={applyTransitionEverywhere}
             open={thumbnailsOpen}
             onToggle={() => setThumbnailsOpen((value) => !value)}
             onPrevious={() => selectSlide(Math.max(0, editingSlideIndex - 1))}
@@ -1326,8 +1373,8 @@ export const PresentationEditorDialog = ({
           <ImportPptxToPresentationDialog open={importPptxOpen} onOpenChange={setImportPptxOpen} themeId={themeId} userId={user?.id} onImported={(slides) => { const updated = [...pendingSlides, ...slides]; setPendingSlides(updated); setEditingSlideIndex(pendingSlides.length); setSelectedBlockId(null); }} />
           <PresentationExportDialog open={exportOpen} onOpenChange={setExportOpen} slides={pendingSlides} title={presentationLesson?.title || "prezentace"} onExportPdf={handleExportPdf} />
           <AddSlideSheet open={addSlideOpen} onOpenChange={setAddSlideOpen} slides={pendingSlides} layoutsOnly showLibrary onAddSlides={(newSlides) => { insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides); setInsertAtIndex(null); }} />
-          <InsertActivityDialog open={insertActivityOpen} onOpenChange={setInsertActivityOpen} themeId={themeId} onInsert={(slide, target) => insertBuiltActivity(slide, activityTypeLabel(slide.activitySpec?.activityType), target)} />
-          <InsertSlidesDialog open={insertSlidesOpen} onOpenChange={setInsertSlidesOpen} themeId={themeId} currentPresentationId={source?.type === "standalone" ? source.presentationId : undefined} onInsert={(slides, position) => { const at = position === "end" ? pendingSlides.length : editingSlideIndex + (position === "after" ? 1 : 0); insertSlidesAt(at, slides.map((slide) => markSlideEditedByTeacher(slide, linkedToLesson))); }} />
+          <InsertActivityDialog open={insertActivityOpen} onOpenChange={(open) => { setInsertActivityOpen(open); if (!open) setActivityInsertAtIndex(null); }} themeId={themeId} onInsert={(slide, target) => insertBuiltActivity(slide, activityTypeLabel(slide.activitySpec?.activityType), target)} />
+          <InsertSlidesDialog open={insertSlidesOpen} onOpenChange={(open) => { setInsertSlidesOpen(open); if (!open) setSlidesInsertAtIndex(null); }} themeId={themeId} currentPresentationId={source?.type === "standalone" ? source.presentationId : undefined} fixedPlacement={slidesInsertAtIndex !== null} onInsert={(slides, position) => { const at = slidesInsertAtIndex ?? (position === "end" ? pendingSlides.length : editingSlideIndex + (position === "after" ? 1 : 0)); insertSlidesAt(at, slides.map((slide) => markSlideEditedByTeacher(slide, linkedToLesson))); setSlidesInsertAtIndex(null); }} />
         </DialogContent>
       </Dialog>
 

@@ -26,4 +26,24 @@ describe("PPTX export editoru a zpětný import", () => {
     expect(imported.slides[0].teacherNotes).toContain("Poznámka pouze pro učitele"); expect(textOf(imported.slides[1])).toContain("Hlavní město?"); expect(textOf(imported.slides[1])).toContain("Praha"); expect(textOf(imported.slides[1])).toContain("Brno"); expect(imported.slides[1].teacherNotes).toContain("Spustit po diskuzi");
     expect(imported.slides[0].blocks.some((b: any) => b.type === "image")).toBe(true); expect(imported.slides[0].blocks.some((b: any) => b.type === "shape")).toBe(true);
   }, 30000);
+
+  it("zapíše přechody i na aktivitě a zpětný import je rozpozná", async () => {
+    const source = [
+      { slideId: "a", type: "content", projector: { headline: "" }, transitionStyle: "push", transitionDirection: "down", transitionDuration: 1.4, blocks: [] },
+      { slideId: "b", type: "activity", projector: { headline: "Kvíz" }, transitionStyle: "blur", transitionDuration: 0.6, activitySpec: { activityType: "mcq", question: "Otázka", options: [{ text: "A" }, { text: "B" }], correctIndex: 0 }, blocks: [] },
+      { slideId: "c", type: "content", projector: { headline: "" }, transitionStyle: "cut", blocks: [] },
+    ];
+    const pptx = await createPresentationPptx(source, "[TEST] transitions");
+    const raw = await pptx.write({ outputType: "uint8array" }) as Uint8Array;
+    const output = await sanitizePresentationPptx(new Uint8Array(raw), source);
+    const JSZip = (await import("jszip")).default;
+    const packed = await JSZip.loadAsync(output);
+    expect(await packed.file("ppt/slides/slide1.xml")!.async("string")).toContain('<p:push dir="d"/>');
+    expect(await packed.file("ppt/slides/slide2.xml")!.async("string")).toContain("<p:fade/>");
+    expect(await packed.file("ppt/slides/slide3.xml")!.async("string")).toContain("<p:cut/>");
+    const imported = await importRichPptx(new Blob([new Uint8Array(output)]));
+    expect(imported.slides[0]).toMatchObject({ transitionStyle: "push", transitionDirection: "down" });
+    expect(imported.slides[1].transitionStyle).toBe("fade");
+    expect(imported.slides[2].transitionStyle).toBe("cut");
+  }, 30000);
 });

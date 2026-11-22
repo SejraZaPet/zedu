@@ -589,19 +589,43 @@ body.a11y-line-height main .whitespace-pre-wrap {
   .slide-anim-scale, .slide-anim-from-bottom, .slide-anim-from-top { animation: none; }
 }
 
-/* --- Přechody mezi slidy (celá prezentace) --- */
-@keyframes slideTransFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideTransPush {
-  from { opacity: 0.2; transform: translateX(6%); }
-  to { opacity: 1; transform: translateX(0); }
-}
-.slide-trans-fade { animation: slideTransFade 0.35s ease-out both; }
-.slide-trans-push { animation: slideTransPush 0.4s cubic-bezier(.2,.7,.3,1) both; }
+/* --- Vstupní přechody slidů; délku nastavuje inline styl z modelu slidu. --- */
+@keyframes slideTransFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideTransPushLeft { from { opacity: .25; transform: translateX(12%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideTransPushRight { from { opacity: .25; transform: translateX(-12%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideTransPushUp { from { opacity: .25; transform: translateY(12%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideTransPushDown { from { opacity: .25; transform: translateY(-12%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideTransZoom { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+@keyframes slideTransRotate { from { opacity: 0; transform: perspective(1200px) rotateZ(-4deg) scale(.94); } to { opacity: 1; transform: perspective(1200px) rotateZ(0) scale(1); } }
+@keyframes slideTransWipeLeft { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+@keyframes slideTransWipeRight { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes slideTransWipeUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+@keyframes slideTransWipeDown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+@keyframes slideTransBlur { from { opacity: 0; filter: blur(18px); } to { opacity: 1; filter: blur(0); } }
+@keyframes slideTransFlip { from { opacity: 0; transform: perspective(1200px) rotateY(70deg); } to { opacity: 1; transform: perspective(1200px) rotateY(0); } }
+@keyframes slideTransMirror { from { opacity: 0; transform: perspective(1200px) rotateY(-65deg) scaleX(.75); } to { opacity: 1; transform: perspective(1200px) rotateY(0) scaleX(1); } }
+@keyframes slideTransFocus { from { opacity: 0; filter: blur(8px); transform: scale(1.12); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
+.slide-trans-fade { animation-name: slideTransFade; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
+.slide-trans-push { animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-push.slide-trans-dir-left { animation-name: slideTransPushLeft; }
+.slide-trans-push.slide-trans-dir-right { animation-name: slideTransPushRight; }
+.slide-trans-push.slide-trans-dir-up { animation-name: slideTransPushUp; }
+.slide-trans-push.slide-trans-dir-down { animation-name: slideTransPushDown; }
+.slide-trans-zoom { animation-name: slideTransZoom; animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-rotate { animation-name: slideTransRotate; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
+.slide-trans-wipe { animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.7,.3,1); animation-fill-mode: both; }
+.slide-trans-wipe.slide-trans-dir-left { animation-name: slideTransWipeLeft; }
+.slide-trans-wipe.slide-trans-dir-right { animation-name: slideTransWipeRight; }
+.slide-trans-wipe.slide-trans-dir-up { animation-name: slideTransWipeUp; }
+.slide-trans-wipe.slide-trans-dir-down { animation-name: slideTransWipeDown; }
+.slide-trans-blur { animation-name: slideTransBlur; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
+.slide-trans-flip { animation-name: slideTransFlip; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
+.slide-trans-mirror { animation-name: slideTransMirror; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; transform-origin: center; }
+.slide-trans-focus { animation-name: slideTransFocus; animation-duration: .45s; animation-timing-function: ease-out; animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
-  .slide-trans-fade, .slide-trans-push { animation: none; }
+  .slide-trans-fade, .slide-trans-push, .slide-trans-push[class], .slide-trans-zoom, .slide-trans-rotate,
+  .slide-trans-wipe, .slide-trans-wipe[class], .slide-trans-blur, .slide-trans-flip, .slide-trans-mirror,
+  .slide-trans-focus { animation: none; }
 }
 
 /* Čitelnost textu na fotografickém pozadí (TextScrim) */
@@ -1035,9 +1059,26 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
 .deck-thumbnail-action:hover { background: hsl(var(--deck-soft)); }
 .deck-thumbnail-action:focus-visible { outline: 2px solid hsl(var(--deck-violet)); outline-offset: -2px; }
 .deck-thumbnail-action:disabled { opacity: .4; cursor: not-allowed; }
-@media (max-width: 1024px), (pointer: coarse) { .deck-thumbnail-actions { opacity: 1; } .deck-thumbnail-action { width: 44px; height: 44px; } }
+@media (max-width: 1024px), (pointer: coarse) { .deck-thumbnail-actions { opacity: 1; } .deck-thumbnail-action { width: 44px; height: 44px; } .deck-thumbnail-list { gap: 96px; } .deck-thumbnail-gap-actions { top: 12px; gap: 4px; opacity: 1; } .deck-transition-gap-button { width: 44px; height: 44px; } }
 .deck-add-slide { display: flex; width: 100px; height: 76px; flex-shrink: 0; align-items: center; justify-content: center; gap: 4px; border: 2px dashed hsl(var(--deck-violet) / .45); border-radius: 8px; color: hsl(var(--deck-violet)); font-size: 12px; font-weight: 700; }
 .deck-add-slide:hover { background: hsl(var(--deck-soft)); }
+.deck-thumbnail-list { gap: 48px; }
+.deck-thumbnail-gap-actions { position: absolute; left: 140px; top: 20px; z-index: 24; display: flex; gap: 4px; opacity: 0; transition: opacity 120ms; }
+.group:hover .deck-thumbnail-gap-actions, .group:focus-within .deck-thumbnail-gap-actions, .deck-thumbnail-gap-actions--active { opacity: 1; }
+.deck-transition-gap-button { position: relative; display: inline-flex; width: 22px; height: 30px; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid hsl(var(--deck-line)); border-radius: 7px; background: hsl(var(--deck-panel)); color: hsl(var(--deck-violet-deep)); box-shadow: 0 2px 6px hsl(var(--deck-ink) / .12); }
+.deck-transition-gap-button:hover { border-color: hsl(var(--deck-teal)); background: hsl(var(--deck-soft)); }
+.deck-transition-gap-button:focus-visible { outline: 3px solid hsl(var(--deck-teal)); outline-offset: 1px; }
+.deck-transition-gap-button--active { border-color: hsl(var(--deck-violet) / .55); background: hsl(var(--deck-soft)); }
+.deck-transition-active-dot { position: absolute; right: 2px; top: 2px; width: 5px; height: 5px; border-radius: 999px; background: hsl(var(--deck-violet)); }
+.deck-transition-option { display: flex; min-width: 0; flex-direction: column; gap: 5px; border: 2px solid hsl(var(--deck-line)); border-radius: 9px; background: hsl(var(--deck-panel)); padding: 5px; color: hsl(var(--deck-ink)); text-align: left; }
+.deck-transition-option:hover { border-color: hsl(var(--deck-teal)); }
+.deck-transition-option:focus-visible { outline: 3px solid hsl(var(--deck-teal)); outline-offset: 1px; }
+.deck-transition-option--selected { border-color: hsl(var(--deck-violet)); background: hsl(var(--deck-soft)); }
+.deck-transition-mini { position: relative; display: block; height: 42px; overflow: hidden; border-radius: 5px; background: hsl(var(--deck-canvas)); perspective: 300px; }
+.deck-transition-mini-before, .deck-transition-mini-after { position: absolute; inset: 5px 22px; display: block; border-radius: 3px; }
+.deck-transition-mini-before { background: hsl(var(--deck-violet) / .35); }
+.deck-transition-mini-after { border: 1px solid hsl(var(--deck-teal)); background: linear-gradient(135deg, hsl(var(--deck-teal) / .55), hsl(var(--deck-violet) / .5)); animation-play-state: paused; animation-delay: -999s; }
+.deck-transition-option:hover .deck-transition-mini-after, .deck-transition-option:focus-visible .deck-transition-mini-after { animation-play-state: running; animation-delay: 0s; }
 .deck-insert-tile { display: flex; min-height: 60px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid hsl(var(--deck-line)); border-radius: 9px; background: hsl(var(--deck-panel)); padding: 6px 2px; color: hsl(var(--deck-muted)); font-size: 10px; }
 .deck-insert-tile:hover { border-color: hsl(var(--deck-violet) / .55); background: hsl(var(--deck-soft)); color: hsl(var(--deck-violet-deep)); }
 .deck-template-card { overflow: hidden; border: 1px solid hsl(var(--deck-line)); border-radius: 12px; background: hsl(var(--deck-panel)); text-align: left; }
@@ -1064,5 +1105,6 @@ body.has-view-as-pill.has-view-as-pill--stacked { padding-bottom: calc(8.5rem + 
   .deck-left-tab { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .deck-thumbnail, .deck-add-slide, .deck-insert-tile { transition: none; }
+  .deck-thumbnail, .deck-add-slide, .deck-insert-tile, .deck-thumbnail-gap-actions { transition: none; }
+  .deck-transition-mini-after, .deck-transition-mini-after[class] { animation: none; }
 }
