@@ -117,6 +117,9 @@ const StudentAssignments = () => {
                 <AssignmentStatusCard status={visualStatus} title={a.title} onOpen={() => navigate(`/student/ulohy/${a.id}`)}
                   actions={<Button className="assignment-card-action" size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>Otevřít</Button>}>
                   {a.description && <p className="line-clamp-2 text-sm">{assignmentDescriptionToText(a.description)}</p>}
+                  {assignmentKind(a.settings) === "material" && (a.worksheet_id || ((a.settings as any)?.worksheets?.length ?? 0) > 0) && (
+                    <span className="inline-flex w-fit rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground" data-testid="material-available-badge">K dispozici – neodevzdává se</span>
+                  )}
                   {assignmentKind(a.settings) === "material" && materialContentLabel(a) && (
                     <p className="text-xs text-muted-foreground">{materialContentLabel(a)}</p>
                   )}

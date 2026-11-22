@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AssignmentDetailDialog from "@/components/admin/AssignmentDetailDialog";
+import { ConvertToMaterialDialog } from "@/components/assignments/ConvertToMaterialDialog";
 import AssignmentStudentPreview from "@/components/assignments/AssignmentStudentPreview";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -196,6 +197,8 @@ const TeacherAssignments = () => {
   const [recipientIds, setRecipientIds] = useState<string[]>([]);
   /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
   const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
+  /** Hromadný převod úkolů s listem na materiál (null = zavřeno). */
+  const [convertIds, setConvertIds] = useState<string[] | null>(null);
   const [previewAssignment, setPreviewAssignment] = useState<Assignment | null>(null);
   /** Úloha, pro kterou se mají zobrazit výsledky. */
   const [resultsAssignmentId, setResultsAssignmentId] = useState<string | null>(null);
@@ -1162,6 +1165,9 @@ const TeacherAssignments = () => {
           <TabsContent value="assignments" className="space-y-4">
             <div className="flex justify-between gap-2 flex-wrap">
               <div className="flex gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setConvertIds([])} data-testid="open-convert">
+                <BookOpen className="w-4 h-4 mr-1.5" aria-hidden="true" /> Úkoly s listem
+              </Button>
               <Select value={filterExamType} onValueChange={setFilterExamType}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filtrovat podle typu" />
@@ -1205,7 +1211,14 @@ const TeacherAssignments = () => {
                     : formKind === "material" ? "Materiál se neodevzdává – žáci ho jen otevřou. Nemá termín ani hodnocení."
                     : `Krátká zpráva pro žáky (do ${ANNOUNCEMENT_MAX} znaků), bez odevzdání a termínu.`}
                 </p>
-                {kindLocked && <p className="mt-1 text-xs text-muted-foreground" data-testid="kind-locked">Druh nelze změnit – žáci už mají pokusy nebo odevzdání.</p>}
+                {kindLocked && (
+                  <div className="mt-1 space-y-1" data-testid="kind-locked">
+                    <p className="text-xs text-muted-foreground">Druh nelze ve formuláři změnit – žáci už mají pokusy nebo odevzdání.</p>
+                    {formKind === "task" && editingId && (
+                      <Button type="button" size="sm" variant="outline" onClick={() => setConvertIds([editingId])}>Změnit na materiál (odevzdání zůstanou uložená)</Button>
+                    )}
+                  </div>
+                )}
                 {formKind !== "task" && hiddenTaskData && <p className="mt-1 text-xs text-muted-foreground" data-testid="kind-hidden-note">Termín, pokusy a nastavení úkolu zůstávají jen ve formuláři – u {formKind === "material" ? "materiálu" : "oznámení"} se neuloží.</p>}
               </fieldset>
               <div>
@@ -2196,6 +2209,12 @@ const TeacherAssignments = () => {
         })()}
 
         <AssignmentStudentPreview assignment={previewAssignment} open={!!previewAssignment} onOpenChange={(o) => { if (!o) setPreviewAssignment(null); }} />
+        <ConvertToMaterialDialog
+          open={convertIds !== null}
+          initialIds={convertIds ?? undefined}
+          onOpenChange={(o) => { if (!o) setConvertIds(null); }}
+          onDone={() => { setShowForm(false); resetForm(); loadData(); }}
+        />
         <AssignmentDetailDialog
           assignment={detailAssignment}
           open={!!detailAssignment}

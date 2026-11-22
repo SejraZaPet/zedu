@@ -749,6 +749,7 @@ const StudentAssignmentPlayer = () => {
         )}
 
         {/* Propojená lekce z učebnice */}
+        {assignmentKind(assignment.settings) === "material" && assignmentWorksheets(assignment).length > 0 && <p className="text-sm text-muted-foreground" data-testid="material-available-note">K dispozici – neodevzdává se. List si otevři a pracuj s ním, nic neodevzdáváš.</p>}
         {assignmentKind(assignment.settings) === "material" && <MaterialWorksheetsCard worksheets={assignmentWorksheets(assignment)} qrPath={`/student/ulohy/${assignment.id}`} />}
         {assignmentKind(assignment.settings) === "material" && planLessons(assignment).length > 1 ? (
           <MaterialLessonsCard lessons={planLessons(assignment)} />
