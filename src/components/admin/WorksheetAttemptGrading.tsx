@@ -187,7 +187,7 @@ export default function WorksheetAttemptGrading({ worksheetId, answers, existing
       const it = items.get(id);
       out.push({
         id,
-        prompt: it ? String(it.prompt || id) : "Neznámé zadání (položka už v listu není)",
+        prompt: it ? worksheetItemLabel(it) : "Neznámé zadání (položka už v listu není)",
         type: it ? String(it.type) : "unknown",
         max: it && Number(it.points) > 0 ? Number(it.points) : null,
         answer: ans[id],
