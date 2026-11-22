@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { vi } from "vitest";
+vi.mock("@/lib/assignment-description", () => ({ assignmentDescriptionToText: (v: string) => v.replace(/<[^>]*>/g, ""), sanitizeAssignmentDescription: (v: string) => v }));
 import { wallErrorReason, isWallAuthError, wallDraftKey, loadWallDraft, saveWallDraft, wallScheduleIso } from "@/lib/wall-composer";
 
 const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }; };
@@ -26,5 +28,22 @@ describe("wall composer safety", () => {
     expect(() => wallScheduleIso("2026-11-22T10:00", now)).toThrow();
     expect(() => wallScheduleIso("", now)).toThrow();
     expect(wallScheduleIso("2026-12-01T08:00", now)).toMatch(/^2026-12-01T/);
+  });
+});
+
+import { wallDraftRow } from "@/lib/wall-composer";
+import { readFileSync } from "node:fs";
+describe("wallDraftRow matches assignments schema", () => {
+  const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
+  const block = types.slice(types.indexOf("      assignments: {")).split("Insert: {")[1].split("}")[0];
+  const columns = new Set([...block.matchAll(/^\s+(\w+)\??:/gm)].map((m) => m[1]));
+  it("sends only existing columns", () => {
+    expect(columns.has("subject_id")).toBe(true);
+    const row = wallDraftRow({ classId: "c1", groupId: null, subjectId: null, subject: "Dějepis", targetName: "[TEST]" },
+      { description: "Ahoj", materials: [], pinned: false, commentsEnabled: true, notifyEmail: false }, "t1");
+    expect(Object.keys(row).filter((k) => !columns.has(k))).toEqual([]);
+  });
+  it("PGRST204 is not masked", () => {
+    expect(wallErrorReason({ code: "PGRST204" })).toMatch(/chybí pole v databázi.*PGRST204/);
   });
 });
