@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getAuthPasswordError } from "../_shared/password-errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,8 +52,13 @@ Deno.serve(async (req) => {
       password: newPassword,
     });
     if (updateError) {
-      return new Response(JSON.stringify({ error: updateError.message }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const passwordError = getAuthPasswordError(updateError);
+      return new Response(JSON.stringify(passwordError ?? {
+        code: "reset_failed",
+        error: "Heslo se nepodařilo změnit. Zkuste to prosím znovu.",
+      }), {
+        status: passwordError ? 422 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

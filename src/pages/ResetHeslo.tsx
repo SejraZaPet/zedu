@@ -6,6 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  GENERIC_RESET_ERROR_MESSAGE,
+  resolvePasswordResetFailure,
+} from "@/lib/password-reset-client";
+import {
+  getPasswordPolicyError,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_HINT,
+} from "@/lib/password-policy";
 
 const ResetHeslo = () => {
   const navigate = useNavigate();
@@ -17,48 +26,56 @@ const ResetHeslo = () => {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
-      setError("Odkaz je neplatný nebo vypršel.");
+      setLinkError("Odkaz je neplatný nebo vypršel.");
+    } else {
+      setLinkError(null);
     }
   }, [token]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
-      return;
-    }
-    if (password !== confirm) {
-      toast({ title: "Chyba", description: "Hesla se neshodují.", variant: "destructive" });
-      return;
-    }
+    const policyError = getPasswordPolicyError(password);
+    setPasswordError(policyError);
+    setConfirmError(password !== confirm ? "Hesla se neshodují." : null);
+    if (policyError || password !== confirm) return;
+
     setLoading(true);
-    setError(null);
+    setLinkError(null);
     try {
       const { data, error: fnErr } = await supabase.functions.invoke(
         "confirm-password-reset",
-        { body: { token, new_password: password } }
+        { body: { token, new_password: password } },
       );
-      if (fnErr) {
-        const msg = (data as any)?.error || "Odkaz je neplatný nebo vypršel.";
-        setError(msg);
+      const responseData = data as { code?: unknown; error?: unknown } | null;
+      if (fnErr || responseData?.error) {
+        const failure = await resolvePasswordResetFailure(responseData, fnErr);
+        if (failure.code === "invalid_token") {
+          setLinkError(failure.message);
+        } else {
+          // Slabé heslo i ostatní chyby nechávají formulář i token nedotčené.
+          setPasswordError(failure.message);
+        }
       } else {
         setDone(true);
         toast({ title: "Heslo bylo změněno", description: "Nyní se můžete přihlásit novým heslem." });
         setTimeout(() => navigate("/auth", { replace: true }), 2500);
       }
     } catch {
-      setError("Došlo k chybě. Zkuste to prosím znovu.");
+      setPasswordError(GENERIC_RESET_ERROR_MESSAGE);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  if (error) {
+  if (linkError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
@@ -66,7 +83,7 @@ const ResetHeslo = () => {
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
           <h1 className="font-heading text-2xl font-bold">Neplatný odkaz</h1>
-          <p className="text-sm text-muted-foreground mt-2 mb-6">{error}</p>
+          <p className="text-sm text-muted-foreground mt-2 mb-6">{linkError}</p>
           <div className="flex flex-col gap-2">
             <Button asChild>
               <Link to="/zapomenute-heslo">Vyžádat nový odkaz</Link>
@@ -104,7 +121,7 @@ const ResetHeslo = () => {
           <h1 className="font-heading text-2xl font-bold">Nastavit nové heslo</h1>
           <p className="text-sm text-muted-foreground mt-1">Zadejte své nové heslo.</p>
         </div>
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="space-y-4" onSubmit={submit} noValidate>
           <div>
             <Label htmlFor="newPassword">Nové heslo</Label>
             <div className="relative">
@@ -112,21 +129,30 @@ const ResetHeslo = () => {
                 id="newPassword"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setPasswordError(null); }}
                 className="mt-1 pr-10"
-                placeholder="Minimálně 6 znaků"
-                minLength={6}
+                placeholder={`Minimálně ${MIN_PASSWORD_LENGTH} znaků`}
+                minLength={MIN_PASSWORD_LENGTH}
                 required
                 autoComplete="new-password"
+                aria-invalid={Boolean(passwordError)}
+                aria-describedby={`passwordPolicyHint${passwordError ? " newPasswordError" : ""}`}
               />
               <button
                 type="button"
+                aria-label={showPassword ? "Skrýt nové heslo" : "Zobrazit nové heslo"}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <p id="passwordPolicyHint" className="text-xs text-muted-foreground mt-2">{PASSWORD_POLICY_HINT}</p>
+            {passwordError && (
+              <p id="newPasswordError" role="alert" aria-live="polite" className="text-sm text-destructive mt-2">
+                {passwordError}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="confirmPassword">Potvrdit heslo</Label>
@@ -135,21 +161,29 @@ const ResetHeslo = () => {
                 id="confirmPassword"
                 type={showConfirm ? "text" : "password"}
                 value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                onChange={(e) => { setConfirm(e.target.value); setConfirmError(null); }}
                 className="mt-1 pr-10"
                 placeholder="Zopakujte heslo"
-                minLength={6}
+                minLength={MIN_PASSWORD_LENGTH}
                 required
                 autoComplete="new-password"
+                aria-invalid={Boolean(confirmError)}
+                aria-describedby={confirmError ? "confirmPasswordError" : undefined}
               />
               <button
                 type="button"
+                aria-label={showConfirm ? "Skrýt potvrzení hesla" : "Zobrazit potvrzení hesla"}
                 onClick={() => setShowConfirm(!showConfirm)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {confirmError && (
+              <p id="confirmPasswordError" role="alert" aria-live="polite" className="text-sm text-destructive mt-2">
+                {confirmError}
+              </p>
+            )}
           </div>
           <Button className="w-full" type="submit" disabled={loading}>
             {loading ? "Ukládám..." : "Uložit nové heslo"}

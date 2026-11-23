@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { completePasswordReset, isValidPasswordResetToken } from "./core.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,61 +28,66 @@ Deno.serve(async (req) => {
   }
   try {
     const { token, new_password } = await req.json().catch(() => ({}));
-    if (
-      !token ||
-      typeof token !== "string" ||
-      !/^[a-f0-9]{64}$/i.test(token.trim())
-    ) {
-      return json(400, { error: "Odkaz je neplatný nebo vypršel." });
+    if (!isValidPasswordResetToken(token)) {
+      return json(400, { code: "invalid_token", error: "Odkaz je neplatný nebo vypršel." });
     }
-    if (!new_password || typeof new_password !== "string" || new_password.length < 6) {
-      return json(400, { error: "Heslo musí mít alespoň 6 znaků." });
+    if (!new_password || typeof new_password !== "string" || new_password.length < 8) {
+      return json(422, { code: "password_too_short", error: "Heslo musí mít alespoň 8 znaků." });
     }
     if (new_password.length > 200) {
-      return json(400, { error: "Heslo je příliš dlouhé." });
+      return json(422, { code: "password_too_long", error: "Heslo je příliš dlouhé." });
     }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const tokenHash = await sha256Hex(token.trim());
-    const { data: row } = await admin
+    const { data: row, error: tokenError } = await admin
       .from("password_reset_tokens")
       .select("id, user_id, expires_at, used_at")
       .eq("token_hash", tokenHash)
       .maybeSingle();
 
-    if (!row || row.used_at || new Date(row.expires_at).getTime() <= Date.now()) {
-      return json(400, { error: "Odkaz je neplatný nebo vypršel." });
+    if (tokenError) {
+      console.error("password reset token lookup failed", tokenError.code || "unknown");
+      return json(500, { code: "reset_failed", error: "Došlo k chybě. Zkuste to prosím znovu." });
     }
-
-    const { error: updErr } = await admin.auth.admin.updateUserById(row.user_id, {
-      password: new_password,
-    });
-    if (updErr) {
-      console.error("updateUserById error", updErr.message);
-      return json(500, { error: "Nepodařilo se nastavit nové heslo. Zkuste to prosím znovu." });
+    if (!row || row.used_at || new Date(row.expires_at).getTime() <= Date.now()) {
+      return json(400, { code: "invalid_token", error: "Odkaz je neplatný nebo vypršel." });
     }
 
     const nowIso = new Date().toISOString();
-    // Mark this token used + invalidate all other unused tokens for user
-    await admin
-      .from("password_reset_tokens")
-      .update({ used_at: nowIso })
-      .eq("user_id", row.user_id)
-      .is("used_at", null);
-
-    // Credentials live only in profile_credentials (encrypted); profiles no longer holds any password column
-    await admin.rpc("set_login_password", {
-      _profile_id: row.user_id,
-      _password: new_password,
-    });
-
-    return json(200, { message: "Heslo bylo změněno." });
-  } catch (e) {
-    console.error("confirm-password-reset error", (e as Error).message);
-    return json(500, { error: "Došlo k chybě. Zkuste to prosím znovu." });
+    return await completePasswordReset({
+      updatePassword: async () => {
+        const { error } = await admin.auth.admin.updateUserById(row.user_id, {
+          password: new_password,
+        });
+        if (error) {
+          // Nikdy nelogovat heslo, token ani technickou zprávu, která by je mohla obsahovat.
+          console.error("password update rejected", error.code || error.status || "unknown");
+        }
+        return error;
+      },
+      markTokensUsed: async () => {
+        // Označit tento token a zneplatnit ostatní až po úspěšné změně hesla.
+        return await admin
+          .from("password_reset_tokens")
+          .update({ used_at: nowIso })
+          .eq("user_id", row.user_id)
+          .is("used_at", null);
+      },
+      syncLoginPassword: async () => {
+        // Přihlašovací údaje zůstávají pouze v šifrovaných profile_credentials.
+        return await admin.rpc("set_login_password", {
+          _profile_id: row.user_id,
+          _password: new_password,
+        });
+      },
+    }, json);
+  } catch (error) {
+    console.error("confirm-password-reset error", (error as Error).name || "Error");
+    return json(500, { code: "reset_failed", error: "Došlo k chybě. Zkuste to prosím znovu." });
   }
 });

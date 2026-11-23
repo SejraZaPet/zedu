@@ -12,6 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TERMS_VERSION, registrationConsentError, requiresTermsConsent } from "@/lib/terms";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
+import {
+  getAuthPasswordErrorMessage,
+  getPasswordPolicyError,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_HINT,
+} from "@/lib/password-policy";
 
 type Role = "student" | "teacher" | "lektor" | "rodic";
 
@@ -326,8 +332,9 @@ const Auth = () => {
       return;
     }
 
-    if (regPassword.length < 6) {
-      setError("Heslo musí mít alespoň 6 znaků.");
+    const passwordPolicyError = getPasswordPolicyError(regPassword);
+    if (passwordPolicyError) {
+      setError(passwordPolicyError);
       setLoading(false);
       return;
     }
@@ -382,7 +389,10 @@ const Auth = () => {
 
     if (signUpError) {
       const msg = signUpError.message || "";
-      if (/Database error saving new user/i.test(msg)) {
+      const passwordError = getAuthPasswordErrorMessage(signUpError);
+      if (passwordError) {
+        setError(passwordError);
+      } else if (/Database error saving new user/i.test(msg)) {
         setError("Registrace selhala. Tento email už může být použitý. Zkuste se přihlásit nebo kontaktujte administrátora.");
       } else if (/already registered|already been registered|user_already_exists/i.test(msg)) {
         setError("Tento email je již zaregistrovaný. Zkuste se přihlásit.");
@@ -831,7 +841,7 @@ const Auth = () => {
             <div>
               <Label htmlFor="regPassword">Heslo</Label>
               <div className="relative">
-                <Input id="regPassword" type={showRegPassword ? "text" : "password"} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1 pr-10" />
+                <Input id="regPassword" type={showRegPassword ? "text" : "password"} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} className="mt-1 pr-10" aria-describedby="registrationPasswordHint" />
                 <button
                   type="button"
                   onClick={() => setShowRegPassword(!showRegPassword)}
@@ -840,6 +850,7 @@ const Auth = () => {
                   {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p id="registrationPasswordHint" className="text-xs text-muted-foreground mt-2">{PASSWORD_POLICY_HINT}</p>
             </div>
             <div>
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>

@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getAuthPasswordErrorMessage,
+  getPasswordPolicyError,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_HINT,
+} from "@/lib/password-policy";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -17,13 +23,12 @@ const ResetPassword = () => {
   const [checking, setChecking] = useState(true);
   const [validLink, setValidLink] = useState(false);
   const [linkError, setLinkError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    // Supabase's recovery flow places tokens in the URL hash (#access_token=...&type=recovery)
-    // and the client auto-establishes a session. We listen for PASSWORD_RECOVERY,
-    // and also fall back to checking the existing session.
+    // Obnovovací odkaz systému účtů vytvoří relaci z tokenu v URL hash.
     const hash = window.location.hash || "";
     const hashHasError = hash.includes("error=") || hash.includes("error_code=");
     const hashHasRecovery = hash.includes("type=recovery") || hash.includes("access_token=");
@@ -44,8 +49,6 @@ const ResetPassword = () => {
       }
     });
 
-    // Fallback: if we already have a session and arrived via recovery hash, allow reset.
-    // Otherwise, after a short grace period, redirect to /auth.
     const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && hashHasRecovery) {
@@ -65,20 +68,23 @@ const ResetPassword = () => {
     };
   }, [navigate]);
 
-
   const handleReset = async () => {
-    if (password.length < 6) {
-      toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
+    const policyError = getPasswordPolicyError(password);
+    if (policyError) {
+      setPasswordError(policyError);
       return;
     }
     if (password !== confirm) {
-      toast({ title: "Chyba", description: "Hesla se neshodují.", variant: "destructive" });
+      setPasswordError("Hesla se neshodují.");
       return;
     }
     setLoading(true);
+    setPasswordError("");
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      const message = getAuthPasswordErrorMessage(error) || "Heslo se nepodařilo změnit. Zkuste to prosím znovu.";
+      setPasswordError(message);
+      toast({ title: "Heslo se nezměnilo", description: message, variant: "destructive" });
     } else {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user?.id;
@@ -137,18 +143,27 @@ const ResetPassword = () => {
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setPasswordError(""); }}
                     className="mt-1 pr-10"
-                    placeholder="Minimálně 6 znaků"
+                    placeholder={`Minimálně ${MIN_PASSWORD_LENGTH} znaků`}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    autoComplete="new-password"
+                    aria-invalid={Boolean(passwordError)}
+                    aria-describedby={`recoveryPasswordHint${passwordError ? " recoveryPasswordError" : ""}`}
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? "Skrýt nové heslo" : "Zobrazit nové heslo"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p id="recoveryPasswordHint" className="text-xs text-muted-foreground mt-2">{PASSWORD_POLICY_HINT}</p>
+                {passwordError && (
+                  <p id="recoveryPasswordError" role="alert" aria-live="polite" className="text-sm text-destructive mt-2">{passwordError}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="confirmPassword">Potvrdit heslo</Label>
@@ -160,9 +175,12 @@ const ResetPassword = () => {
                     onChange={(e) => setConfirm(e.target.value)}
                     className="mt-1 pr-10"
                     placeholder="Zopakujte heslo"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
+                    aria-label={showConfirm ? "Skrýt potvrzení hesla" : "Zobrazit potvrzení hesla"}
                     onClick={() => setShowConfirm(!showConfirm)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
@@ -181,7 +199,7 @@ const ResetPassword = () => {
               <CheckCircle2 className="w-6 h-6 text-primary" />
             </div>
             <h1 className="font-heading text-2xl font-bold">Heslo změněno!</h1>
-            <p className="text-sm text-muted-foreground mt-2">Budete přesměrováni na přihlášení...</p>
+            <p className="text-sm text-muted-foreground mt-1">Budete přesměrováni na přihlášení...</p>
           </div>
         )}
       </div>

@@ -25,6 +25,7 @@ import BezliTeamView from "./BezliTeamView";
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
 
 import { sendWelcomeEmail } from "@/lib/send-email";
+import { resolvePasswordResetFailure } from "@/lib/password-reset-client";
 import ExcelJS from "exceljs";
 import {
   splitFullName,
@@ -768,11 +769,12 @@ const UsersManager = () => {
                         e.stopPropagation();
                         if (!confirm(`Vygenerovat nové heslo pro ${user.first_name} ${user.last_name}?`)) return;
                         const newPassword = Math.random().toString(36).slice(-8) + "Aa1!";
-                        const { error } = await supabase.functions.invoke("reset-user-password", {
+                        const { data, error } = await supabase.functions.invoke("reset-user-password", {
                           body: { userId: user.id, newPassword }
                         });
                         if (error) {
-                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                          const failure = await resolvePasswordResetFailure(data, error);
+                          toast({ title: "Heslo se nezměnilo", description: failure.message, variant: "destructive" });
                         } else {
                           await supabase.rpc("set_login_password", {
                             _profile_id: user.id,
@@ -804,11 +806,12 @@ const UsersManager = () => {
                         e.stopPropagation();
                         if (!confirm(`Vygenerovat nové heslo a vytisknout štítek pro ${user.first_name} ${user.last_name}?`)) return;
                         const newPassword = Math.random().toString(36).slice(-8) + "Aa1!";
-                        const { error } = await supabase.functions.invoke("reset-user-password", {
+                        const { data, error } = await supabase.functions.invoke("reset-user-password", {
                           body: { userId: user.id, newPassword }
                         });
                         if (error) {
-                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                          const failure = await resolvePasswordResetFailure(data, error);
+                          toast({ title: "Heslo se nezměnilo", description: failure.message, variant: "destructive" });
                           return;
                         }
                         await supabase.rpc("set_login_password", { _profile_id: user.id, _password: newPassword });

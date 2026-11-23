@@ -14,6 +14,7 @@ import { requireAuth } from "../_shared/auth.ts";
 import { buildWelcomeEmail } from "./welcome-email.ts";
 import { assignPrimaryRole } from "../_shared/assign-primary-role.ts";
 import { ensureClass, addClassMember, classYearFromCode } from "../_shared/ensure-class.ts";
+import { getAuthPasswordError } from "../_shared/password-errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -225,13 +226,14 @@ Deno.serve(async (req) => {
 
     const userId = created?.user?.id;
     if (createError || !userId) {
+      const passwordError = getAuthPasswordError(createError);
       results.push({
         row_ref: rowRef,
         name,
         ok: false,
-        error: /already|exists/i.test(createError?.message ?? "")
+        error: passwordError?.error ?? (/already|exists/i.test(createError?.message ?? "")
           ? "Účet s tímto e-mailem už existuje."
-          : (createError?.message || "Účet se nepodařilo vytvořit."),
+          : (createError?.message || "Účet se nepodařilo vytvořit.")),
       });
       continue;
     }

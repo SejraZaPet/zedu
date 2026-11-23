@@ -434,3 +434,9 @@
 
 ## Mobilní zvoneček upozornění
 - [x] Zvoneček v mobilní hlavičce, seznam v šířce obrazovky, řádek Upozornění v menu, testy a ověření 360/390 px.
+
+## Obnova a změna hesla – čitelné chyby
+- [x] Rozlišeny `weak_password`, `invalid_token` a ostatní chyby; FunctionsHttpError se čte z `context.json()`, formulář zůstává vyplněný a token se spotřebuje až po úspěchu.
+- [x] Jednotná kontrola min. 8 znaků a 38 běžných hesel v obou obnovách, registraci a profilu; české chyby i pro školní import a administrátorský reset.
+- [x] 10 frontendových a 4 Deno testy; prohlížeč při 390 px ověřil weak_password, invalid_token, úspěch → /auth a lokální odmítnutí bez serveru, 0 chyb stránky. Build OK; bez DB/RLS/SQL, nasazení a AGENTS.md.
+- Neověřeno: skutečná změna hesla a ostrá edge funkce (záměrně nenasazeno a nevoláno); hostované nastavení minimální délky nástroje jen pro čtení neposkytují, aplikace nyní jednotně vyžaduje 8 znaků.

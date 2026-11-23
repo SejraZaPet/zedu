@@ -21,6 +21,12 @@ import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 import { useAccessibilitySettings } from "@/hooks/useAccessibilitySettings";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import MoodCard from "@/components/profile/MoodCard";
+import {
+  getAuthPasswordErrorMessage,
+  getPasswordPolicyError,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_HINT,
+} from "@/lib/password-policy";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -380,8 +386,9 @@ const ProfilePage = () => {
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
+    const passwordPolicyError = getPasswordPolicyError(newPassword);
+    if (passwordPolicyError) {
+      toast({ title: "Heslo se nezměnilo", description: passwordPolicyError, variant: "destructive" });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -399,7 +406,8 @@ const ProfilePage = () => {
     setChangingPassword(false);
 
     if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      const message = getAuthPasswordErrorMessage(error) || "Heslo se nepodařilo změnit. Zkuste to prosím znovu.";
+      toast({ title: "Heslo se nezměnilo", description: message, variant: "destructive" });
       return;
     }
 
@@ -955,7 +963,8 @@ const ProfilePage = () => {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="newPassword">Nové heslo</Label>
-                  <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Minimálně 6 znaků" />
+                  <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={`Minimálně ${MIN_PASSWORD_LENGTH} znaků`} minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" aria-describedby="profilePasswordHint" />
+                  <p id="profilePasswordHint" className="text-xs text-muted-foreground mt-2">{PASSWORD_POLICY_HINT}</p>
                 </div>
                 <div>
                   <Label htmlFor="confirmPassword">Potvrzení hesla</Label>
