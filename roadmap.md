@@ -431,3 +431,6 @@
 - [x] Adminům přidán vstup „Upravit úvodní stránku“ v administraci a chráněné automatické zapnutí editace.
 - [x] Zachováno `realRole === "admin"`; ukončení nabízí návrat do administrace. Ověřeny 4 testy admin/učitel/veřejnost, typy a přihlášený průchod bez chyb stránky; bez DB/RLS, nasazení a AGENTS.md.
 - [x] Hromadný převod úkolů s listem na materiál + vrácení zpět + žákovský štítek
+
+## Mobilní zvoneček upozornění
+- [x] Zvoneček v mobilní hlavičce, seznam v šířce obrazovky, řádek Upozornění v menu, testy a ověření 360/390 px.

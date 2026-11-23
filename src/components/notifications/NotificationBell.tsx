@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { htmlToPlainText } from "@/lib/html-to-text";
 import { useNavigate } from "react-router-dom";
 import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, MessageSquare, Flag } from "lucide-react";
@@ -23,9 +24,17 @@ const TYPE_META: Record<string, { Icon: any; color: string }> = {
   message_reported: { Icon: Flag, color: "#dc2626" },
 };
 
-const NotificationBell = () => {
+interface NotificationBellProps {
+  /** Mobilní hlavička: dotykový cíl 44×44 px. */
+  touch?: boolean;
+  /** Hlásí počet nepřečtených (mobilní menu), bez druhého odběru upozornění. */
+  onUnreadChange?: (count: number) => void;
+}
+
+const NotificationBell = ({ touch = false, onUnreadChange }: NotificationBellProps = {}) => {
   const navigate = useNavigate();
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  useEffect(() => { onUnreadChange?.(unreadCount); }, [unreadCount, onUnreadChange]);
 
   const sorted = [...notifications].sort((a, b) => {
     if (!!a.read_at !== !!b.read_at) return a.read_at ? 1 : -1;
@@ -41,11 +50,11 @@ const NotificationBell = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative px-2 text-muted-foreground hover:text-primary" aria-label="Notifikace">
-          <Bell size={18} />
+        <Button variant="ghost" size="sm" className={`relative text-muted-foreground hover:text-primary ${touch ? "h-11 w-11 p-0" : "px-2"}`} aria-label={unreadCount > 0 ? `Upozornění, ${unreadCount} nepřečtených` : "Upozornění"}>
+          <Bell size={touch ? 22 : 18} />
           {unreadCount > 0 && (
             <span
-              className="absolute -top-0.5 -right-0.5 flex items-center justify-center text-[10px] font-bold text-white rounded-full"
+              className={`absolute ${touch ? "top-1 right-1" : "-top-0.5 -right-0.5"} flex items-center justify-center text-[10px] font-bold text-white rounded-full`}
               style={{
                 background: "#dc2626",
                 minWidth: "18px",
@@ -59,7 +68,12 @@ const NotificationBell = () => {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="p-0" style={{ width: "380px" }}>
+      <DropdownMenuContent
+        align="end"
+        collisionPadding={8}
+        className="p-0"
+        style={{ width: "min(380px, calc(100vw - 1rem))" }}
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="font-semibold text-sm">Notifikace</span>
           {unreadCount > 0 && (
@@ -71,7 +85,7 @@ const NotificationBell = () => {
             </button>
           )}
         </div>
-        <div style={{ maxHeight: "440px", overflowY: "auto" }}>
+        <div style={{ maxHeight: "min(440px, calc(100dvh - 70px - var(--demo-banner-h, 0px) - 9rem))", overflowY: "auto", overscrollBehavior: "contain" }}>
           {loading ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">Načítání…</div>
           ) : top5.length === 0 ? (

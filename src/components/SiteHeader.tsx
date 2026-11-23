@@ -14,7 +14,8 @@ import {
 import { useMySchool } from "@/hooks/useMySchool";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, Bell } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useMyLeague, showLeagueMenu } from "@/hooks/useMyLeague";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
@@ -125,6 +126,8 @@ const SiteHeader = () => {
         : [i])
     : STUDENT_EXTRA_ITEMS;
   const unreadMessages = useUnreadMessages();
+  const isMobile = useIsMobile();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
   const { hasSchool } = useMySchool();
@@ -266,15 +269,15 @@ const SiteHeader = () => {
       }}
     >
       <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
-        <button onClick={() => navigate("/")} className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0 gap-3">
-          <img src={logo} alt="Bezli" className="h-9 w-auto" />
+        <button onClick={() => navigate("/")} className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0 gap-2 sm:gap-3 min-w-0 shrink overflow-hidden whitespace-nowrap">
+          <img src={logo} alt="Bezli" className="h-9 w-auto shrink-0" />
           {branding?.custom_logo_url && (
             <>
               <span className="h-6 w-px bg-border" aria-hidden />
               <img
                 src={branding.custom_logo_url}
                 alt={branding.name}
-                className="h-8 w-auto max-w-[120px] object-contain"
+                className="h-8 w-auto max-w-[96px] sm:max-w-[120px] min-w-0 object-contain"
               />
             </>
           )}
@@ -316,7 +319,7 @@ const SiteHeader = () => {
                   )}
                 </span>
               </Button>
-              <NotificationBell />
+              {!isMobile && <NotificationBell />}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className={`gap-2 ${location.pathname === "/profil" || location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
@@ -407,15 +410,20 @@ const SiteHeader = () => {
           )}
         </div>
 
+        <div className="md:hidden flex items-center gap-1 shrink-0">
+        {isLoggedIn && isMobile && (
+          <NotificationBell touch onUnreadChange={setUnreadNotifications} />
+        )}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden text-foreground p-2"
+          className="md:hidden text-foreground p-2 h-11 w-11 flex items-center justify-center"
           aria-label="Menu"
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+        </div>
       </div>
 
       {menuOpen && (
@@ -524,6 +532,14 @@ const SiteHeader = () => {
                     {unreadMessages > 0 && (
                       <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold leading-[22px] text-center" aria-label={`${unreadMessages} nepřečtených`}>
                         {unreadMessages > 99 ? "99+" : unreadMessages}
+                      </span>
+                    )}
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); navigate("/notifikace"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/notifikace" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                    <Bell size={18} /> <span className="font-semibold text-foreground">Upozornění</span>
+                    {unreadNotifications > 0 && (
+                      <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold leading-[22px] text-center" aria-label={`${unreadNotifications} nepřečtených`}>
+                        {unreadNotifications > 99 ? "99+" : unreadNotifications}
                       </span>
                     )}
                   </button>
