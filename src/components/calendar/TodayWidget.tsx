@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchExceptionRows, fetchStudentScheduleChanges, mergeExceptions, mergeStudentScheduleChanges, ownedSource, type Expander } from "@/lib/schedule-exception-store";
+import TodayMobileLessons from "@/components/calendar/TodayMobileLessons";
 import ScheduleExceptionDialog from "@/components/calendar/ScheduleExceptionDialog";
 import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import { useToast } from "@/hooks/use-toast";
@@ -369,7 +370,19 @@ const TodayWidget = ({ role, onOpenAssignmentsChange, onUpcomingExamsChange }: P
               : "Dnes nemáš žádnou hodinu v rozvrhu."}
           </p>
         ) : (
-          <ul className="space-y-1">
+          <>
+          <div className="md:hidden">
+            <TodayMobileLessons
+              lessons={todayLessons}
+              role={role}
+              phaseOf={lessonStatus}
+              targetOf={(ev) => lessonTargets[ev.scheduleSource?.slotId ?? ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")]}
+              canChange={(ev) => role === "teacher" && !!user && !!ownedSource(ev, user.id)}
+              onAction={(ev, mode) => setExceptionAction({ event: ev, mode })}
+              onOpen={(t) => navigate(t)}
+            />
+          </div>
+          <ul className="hidden md:block space-y-1">
             {todayLessons.map((ev) => {
               const status = lessonStatus(ev);
               const isCurrent = status === "current";
@@ -451,6 +464,7 @@ const TodayWidget = ({ role, onOpenAssignmentsChange, onUpcomingExamsChange }: P
               );
             })}
           </ul>
+          </>
         )}
 
         {role === "student" && !loading && (todayOpenAssignments.length > 0 || nearestExam || hasNewNotebookEntry) && (
