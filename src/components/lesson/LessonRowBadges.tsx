@@ -48,4 +48,4 @@ export default function LessonRowBadges({ badges }: { badges: RowBadges }) {
   );
 }
 
-export const TODAY_ROW_CLASS = "bg-gradient-brand text-primary-foreground border-transparent [&_.text-muted-foreground]:text-primary-foreground/85";
+export const TODAY_ROW_CLASS = "lesson-row-today text-primary-foreground border-transparent [&_.text-muted-foreground]:text-primary-foreground";

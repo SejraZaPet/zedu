@@ -39,6 +39,16 @@ describe("LessonTopicEditor", () => {
   });
 });
 
+describe("LessonTopicEditor na gradientní kartě", () => {
+  it("použije kontrastní varianty všech akcí", () => {
+    render(<LessonTopicEditor topic="Zlomky" onSave={vi.fn()} onColor />);
+    fireEvent.click(screen.getByRole("button", { name: /Upravit téma hodiny/ }));
+    expect(screen.getByRole("button", { name: "Uložit" }).className).toContain("bg-background");
+    expect(screen.getByRole("button", { name: "Zrušit" }).className).toContain("border-primary-foreground");
+    expect(screen.getByRole("button", { name: /Smazat téma/ }).className).toContain("text-destructive-strong");
+  });
+});
+
 describe("LessonTopicEditor u budoucí hodiny", () => {
   it("uloží téma pro budoucí datum", async () => {
     const save = vi.fn().mockResolvedValue(true);

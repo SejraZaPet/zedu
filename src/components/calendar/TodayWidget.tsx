@@ -438,11 +438,11 @@ const TodayWidget = ({ role, onOpenAssignmentsChange, onUpcomingExamsChange }: P
                   {canChange && (
                     <span className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       {ev.scheduleStatus ? (
-                        <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "revert" })}>Vrátit zpět</Button>
+                        <Button size="sm" variant={isActiveLesson ? "onColorOutline" : "ghost"} className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "revert" })}>Vrátit zpět</Button>
                       ) : (
                         <>
-                          <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "move" })}>Přesunout</Button>
-                          <Button size="sm" variant="ghost" className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "cancel" })}>Zrušit</Button>
+                          <Button size="sm" variant={isActiveLesson ? "onColorOutline" : "ghost"} className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "move" })}>Přesunout</Button>
+                          <Button size="sm" variant={isActiveLesson ? "onColorOutline" : "ghost"} className="h-9" onClick={() => setExceptionAction({ event: ev, mode: "cancel" })}>Zrušit</Button>
                         </>
                       )}
                     </span>

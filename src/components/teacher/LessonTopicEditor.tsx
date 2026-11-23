@@ -14,10 +14,12 @@ interface Props {
   /** Volitelný „Popis hodiny“; bez `onSaveNote` se pole nezobrazí. */
   note?: string | null;
   onSaveNote?: (note: string | null) => Promise<boolean>;
+  /** Použije kontrastní ovládací prvky pro tmavý barevný/gradientní podklad. */
+  onColor?: boolean;
 }
 
 /** Inline editor veřejného tématu proběhlé hodiny (funguje i bez plánu hodiny). */
-export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Props) {
+export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote, onColor = false }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
@@ -47,7 +49,7 @@ export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Pr
       <Button
         ref={triggerRef}
         type="button"
-        variant={topic ? "ghost" : "outline"}
+        variant={onColor ? "onColorOutline" : topic ? "ghost" : "outline"}
         size="sm"
         className="mt-1 h-auto min-h-11 w-full justify-start whitespace-normal break-words px-2 py-1.5 text-left text-xs"
         onClick={() => { setDraft(topic ?? ""); setNoteDraft(note ?? ""); setEditing(true); }}
@@ -72,7 +74,7 @@ export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Pr
         onChange={(ev) => setDraft(ev.target.value)}
         placeholder="Např. Opakování zlomků"
         aria-label="Téma hodiny"
-        className="h-11 text-sm text-foreground caret-foreground placeholder:text-muted-foreground"
+        className="h-11 border-input bg-background text-sm text-foreground caret-foreground placeholder:text-muted-foreground placeholder:opacity-100"
         onKeyDown={(ev) => {
           if (ev.key === "Enter") { ev.preventDefault(); void save(draft.trim() || null); }
           if (ev.key === "Escape") { ev.preventDefault(); close(); }
@@ -87,21 +89,21 @@ export function LessonTopicEditor({ topic, onSave, note = null, onSaveNote }: Pr
             placeholder="Popis hodiny (nepovinné) – co budeme dělat, co si přinést…"
             aria-label="Popis hodiny"
             rows={3}
-            className="text-sm text-foreground caret-foreground placeholder:text-muted-foreground"
+            className="border-input bg-background text-sm text-foreground caret-foreground placeholder:text-muted-foreground placeholder:opacity-100"
           />
           <p className="text-right text-[11px] text-muted-foreground" aria-live="polite">{noteDraft.length} / {LESSON_NOTE_MAX}</p>
         </div>
       )}
       <p className="text-[11px] text-muted-foreground">Uvidí to žáci u této hodiny (Nadcházející / Co jste probrali).</p>
       <div className="flex flex-wrap gap-1.5">
-        <Button type="button" size="sm" className="min-h-11" disabled={busy} onClick={() => save(draft.trim() || null)}>
+        <Button type="button" size="sm" variant={onColor ? "onColor" : "default"} className="min-h-11" disabled={busy} onClick={() => save(draft.trim() || null)}>
           Uložit
         </Button>
-        <Button type="button" size="sm" variant="ghost" className="min-h-11" disabled={busy} onClick={close}>
+        <Button type="button" size="sm" variant={onColor ? "onColorOutline" : "ghost"} className="min-h-11" disabled={busy} onClick={close}>
           Zrušit
         </Button>
         {topic && (
-          <Button type="button" size="sm" variant="ghost" className="min-h-11 text-destructive" disabled={busy} onClick={() => save(null)}>
+          <Button type="button" size="sm" variant={onColor ? "onColorDestructive" : "ghost"} className={`min-h-11 ${onColor ? "" : "text-destructive"}`} disabled={busy} onClick={() => save(null)}>
             <Trash2 className="mr-1 h-3.5 w-3.5" /> Smazat téma
           </Button>
         )}

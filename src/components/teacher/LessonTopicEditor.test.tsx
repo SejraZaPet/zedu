@@ -25,9 +25,11 @@ describe("Popis hodiny", () => {
     fireEvent.click(screen.getByRole("button", { name: /Upravit téma hodiny/ }));
     for (const label of ["Téma hodiny", "Popis hodiny"]) {
       const field = screen.getByRole("textbox", { name: label });
+      expect(field.className).toContain("bg-background");
       expect(field.className).toContain("text-foreground");
       expect(field.className).toContain("caret-foreground");
       expect(field.className).toContain("placeholder:text-muted-foreground");
+      expect(field.className).toContain("placeholder:opacity-100");
     }
   });
 });

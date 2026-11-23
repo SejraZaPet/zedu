@@ -17,6 +17,9 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         hero: "bg-gradient-brand text-primary-foreground font-semibold hover:brightness-110 shadow-lg shadow-primary/15 rounded-[14px]",
         "outline-gold": "border border-primary/30 text-primary hover:bg-primary/5 hover:border-primary rounded-[14px]",
+        onColor: "border border-background bg-background text-foreground shadow-md hover:bg-background/90 rounded-[14px] focus-visible:ring-background focus-visible:ring-offset-primary",
+        onColorOutline: "border border-primary-foreground bg-foreground/35 text-primary-foreground hover:bg-foreground/45 rounded-[14px] focus-visible:ring-background focus-visible:ring-offset-primary",
+        onColorDestructive: "border border-destructive-strong bg-background text-destructive-strong shadow-md hover:bg-destructive/10 rounded-[14px] focus-visible:ring-background focus-visible:ring-offset-primary",
       },
       size: {
         default: "h-11 px-5 py-2",

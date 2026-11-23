@@ -17,7 +17,8 @@ describe("Průběh – dnešní hodina a ikonky", () => {
     expect(isUpcomingLesson(ended, now)).toBe(false);
     expect(isTodayLesson(ended, now)).toBe(false);
     expect(isTodayLesson(tomorrow, now)).toBe(false);
-    expect(TODAY_ROW_CLASS).toContain("bg-gradient-brand");
+    expect(TODAY_ROW_CLASS).toContain("lesson-row-today");
+    expect(TODAY_ROW_CLASS).toContain("[&_.text-muted-foreground]:text-primary-foreground");
   });
 
   it("ikonky jen tam, kde něco existuje", () => {

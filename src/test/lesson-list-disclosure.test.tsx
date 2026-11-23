@@ -63,6 +63,6 @@ describe("Rozbalování hodin", () => {
     const visible = lessons.filter((e) => isUpcomingLesson(e, now)).slice(0, 5);
     expect(visible).toHaveLength(5);
     expect(isTodayLesson(visible[0], now)).toBe(true);
-    expect(TODAY_ROW_CLASS).toContain("bg-gradient-brand");
+    expect(TODAY_ROW_CLASS).toContain("lesson-row-today");
   });
 });

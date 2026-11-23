@@ -410,7 +410,14 @@
 - [x] Etapa 3: Zobrazit při kliknutí, pořadí, bezpečné aktivity a zobrazení kvízu před časem.
 - [ ] Etapy 4–5 jako další plán: všechny presety/balíčky stránek a PPTX import/export.
 - [x] 51 cílených testů, typecheck, build, přihlášený živý průchod a úklid [TEST] dat; bez DB/RLS, nasazení a AGENTS.md.
-- Živý průchod potvrdil skrytí/odhalení v projekci i telefonu, zachování prvního slidu, reduced-motion `none`, další slide a úklid. Editorovo plátno ověřují přímé testy; opakované vizuální spouštění bylo nestabilní kvůli načítání seznamu, ne kvůli chybě aplikace. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.
+- Živý průchod potvrdil skrytí/odhalení v projekci i telefonu, zachování prvního slidu, reduced-motion `none`, další slide a úklid. Editorovo plátno ověřují přímé testy; opakované vizuální spouštění bylo nestabilní kvůli načítání seznamu, ne kvůli chybě aplikace
+
+## Dnešní hodina – kontrast inline editoru
+- [x] Sdílené kontrastní varianty tlačítek pro barevný/gradientní podklad, včetně destruktivní akce a focus ringu.
+- [x] Čitelný placeholder, hodnota a pozadí polí tématu a popisu; akce Přiřadit/Nový/Otevřít/Změnit na dnešní kartě.
+- [x] Stejná obrysová varianta u Přesunout/Zrušit právě probíhající hodiny ve widgetu Dnes; žádný další inline editor tématu na gradientu.
+- [x] 23 cílených testů, typy a build; screenshoty před psaním/po psaní a focus pod režimem Prohlížíš jako Učitel, simulovaných 8:55 pro widget Dnes, naměřené kontrasty AA. Oba formuláře zrušeny bez uložení; bez DB/RLS, nasazení a změny AGENTS.md.
+- Aplikace nemá globální tmavý režim; vizuálně ověřena výchozí světlá nálada, ostatní nálady používají stejné semantické tokeny.. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.
 
 ## Úvodní stránka – editace pouze z administrace
 - [x] Odebráno plovoucí „Upravit stránku“ z běžné veřejné adresy `/`.

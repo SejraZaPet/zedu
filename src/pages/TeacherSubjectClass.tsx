@@ -1685,6 +1685,7 @@ export default function TeacherSubjectClass() {
                                 note={lessonTopics[dateKey]?.note ?? null}
                                 onSave={(t) => saveLessonTopic(dateKey, { topic: t })}
                                 onSaveNote={(n) => saveLessonTopic(dateKey, { note: n })}
+                                onColor={isTodayLesson(e, now)}
                               />
                             </div>
                             <LessonPlanActions
@@ -1695,6 +1696,7 @@ export default function TeacherSubjectClass() {
                               onAssign={() => openAssignPlanDialog(e.start)}
                               onNew={() => newLessonPlan(e.start)}
                               onUnlink={() => planForDate && setUnlinkTarget({ planId: planForDate.id, title: planForDate.title, dateKey })}
+                              onColor={isTodayLesson(e, now)}
                             />
                           </div>
                         </Card>
