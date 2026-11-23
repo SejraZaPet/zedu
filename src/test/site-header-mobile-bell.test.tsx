@@ -69,3 +69,27 @@ describe("mobilní hlavička – zvoneček", () => {
     expect(screen.getByTestId("location").textContent).toBe("/notifikace");
   });
 });
+
+describe("mobilní hlavička – ikona Zprávy", () => {
+  beforeEach(() => mockUseAuth.mockReset());
+
+  it("přihlášený má pořadí Zprávy, zvoneček, hamburger a ikona vede na /zpravy", () => {
+    mockUseAuth.mockReturnValue(auth(true, "teacher"));
+    renderHeader();
+    const msg = screen.getByTestId("mobile-messages-icon");
+    const bell = screen.getByTestId("notification-bell");
+    const hamburger = document.querySelector('button[aria-label="Menu"]')!;
+    expect(msg.compareDocumentPosition(bell) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bell.compareDocumentPosition(hamburger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(msg.className).toContain("h-11");
+    expect(msg.className).toContain("w-11");
+    fireEvent.click(msg);
+    expect(screen.getByTestId("location").textContent).toBe("/zpravy");
+  });
+
+  it("nepřihlášený ikonu Zprávy nevidí", () => {
+    mockUseAuth.mockReturnValue(auth(false, null));
+    renderHeader();
+    expect(screen.queryByTestId("mobile-messages-icon")).toBeNull();
+  });
+});

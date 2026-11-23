@@ -277,7 +277,7 @@ const SiteHeader = () => {
               <img
                 src={branding.custom_logo_url}
                 alt={branding.name}
-                className="h-8 w-auto max-w-[96px] sm:max-w-[120px] min-w-0 object-contain"
+                className="h-8 w-auto max-w-[72px] sm:max-w-[120px] min-w-0 object-contain"
               />
             </>
           )}
@@ -410,7 +410,23 @@ const SiteHeader = () => {
           )}
         </div>
 
-        <div className="md:hidden flex items-center gap-1 shrink-0">
+        <div className="md:hidden flex items-center gap-0.5 shrink-0">
+        {isLoggedIn && (
+          <button
+            type="button"
+            onClick={() => navigate("/zpravy")}
+            className="relative h-11 w-11 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={unreadMessages ? `Zprávy, ${unreadMessages} nepřečtených` : "Zprávy"}
+            data-testid="mobile-messages-icon"
+          >
+            <MessagesSquare size={22} />
+            {unreadMessages > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-[18px] text-center" aria-hidden>
+                {unreadMessages > 9 ? "9+" : unreadMessages}
+              </span>
+            )}
+          </button>
+        )}
         {isLoggedIn && isMobile && (
           <NotificationBell touch onUnreadChange={setUnreadNotifications} />
         )}
