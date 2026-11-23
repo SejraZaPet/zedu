@@ -105,7 +105,7 @@ interface Props {
    * nav/header/list bubbles where the full character wouldn't be legible.
    */
   crop?: "head" | "full";
-  /** When false, hides the pencil edit badge (and "new items" dot) overlay. Default true. */
+  /** When false, hides the pencil edit badge overlay. Default true. */
   showEditButton?: boolean;
   /** When false, hides the equipped achievement badge overlay (used for teachers). Default true. */
   showStreakBadge?: boolean;
@@ -117,24 +117,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [hasNew, setHasNew] = useState(false);
-
-  useEffect(() => {
-    if (!userId || !editable) {
-      setHasNew(false);
-      return;
-    }
-    let mounted = true;
-    (async () => {
-      const { count } = await supabase
-        .from("user_avatar_items")
-        .select("avatar_item_id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("is_new", true);
-      if (mounted) setHasNew((count ?? 0) > 0);
-    })();
-    return () => { mounted = false; };
-  }, [userId, editable]);
 
   // Bumped when the avatar profile is saved elsewhere (AvatarEditor) so we refetch.
   const [reloadKey, setReloadKey] = useState(0);
@@ -266,13 +248,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
         >
           <Pencil style={{ width: Math.max(10, size * 0.16), height: Math.max(10, size * 0.16) }} />
         </span>
-      )}
-      {editable && showEditButton && hasNew && (
-        <span
-          aria-label="Nové položky odemčeny"
-          className="absolute -top-0.5 -right-0.5 rounded-full bg-destructive ring-2 ring-background"
-          style={{ width: Math.max(10, size * 0.2), height: Math.max(10, size * 0.2) }}
-        />
       )}
     </>
   );

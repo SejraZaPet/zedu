@@ -8,7 +8,6 @@ import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,14 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
   Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye, Smile,
@@ -125,7 +116,6 @@ interface Profile {
 
 interface OwnedItem {
   avatar_item_id: string;
-  is_new: boolean;
   is_favorite: boolean;
 }
 
@@ -192,24 +182,6 @@ const LAYER_ORDER: LayerSpec[] = [
 
   { category: "frame" },
 ];
-
-const RARITY_LABEL: Record<AvatarItem["rarity"], string> = {
-  common: "Běžné",
-  uncommon: "Neobyčejné",
-  rare: "Vzácné",
-  epic: "Epické",
-  legendary: "Legendární",
-  mythic: "Mýtické",
-};
-
-const RARITY_TONE: Record<AvatarItem["rarity"], string> = {
-  common: "bg-muted text-muted-foreground",
-  uncommon: "bg-primary/15 text-primary",
-  rare: "bg-secondary/15 text-secondary",
-  epic: "bg-accent/20 text-accent-foreground",
-  legendary: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
-  mythic: "bg-gradient-brand-sm text-white",
-};
 
 const emptyProfile = (userId: string): Profile => ({
   user_id: userId,
@@ -437,19 +409,18 @@ function LayerVisual({
 // ---------- Memoized grid tile ----------
 // Isolated so that toggling a color in the palette (which mutates `draft`)
 // doesn't re-render every item in the picker grid. Each tile only re-renders
-// when its own props change (item identity, unlocked/selected/favorite/new).
+// when its own props change (item identity, unlocked/selected/favorite).
 interface AvatarTileProps {
   item: AvatarItem;
   unlocked: boolean;
   selected: boolean;
   isFavorite: boolean;
-  isNew: boolean;
   unlockText: string;
   onPick: (item: AvatarItem) => void;
   onToggleFavorite: (item: AvatarItem) => void;
 }
 const AvatarTile = React.memo(function AvatarTile({
-  item, unlocked, selected, isFavorite, isNew, unlockText, onPick, onToggleFavorite,
+  item, unlocked, selected, isFavorite, unlockText, onPick, onToggleFavorite,
 }: AvatarTileProps) {
   return (
     <div
@@ -481,11 +452,6 @@ const AvatarTile = React.memo(function AvatarTile({
           {!unlocked && (
             <span className="absolute inset-0 bg-background/40 flex items-center justify-center">
               <Lock className="w-6 h-6 text-foreground/80" />
-            </span>
-          )}
-          {isNew && unlocked && (
-            <span className="absolute top-1 right-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5">
-              NOVÉ
             </span>
           )}
         </div>
@@ -696,7 +662,6 @@ export default function AvatarEditor() {
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [newQueue, setNewQueue] = useState<string[]>([]);
   
 
   const userId = user?.id;
@@ -706,7 +671,7 @@ export default function AvatarEditor() {
     setLoading(true);
     const [itemsRes, ownedRes, profileRes] = await Promise.all([
       supabase.from("avatar_items").select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("user_avatar_items").select("avatar_item_id, is_new, is_favorite").eq("user_id", userId),
+      supabase.from("user_avatar_items").select("avatar_item_id, is_favorite").eq("user_id", userId),
       supabase.from("avatar_profiles").select("*").eq("user_id", userId).maybeSingle(),
     ]);
     if (itemsRes.error) toast({ title: "Chyba", description: itemsRes.error.message, variant: "destructive" });
@@ -714,7 +679,6 @@ export default function AvatarEditor() {
     const ownedMap = new Map<string, OwnedItem>();
     (ownedRes.data ?? []).forEach((r: any) => ownedMap.set(r.avatar_item_id, r));
     setOwned(ownedMap);
-    setNewQueue((ownedRes.data ?? []).filter((r: any) => r.is_new).map((r: any) => r.avatar_item_id as string));
     const prof = (profileRes.data as Profile | null) ?? null;
     setDbProfile(prof);
     setDraft(prof ? { ...prof } : null);
@@ -897,45 +861,6 @@ export default function AvatarEditor() {
   const handleBack = () => {
     if (isDirty) setConfirmDiscard(true);
     else navigate(-1);
-  };
-
-  // ---------- "New item unlocked" queue handlers ----------
-  const clearIsNew = async (itemId: string, extraPatch: Record<string, unknown> = {}) => {
-    if (!userId) return;
-    setOwned((prev) => {
-      const m = new Map(prev);
-      const cur = m.get(itemId);
-      if (cur) m.set(itemId, { ...cur, is_new: false, ...(extraPatch.is_favorite !== undefined ? { is_favorite: extraPatch.is_favorite as boolean } : {}) });
-      return m;
-    });
-    setNewQueue((q) => q.filter((id) => id !== itemId));
-    const { error } = await supabase
-      .from("user_avatar_items")
-      .update({ is_new: false, ...extraPatch })
-      .eq("user_id", userId)
-      .eq("avatar_item_id", itemId);
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
-    }
-  };
-
-  const tryOnNewItem = (item: AvatarItem) => {
-    if (draft) {
-      applyPick(item);
-      setActiveCategory(item.category);
-      if (item.category === "outfit" && item.layer_slot) {
-        setActiveSlot(item.layer_slot);
-      }
-    }
-    void clearIsNew(item.id);
-  };
-
-  const favoriteNewItem = (item: AvatarItem) => {
-    void clearIsNew(item.id, { is_favorite: true });
-  };
-
-  const continueNewItem = (item: AvatarItem) => {
-    void clearIsNew(item.id);
   };
 
   // Onboarding: need to create profile first
@@ -1204,7 +1129,6 @@ export default function AvatarEditor() {
                       unlocked={unlocked}
                       selected={selected}
                       isFavorite={!!meta?.is_favorite}
-                      isNew={!!meta?.is_new}
                       unlockText={unlockLabel(it)}
                       onPick={stableApplyPick}
                       onToggleFavorite={stableToggleFavorite}
@@ -1246,59 +1170,6 @@ export default function AvatarEditor() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {(() => {
-        const currentId = newQueue[0];
-        const item = currentId ? itemsById.get(currentId) : null;
-        if (!item) return null;
-        return (
-          <Dialog
-            open={true}
-            onOpenChange={(open) => { if (!open) continueNewItem(item); }}
-          >
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Nová položka odemčena!</DialogTitle>
-                <DialogDescription>
-                  Do své sbírky získáváš nový kosmetický předmět.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col items-center gap-3 py-2">
-                <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
-                  <LayerVisual item={item} useThumbnail />
-                  {item.category === "badge" && (
-                    <BadgeOverlay
-                      iconName={item.icon_name}
-                      rarity={item.rarity}
-                      className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                      size={56}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-base font-semibold">{item.name}</span>
-                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", RARITY_TONE[item.rarity])}>
-                    {RARITY_LABEL[item.rarity]}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  Právě jsi odemkl(a) položku <strong>{item.name}</strong>.
-                </p>
-              </div>
-              <DialogFooter className="flex-col sm:flex-row gap-2">
-                <Button variant="outline" onClick={() => continueNewItem(item)}>
-                  Pokračovat
-                </Button>
-                <Button variant="outline" onClick={() => favoriteNewItem(item)}>
-                  <Heart className="w-4 h-4 mr-1" /> Přidat do oblíbených
-                </Button>
-                <Button onClick={() => tryOnNewItem(item)}>
-                  Vyzkoušet na avatarovi
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
     </div>
   );
 }

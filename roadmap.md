@@ -417,7 +417,14 @@
 - [x] Čitelný placeholder, hodnota a pozadí polí tématu a popisu; akce Přiřadit/Nový/Otevřít/Změnit na dnešní kartě.
 - [x] Stejná obrysová varianta u Přesunout/Zrušit právě probíhající hodiny ve widgetu Dnes; žádný další inline editor tématu na gradientu.
 - [x] 23 cílených testů, typy a build; screenshoty před psaním/po psaní a focus pod režimem Prohlížíš jako Učitel, simulovaných 8:55 pro widget Dnes, naměřené kontrasty AA. Oba formuláře zrušeny bez uložení; bez DB/RLS, nasazení a změny AGENTS.md.
-- Aplikace nemá globální tmavý režim; vizuálně ověřena výchozí světlá nálada, ostatní nálady používají stejné semantické tokeny.. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.
+- Aplikace nemá globální tmavý režim; vizuálně ověřena výchozí světlá nálada, ostatní nálady používají stejné semantické tokeny.
+
+## Editor avatara – odstranění novinek
+- [x] Příčina: `user_avatar_items.is_new` má výchozí true a `sync_avatar_unlocks` vloží novému uživateli všechny výchozí položky; bez seen tabulky/localStorage se vše ukázalo jako novinka.
+- [x] Odstraněny štítky NOVÉ, fronta dialogů Nová položka odemčena, červená tečka, čtení fronty a zápisy is_new=false; vlastnictví, oblíbené, odemykání, položky/obrázky, administrace a počáteční vytvoření avatara zachovány.
+- [x] 5 testů: nový uživatel se všemi is_new=true bez novinek, oblíbené beze změny is_new, bublina bez dotazu na novinky a původní tvary; skutečný nový účet nebyl vytvořen kvůli zákazu zápisů.
+- [x] Typy a build OK; náhled Prohlížíš jako Učitel bez dialogu/štítků/tečky, kategorie a filtry fungují, žádný zápis do avatarových tabulek, žádné chyby prohlížeče.
+- [x] Commit do main; bez DB/RLS/SQL změn, nasazení a změny AGENTS.md.. Fyzický telefon, vlastní tempo a nativní PPTX animace neověřeny.
 
 ## Úvodní stránka – editace pouze z administrace
 - [x] Odebráno plovoucí „Upravit stránku“ z běžné veřejné adresy `/`.
