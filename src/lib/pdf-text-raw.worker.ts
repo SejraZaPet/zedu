@@ -12,31 +12,7 @@
 
 /// <reference lib="webworker" />
 
-const decodePdfString = (s: string): string => {
-  let out = "";
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch !== "\\") { out += ch; continue; }
-    const next = s[i + 1];
-    if (next === undefined) break;
-    if (next === "n") { out += "\n"; i++; }
-    else if (next === "r") { out += "\r"; i++; }
-    else if (next === "t") { out += "\t"; i++; }
-    else if (next === "b") { out += "\b"; i++; }
-    else if (next === "f") { out += "\f"; i++; }
-    else if (next === "(" || next === ")" || next === "\\") { out += next; i++; }
-    else if (next >= "0" && next <= "7") {
-      let oct = next;
-      if (s[i + 2] && s[i + 2] >= "0" && s[i + 2] <= "7") { oct += s[i + 2]; i++; }
-      if (s[i + 2] && s[i + 2] >= "0" && s[i + 2] <= "7") { oct += s[i + 2]; i++; }
-      out += String.fromCharCode(parseInt(oct, 8));
-      i++;
-    } else {
-      out += next; i++;
-    }
-  }
-  return out;
-};
+import { decodePdfLiteral as decodePdfString } from "./pdf-raw-text-decode";
 
 // Regex notes: alternatives are mutually exclusive (one starts with `\`,
 // the other explicitly excludes `\`), so there is no ambiguity that would
