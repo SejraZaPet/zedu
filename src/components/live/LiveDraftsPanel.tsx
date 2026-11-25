@@ -242,7 +242,7 @@ export default function LiveDraftsPanel({ sessionId, currentIndex, slidesCount, 
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Náhled (jen pro vás){saving ? " · ukládám…" : ""}</p>
                 <div className="aspect-video rounded-lg overflow-hidden border border-border">
-                  <SlideCanvas slide={slideWithFallbackBlocks(active.slide)} darkMode />
+                  <SlideCanvas slide={slideWithFallbackBlocks(active.slide)} darkMode showCorrectAnswers />
                 </div>
               </div>
 

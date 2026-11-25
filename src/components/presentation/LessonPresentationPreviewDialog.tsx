@@ -57,6 +57,7 @@ const PreviewSlideStage = ({ slide }: { slide: any }) => {
         <SlideCanvas
           fit={false}
           slide={slide}
+          showCorrectAnswers
           themeId={slide?.themeId}
           darkMode={slide?.presentationSource !== "lesson"}
         />

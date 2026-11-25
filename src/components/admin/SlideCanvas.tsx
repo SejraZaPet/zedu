@@ -74,6 +74,8 @@ interface BodyProps {
   themeId?: string;
   editable?: boolean;
   darkMode?: boolean;
+  /** Soukromý učitelský/editorový náhled řešení; projekce a žák vždy false. */
+  showCorrectAnswers?: boolean;
   revealStep?: number;
   /** Editor: 0 = klidná úprava; vyšší číslo spustí nový náhled. */
   animationPreviewKey?: number;
@@ -497,6 +499,7 @@ function ResizableSlideImage({
 function EditableBlock(props: {
   block: Block;
   editable?: boolean;
+  showCorrectAnswers?: boolean;
   asCard?: boolean;
   framed?: boolean;
   onChange?: (patch: Partial<Block> | ((b: Block) => Block)) => void;
@@ -528,12 +531,14 @@ function EditableBlock(props: {
 function EditableBlockInner({
   block,
   editable,
+  showCorrectAnswers = false,
   asCard,
   framed,
   onChange,
 }: {
   block: Block;
   editable?: boolean;
+  showCorrectAnswers?: boolean;
   asCard?: boolean;
   /** Blok je ve volné vrstvě (má `frame`). */
   framed?: boolean;
@@ -542,7 +547,7 @@ function EditableBlockInner({
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
 
   if (block.type === "activity" && (block as any).renderAs === "activity-preview") {
-    return <div className="h-full w-full overflow-hidden"><ActivitySpecPreview spec={block.props} /></div>;
+    return <div className="h-full w-full overflow-hidden"><ActivitySpecPreview spec={block.props} revealAnswers={showCorrectAnswers} /></div>;
   }
 
   // Skupina spojených prvků – potomci mají rámce relativní k rámci skupiny,
@@ -568,7 +573,7 @@ function EditableBlockInner({
                 zIndex: typeof child.zIndex === "number" ? child.zIndex : i + 1,
               }}
             >
-              <EditableBlock block={child} framed />
+              <EditableBlock block={child} showCorrectAnswers={showCorrectAnswers} framed />
             </div>
           );
         })}
@@ -1697,6 +1702,7 @@ export function SlideBody({
   slide,
   themeId,
   editable,
+  showCorrectAnswers = false,
   darkMode = true,
   revealStep,
   animationPreviewKey = 0,
@@ -2135,10 +2141,11 @@ export function SlideBody({
           <EditableBlock
             block={b}
             editable={!(b as any).locked}
+            showCorrectAnswers={showCorrectAnswers}
             asCard={asCard}
             onChange={(patch) => onChangeBlock?.(b.id, patch)}
           />
-        ) : <EditableBlock block={b} asCard={asCard} />)}
+        ) : <EditableBlock block={b} showCorrectAnswers={showCorrectAnswers} asCard={asCard} />)}
       </BlockShell>
     );
 
@@ -2222,7 +2229,7 @@ export function SlideBody({
         {headlineEl}
         <div data-slide-group="full" className={`w-full space-y-6 ${blockTextScope}`} style={{ zoom: fontScale, ...groupHeightStyle } as any}>
           {blocks.length === 0 && framedBlocks.length === 0 && (slide?.type === "activity" || slide?.type === "studio_step") && slide?.activitySpec ? (
-            <ActivitySpecPreview spec={slide.activitySpec} />
+            <ActivitySpecPreview spec={slide.activitySpec} revealAnswers={showCorrectAnswers} />
           ) : blocks.length === 0 && framedBlocks.length === 0 && editable && !hideEmptyEditorPlaceholders ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.
@@ -2386,10 +2393,11 @@ export function SlideBody({
                 <EditableBlock
                   block={block}
                   editable={!(block as any).locked}
+                  showCorrectAnswers={showCorrectAnswers}
                   framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />
-              ) : <EditableBlock block={block} framed />, "h-full w-full")}
+              ) : <EditableBlock block={block} showCorrectAnswers={showCorrectAnswers} framed />, "h-full w-full")}
             </FreeFrameBlock>
             </div>
           ))}

@@ -1045,7 +1045,7 @@ const LiveTeacherScreen = () => {
               <div className="relative">
                 <div className="overflow-hidden rounded-xl">
                   <div style={drawZoomMode ? undefined : zoomStageStyle(activeZoom)}>
-                    <SlideCanvas slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode projectorFontScale={projectorFontScale} />
+                    <SlideCanvas slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode showCorrectAnswers={false} projectorFontScale={projectorFontScale} />
                   </div>
                 </div>
                 <ZoomZoneSurface
@@ -1068,6 +1068,7 @@ const LiveTeacherScreen = () => {
                 slide={slideWithFallbackBlocks(currentSlide)}
                 themeId={(currentSlide as any)?.themeId}
                 darkMode
+                showCorrectAnswers={false}
                 projectorFontScale={projectorFontScale}
                 allowContentScroll
                 contentScrollTop={Number(settings?.projectorScrollTop) || 0}

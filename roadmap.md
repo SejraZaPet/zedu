@@ -445,3 +445,10 @@
 - [x] Detail úkolu: otevření přílohy na vyžádání přes krátkodobý odkaz i po odevzdání; mazání jen při úpravách.
 - [x] Cílené testy otevření, read-only režimu a chyby; kontrola dalších náhledů bez změn databáze či nasazení.
 - 10 testů a typy prošly. Rychlý náhled, časová osa i sešit portfolia už přílohy otevírají; jejich chování zůstalo beze změny. Skutečný soubor ve storage a blokování vyskakovacího okna prohlížečem nebyly ověřeny.
+
+## Promítání aktivit – skrytí správných odpovědí před odhalením
+- [x] `ActivitySpecPreview.revealAnswers` a `SlideCanvas.showCorrectAnswers` mají bezpečné výchozí false; povoleno jen v editoru a soukromých učitelských náhledech.
+- [x] Opraveny MCQ, pravda/nepravda i nalezené úniky správných dvojic a pořadí; projekce, zrcadlené plátno učitele a žák mají explicitně false.
+- [x] Audit: ActivityTaskPreview a samostatná kola odhalují podle stavu výsledků; QuizActivity, TrueFalseActivity, stará cesta /hra a LessonBlockRenderer až po odpovědi/kontrole. Učitelský panel Zadání a řešení zachován.
+- [x] 49 cílených testů (7 nových včetně skutečných komponent ProjectorSlideView a StudentGamePlay), typy a diff check prošly; bez DB/RLS/SQL, živé relace, zápisů a nasazení.
+- Neověřeno vizuálně na fyzickém projektoru/telefonu; ověření je komponentové v jsdom, bez vytváření či úpravy živých dat.

@@ -90,6 +90,7 @@ const ProjectorCanvasStage = ({
         )}
         <SlideCanvas
           key={currentIndex}
+          showCorrectAnswers={false}
           transparentStage={gameBackground}
           fit={false}
           slide={slide}

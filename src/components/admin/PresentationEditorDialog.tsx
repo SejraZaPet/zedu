@@ -1292,6 +1292,7 @@ export const PresentationEditorDialog = ({
                     slide={currentSlide}
                     themeId={themeId}
                     editable
+                    showCorrectAnswers
                     darkMode={darkPreview}
                     animationPreviewKey={animationPreviewKey}
                     animationRevealCount={slideClickAnimations(blocks).length}

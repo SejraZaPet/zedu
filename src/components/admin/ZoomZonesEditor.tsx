@@ -73,7 +73,7 @@ const ZoomZonesEditor = ({ slide, onChange, darkMode = true }: Props) => {
       <div className="relative">
         <div className="overflow-hidden rounded-xl">
           <div style={zoomStageStyle(previewRect)}>
-            <SlideCanvas slide={slide} darkMode={darkMode} />
+            <SlideCanvas slide={slide} darkMode={darkMode} showCorrectAnswers />
           </div>
         </div>
         {!previewRect && (
