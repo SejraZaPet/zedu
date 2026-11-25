@@ -28,10 +28,9 @@ describe("stavy banneru", () => {
 
 describe("skrytí křížkem", () => {
   beforeEach(() => localStorage.clear());
-  it("skryje na 7 dní", () => {
+  it("skrytí nevyprší po 7 dnech, nový banner s jiným id se ukáže", () => {
     dismissBanner("a", null, NOW);
-    expect(filterDismissed([{ id: "a" }, { id: "b" }], NOW + 6 * 864e5).map((b) => b.id)).toEqual(["b"]);
-    expect(filterDismissed([{ id: "a" }], NOW + 7 * 864e5 + 1).map((b) => b.id)).toEqual(["a"]);
+    expect(filterDismissed([{ id: "a" }, { id: "b" }], NOW + 30 * 864e5).map((b) => b.id)).toEqual(["b"]);
   });
   it("nejdéle do konce platnosti", () => {
     expect(dismissUntil("2026-10-25T10:00:00Z", NOW)).toBe(Date.parse("2026-10-25T10:00:00Z"));
@@ -167,17 +166,17 @@ describe("náhled vybraného souboru", () => {
 });
 
 describe("banner se nikdy neořezává", () => {
-  it("obrázek je zobrazený celý (object-contain), kontejner je plná šířka, vycentrovaný, poměr 4:1 s výškou do 300 px", () => {
+  it("obrázek je zobrazený celý (object-contain), kontejner je kompaktní a nejvýš 720 px široký", () => {
     const { container } = render(<BannerCarousel banners={[mk("o", { image_path: "platform/1500x500.png" })]} />);
     const img = screen.getByRole("img", { name: "Banner o" });
     expect(img.className).toContain("object-contain");
     expect(img.className).not.toContain("object-cover");
     const section = screen.getByRole("region", { name: "Oznámení" });
     expect(section.className).toContain("w-full");
-    expect(section.className).toContain("mx-auto");
-    expect(section.className).not.toContain("max-w-");
-    expect(section.className).toContain("aspect-[4/1]");
-    expect(section.className).toContain("max-h-[300px]");
+    expect(section.className).toContain("max-w-[720px]");
+    expect(section.className).toContain("h-16");
+    expect(section.className).toContain("sm:h-[100px]");
+    expect(section.className).not.toContain("max-h-[300px]");
     expect(section.className).not.toMatch(/object-cover/);
     expect(section.className).toContain("bg-muted");
     expect(container).toBeTruthy();

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMyBanners } from "@/hooks/useMyBanners";
 import {
-  MAX_VIDEO_LOOPS, bannerPublicUrl, dismissBanner, filterDismissed, isSafeHttpsUrl, type Banner,
+  BANNERS_CHANGE_EVENT, MAX_VIDEO_LOOPS, bannerPublicUrl, dismissBanners, filterDismissed, isSafeHttpsUrl, type Banner,
 } from "@/lib/banners";
 
 import { BANNERS_ANCHOR_ID, BANNERS_RESTORE_EVENT } from "./BannersNewsButton";
@@ -31,7 +31,11 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
     if (preview) return;
     const onRestore = () => setDismissTick((t) => t + 1);
     window.addEventListener(BANNERS_RESTORE_EVENT, onRestore);
-    return () => window.removeEventListener(BANNERS_RESTORE_EVENT, onRestore);
+    window.addEventListener(BANNERS_CHANGE_EVENT, onRestore);
+    return () => {
+      window.removeEventListener(BANNERS_RESTORE_EVENT, onRestore);
+      window.removeEventListener(BANNERS_CHANGE_EVENT, onRestore);
+    };
   }, [preview]);
   const hadAny = (() => { try { return sessionStorage.getItem(SEEN_KEY) === "1"; } catch { return false; } })();
   useEffect(() => {
@@ -41,7 +45,7 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
   }, [query.data, preview]);
 
   if (!preview && query.isLoading) {
-    return hadAny ? <div className="mx-auto mb-6 aspect-[4/1] max-h-[300px] w-full rounded-xl bg-muted animate-pulse" aria-hidden /> : null;
+    return hadAny ? <div className="mb-4 h-16 w-full max-w-[720px] rounded-lg bg-muted animate-pulse sm:h-[100px]" aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
   const carousel = <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
@@ -78,7 +82,7 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
     <section
       aria-roledescription="carousel"
       aria-label="Oznámení"
-      className="relative mx-auto mb-6 w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm aspect-[4/1] max-h-[300px]"
+      className="relative mb-4 h-16 w-full max-w-[720px] overflow-hidden rounded-lg border border-border bg-muted shadow-sm sm:h-[100px]"
       onMouseEnter={() => setHoverPause(true)}
       onMouseLeave={() => setHoverPause(false)}
       onFocus={() => setHoverPause(true)}
@@ -109,17 +113,17 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
       {!preview && (
         <button
           type="button"
-          aria-label="Skrýt oznámení na 7 dní"
-          className="absolute right-2 top-2 z-20 grid h-7 w-7 place-items-center rounded-full bg-background/80 text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={() => { dismissBanner(current.id, current.ends_at); onDismiss?.(); }}
+          aria-label="Skrýt oznámení"
+          className="absolute right-1 top-1 z-20 grid h-5 w-5 place-items-center rounded-full bg-background/80 text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => { dismissBanners(banners.map((b) => b.id)); onDismiss?.(); }}
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
 
       {count > 1 && (
-        <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full bg-background/80 px-1.5 py-0.5">
-          <button type="button" aria-label="Předchozí oznámení" onClick={() => go(-1)} className="grid h-6 w-6 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <div className="absolute bottom-1 right-1 z-20 flex items-center gap-0.5 rounded-full bg-background/80 px-1 py-0">
+          <button type="button" aria-label="Předchozí oznámení" onClick={() => go(-1)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <ChevronLeft className="h-4 w-4" />
           </button>
           {banners.map((b, i) => (
@@ -129,16 +133,16 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
               aria-label={`Oznámení ${i + 1}`}
               aria-current={i === index}
               onClick={() => setIndex(i)}
-              className="grid h-6 w-6 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="grid h-5 w-5 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span className={cn("block h-2 w-2 rounded-full", i === index ? "bg-primary" : "bg-muted-foreground/40")} />
             </button>
           ))}
-          <button type="button" aria-label="Další oznámení" onClick={() => go(1)} className="grid h-6 w-6 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" aria-label="Další oznámení" onClick={() => go(1)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <ChevronRight className="h-4 w-4" />
           </button>
           {!reduced && (
-            <button type="button" aria-label={userPause ? "Spustit střídání" : "Pozastavit střídání"} onClick={() => setUserPause((p) => !p)} className="grid h-6 w-6 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <button type="button" aria-label={userPause ? "Spustit střídání" : "Pozastavit střídání"} onClick={() => setUserPause((p) => !p)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {userPause ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
             </button>
           )}

@@ -59,9 +59,14 @@ export function isSafeHttpsUrl(url: string | null | undefined): boolean {
 
 type DismissMap = Record<string, number>;
 
-function readDismissed(): DismissMap {
+export const SEEN_NEWS_KEY = "bezli.banner.seen";
+/** Fired whenever dismissed/seen state changes, so the carousel and the Novinky badge stay in sync. */
+export const BANNERS_CHANGE_EVENT = "bezli:banners-change";
+const MAX_STORED = 200;
+
+function readMap(key: string): DismissMap {
   try {
-    const raw = window.localStorage.getItem(DISMISS_KEY);
+    const raw = window.localStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
@@ -69,6 +74,20 @@ function readDismissed(): DismissMap {
   }
 }
 
+function writeMap(key: string, map: DismissMap): void {
+  try {
+    const entries = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, MAX_STORED);
+    window.localStorage.setItem(key, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    /* localStorage nedostupné – platí jen do obnovení stránky */
+  }
+}
+
+function notifyChange(): void {
+  try { window.dispatchEvent(new Event(BANNERS_CHANGE_EVENT)); } catch { /* ignore */ }
+}
+
+/** @deprecated Skrytí už nevyprší po 7 dnech; ponecháno pro kompatibilitu. */
 export function dismissUntil(endsAt: string | null, now = Date.now()): number {
   const week = now + DISMISS_MS;
   if (!endsAt) return week;
@@ -76,20 +95,47 @@ export function dismissUntil(endsAt: string | null, now = Date.now()): number {
   return Number.isFinite(end) ? Math.min(week, end) : week;
 }
 
-export function dismissBanner(id: string, endsAt: string | null, now = Date.now()): void {
-  try {
-    const map = readDismissed();
-    for (const k of Object.keys(map)) if (!(map[k] > now)) delete map[k];
-    map[id] = dismissUntil(endsAt, now);
-    window.localStorage.setItem(DISMISS_KEY, JSON.stringify(map));
-  } catch {
-    /* localStorage nedostupné – skrytí platí jen do obnovení stránky */
-  }
+/**
+ * Skryje banner na tomto zařízení natrvalo – dokud nepřijde banner s jiným id
+ * nebo dokud uživatel neklikne na Novinky. (Starší záznamy s časem platí také.)
+ */
+export function dismissBanner(id: string, _endsAt?: string | null, now = Date.now()): void {
+  dismissBanners([id], now);
 }
 
-export function filterDismissed<T extends { id: string }>(list: T[], now = Date.now()): T[] {
-  const map = readDismissed();
-  return list.filter((b) => !(typeof map[b.id] === "number" && map[b.id] > now));
+export function dismissBanners(ids: string[], now = Date.now()): void {
+  const map = readMap(DISMISS_KEY);
+  for (const id of ids) map[id] = now;
+  writeMap(DISMISS_KEY, map);
+  notifyChange();
+}
+
+export function isDismissed(id: string): boolean {
+  return typeof readMap(DISMISS_KEY)[id] === "number";
+}
+
+export function filterDismissed<T extends { id: string }>(list: T[], _now = Date.now()): T[] {
+  const map = readMap(DISMISS_KEY);
+  return list.filter((b) => typeof map[b.id] !== "number");
+}
+
+/** Počet nových novinek: neskryté a dosud neotevřené přes tlačítko Novinky. */
+export function countNewBanners<T extends { id: string }>(list: T[]): number {
+  const seen = readMap(SEEN_NEWS_KEY);
+  return filterDismissed(list).filter((b) => typeof seen[b.id] !== "number").length;
+}
+
+export function markBannersSeen(ids: string[], now = Date.now()): void {
+  const map = readMap(SEEN_NEWS_KEY);
+  for (const id of ids) map[id] = now;
+  writeMap(SEEN_NEWS_KEY, map);
+  notifyChange();
+}
+
+/** Tlačítko Novinky: vrátí skryté bannery zpět. */
+export function clearDismissedBanners(): void {
+  try { window.localStorage.removeItem(DISMISS_KEY); } catch { /* storage unavailable */ }
+  notifyChange();
 }
 
 /** Převod chyb databáze na srozumitelnou hlášku. */
