@@ -221,17 +221,21 @@ export function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke, w: number
   ctx.restore();
 }
 
-/** CSS podklad stránky (linky / čtverečky / tečky). */
-export function backgroundCss(style: BackgroundStyle, scale = 1): React.CSSProperties {
-  const step = 40 * scale;
+/** CSS podklad stránky (vždy bílý papír; linky / čtverečky / tečky). */
+export function backgroundCss(style: BackgroundStyle | null | undefined, scale = 1): React.CSSProperties {
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const step = 40 * safeScale;
   const line = "rgba(110,198,217,0.45)";
+  const paper: React.CSSProperties = { backgroundColor: "#ffffff" };
   if (style === "lined") {
     return {
+      ...paper,
       backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${step - 1}px, ${line} ${step - 1}px, ${line} ${step}px)`,
     };
   }
   if (style === "grid") {
     return {
+      ...paper,
       backgroundImage:
         `repeating-linear-gradient(to bottom, transparent 0, transparent ${step - 1}px, ${line} ${step - 1}px, ${line} ${step}px),` +
         `repeating-linear-gradient(to right, transparent 0, transparent ${step - 1}px, ${line} ${step - 1}px, ${line} ${step}px)`,
@@ -239,11 +243,12 @@ export function backgroundCss(style: BackgroundStyle, scale = 1): React.CSSPrope
   }
   if (style === "dotted") {
     return {
-      backgroundImage: `radial-gradient(${line} ${Math.max(1, 1.5 * scale)}px, transparent ${Math.max(1, 1.5 * scale)}px)`,
+      ...paper,
+      backgroundImage: `radial-gradient(${line} ${Math.max(1, 1.5 * safeScale)}px, transparent ${Math.max(1, 1.5 * safeScale)}px)`,
       backgroundSize: `${step}px ${step}px`,
     };
   }
-  return {};
+  return paper;
 }
 
 /* ------------------------------------------------------------------ */

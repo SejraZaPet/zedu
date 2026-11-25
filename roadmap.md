@@ -452,3 +452,10 @@
 - [x] Audit: ActivityTaskPreview a samostatná kola odhalují podle stavu výsledků; QuizActivity, TrueFalseActivity, stará cesta /hra a LessonBlockRenderer až po odpovědi/kontrole. Učitelský panel Zadání a řešení zachován.
 - [x] 49 cílených testů (7 nových včetně skutečných komponent ProjectorSlideView a StudentGamePlay), typy a diff check prošly; bez DB/RLS/SQL, živé relace, zápisů a nasazení.
 - Neověřeno vizuálně na fyzickém projektoru/telefonu; ověření je komponentové v jsdom, bez vytváření či úpravy živých dat.
+
+## Sešit – černá hlavní plocha na Androidu
+- [x] Odstraněno `desynchronized`; bílý papír a průhledné canvas vrstvy, vadná vrstva se při ztrátě kontextu skryje.
+- [x] Bitmapa omezená na 4096 px na stranu a 8 milionů pixelů bez změny CSS rozměrů/souřadnic; hlavní stránka i miniatura se po obnově kontextu překreslí.
+- [x] Prověřeny styly pozadí, chyby podepsaných obrázků, guma, žákovský digitální list, PDF a portfolio; export má bílou výplň a ostatní zobrazení světlé chybové stavy.
+- [x] 6 nových jsdom testů, celkem 75 cílených testů, diff check a automatické sestavení; bez DB/RLS/SQL, nasazení a změny AGENTS.md.
+- Neověřeno na fyzickém Android tabletu ani s konkrétním žákovským sešitem. Přihlášené živé preview v emulaci Androidu nemělo otevřený vlastní sešit, takže vizuální kontrola stage neproběhla; nevytvářela se žádná data.

@@ -45,17 +45,33 @@ const NotebookPageThumb = ({ content, backgroundStyle, className }: Props) => {
   useEffect(() => {
     const cvs = ref.current;
     if (!cvs) return;
-    const w = cvs.clientWidth || 96;
-    const h = cvs.clientHeight || Math.round((w * NB_H) / NB_W);
-    const dpr = window.devicePixelRatio || 1;
-    cvs.width = Math.max(1, Math.floor(w * dpr));
-    cvs.height = Math.max(1, Math.floor(h * dpr));
-    const ctx = cvs.getContext("2d");
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    for (const s of content.strokes) renderStroke(ctx, s, w, h);
-    for (const tb of content.textBoxes) drawNotebookTextBox(ctx, tb, w, h, w / NB_W);
+    const draw = () => {
+      const w = cvs.clientWidth || 96;
+      const h = cvs.clientHeight || Math.round((w * NB_H) / NB_W);
+      const dpr = window.devicePixelRatio || 1;
+      cvs.width = Math.max(1, Math.floor(w * dpr));
+      cvs.height = Math.max(1, Math.floor(h * dpr));
+      const ctx = cvs.getContext("2d");
+      cvs.style.visibility = ctx ? "visible" : "hidden";
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, w, h);
+      for (const s of content.strokes) renderStroke(ctx, s, w, h);
+      for (const tb of content.textBoxes) drawNotebookTextBox(ctx, tb, w, h, w / NB_W);
+    };
+    const contextLost = (event: Event) => {
+      event.preventDefault();
+      cvs.style.visibility = "hidden";
+    };
+    draw();
+    cvs.addEventListener("contextlost", contextLost);
+    cvs.addEventListener("contextrestored", draw);
+    return () => {
+      cvs.removeEventListener("contextlost", contextLost);
+      cvs.removeEventListener("contextrestored", draw);
+    };
   }, [content]);
 
   return (
@@ -77,7 +93,7 @@ const NotebookPageThumb = ({ content, backgroundStyle, className }: Props) => {
           style={{ left: `${img.x * 100}%`, top: `${img.y * 100}%`, width: `${img.w * 100}%`, height: `${img.h * 100}%` }}
         />
       ) : null)}
-      <canvas ref={ref} className="absolute inset-0 h-full w-full" />
+      <canvas ref={ref} className="absolute inset-0 h-full w-full" style={{ backgroundColor: "transparent" }} />
       {isLiveWorksheetPage(content) && content.worksheet && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-card/90 p-1 text-center">
           <FileText className="h-5 w-5 text-primary" aria-hidden />

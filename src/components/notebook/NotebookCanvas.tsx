@@ -6,6 +6,7 @@ import {
   ArrowUpRight, Undo2, Redo2, Trash2, MousePointer2, ImagePlus, X, ZoomIn, ZoomOut, Hand, Maximize2,
 } from "lucide-react";
 import { anchorScroll, clampZoom, fitWidth, distance, isGesturePointer, midpoint, pinchZoom } from "@/lib/notebook-gestures";
+import { notebookCanvasSurface } from "@/lib/notebook-canvas";
 import { Button } from "@/components/ui/button";
 import NotebookTextEditor from "@/components/notebook/NotebookTextEditor";
 import NotebookImageContent from "@/components/notebook/NotebookImageContent";
@@ -111,35 +112,60 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     return () => stage.removeEventListener("selectstart", block);
   }, [drawingMode]);
 
-  /* --- velikost plátna --- */
+  /* --- velikost plátna a obnova po ztrátě kontextu --- */
   useEffect(() => {
     const cvs = canvasRef.current;
     const live = liveRef.current;
     const stage = stageRef.current;
     if (!cvs || !stage) return;
-    // desynchronized musí být v prvním volání getContext; kde chybí, prohlížeč volbu ignoruje.
-    try { live?.getContext("2d", { desynchronized: true } as CanvasRenderingContext2DSettings); } catch { /* nepodporováno */ }
     const resize = () => {
       const w = stage.clientWidth;
       const h = stage.clientHeight;
       if (!w || !h) return;
-      const dpr = window.devicePixelRatio || 1;
-      cvs.width = Math.max(1, Math.floor(w * dpr));
-      cvs.height = Math.max(1, Math.floor(h * dpr));
-      cvs.style.width = `${w}px`;
-      cvs.style.height = `${h}px`;
-      cvs.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (live) {
-        live.width = cvs.width; live.height = cvs.height;
-        live.style.width = `${w}px`; live.style.height = `${h}px`;
-        live.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Dva velké canvasy na tabletu mohou vyčerpat GPU paměť. Omezíme jen bitmapu,
+      // CSS rozměry a relativní souřadnice tahů zůstávají beze změny.
+      const surface = notebookCanvasSurface(w, h, window.devicePixelRatio || 1);
+      for (const target of [cvs, live]) {
+        if (!target) continue;
+        target.width = surface.width;
+        target.height = surface.height;
+        target.style.width = `${w}px`;
+        target.style.height = `${h}px`;
+        const ctx = target.getContext("2d");
+        target.style.visibility = ctx ? "visible" : "hidden";
+        if (!ctx) continue; // Bílý papír a ostatní prvky zůstávají použitelné.
+        ctx.setTransform(surface.scaleX, 0, 0, surface.scaleY, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1;
       }
       rerender();
     };
+    const contextLost = (event: Event) => {
+      event.preventDefault();
+      (event.currentTarget as HTMLCanvasElement).style.visibility = "hidden";
+    };
+    const contextRestored = () => resize();
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(stage);
-    return () => ro.disconnect();
+    for (const target of [cvs, live]) {
+      if (!target) continue;
+      target.addEventListener("contextlost", contextLost);
+      target.addEventListener("contextrestored", contextRestored);
+      // Sešit používá 2D, ale některé prohlížeče hlásí pád GPU i touto událostí.
+      target.addEventListener("webglcontextlost", contextLost);
+      target.addEventListener("webglcontextrestored", contextRestored);
+    }
+    return () => {
+      ro.disconnect();
+      for (const target of [cvs, live]) {
+        if (!target) continue;
+        target.removeEventListener("contextlost", contextLost);
+        target.removeEventListener("contextrestored", contextRestored);
+        target.removeEventListener("webglcontextlost", contextLost);
+        target.removeEventListener("webglcontextrestored", contextRestored);
+      }
+    };
   }, [rerender]);
 
   /* --- vykreslení kresby --- */
@@ -151,6 +177,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     if (!ctx) return;
     const w = stage.clientWidth;
     const h = stage.clientHeight;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, w, h);
     for (const s of strokes) renderStroke(ctx, s, w, h);
     // Guma maže hotové tahy, proto se kreslí do hlavní vrstvy; ostatní tahy jsou na horní vrstvě.
@@ -165,6 +193,8 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     const ctx = live?.getContext("2d");
     if (!ctx || !stage) return;
     const w = stage.clientWidth, h = stage.clientHeight;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, w, h);
     const cur = drawingRef.current;
     if (!cur || cur.tool === "eraser") return;
@@ -832,9 +862,17 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
 
           <canvas
             ref={canvasRef}
+            data-testid="nb-strokes-canvas"
             className={cn("absolute inset-0", drawingActive ? "cursor-crosshair" : "pointer-events-none")}
+            style={{ backgroundColor: "transparent" }}
           />
-          <canvas ref={liveRef} aria-hidden className="pointer-events-none absolute inset-0" />
+          <canvas
+            ref={liveRef}
+            data-testid="nb-live-canvas"
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundColor: "transparent" }}
+          />
 
           {/* Textové boxy — nad kresbou */}
           {textBoxes.map((tb) => (
