@@ -1,4 +1,4 @@
-import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import DashboardGreetingHeader from "@/components/dashboard/DashboardGreetingHeader";
 import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
@@ -369,7 +369,8 @@ const TeacherDashboard = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-6xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+        <DashboardGreetingHeader
+          identity={
           <div className="flex items-center gap-4">
             <ProfileAvatarBubble
               userId={user?.id ?? null}
@@ -388,15 +389,16 @@ const TeacherDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <BannersNewsButton />
-            <Button variant="ghost" size="sm" onClick={() => persistOrder(createDefaultTeacherDashboardOrder())}>
-              Obnovit pořadí
-            </Button>
-          </div>
-        </div>
-
-        <DashboardBanners />
+          }
+          actions={
+            <>
+              <BannersNewsButton />
+              <Button variant="ghost" size="sm" onClick={() => persistOrder(createDefaultTeacherDashboardOrder())}>
+                Obnovit pořadí
+              </Button>
+            </>
+          }
+        />
 
         <div data-testid="teacher-today-slot">
           <TodayWidget role="teacher" />

@@ -18,7 +18,7 @@ function saveData(): boolean {
 }
 
 /** Banner slides on dashboards only. `preview` = admin live preview (no RPC, no dismiss). */
-export function DashboardBanners({ preview }: { preview?: Banner[] }) {
+export function DashboardBanners({ preview, className, inline }: { preview?: Banner[]; className?: string; inline?: boolean }) {
   const query = useMyBanners();
   const [dismissTick, setDismissTick] = useState(0);
   const source = preview ?? query.data ?? [];
@@ -45,14 +45,14 @@ export function DashboardBanners({ preview }: { preview?: Banner[] }) {
   }, [query.data, preview]);
 
   if (!preview && query.isLoading) {
-    return hadAny ? <div className="mb-4 h-16 w-full max-w-[720px] rounded-lg bg-muted animate-pulse sm:h-[100px]" aria-hidden /> : null;
+    return hadAny ? <div className={cn("h-16 w-full rounded-lg bg-muted animate-pulse sm:h-[100px]", inline ? className : cn("mb-4 max-w-[720px]", className))} aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
-  const carousel = <BannerCarousel banners={banners} preview={!!preview} onDismiss={() => setDismissTick((t) => t + 1)} />;
-  return preview ? carousel : <div id={BANNERS_ANCHOR_ID} className="scroll-mt-24">{carousel}</div>;
+  const carousel = <BannerCarousel banners={banners} preview={!!preview} inline={inline} onDismiss={() => setDismissTick((t) => t + 1)} />;
+  return preview ? carousel : <div id={BANNERS_ANCHOR_ID} data-testid="dashboard-banner-slot" className={cn("scroll-mt-24", className)}>{carousel}</div>;
 }
 
-export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banner[]; preview?: boolean; onDismiss?: () => void }) {
+export function BannerCarousel({ banners, preview, inline, onDismiss }: { banners: Banner[]; preview?: boolean; inline?: boolean; onDismiss?: () => void }) {
   const [index, setIndex] = useState(0);
   const [hoverPause, setHoverPause] = useState(false);
   const [userPause, setUserPause] = useState(false);
@@ -82,7 +82,10 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
     <section
       aria-roledescription="carousel"
       aria-label="Oznámení"
-      className="relative mb-4 h-16 w-full max-w-[720px] overflow-hidden rounded-lg border border-border bg-muted shadow-sm sm:h-[100px]"
+      className={cn(
+        "relative h-16 w-full overflow-hidden rounded-lg border border-border bg-muted shadow-sm sm:h-[100px]",
+        inline ? "max-w-none" : "mb-4 max-w-[720px]",
+      )}
       onMouseEnter={() => setHoverPause(true)}
       onMouseLeave={() => setHoverPause(false)}
       onFocus={() => setHoverPause(true)}
@@ -152,18 +155,26 @@ export function BannerCarousel({ banners, preview, onDismiss }: { banners: Banne
   );
 }
 
+/** Blurred copy of the image fills the card's sides; the real media stays whole (object-contain). */
+function BannerBackdrop({ src }: { src: string | null | undefined }) {
+  if (!src) return null;
+  return <img src={src} alt="" aria-hidden="true" data-banner-backdrop className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-80 blur-xl" />;
+}
+
 function BannerSlide({ banner, active, posterOnly, tabbable }: { banner: Banner; active: boolean; posterOnly: boolean; tabbable: boolean }) {
-  const media = banner.media_type === "video" && !posterOnly
+  const backdropSrc = bannerPublicUrl(banner.media_type === "video" ? banner.poster_path : banner.image_path);
+  const inner = banner.media_type === "video" && !posterOnly
     ? <BannerVideo banner={banner} active={active} />
     : (
       <img
         src={bannerPublicUrl(banner.media_type === "video" ? banner.poster_path : banner.image_path) ?? ""}
         alt={banner.alt_text}
-        className="h-full w-full object-contain"
+        className="relative h-full w-full object-contain"
         loading="lazy"
         decoding="async"
       />
     );
+  const media = <div className="relative h-full w-full overflow-hidden"><BannerBackdrop src={backdropSrc} />{inner}</div>;
   if (isSafeHttpsUrl(banner.link_url)) {
     return (
       <a href={banner.link_url!} target="_blank" rel="noopener noreferrer" tabIndex={tabbable ? 0 : -1} className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
@@ -201,7 +212,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
   }, [active, visible, done]);
 
   if (done) {
-    return <img src={poster} alt={banner.alt_text} className="h-full w-full object-contain" />;
+    return <img src={poster} alt={banner.alt_text} className="relative h-full w-full object-contain" />;
   }
   return (
     <video
@@ -212,7 +223,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
       playsInline
       preload="metadata"
       aria-label={banner.alt_text}
-      className="h-full w-full object-contain"
+      className="relative h-full w-full object-contain"
       onEnded={(e) => {
         loops.current += 1;
         if (loops.current >= MAX_VIDEO_LOOPS) setDone(true);

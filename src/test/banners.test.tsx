@@ -194,3 +194,17 @@ describe("banner se nikdy neořezává", () => {
   });
 });
 
+
+describe("banner v řádku hlavičky", () => {
+  it("inline varianta nemá vlastní okraj ani limit 720 px a obrázek vyplní kartu rozmazaným pozadím", () => {
+    const { container } = render(<BannerCarousel inline banners={[mk("i", { image_path: "platform/1500x500.png" })]} />);
+    const section = screen.getByRole("region", { name: "Oznámení" });
+    expect(section.className).toContain("max-w-none");
+    expect(section.className).not.toContain("mb-4");
+    expect(section.className).toContain("sm:h-[100px]");
+    const backdrop = container.querySelector("[data-banner-backdrop]")!;
+    expect(backdrop.getAttribute("aria-hidden")).toBe("true");
+    expect(backdrop.getAttribute("alt")).toBe("");
+    expect(screen.getByRole("img", { name: "Banner i" }).className).toContain("object-contain");
+  });
+});

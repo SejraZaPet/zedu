@@ -22,7 +22,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
-import DashboardBanners from "@/components/dashboard/DashboardBanners";
+import DashboardGreetingHeader from "@/components/dashboard/DashboardGreetingHeader";
 import BannersNewsButton from "@/components/dashboard/BannersNewsButton";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { StudentDashboardCompactTile, StudentDashboardTile } from "@/components/dashboard/StudentDashboardTile";
@@ -179,7 +179,11 @@ const StudentDashboard = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-6xl overflow-x-clip"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8 flex flex-wrap items-center gap-5">
+        <DashboardGreetingHeader
+          showBanners={!!user}
+          actions={user ? <BannersNewsButton /> : undefined}
+          identity={
+            <div className="flex flex-wrap items-center gap-5">
           <ProfileAvatarBubble
             userId={user?.id ?? null}
             size={96}
@@ -206,10 +210,9 @@ const StudentDashboard = () => {
               </div>
             )}
           </div>
-          {user && <BannersNewsButton />}
-        </div>
-
-        {user && <DashboardBanners />}
+            </div>
+          }
+        />
 
         <div data-testid="student-dashboard-stack">
           <div data-testid="student-today-slot">
