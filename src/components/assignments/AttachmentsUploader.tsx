@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Upload, FileIcon, X, Loader2, Paperclip } from "lucide-react";
+import { Upload, FileIcon, X, Loader2, Paperclip, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { ASSIGNMENT_UPLOADS_BUCKET, removeStudentAttachmentFile } from "@/lib/portfolio";
+import {
+  ASSIGNMENT_UPLOADS_BUCKET,
+  getStudentAttachmentSignedUrl,
+  removeStudentAttachmentFile,
+} from "@/lib/portfolio";
 
 interface Attachment {
   id: string;
@@ -61,6 +65,7 @@ const formatBytes = (b: number) => {
 const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
   const [files, setFiles] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +141,24 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
     toast({ title: "Příloha smazána" });
   };
 
+  const handleOpen = async (att: Attachment) => {
+    if (openingId) return;
+    setOpeningId(att.id);
+    try {
+      const url = await getStudentAttachmentSignedUrl(att.file_path, { expiresIn: 300 });
+      if (!url) throw new Error("Missing signed URL");
+      window.open(url, "_blank", "noopener");
+    } catch {
+      toast({
+        title: "Soubor se nepodařilo otevřít",
+        description: "Zkus to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -194,6 +217,22 @@ const AttachmentsUploader = ({ assignmentId, studentId, disabled }: Props) => {
               <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <span className="flex-1 truncate" title={f.file_name}>{f.file_name}</span>
               <span className="text-xs text-muted-foreground">{formatBytes(f.file_size)}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="min-h-11 shrink-0"
+                onClick={() => handleOpen(f)}
+                disabled={openingId === f.id}
+                aria-label={`Otevřít ${f.file_name}`}
+              >
+                {openingId === f.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <ExternalLink className="h-4 w-4" aria-hidden />
+                )}
+                <span className="ml-1">Otevřít</span>
+              </Button>
               {!disabled && (
                 <Button
                   type="button"

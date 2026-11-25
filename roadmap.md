@@ -440,3 +440,8 @@
 - [x] Jednotná kontrola min. 8 znaků a 38 běžných hesel v obou obnovách, registraci a profilu; české chyby i pro školní import a administrátorský reset.
 - [x] 10 frontendových a 4 Deno testy; prohlížeč při 390 px ověřil weak_password, invalid_token, úspěch → /auth a lokální odmítnutí bez serveru, 0 chyb stránky. Build OK; bez DB/RLS/SQL, nasazení a AGENTS.md.
 - Neověřeno: skutečná změna hesla a ostrá edge funkce (záměrně nenasazeno a nevoláno); hostované nastavení minimální délky nástroje jen pro čtení neposkytují, aplikace nyní jednotně vyžaduje 8 znaků.
+
+## Žákovské přílohy – zpětné otevření
+- [x] Detail úkolu: otevření přílohy na vyžádání přes krátkodobý odkaz i po odevzdání; mazání jen při úpravách.
+- [x] Cílené testy otevření, read-only režimu a chyby; kontrola dalších náhledů bez změn databáze či nasazení.
+- 10 testů a typy prošly. Rychlý náhled, časová osa i sešit portfolia už přílohy otevírají; jejich chování zůstalo beze změny. Skutečný soubor ve storage a blokování vyskakovacího okna prohlížečem nebyly ověřeny.
