@@ -7,7 +7,7 @@
 - [x] Úplné návrhy 9 učitelských + 7 navazujících modulů a revize dalších kurzů v `.lovable/reviews/academy-content.md`; žádné obsahové zápisy.
 - [x] 12 cílených testů a automatické sestavení OK; přihlášený kurz na 1547/390 px, skutečné pokračování u kurzu s 1/4, navigace, obrázek+Escape+fokus; 0 chyb stránky a žádné zápisy do Akademie. Globální zápisy při následné návštěvě Studia zablokovány.
 - [ ] Doplnění/nahrání 9 snímků čeká na bezpečné ukázkové stavy a samostatné schválení nahrávání; existující obrázek funguje, ale lišta je zastaralá. Lokálně pořízen prázdný návrh Studia a mobilní hlavička administrátora, nikoli hotová sada učitelských snímků.
-- [x] Znění schváleno 26. 11.; přesný nespouštěný zápis 9 modulů připraven v Files (akademie-ucitele-update.sql). [ ] Spuštění čeká na pokyn; nový kurz čeká na schválení názvu a publika. Interní CRM a reálné žákovské/rodičovské/lektorské pohledy neověřeny; bez nasazení, DB/RLS/SQL a změn AGENTS.md.
+- [x] Navazující kurz „Bezli v každodenní výuce — pro učitele" založen jako koncept (7 modulů); zveřejnění čeká na pokyn
 
 ## Demo – uložení práce a připomínky (schváleno etapy 1–2, termín 25. 11.)
 - [x] (1) migrace a RPC – finální SQL ukázat před spuštěním
