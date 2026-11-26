@@ -4,6 +4,9 @@ import {
   PUBLISH_MATERIALS_ONLY_HINT,
   PUBLISH_MATERIALS_ONLY_LABEL,
   PUBLISH_MATERIALS_ONLY_TOAST,
+  PUBLISH_MATERIALS_ONLY_BLOCKED,
+  materialsOnlyDecision,
+  materialsOnlyReasonLabel,
 } from "@/lib/worksheet-publish-menu";
 import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
 import { InlineText } from "@/components/worksheet/InlineText";
@@ -1315,8 +1318,34 @@ export default function WorksheetEditor() {
     }
   }
 
+  const [inVisiblePlan, setInVisiblePlan] = useState<boolean | null>(null);
+  // Čtecí kontrola: je list (nebo jeho lekce) ve viditelném plánu hodiny? Zrcadlí is_worksheet_in_student_lesson_plan.
+  const checkVisiblePlan = useCallback(async () => {
+    if (!id) return;
+    setInVisiblePlan(null);
+    try {
+      const nowIso = new Date().toISOString();
+      const base = () => supabase.from("lesson_plans" as any).select("id", { count: "exact", head: true })
+        .eq("visible_to_students", true)
+        .or(`visible_from.is.null,visible_from.lte.${nowIso}`);
+      const direct = await base().contains("worksheet_ids", [id]);
+      if (direct.error) throw direct.error;
+      let n = direct.count ?? 0;
+      if (n === 0 && sourceLessonId) {
+        const viaLesson = await base().eq("lesson_ref_id", sourceLessonId);
+        if (viaLesson.error) throw viaLesson.error;
+        n = viaLesson.count ?? 0;
+      }
+      setInVisiblePlan(n > 0);
+    } catch {
+      setInVisiblePlan(null);
+    }
+  }, [id, sourceLessonId]);
+  useEffect(() => { void checkVisiblePlan(); }, [checkVisiblePlan]);
+  const materialsOnly = materialsOnlyDecision({ status, show_in_lesson: showInLesson, source_lesson_id: sourceLessonId, inVisiblePlan });
+
   async function publishToMaterialsOnly() {
-    if (!id || !canPublishToMaterialsOnly(status)) return;
+    if (!id || !materialsOnly.allowed) return;
     const { error } = await supabase
       .from("worksheets" as any)
       .update(materialsOnlyPublishPatch() as any)
@@ -2710,7 +2739,7 @@ export default function WorksheetEditor() {
             </DropdownMenu>
 
             {/* Publish dropdown */}
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(o) => { if (o) void checkVisiblePlan(); }}>
               <DropdownMenuTrigger asChild>
                 <Button size="sm">
                   <Send className="w-4 h-4 sm:mr-1" />
@@ -2728,7 +2757,16 @@ export default function WorksheetEditor() {
                 <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
                   <Send className="w-4 h-4 mr-2" /> Zadat žákům…
                 </DropdownMenuItem>
-                {canPublishToMaterialsOnly(status) && (
+                {canPublishToMaterialsOnly(status) && !materialsOnly.allowed && (
+                  <DropdownMenuItem disabled className="items-start opacity-100 data-[disabled]:opacity-100">
+                    <BookOpen className="w-4 h-4 mr-2 mt-0.5 shrink-0 text-muted-foreground" />
+                    <span className="flex flex-col text-muted-foreground">
+                      <span className="text-xs">{PUBLISH_MATERIALS_ONLY_BLOCKED}</span>
+                      <span className="text-xs font-medium">{materialsOnlyReasonLabel(materialsOnly.reason)}</span>
+                    </span>
+                  </DropdownMenuItem>
+                )}
+                {materialsOnly.allowed && (
                   <DropdownMenuItem
                     onClick={() => void publishToMaterialsOnly()}
                     className="items-start"
