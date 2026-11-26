@@ -1,3 +1,5 @@
+import { frameSizePx, resolveCornerRadiusPx } from "@/lib/shape-corner-radius";
+import { STAGE_W } from "@/lib/slide-stage";
 import pptxgen from "pptxgenjs";
 import { activityToCoreQuestions } from "@/lib/live-game-core";
 import { activitySummary } from "@/lib/activity-meta";
@@ -119,8 +121,10 @@ export async function createPresentationPptx(slides: any[], title = "Prezentace"
           slide.addImage(options);
         } catch { slide.addText("[Obrázek se nepodařilo vložit]", { ...frame, fontSize: 14, color: "B91C1C" }); }
       } else if (block.type === "shape") {
-        const kind = p.shapeKind === "circle" ? pptx.ShapeType.ellipse : p.shapeKind === "rectangle" ? pptx.ShapeType.rect : pptx.ShapeType.roundRect;
-        slide.addShape(kind, { ...frame, rectRadius: p.shapeKind === "pill" ? frame.h / 2 : Math.max(0.02, Number(p.borderRadius || 12) / 100), rotate: Number(p.rotation) || 0, fill: { color: hex(p.fillColor, "FFFFFF"), transparency: p.fillOpacity === undefined ? 0 : Math.round((1 - p.fillOpacity) * 100) }, line: { color: hex(p.strokeColor, p.fillColor || "FFFFFF"), transparency: p.strokeColor ? (p.strokeOpacity === undefined ? 0 : Math.round((1 - p.strokeOpacity) * 100)) : 100, width: Math.max(0, Number(p.strokeWidth) || 0) } });
+        const size = frameSizePx(block.frame, 0.8 * STAGE_W / PAGE_W);
+        const radiusIn = resolveCornerRadiusPx(p, size.w, size.h) * PAGE_W / STAGE_W;
+        const kind = p.shapeKind === "circle" ? pptx.ShapeType.ellipse : radiusIn > 0.001 && (p.shapeKind === "rectangle" || p.shapeKind === "rounded-rect" || p.shapeKind === "pill" || !p.shapeKind) ? pptx.ShapeType.roundRect : pptx.ShapeType.rect;
+        slide.addShape(kind, { ...frame, rectRadius: kind === pptx.ShapeType.roundRect ? radiusIn : undefined, rotate: Number(p.rotation) || 0, fill: { color: hex(p.fillColor, "FFFFFF"), transparency: p.fillOpacity === undefined ? 0 : Math.round((1 - p.fillOpacity) * 100) }, line: { color: hex(p.strokeColor, p.fillColor || "FFFFFF"), transparency: p.strokeColor ? (p.strokeOpacity === undefined ? 0 : Math.round((1 - p.strokeOpacity) * 100)) : 100, width: Math.max(0, Number(p.strokeWidth) || 0) } });
         if (p.text) addText(slide, p.text, p, frame);
       } else if (block.type === "bullet_list") {
         addText(slide, (p.items || []).map((x: string) => `<li>${x}</li>`).join(""), p, frame);

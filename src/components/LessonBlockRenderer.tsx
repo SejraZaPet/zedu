@@ -390,6 +390,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
           shapeKind={p.shapeKind}
           fillColor={p.fillColor}
           strokeColor={p.strokeColor}
+          borderRadius={p.borderRadius}
+          cornerRadiusPx={p.cornerRadiusPx}
           strokeWidth={p.strokeWidth}
           height={Number(p.height) || 160}
         />

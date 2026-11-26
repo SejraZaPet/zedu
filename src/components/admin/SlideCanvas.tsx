@@ -1199,6 +1199,7 @@ function EditableBlockInner({
           strokeOpacity={p.strokeOpacity}
           strokeWidth={p.strokeWidth}
           borderRadius={p.borderRadius}
+          cornerRadiusPx={p.cornerRadiusPx}
           fillGradient={p.fillGradient}
           height={Number(p.height) || 160}
           fill={framed}

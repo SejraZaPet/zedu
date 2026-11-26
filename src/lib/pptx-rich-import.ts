@@ -1,4 +1,5 @@
 import type JSZip from "jszip";
+import { STAGE_W, STAGE_H } from "@/lib/slide-stage";
 import { createPresentationImageUploader, PresentationImageImportCache, readBlobArrayBuffer, type PresentationImageUpload } from "@/lib/presentation-import-images";
 import type { PresentationImportProgress, PresentationImportResult } from "@/lib/presentation-import-types";
 import { pptxTransitionFromDocument } from "@/lib/pptx-slide-transitions";
@@ -81,6 +82,15 @@ function groupTransform(group: Element) {
 function mapGroupFrame(frame: RawFrame, group: ReturnType<typeof groupTransform>): RawFrame {
   if (!group) return frame;
   return { ...frame, x: group.x + (frame.x - group.cx) * group.w / group.cw, y: group.y + (frame.y - group.cy) * group.h / group.ch, w: frame.w * group.w / group.cw, h: frame.h * group.h / group.ch, rot: frame.rot };
+}
+
+/** Poloměr roundRect (adj = podíl kratší strany × 100000, výchozí 16667) v px scény. */
+export function importedCornerRadiusPx(spPr: Element | null | undefined, frame: { w: number; h: number }): number {
+  const gd = spPr ? Array.from(spPr.getElementsByTagName("a:gd")).find((g) => g.getAttribute("name") === "adj") : undefined;
+  const m = /val\s+(-?\d+)/.exec(gd?.getAttribute("fmla") || "");
+  const adj = Math.max(0, Math.min(50000, m ? Number(m[1]) : 16667));
+  const minSide = Math.min((frame.w * STAGE_W) / 100, (frame.h * STAGE_H) / 100);
+  return Math.round((adj / 100000) * minSide * 10) / 10;
 }
 
 function stageFrame(frame: RawFrame, size: { cx: number; cy: number }) {
@@ -281,7 +291,7 @@ class Parser {
           if (hasShape && shapeKind) {
             const gradient = first(spPr, "a:gradFill");
             const stops = gradient ? direct(first(gradient, "a:gsLst"), "a:gs").map((gs) => readColor(gs, this.theme).color).filter(Boolean) : [];
-            blocks.push({ ...base, type: "shape", props: { ...base.props, shapeKind, fillColor: solid.color || "#FFFFFF", fillOpacity: solid.opacity, strokeColor: stroke.color, strokeOpacity: stroke.opacity, strokeWidth: line ? num(line.getAttribute("w"), 12700) / 12700 : 0, borderRadius: preset === "roundRect" ? 18 : undefined, fillGradient: stops.length ? { from: stops[0], to: stops[1] || stops[0], direction: `${num(first(gradient, "a:lin")?.getAttribute("ang"), 0) / 60000 + 90}deg` } : undefined, text: text?.html || "", fontSize: text?.props.fontSize, color: text?.props.color, fontFamily: text?.props.fontFamily, bold: text?.props.bold, italic: text?.props.italic, align: text?.props.align, lineHeight: text?.props.lineHeight } });
+            blocks.push({ ...base, type: "shape", props: { ...base.props, shapeKind, fillColor: solid.color || "#FFFFFF", fillOpacity: solid.opacity, strokeColor: stroke.color, strokeOpacity: stroke.opacity, strokeWidth: line ? num(line.getAttribute("w"), 12700) / 12700 : 0, cornerRadiusPx: preset === "roundRect" ? importedCornerRadiusPx(spPr, frame) : undefined, fillGradient: stops.length ? { from: stops[0], to: stops[1] || stops[0], direction: `${num(first(gradient, "a:lin")?.getAttribute("ang"), 0) / 60000 + 90}deg` } : undefined, text: text?.html || "", fontSize: text?.props.fontSize, color: text?.props.color, fontFamily: text?.props.fontFamily, bold: text?.props.bold, italic: text?.props.italic, align: text?.props.align, lineHeight: text?.props.lineHeight } });
             this.counts.shapes++; if (text) this.counts.textElements++;
           } else if (text) {
             const isTitle = text.isTitle || (Number(text.props.fontSize) >= 28 && !blocks.some((b) => b.type === "heading"));

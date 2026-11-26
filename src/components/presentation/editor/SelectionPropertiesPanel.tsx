@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DEFAULT_ROUNDED_RADIUS_PX, frameSizePx, isRoundableRect, maxCornerRadiusPx, resolveCornerRadiusPx } from "@/lib/shape-corner-radius";
 import ColorPicker from "@/components/admin/ColorPicker";
 import GradientPicker from "@/components/admin/GradientPicker";
 import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
@@ -83,7 +84,20 @@ export default function SelectionPropertiesPanel({ slide, block, themeId, onThem
                 <div><Label className="mb-2 block text-xs">Výplň</Label><ColorPicker value={props.fillColor === "none" ? null : props.fillColor} onChange={(fillColor) => setProps({ fillColor: fillColor ?? "none", fillGradient: null })} allowNull nullLabel="Bez výplně" /></div>
                 <div><Label className="mb-2 block text-xs">Ohraničení</Label><ColorPicker value={props.strokeColor === "none" ? null : props.strokeColor} onChange={(strokeColor) => setProps({ strokeColor: strokeColor ?? "none" })} allowNull nullLabel="Bez ohraničení" /></div>
                 <Label className="text-xs" htmlFor="shape-radius">Zaoblení</Label>
-                <Select value={props.shapeKind || "rectangle"} onValueChange={(shapeKind) => setProps({ shapeKind })}><SelectTrigger id="shape-radius"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rectangle">Ostré rohy</SelectItem><SelectItem value="rounded-rect">Zaoblené rohy</SelectItem><SelectItem value="circle">Kruh</SelectItem></SelectContent></Select>
+                <Select value={props.shapeKind || "rectangle"} onValueChange={(shapeKind) => setProps(shapeKind === "rectangle" ? { shapeKind, cornerRadiusPx: 0 } : shapeKind === "rounded-rect" && !(Number(props.cornerRadiusPx) > 0) ? { shapeKind, cornerRadiusPx: DEFAULT_ROUNDED_RADIUS_PX } : { shapeKind })}><SelectTrigger id="shape-radius"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rectangle">Ostré rohy</SelectItem><SelectItem value="rounded-rect">Zaoblené rohy</SelectItem><SelectItem value="circle">Kruh</SelectItem></SelectContent></Select>
+                {isRoundableRect(props.shapeKind) && (() => {
+                  const sz = frameSizePx((block as any).frame, Number(props.height) || 160);
+                  const max = Math.floor(maxCornerRadiusPx(sz.w, sz.h));
+                  const value = Math.round(resolveCornerRadiusPx(props, sz.w, sz.h));
+                  const commit = (raw: number) => { if (Number.isFinite(raw)) setProps({ cornerRadiusPx: Math.min(max, Math.max(0, Math.round(raw))) }); };
+                  return (
+                    <div>
+                      <div className="mb-1 flex items-center justify-between gap-2"><Label htmlFor="shape-radius-px" className="text-xs">Poloměr rohů (px)</Label>
+                        <Input id="shape-radius-px" type="number" min={0} max={max} step={1} value={value} onChange={(e) => commit(Number(e.target.value))} className="h-8 w-20 text-right" /></div>
+                      <input aria-label="Poloměr rohů" type="range" min={0} max={max} step={1} value={value} onChange={(e) => commit(Number(e.target.value))} className="w-full accent-deck-violet" />
+                    </div>
+                  );
+                })()}
               </>}
               {isImage && <Select value={props.objectFit || "contain"} onValueChange={(objectFit) => setProps({ objectFit })}><SelectTrigger aria-label="Vyplnění obrázku"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="contain">Přizpůsobit bez oříznutí</SelectItem><SelectItem value="cover">Vyplnit a oříznout</SelectItem></SelectContent></Select>}
               <div>

@@ -1,4 +1,5 @@
-import { useId, type CSSProperties } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { resolveCornerRadiusPx } from "@/lib/shape-corner-radius";
 import { normalizeGradient, type SlideGradient } from "@/lib/slide-gradient";
 
 export type ShapeKind =
@@ -37,6 +38,8 @@ interface Props {
   strokeOpacity?: number;
   /** Poloměr rohů v jednotkách SVG viewBoxu (0–50). */
   borderRadius?: number;
+  /** Poloměr rohů v px slidu, nezávislý na velikosti tvaru (má přednost). */
+  cornerRadiusPx?: number | null;
   /** Výška vykreslené plochy v px. */
   height?: number;
   /** Vyplnit celý rodičovský box (100 % × 100 %) – pro volně umístěné tvary. */
@@ -82,6 +85,7 @@ const ShapeRenderer = ({
   fillOpacity,
   strokeOpacity,
   borderRadius,
+  cornerRadiusPx,
   height = 160,
   fill,
   style,
@@ -105,11 +109,36 @@ const ShapeRenderer = ({
               ? { x1: "0%", y1: "100%", x2: "100%", y2: "0%" }
               : { x1: "0%", y1: "0%", x2: "100%", y2: "100%" };
   const paint = gradient ? `url(#${gradientId})` : fillColor;
+  const isRect = shapeKind === "rectangle" || shapeKind === "rounded-rect" || shapeKind === "pill";
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = svgRef.current;
+    if (!isRect || !el) return;
+    // offsetWidth/clientWidth nejsou ovlivněné CSS transform → px scény i při zoomu.
+    const measure = () => {
+      const w = (el as any).clientWidth || el.getBoundingClientRect().width;
+      const h = (el as any).clientHeight || el.getBoundingClientRect().height;
+      setSize((prev) => (w > 0 && h > 0 ? (prev && prev.w === w && prev.h === h ? prev : { w, h }) : prev));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isRect]);
   const polyProps = { fill: paint, fillOpacity, stroke: strokeColor, strokeOpacity, strokeWidth: sw };
+
+  const vbW = isRect && size ? size.w : 200;
+  const vbH = isRect && size ? size.h : 100;
+  const legacyRx = shapeKind === "pill" ? 50 : shapeKind === "rounded-rect" ? Math.max(0, Math.min(50, borderRadius ?? 30)) : 6;
+  const rx = isRect && size ? Math.max(0, resolveCornerRadiusPx({ shapeKind, cornerRadiusPx, borderRadius }, size.w, size.h) - sw / 2) : legacyRx;
 
   return (
     <svg
-      viewBox="0 0 200 100"
+      ref={svgRef}
+      data-shape-radius={isRect && size ? String(Math.round(rx * 100) / 100) : undefined}
+      viewBox={`0 0 ${vbW} ${vbH}`}
       preserveAspectRatio="none"
       width="100%"
       height={fill ? "100%" : height}
@@ -130,11 +159,12 @@ const ShapeRenderer = ({
       )}
       {(shapeKind === "rectangle" || shapeKind === "rounded-rect" || shapeKind === "pill") && (
         <rect
-          x={sw}
-          y={sw}
-          width={200 - sw * 2}
-          height={100 - sw * 2}
-          rx={shapeKind === "pill" ? 50 : shapeKind === "rounded-rect" ? Math.max(0, Math.min(50, borderRadius ?? 30)) : 6}
+          x={size ? sw / 2 : sw}
+          y={size ? sw / 2 : sw}
+          width={Math.max(0, size ? vbW - sw : 200 - sw * 2)}
+          height={Math.max(0, size ? vbH - sw : 100 - sw * 2)}
+          rx={rx}
+          ry={rx}
           fill={paint}
           fillOpacity={fillOpacity}
           stroke={strokeColor}

@@ -88,6 +88,8 @@ const ShapeBlock = ({ block, onChange }: Props) => {
           fillColor={p.fillColor}
           strokeColor={p.strokeColor}
           strokeWidth={p.strokeWidth}
+          borderRadius={p.borderRadius}
+          cornerRadiusPx={p.cornerRadiusPx}
           fillGradient={p.fillGradient}
           height={Math.min(Number(p.height) || 160, 160)}
         />

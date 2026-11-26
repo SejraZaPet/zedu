@@ -1,3 +1,4 @@
+import { DEFAULT_ROUNDED_RADIUS_PX } from "@/lib/shape-corner-radius";
 import { BEZLI_TEMPLATE_GRADIENT } from "@/lib/presentation-themes";
 import { DEFAULT_ACTIVITY_COLORS } from "@/lib/activity-colors";
 
@@ -35,7 +36,7 @@ const text = (value: string, frame: any, size = 24, color: string = C.white, ext
   text: value, fontSize: size, color, fontFamily: BODY_FONT, lineHeight: 1.25, ...extra,
 }, frame, 3);
 const shape = (frame: any, fillColor: string = C.cream, shapeKind = "rounded-rect") => framed("shape", {
-  shapeKind, fillColor, strokeColor: fillColor, strokeWidth: 0, borderRadius: shapeKind === "pill" ? 999 : 28, opacity: 100,
+  shapeKind, fillColor, strokeColor: fillColor, strokeWidth: 0, borderRadius: shapeKind === "pill" ? 999 : 28, cornerRadiusPx: shapeKind === "pill" ? undefined : DEFAULT_ROUNDED_RADIUS_PX, opacity: 100,
 }, frame, 1);
 const pill = (label: string, frame: any) => framed("shape", {
   shapeKind: "pill", fillColor: C.teal, strokeColor: C.teal, strokeWidth: 0, borderRadius: 999,
