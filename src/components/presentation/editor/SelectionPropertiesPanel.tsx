@@ -117,6 +117,11 @@ export default function SelectionPropertiesPanel({ slide, block, themeId, onThem
         </>
       ) : (
         <>
+          {slide?.projector?.headline ? (
+            <Section title="Nadpis slidu">
+              <Button variant="outline" size="sm" className="w-full" onClick={() => onSlideChange({ projector: { ...(slide.projector || {}), headline: "" } })}>Odstranit nadpis</Button>
+            </Section>
+          ) : null}
           <Section title="Pozadí a motiv">
             <ThemeGalleryPopover themeId={themeId} onChange={onThemeChange} />
             <Button variant="outline" size="sm" className="w-full" onClick={() => onSlideChange({ backgroundOverride: null })}>Podle motivu prezentace</Button>

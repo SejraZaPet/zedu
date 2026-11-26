@@ -171,7 +171,7 @@ export const PRESENTATION_TEMPLATES: PresentationTemplate[] = [
   { id: "classic-lesson", name: "Klasická hodina", description: "Úvod → výklad → procvičení → shrnutí", build: () => [fromSlide("title"), fromSlide("goal"), fromSlide("quiz"), fromSlide("summary")] },
   { id: "quiz-only", name: "Jen kvíz", description: "Jeden prázdný kvízový slide", build: () => [fromSlide("quiz")] },
   { id: "discussion-groups", name: "Diskuze a skupinová práce", description: "Výklad → rozdělení do skupin → diferencovaná aktivita → diskuzní zeď", build: () => [explainSlide("Zadání a kontext"), teamsSlide(), differentiatedSlide(), wallSlide("Co jste zjistili?")] },
-  { id: "blank", name: "Prázdná prezentace", description: "Jeden prázdný slide, doplníte si vše sami", build: () => [explainSlide("Nový slide")] },
+  { id: "blank", name: "Prázdná prezentace", description: "Jeden prázdný slide, doplníte si vše sami", build: () => [{ ...explainSlide(""), hideEmptyEditorPlaceholders: true }] },
 ];
 
 export function cloneTemplateSlides(slides: any[]): any[] {

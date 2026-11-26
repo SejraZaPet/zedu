@@ -41,7 +41,8 @@ const ThemeGalleryPopover = ({ themeId, onChange }: Props) => {
                   <span
                     className="text-sm font-bold"
                     style={{
-                      background: `linear-gradient(90deg, ${t.primaryColor}, ${t.secondaryColor})`,
+                      backgroundImage: `linear-gradient(90deg, ${t.primaryColor}, ${t.secondaryColor})`,
+                      WebkitTextFillColor: "transparent",
                       WebkitBackgroundClip: "text",
                       backgroundClip: "text",
                       color: "transparent",

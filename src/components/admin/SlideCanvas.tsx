@@ -37,7 +37,7 @@ import {
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
-import { blockContrastClass, headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
+import { blockContrastClass, headlineColorsForBackground, headlineTextStyle, resolveSlideIsDark } from "@/lib/slide-contrast";
 import { blockBackgroundSlideColor, blockBackgroundStyle } from "@/lib/block-backgrounds";
 import { getGroupChildHeight } from "@/lib/slide-groups";
 import { slideTransitionMatchKey } from "@/lib/slide-transitions";
@@ -1974,12 +1974,11 @@ export function SlideBody({
       className={`font-heading font-semibold leading-tight ${headlineSizeClass}`}
       style={headlineBackground
         ? { color: "hsl(var(--foreground))" }
-        : {
-            background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
+        : headlineTextStyle(headlineColors, isDark, [
+            theme.gradient?.from, theme.gradient?.to,
+            (slide as any)?.backgroundOverride?.color,
+            (slide as any)?.backgroundOverride?.gradient?.from, (slide as any)?.backgroundOverride?.gradient?.to,
+          ])}
       onCommit={(v) => onChangeHeadline?.(v)}
     />
   );

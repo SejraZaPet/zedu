@@ -1,3 +1,4 @@
+import type React from "react";
 /**
  * Kontrast snímku prezentace.
  *
@@ -99,4 +100,35 @@ export function headlineColorsForBackground(
   if (!isDark && light > 0.55) return { primary: "#0F172A", secondary: "#334155" };
   if (isDark && light < 0.45) return { primary: "#FFFFFF", secondary: "#E2E8F0" };
   return { primary, secondary };
+}
+
+const norm = (c?: string | null) => String(c || "").trim().toLowerCase();
+
+/**
+ * Styl nadpisu slidu. Přechodový text používá `backgroundImage` (ne zkratku
+ * `background`): React při změně barev nastavuje jen změněné vlastnosti a zkratka
+ * `background` by vynulovala `background-clip: text` – nadpis se pak vykreslil
+ * jako plný barevný obdélník s průhledným (neviditelným) textem.
+ * Když by kterákoli barva přechodu splývala s pozadím (nebo s přechodem pozadí),
+ * použije se jednolitá kontrastní barva.
+ */
+export function headlineTextStyle(
+  colors: { primary: string; secondary: string },
+  isDark: boolean,
+  backgroundColors: (string | null | undefined)[] = [],
+): React.CSSProperties {
+  const solid = { color: isDark ? "#FFFFFF" : "#0F172A" };
+  const lights = [colors.primary, colors.secondary].map(cssColorLightness);
+  if (lights.some((l) => l === null)) return solid;
+  const readable = lights.every((l) => (isDark ? (l as number) >= 0.45 : (l as number) <= 0.55));
+  const bg = backgroundColors.map(norm).filter(Boolean);
+  const clashes = bg.includes(norm(colors.primary)) || bg.includes(norm(colors.secondary));
+  if (!readable || clashes) return solid;
+  return {
+    backgroundImage: `linear-gradient(90deg, ${colors.primary}, ${colors.secondary})`,
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    color: "transparent",
+  } as React.CSSProperties;
 }
