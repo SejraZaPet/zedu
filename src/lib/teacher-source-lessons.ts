@@ -78,7 +78,8 @@ export async function loadTeacherSourceLessons(uid: string, opts: { withBlocks?:
   const bookBySubject = new Map<string, { book: SourceBookRow; kind: SourceBookKind }>();
   for (const x of usable) if (x.kind !== "demo" && x.book.subject && !bookBySubject.has(x.book.subject)) bookBySubject.set(x.book.subject, x);
   const subjects = [...bookBySubject.keys()];
-  if (subjects.length) {
+  // Demo účet nečte globální katalog lekcí (bez demo izolace v RLS by viděl i koncepty).
+  if (subjects.length && !isDemo) {
     const topics = await fetchAllPages<any>((from, to) => supabase.from("textbook_topics")
       .select("id, subject, title").in("subject", subjects).order("id").range(from, to) as any);
     const subjectByTopic = new Map(topics.map(t => [t.id as string, t.subject as string]));

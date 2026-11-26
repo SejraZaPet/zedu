@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoAccount } from "@/lib/demo-seed-textbooks";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -97,9 +98,15 @@ const LessonSourcePickerDialog = ({
       setLoading(true);
       setError(null);
       try {
+        const { data: authData } = await supabase.auth.getUser();
+        const uid = authData.user?.id;
+        // Demo účet: bez globálního katalogu lekcí (žádné koncepty ani cizí lekce).
+        const isDemo = uid ? await isDemoAccount(uid) : false;
         const [topicsRes, globalRes, myBooksRes, myLessonsRes] = await Promise.all([
           supabase.from("textbook_topics").select("id, title, subject, grade").order("title").limit(500),
-          supabase.from("textbook_lessons").select("id, title, topic_id").order("sort_order").limit(2000),
+          isDemo
+            ? Promise.resolve({ data: [] as any[], error: null })
+            : supabase.from("textbook_lessons").select("id, title, topic_id").order("sort_order").limit(2000),
           supabase.from("teacher_textbooks").select("id, title").is("deleted_at", null).order("title").limit(200),
           supabase
             .from("teacher_textbook_lessons")

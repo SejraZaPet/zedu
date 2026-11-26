@@ -1,3 +1,4 @@
+import { isDemoAccount } from "@/lib/demo-seed-textbooks";
 import {
   canPublishToMaterialsOnly,
   materialsOnlyPublishPatch,
@@ -569,12 +570,16 @@ export default function WorksheetEditor() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      // Demo účet nesmí vidět globální katalog lekcí (vč. konceptů autorky).
+      const isDemo = await isDemoAccount(user.id);
       const [globalRes, teacherRes] = await Promise.all([
-        supabase
-          .from("textbook_lessons")
-          .select("id, title, topic_id")
-          .order("title", { ascending: true })
-          .limit(500),
+        isDemo
+          ? Promise.resolve({ data: [] as any[] })
+          : supabase
+              .from("textbook_lessons")
+              .select("id, title, topic_id")
+              .order("title", { ascending: true })
+              .limit(500),
         supabase
           .from("teacher_textbook_lessons")
           .select("id, title, textbook_id")
