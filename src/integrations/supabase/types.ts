@@ -1904,7 +1904,22 @@ export type Database = {
           updated_at?: string
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_reviews: {
         Row: {

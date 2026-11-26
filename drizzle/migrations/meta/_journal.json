@@ -708,6 +708,13 @@
       "when": 1795712476857,
       "tag": "0100_hide_draft_lessons",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1795715529632,
+      "tag": "0101_classes_school_id_fkey",
+      "breakpoints": true
     }
   ]
 }
