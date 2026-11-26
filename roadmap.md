@@ -1,5 +1,10 @@
 # Roadmap
 
+## Akademie – celková revize (26. 11. 2026)
+- [x] Čtecí kontrola kurzů, devíti modulů učitelského úvodu a současného ovládání.
+- [x] Připravit plán obsahu, skutečných snímků, vzhledu a nových modulů.
+- [ ] Realizace čeká na schválení rozsahu plánu; zápisy kurzů a obrázků až po samostatném schválení konkrétních změn. Bez nasazení a změn AGENTS.md.
+
 ## Demo – uložení práce a připomínky (schváleno etapy 1–2, termín 25. 11.)
 - [x] (1) migrace a RPC – finální SQL ukázat před spuštěním
 - [x] (2) demo-save-contact + dialog + odpočet + export
