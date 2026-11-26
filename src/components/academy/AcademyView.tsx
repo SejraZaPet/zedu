@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchField } from "@/components/ui/search-field";
+import { matchesSearch } from "@/lib/picker-search";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MarkdownContent from "@/components/MarkdownContent";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import {
-  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
+  ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper, RefreshCw, ZoomIn,
 } from "lucide-react";
 
 type AudienceScope = "teacher" | "student" | "parent" | "internal";
@@ -71,6 +74,31 @@ interface CertificateRow {
 
 const renderContent = (content: string) => <MarkdownContent content={content} />;
 
+const AcademyImage = ({ block }: { block: Block }) => {
+  const url = typeof block.props.url === "string" ? block.props.url.trim() : "";
+  const alt = typeof block.props.alt === "string" ? block.props.alt : "";
+  const caption = typeof block.props.caption === "string" ? block.props.caption : "";
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  if (!url) return block.props.icon ? <LessonBlock block={block} /> : null;
+  if (failed) return <p role="status" className="text-sm text-muted-foreground">Obrázek se nepodařilo načíst. <Button variant="ghost" className="min-h-11" onClick={() => setFailed(false)}><RefreshCw aria-hidden="true" className="mr-2 h-4 w-4" />Zkusit znovu</Button></p>;
+  return <figure className="min-w-0 space-y-2">
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" className="group relative h-auto min-h-11 w-full overflow-hidden rounded-lg p-0" aria-label={`Zvětšit obrázek: ${alt || caption || "Snímek aplikace"}`}>
+          <img src={url} alt={alt || caption} loading="lazy" onError={() => setFailed(true)} className="block h-auto max-h-[560px] w-full object-contain" />
+          <span className="absolute bottom-2 right-2 rounded-md border border-border bg-background p-2 text-foreground"><ZoomIn className="h-4 w-4" aria-hidden="true" /></span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[96dvh] w-[96vw] max-w-6xl overflow-y-auto [&>button]:h-11 [&>button]:w-11 [&>button]:grid [&>button]:place-items-center">
+        <DialogHeader><DialogTitle>Zvětšený snímek</DialogTitle><DialogDescription>{caption || alt || "Snímek aplikace Bezli"}</DialogDescription></DialogHeader>
+        <img src={url} alt={alt || caption} className="h-auto max-h-[80dvh] w-full object-contain" />
+      </DialogContent>
+    </Dialog>
+    {caption && <figcaption className="text-sm text-muted-foreground">{caption}</figcaption>}
+  </figure>;
+};
+
 /** Modul se vykresluje stejným rendererem jako lekce; fallback na starý Markdown. */
 const ModuleContent = ({ module }: { module: Module }) => {
   const blocks = Array.isArray(module.content_blocks) ? module.content_blocks : [];
@@ -80,7 +108,7 @@ const ModuleContent = ({ module }: { module: Module }) => {
         {blocks
           .filter((b) => b && b.visible !== false)
           .map((b, i) => (
-            <LessonBlock key={b.id || i} block={b} blockIndex={i} />
+            b.type === "image" ? <AcademyImage key={b.id || i} block={b} /> : <LessonBlock key={b.id || i} block={b} blockIndex={i} />
           ))}
       </div>
     );
@@ -91,7 +119,7 @@ const ModuleContent = ({ module }: { module: Module }) => {
 const statusMeta = (status: EvidenceSubmission["status"]) => {
   if (status === "approved") return { label: "Schváleno 🎉", cls: "bg-primary/10 text-primary border-primary/30" };
   if (status === "rejected") return { label: "Zamítnuto", cls: "bg-destructive/10 text-destructive border-destructive/30" };
-  return { label: "Čeká na posouzení", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30" };
+  return { label: "Čeká na posouzení", cls: "bg-muted text-foreground border-border" };
 };
 
 interface EvidencePanelProps {
@@ -177,6 +205,10 @@ interface AcademyViewProps {
 const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState(false);
+  const [modulesLoading, setModulesLoading] = useState(false);
+  const [modulesError, setModulesError] = useState(false);
+  const courseRequest = useRef(0);
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
@@ -187,6 +219,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
 
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
+  const [certError, setCertError] = useState(false);
 
   // Pathways (skládatelné kvalifikace)
   interface PathwayItem {
@@ -199,6 +232,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   }
   const [pathways, setPathways] = useState<PathwayItem[]>([]);
   const [pathwaysLoading, setPathwaysLoading] = useState(false);
+  const [pathwaysError, setPathwaysError] = useState(false);
 
 
   // Evidence submission for current course
@@ -217,6 +251,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [filterAccredited, setFilterAccredited] = useState<string>("all");
   const [filterPrice, setFilterPrice] = useState<string>("all");
   const [filterAudience, setFilterAudience] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const categories = useMemo(
     () => Array.from(new Set(courses.map((c) => c.category).filter((v): v is string => !!v && v.trim() !== ""))).sort((a, b) => a.localeCompare(b, "cs")),
@@ -224,6 +260,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   );
   const filteredCourses = useMemo(
     () => courses.filter((c) => {
+      if (!matchesSearch(search, c.title, c.description)) return false;
       if (filterCategory !== "all" && (c.category || "") !== filterCategory) return false;
       if (filterCert !== "all" && String(!!c.issues_certificate) !== filterCert) return false;
       if (filterAccredited !== "all" && String(!!c.is_accredited) !== filterAccredited) return false;
@@ -233,7 +270,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
       if (filterPrice === "paid" && !isPaid) return false;
       return true;
     }),
-    [courses, filterCategory, filterCert, filterAccredited, filterPrice, filterAudience],
+    [courses, search, filterCategory, filterCert, filterAccredited, filterPrice, filterAudience],
   );
   const filtersActive = filterCategory !== "all" || filterCert !== "all" || filterAccredited !== "all" || filterPrice !== "all" || filterAudience !== "all";
   const resetFilters = () => { setFilterCategory("all"); setFilterCert("all"); setFilterAccredited("all"); setFilterPrice("all"); setFilterAudience("all"); };
@@ -243,27 +280,31 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const { data: courseRows } = await supabase
+    setCoursesError(false);
+    const { data: courseRows, error: courseError } = await supabase
       .from("academy_courses")
       .select("*")
       .eq("is_published", true)
       .in("audience", audienceValues)
       .order("sort_order", { ascending: true });
 
-    if (!courseRows) { setCourses([]); setLoading(false); return; }
+    if (courseError || !courseRows) { setCoursesError(true); setLoading(false); return; }
+    if (courseRows.length === 0) { setCourses([]); setLoading(false); return; }
 
     const courseIds = courseRows.map((c: any) => c.id);
-    const [{ data: modCounts }, { data: enrolls }] = await Promise.all([
+    const [{ data: modCounts, error: countsError }, { data: enrolls, error: enrollmentError }] = await Promise.all([
       supabase.from("academy_modules").select("id, course_id").in("course_id", courseIds),
       user
         ? supabase.from("academy_enrollments").select("id, course_id, completed_at").eq("teacher_id", user.id).in("course_id", courseIds)
-        : Promise.resolve({ data: [] as any[] }),
+        : Promise.resolve({ data: [] as any[], error: null }),
     ]);
+    if (countsError || enrollmentError) { setCoursesError(true); setLoading(false); return; }
 
     const enrollmentIds = (enrolls || []).map((e: any) => e.id);
-    const { data: completions } = enrollmentIds.length
+    const { data: completions, error: completionsError } = enrollmentIds.length
       ? await supabase.from("academy_module_completions").select("enrollment_id, module_id").in("enrollment_id", enrollmentIds)
-      : { data: [] as any[] };
+      : { data: [] as any[], error: null };
+    if (completionsError) { setCoursesError(true); setLoading(false); return; }
 
     const modByCourse = new Map<string, number>();
     (modCounts || []).forEach((m: any) => modByCourse.set(m.course_id, (modByCourse.get(m.course_id) || 0) + 1));
@@ -284,11 +325,13 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const fetchCertificates = useCallback(async () => {
     if (!user) return;
     setCertLoading(true);
-    const { data } = await supabase
+    setCertError(false);
+    const { data, error } = await supabase
       .from("academy_certificates")
       .select("id, certificate_number, issued_at, pdf_url, enrollment_id, academy_enrollments!inner(teacher_id, course_id, academy_courses(title, audience))")
       .eq("academy_enrollments.teacher_id", user.id)
       .order("issued_at", { ascending: false });
+    if (error) { setCertError(true); setCertLoading(false); return; }
     const mapped: CertificateRow[] = (data || [])
       .filter((r: any) => audienceValues.includes(r.academy_enrollments?.academy_courses?.audience))
       .map((r: any) => ({
@@ -306,7 +349,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const fetchPathways = useCallback(async () => {
     if (!user) { setPathways([]); return; }
     setPathwaysLoading(true);
-    const [{ data: pRows }, { data: pcRows }, { data: certRows }, { data: pathCerts }] = await Promise.all([
+    setPathwaysError(false);
+    const [{ data: pRows, error: pError }, { data: pcRows, error: pcError }, { data: certRows, error: cError }, { data: pathCerts, error: certsError }] = await Promise.all([
       (supabase as any).from("academy_pathways").select("id, title, description").eq("is_published", true),
       (supabase as any).from("academy_pathway_courses").select("pathway_id, course_id, sort_order").order("sort_order"),
       supabase
@@ -315,6 +359,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
         .eq("academy_enrollments.teacher_id", user.id),
       (supabase as any).from("academy_pathway_certificates").select("pathway_id, certificate_number").eq("teacher_id", user.id),
     ]);
+    if (pError || pcError || cError || certsError) { setPathwaysError(true); setPathwaysLoading(false); return; }
     const completedCourseIds = new Set<string>(
       ((certRows as any[]) || []).map((r) => r.academy_enrollments?.course_id).filter(Boolean)
     );
@@ -348,32 +393,46 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
 
   const openCourse = async (courseId: string) => {
     if (!user) return;
+    const request = ++courseRequest.current;
     setSelectedCourseId(courseId);
     setActiveModuleId(null);
+    setModules([]);
+    setCompletedIds(new Set());
+    setEnrollmentId(null);
+    setEnrollmentCompletedAt(null);
+    setEvidence(null);
+    setModulesLoading(true);
+    setModulesError(false);
 
-    let { data: enroll } = await supabase
+    let { data: enroll, error: readError } = await supabase
       .from("academy_enrollments")
       .select("id, completed_at")
       .eq("teacher_id", user.id)
       .eq("course_id", courseId)
       .maybeSingle();
+    if (request !== courseRequest.current) return;
+    if (readError) { setModulesError(true); setModulesLoading(false); return; }
     if (!enroll) {
       const { data: created, error } = await supabase
         .from("academy_enrollments")
         .insert({ teacher_id: user.id, course_id: courseId })
         .select("id, completed_at")
         .single();
-      if (error) { toast.error("Nepodařilo se zapsat do kurzu"); return; }
+      if (request !== courseRequest.current) return;
+      if (error) { setModulesError(true); setModulesLoading(false); toast.error("Nepodařilo se zapsat do kurzu. Zkuste to znovu."); return; }
       enroll = created;
     }
-    setEnrollmentId(enroll!.id);
-    setEnrollmentCompletedAt(enroll!.completed_at);
+    if (!enroll) { setModulesError(true); setModulesLoading(false); return; }
+    setEnrollmentId(enroll.id);
+    setEnrollmentCompletedAt(enroll.completed_at);
 
-    const [{ data: mods }, { data: comps }, { data: evi }] = await Promise.all([
+    const [{ data: mods, error: modError }, { data: comps, error: compError }, { data: evi, error: evidenceError }] = await Promise.all([
       supabase.from("academy_modules").select("*").eq("course_id", courseId).order("sort_order", { ascending: true }),
-      supabase.from("academy_module_completions").select("module_id").eq("enrollment_id", enroll!.id),
-      supabase.from("academy_evidence_submissions").select("*").eq("enrollment_id", enroll!.id).order("submitted_at", { ascending: false }).limit(1),
+      supabase.from("academy_module_completions").select("module_id").eq("enrollment_id", enroll.id),
+      supabase.from("academy_evidence_submissions").select("*").eq("enrollment_id", enroll.id).order("submitted_at", { ascending: false }).limit(1),
     ]);
+    if (request !== courseRequest.current) return;
+    if (modError || compError || evidenceError) { setModulesError(true); setModulesLoading(false); return; }
     setModules(((mods || []) as unknown[]).map((m) => {
       const row = m as Record<string, unknown>;
       return {
@@ -385,7 +444,10 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setEvidence(((evi as any[]) || [])[0] || null);
     setEvidenceDesc("");
     setEvidenceFile(null);
-    if (mods && mods.length > 0) setActiveModuleId(mods[0].id);
+    const completed = new Set((comps || []).map((c: any) => c.module_id));
+    const resume = enroll.completed_at ? mods?.[0] : mods?.find((m) => !completed.has(m.id)) ?? mods?.[0];
+    setActiveModuleId(resume?.id ?? null);
+    setModulesLoading(false);
   };
 
   const reloadEvidence = useCallback(async () => {
@@ -500,6 +562,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   };
 
   const backToList = () => {
+    courseRequest.current += 1;
+    setModulesLoading(false); setModulesError(false);
     setSelectedCourseId(null); setModules([]); setCompletedIds(new Set());
     setEnrollmentId(null); setEnrollmentCompletedAt(null);
     setEvidence(null); setEvidenceDesc(""); setEvidenceFile(null);
@@ -529,7 +593,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
         <>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-white" />
+              <GraduationCap className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-heading text-2xl font-semibold">{title || "Bezli Akademie"}</h1>
@@ -538,7 +602,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
           </div>
 
           <Tabs defaultValue="courses">
-            <TabsList>
+            <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 [&>button]:min-h-11">
               <TabsTrigger value="courses">Kurzy</TabsTrigger>
               <TabsTrigger value="pathways">
                 <GraduationCap className="w-4 h-4 mr-1" /> Kvalifikace
@@ -550,13 +614,16 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             </TabsList>
 
             <TabsContent value="courses" className="mt-4">
-              {!loading && courses.length > 0 && (
-                <div className="mb-4 p-3 rounded-xl border border-border bg-card flex flex-wrap items-end gap-3">
+              {!loading && !coursesError && courses.length > 0 && (
+                <div className="mb-6 space-y-4">
+                <div className="max-w-xl"><SearchField value={search} onChange={setSearch} label="Hledat kurzy" count={filteredCourses.length} /></div>
+                <Button variant="outline" className="min-h-11 sm:hidden" aria-expanded={filtersOpen} aria-controls="academy-filters" onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal className="mr-2 h-4 w-4" aria-hidden="true" />Filtry{filtersActive ? " · Aktivní" : ""}</Button>
+                <div id="academy-filters" className={`${filtersOpen ? "flex" : "hidden"} sm:flex flex-wrap items-end gap-3 [&_button[role=combobox]]:min-h-11`}>
                   <div className="flex items-center gap-2 text-sm font-medium mr-1">
                     <SlidersHorizontal className="w-4 h-4 text-primary" /> Filtry
                   </div>
                   {categories.length > 0 && (
-                    <div className="w-[180px]">
+                    <div className="w-full sm:w-[180px]">
                       <Label className="text-xs text-muted-foreground">Téma</Label>
                       <Select value={filterCategory} onValueChange={setFilterCategory}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -567,7 +634,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </Select>
                     </div>
                   )}
-                  <div className="w-[190px]">
+                  <div className="w-full sm:w-[190px]">
                     <Label className="text-xs text-muted-foreground">Cílová skupina</Label>
                     <Select value={filterAudience} onValueChange={setFilterAudience}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -578,7 +645,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-[170px]">
+                  <div className="w-full sm:w-[170px]">
 
                     <Label className="text-xs text-muted-foreground">Certifikát</Label>
                     <Select value={filterCert} onValueChange={setFilterCert}>
@@ -590,7 +657,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-[170px]">
+                  <div className="w-full sm:w-[170px]">
                     <Label className="text-xs text-muted-foreground">Akreditace DVPP</Label>
                     <Select value={filterAccredited} onValueChange={setFilterAccredited}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -601,7 +668,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-[150px]">
+                  <div className="w-full sm:w-[150px]">
                     <Label className="text-xs text-muted-foreground">Cena</Label>
                     <Select value={filterPrice} onValueChange={setFilterPrice}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -613,17 +680,20 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                     </Select>
                   </div>
                   {filtersActive && (
-                    <Button variant="ghost" size="sm" onClick={resetFilters}>Zrušit filtry</Button>
+                    <Button variant="ghost" size="sm" className="min-h-11" onClick={resetFilters}>Zrušit filtry</Button>
                   )}
                   <div className="text-xs text-muted-foreground ml-auto">{filteredCourses.length} z {courses.length} kurzů</div>
                 </div>
+                </div>
               )}
               {loading ? (
-                <p className="text-muted-foreground">Načítání…</p>
+                <p role="status" className="text-muted-foreground">Načítání…</p>
+              ) : coursesError ? (
+                <div role="alert" className="space-y-3"><p>Kurzy se nepodařilo načíst. Zkuste načtení zopakovat.</p><Button variant="outline" className="min-h-11" onClick={fetchCourses}><RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />Zkusit znovu</Button></div>
               ) : courses.length === 0 ? (
                 <p className="text-muted-foreground">Zatím zde nejsou žádné kurzy.</p>
               ) : filteredCourses.length === 0 ? (
-                <p className="text-muted-foreground">Žádný kurz neodpovídá zvoleným filtrům.</p>
+                <div role="status" className="space-y-2"><p className="text-muted-foreground">Žádný kurz neodpovídá hledání a filtrům.</p><Button variant="ghost" className="min-h-11" onClick={() => { resetFilters(); setSearch(""); }}>Zrušit hledání a filtry</Button></div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredCourses.map((c) => {
@@ -631,10 +701,10 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                     const pct = c.moduleCount ? Math.round(((c.completedCount || 0) / c.moduleCount) * 100) : 0;
                     const priceLabel = c.price && Number(c.price) > 0 ? `${Number(c.price).toLocaleString("cs-CZ")} Kč` : "Zdarma";
                     return (
-                      <Card key={c.id} className="p-5 flex flex-col hover:border-primary/40 transition-colors">
-                        {c.cover_image_url && (<img src={c.cover_image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-3" />)}
+                      <Card key={c.id} className="min-w-0 rounded-lg p-5 flex flex-col hover:border-primary/40 transition-colors">
+                        {c.cover_image_url && (<img src={c.cover_image_url} alt="" className="w-full h-32 object-contain rounded-lg mb-3" />)}
                         <div className="flex items-start gap-2 mb-2 flex-wrap">
-                          <h2 className="font-heading text-lg font-semibold flex-1">{c.title}</h2>
+                          <h2 className="min-w-0 break-words font-heading text-lg font-semibold flex-1">{c.title}</h2>
                           {c.is_accredited && (<Badge variant="secondary" className="gap-1"><Award className="w-3 h-3" /> DVPP</Badge>)}
                           {c.issues_certificate && (<Badge variant="outline" className="gap-1"><FileBadge2 className="w-3 h-3" /> Certifikát</Badge>)}
                         </div>
@@ -652,7 +722,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                             </div>
                           </div>
                         )}
-                        <Button className="mt-auto" onClick={() => openCourse(c.id)}>
+                        <Button className="mt-auto min-h-11" aria-label={`${c.enrollment ? "Pokračovat v kurzu" : "Zahájit kurz"}: ${c.title}`} onClick={() => openCourse(c.id)}>
                           <Play className="w-4 h-4 mr-1" /> {c.enrollment ? "Pokračovat" : "Zahájit kurz"}
                         </Button>
                       </Card>
@@ -665,6 +735,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             <TabsContent value="pathways" className="mt-4">
               {pathwaysLoading ? (
                 <p className="text-muted-foreground">Načítání…</p>
+              ) : pathwaysError ? (
+                <div role="alert" className="space-y-3"><p>Kvalifikace se nepodařilo načíst. Zkuste načtení zopakovat.</p><Button variant="outline" className="min-h-11" onClick={fetchPathways}><RefreshCw aria-hidden="true" className="mr-2 h-4 w-4" />Zkusit znovu</Button></div>
               ) : pathways.length === 0 ? (
                 <div className="p-8 border border-dashed border-border rounded-xl text-center">
                   <GraduationCap className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
@@ -693,7 +765,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                               size="sm"
                               variant="outline"
                               onClick={async () => {
-                                const url = `${window.location.origin}/overit/${encodeURIComponent(p.certificate_number!)}`;
+                                if (!p.certificate_number) return;
+                                const url = `${window.location.origin}/overit/${encodeURIComponent(p.certificate_number)}`;
                                 try {
                                   await navigator.clipboard.writeText(url);
                                   toast.success("Odkaz zkopírován.");
@@ -716,6 +789,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             <TabsContent value="certificates" className="mt-4">
               {certLoading ? (
                 <p className="text-muted-foreground">Načítání…</p>
+              ) : certError ? (
+                <div role="alert" className="space-y-3"><p>Certifikáty se nepodařilo načíst. Zkuste načtení zopakovat.</p><Button variant="outline" className="min-h-11" onClick={fetchCertificates}><RefreshCw aria-hidden="true" className="mr-2 h-4 w-4" />Zkusit znovu</Button></div>
               ) : certificates.length === 0 ? (
                 <div className="p-8 border border-dashed border-border rounded-xl text-center">
                   <FileBadge2 className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
@@ -724,9 +799,9 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
               ) : (
                 <div className="space-y-2">
                   {certificates.map((c) => (
-                    <Card key={c.id} className="p-4 flex items-center gap-3">
+                    <Card key={c.id} className="rounded-lg p-4 flex flex-wrap items-center gap-3">
                       <FileBadge2 className="w-5 h-5 text-primary" />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 basis-48">
                         <div className="font-medium truncate">{c.course_title}</div>
                         <div className="text-xs text-muted-foreground">
                           Č. {c.certificate_number} · Vydáno {new Date(c.issued_at).toLocaleDateString("cs-CZ")}
@@ -734,6 +809,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </div>
                       <Button
                         size="sm"
+                        className="min-h-11"
                         variant="outline"
                         onClick={async () => {
                           const url = `${window.location.origin}/overit/${encodeURIComponent(c.certificate_number)}`;
@@ -747,7 +823,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       >
                         <Share2 className="w-4 h-4 mr-1" /> Sdílet
                       </Button>
-                      <Button size="sm" onClick={() => downloadCertificate(c)}>
+                      <Button size="sm" className="min-h-11" onClick={() => downloadCertificate(c)}>
                         <Download className="w-4 h-4 mr-1" /> Stáhnout PDF
                       </Button>
                     </Card>
@@ -759,30 +835,29 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
         </>
       ) : (
         <>
-          <Button variant="ghost" size="sm" onClick={backToList} className="mb-4">
+          <Button variant="ghost" size="sm" onClick={backToList} className="mb-4 min-h-11">
             <ArrowLeft className="w-4 h-4 mr-1" /> Zpět na kurzy
           </Button>
 
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h1 className="font-heading text-2xl font-semibold">{selectedCourse?.title}</h1>
+              <h1 className="min-w-0 break-words font-heading text-2xl font-semibold">{selectedCourse?.title}</h1>
               {selectedCourse?.is_accredited && (<Badge variant="secondary" className="gap-1"><Award className="w-3 h-3" /> DVPP</Badge>)}
               {selectedCourse?.issues_certificate && (<Badge variant="outline" className="gap-1"><FileBadge2 className="w-3 h-3" /> Certifikát</Badge>)}
             </div>
             {selectedCourse?.description && (<p className="text-sm text-muted-foreground mb-3">{selectedCourse.description}</p>)}
-            <Progress value={progressPct} className="h-2" />
-            <div className="text-xs text-muted-foreground mt-1">{completedIds.size}/{modules.length} modulů · {progressPct} %</div>
-            {enrollmentCompletedAt && !(selectedCourse?.requires_evidence && selectedCourse?.issues_certificate) && (
+            {!modulesLoading && !modulesError && <><Progress value={progressPct} className="h-2" /><div className="text-xs text-muted-foreground mt-1">{completedIds.size}/{modules.length} modulů · {progressPct} %</div></>}
+            {!modulesLoading && !modulesError && enrollmentCompletedAt && !(selectedCourse?.requires_evidence && selectedCourse?.issues_certificate) && (
               <div className="mt-4 rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 md:p-8 text-center">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-brand-sm flex items-center justify-center mb-4">
-                  <PartyPopper className="w-8 h-8 text-white" />
+                  <PartyPopper className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h2 className="font-heading text-2xl md:text-3xl font-bold mb-2">
-                  Gratulujeme! Právě jsi dokončil/a kurz „{selectedCourse?.title}“
+                  Gratulujeme! {audience === "student" ? "Právě jsi dokončil/a" : "Právě jste dokončil/a"} kurz „{selectedCourse?.title}“
                 </h2>
                 {selectedCourse?.issues_certificate && (
                   <p className="text-muted-foreground max-w-xl mx-auto mb-2">
-                    Certifikát ti dorazí e-mailem a najdeš ho i v sekci Moje certifikáty.
+                    {audience === "student" ? "Certifikát ti dorazí e-mailem a najdeš ho" : "Certifikát Vám dorazí e-mailem a najdete ho"} i v sekci Moje certifikáty.
                   </p>
                 )}
                 <Button size="lg" className="mt-4" onClick={backToList}>
@@ -792,7 +867,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             )}
 
 
-            {enrollmentCompletedAt && selectedCourse?.requires_evidence && selectedCourse?.issues_certificate && (
+            {!modulesLoading && !modulesError && enrollmentCompletedAt && selectedCourse?.requires_evidence && selectedCourse?.issues_certificate && (
               <div className="mt-3">
                 <EvidencePanel
                   evidence={evidence}
@@ -807,48 +882,52 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
-            <aside className="border border-border rounded-xl bg-card p-2 h-fit md:sticky md:top-4">
-              <ul className="space-y-1">
+          {modulesLoading ? <p role="status" className="py-6 text-muted-foreground">Načítání modulů…</p> : modulesError ? <div role="alert" className="space-y-3 py-6"><p>Obsah kurzu se nepodařilo načíst. Zkuste načtení zopakovat.</p><Button variant="outline" className="min-h-11" onClick={() => { if (selectedCourseId) openCourse(selectedCourseId); }}><RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />Zkusit znovu</Button></div> : modules.length === 0 ? <p role="status" className="py-6 text-muted-foreground">Tento kurz zatím nemá žádné moduly.</p> : <div className="grid min-w-0 grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] gap-6">
+            <aside aria-label="Moduly kurzu" className="min-w-0 h-fit md:sticky md:top-4">
+              <div className="mb-3 md:hidden"><Label htmlFor="academy-module">Modul kurzu</Label><Select value={activeModuleId || ""} onValueChange={setActiveModuleId}><SelectTrigger id="academy-module" className="h-auto min-h-11 w-full [&>span]:whitespace-normal [&>span]:text-left"><SelectValue /></SelectTrigger><SelectContent>{modules.map((m, i) => <SelectItem key={m.id} value={m.id}>{i + 1}. {m.title}{completedIds.has(m.id) ? " · Splněno" : ""}</SelectItem>)}</SelectContent></Select></div>
+              <ul className="hidden space-y-1 md:block">
                 {modules.map((m, i) => {
                   const done = completedIds.has(m.id);
                   const active = m.id === activeModuleId;
                   return (
                     <li key={m.id}>
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => setActiveModuleId(m.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-start gap-2 transition-colors ${active ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
+                        aria-current={active ? "step" : undefined}
+                        className={`h-auto min-h-11 w-full whitespace-normal text-left px-3 py-2 rounded-lg text-sm flex items-start gap-2 transition-colors ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
                       >
                         {done ? <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />}
-                        <span className="flex-1">
+                        <span className="min-w-0 flex-1 break-words">
                           <span className="text-xs text-muted-foreground">Modul {i + 1}</span>
                           <span className="block">{m.title}</span>
                         </span>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}
               </ul>
             </aside>
 
-            <section className="border border-border rounded-xl bg-card p-6">
+            <section aria-label="Obsah modulu" className="min-w-0 [&_img]:max-w-full [&_iframe]:max-w-full">
               {activeModule ? (
                 <>
-                  <h2 className="font-heading text-xl font-semibold mb-3">{activeModule.title}</h2>
+                  <h2 className="break-words font-heading text-xl font-semibold mb-3">{activeModule.title}</h2>
                   {activeModule.video_url && (
                     <div className="mb-4 aspect-video rounded-lg overflow-hidden bg-muted">
                       <iframe src={activeModule.video_url} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={activeModule.title} />
                     </div>
                   )}
                   <ModuleContent module={activeModule} />
-                  <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
-                    <Button variant={completedIds.has(activeModule.id) ? "outline" : "default"} onClick={() => toggleModuleDone(activeModule.id)}>
+                  <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-3">
+                    <Button className="h-auto min-h-11 whitespace-normal text-left" variant={completedIds.has(activeModule.id) ? "outline" : "default"} onClick={() => toggleModuleDone(activeModule.id)}>
                       {completedIds.has(activeModule.id) ? (<><CheckCircle2 className="w-4 h-4 mr-1" /> Splněno – zrušit</>) : (<><Circle className="w-4 h-4 mr-1" /> Označit jako dokončené</>)}
                     </Button>
                     {(() => {
                       const idx = modules.findIndex((m) => m.id === activeModule.id);
+                      const previous = modules[idx - 1];
                       const next = modules[idx + 1];
-                      return next ? (<Button variant="ghost" onClick={() => setActiveModuleId(next.id)}>Další modul →</Button>) : null;
+                      return <div className="ml-auto flex flex-wrap items-center gap-1"><Button variant="ghost" className="min-h-11" disabled={!previous} onClick={() => { if (previous) setActiveModuleId(previous.id); }}><ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />Předchozí</Button><span className="text-xs text-muted-foreground">{idx + 1} / {modules.length}</span><Button variant="ghost" className="min-h-11" disabled={!next} onClick={() => { if (next) setActiveModuleId(next.id); }}>Další<ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" /></Button></div>;
                     })()}
                   </div>
                 </>
@@ -856,7 +935,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                 <p className="text-muted-foreground">Vyberte modul ze seznamu.</p>
               )}
             </section>
-          </div>
+          </div>}
         </>
       )}
     </div>

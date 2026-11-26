@@ -5,7 +5,7 @@ import AcademyView from "@/components/academy/AcademyView";
 const TeacherAcademy = () => (
   <div className="min-h-screen bg-background flex flex-col">
     <SiteHeader />
-    <main className="flex-1">
+    <main className="flex-1 pt-20">
       <AcademyView audience="teacher" title="Bezli Akademie" subtitle="Kurzy a webináře pro učitele." />
     </main>
     <SiteFooter />
