@@ -1,3 +1,10 @@
+import {
+  canPublishToMaterialsOnly,
+  materialsOnlyPublishPatch,
+  PUBLISH_MATERIALS_ONLY_HINT,
+  PUBLISH_MATERIALS_ONLY_LABEL,
+  PUBLISH_MATERIALS_ONLY_TOAST,
+} from "@/lib/worksheet-publish-menu";
 import { splitLessonActivities, defaultActivityMode, type LessonActivityMode } from "@/lib/worksheet-activity-modes";
 import { InlineText } from "@/components/worksheet/InlineText";
 import { applyWorksheetInlineTextEdit, type WorksheetInlineTextPath } from "@/lib/worksheet-inline-edit";
@@ -1306,6 +1313,21 @@ export default function WorksheetEditor() {
       setScheduledAt(null);
       toast({ title: next === "published" ? "Publikováno" : "Vráceno do konceptu" });
     }
+  }
+
+  async function publishToMaterialsOnly() {
+    if (!id || !canPublishToMaterialsOnly(status)) return;
+    const { error } = await supabase
+      .from("worksheets" as any)
+      .update(materialsOnlyPublishPatch() as any)
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Změna stavu selhala", description: error.message, variant: "destructive" });
+      return;
+    }
+    setStatus("published");
+    setScheduledAt(null);
+    toast({ title: PUBLISH_MATERIALS_ONLY_TOAST });
   }
 
   async function schedulePublish(when: Date) {
@@ -2702,10 +2724,22 @@ export default function WorksheetEditor() {
                   <ChevronDown className="w-3.5 h-3.5 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-popover">
+              <DropdownMenuContent align="end" className="w-72 bg-popover">
                 <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
                   <Send className="w-4 h-4 mr-2" /> Zadat žákům…
                 </DropdownMenuItem>
+                {canPublishToMaterialsOnly(status) && (
+                  <DropdownMenuItem
+                    onClick={() => void publishToMaterialsOnly()}
+                    className="items-start"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2 mt-0.5 shrink-0" />
+                    <span className="flex flex-col">
+                      <span>{PUBLISH_MATERIALS_ONLY_LABEL}</span>
+                      <span className="text-xs text-muted-foreground">{PUBLISH_MATERIALS_ONLY_HINT}</span>
+                    </span>
+                  </DropdownMenuItem>
+                )}
                 {status === "published" && (
                   <DropdownMenuItem onClick={togglePublish}>
                     <RotateCcw className="w-4 h-4 mr-2" /> Vrátit do konceptu
