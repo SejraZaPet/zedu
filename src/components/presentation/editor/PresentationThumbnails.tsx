@@ -65,7 +65,7 @@ const Thumbnail = memo(function Thumbnail({
   onSelect, onDelete, onDuplicate, onMoveEdge, onToggleHidden, onInsert, onTransitionChange, onApplyTransitionAll,
 }: ThumbnailProps) {
   const id = String(slide?.slideId || index);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
   const [menuOpen, setMenuOpen] = useState(false);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -82,6 +82,8 @@ const Thumbnail = memo(function Thumbnail({
     longPressPointRef.current = null;
   };
   const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    // Compose with the sortable activator: replacing it prevents every drag.
+    listeners?.onPointerDown?.(event);
     if (event.pointerType === "mouse") return;
     cancelLongPress();
     longPressPointRef.current = { x: event.clientX, y: event.clientY };
@@ -92,6 +94,7 @@ const Thumbnail = memo(function Thumbnail({
     }, 550);
   };
   useEffect(() => cancelLongPress, []);
+  useEffect(() => { if (isDragging) cancelLongPress(); }, [isDragging]);
 
   const actionButton = (label: string, onClick: () => void, icon: ReactNode, disabled = false, destructive = false) => (
     <button
@@ -116,6 +119,7 @@ const Thumbnail = memo(function Thumbnail({
         <div className="relative">
           <button
             type="button"
+            ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
             data-slide-thumbnail={index}
@@ -124,7 +128,10 @@ const Thumbnail = memo(function Thumbnail({
               onSelect(index, event);
             }}
             onKeyDown={(event) => {
-              if (event.key !== "Delete" && event.key !== "Backspace") return;
+              if (event.key !== "Delete" && event.key !== "Backspace") {
+                listeners?.onKeyDown?.(event);
+                return;
+              }
               event.preventDefault();
               event.stopPropagation();
               onDelete(actionIndices);
@@ -140,7 +147,7 @@ const Thumbnail = memo(function Thumbnail({
             aria-label={`Otevřít slide ${index + 1}: ${title}${activity ? ", obsahuje aktivitu" : ""}${hidden ? ", skrytý při promítání" : ""}`}
             aria-current={active ? "true" : undefined}
             aria-pressed={selected}
-            className={`deck-thumbnail ${active ? "deck-thumbnail--active" : ""} ${selected && !active ? "ring-2 ring-deck-violet" : ""} ${hidden ? "opacity-65" : ""}`}
+            className={`deck-thumbnail touch-none ${active ? "deck-thumbnail--active" : ""} ${selected && !active ? "ring-2 ring-deck-violet" : ""} ${hidden ? "opacity-65" : ""}`}
             style={{ ...themeStageStyle(getPresentationTheme(themeId)), ...slideBackgroundOverrideStyle(slide) }}
           >
             <LazySlidePreview slide={slide} themeId={themeId} />
