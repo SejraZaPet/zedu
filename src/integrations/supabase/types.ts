@@ -2632,6 +2632,48 @@ export type Database = {
           },
         ]
       }
+      demo_event_config: {
+        Row: {
+          active_from: string
+          active_until: string
+          ai_daily_global: number
+          ai_per_account: number
+          create_global_day: number
+          create_per_ip_hour: number
+          live_players_max: number
+          materials_max: number
+          tag: string
+          upload_max_bytes: number
+          upload_max_files: number
+        }
+        Insert: {
+          active_from: string
+          active_until: string
+          ai_daily_global: number
+          ai_per_account: number
+          create_global_day: number
+          create_per_ip_hour: number
+          live_players_max: number
+          materials_max: number
+          tag: string
+          upload_max_bytes: number
+          upload_max_files: number
+        }
+        Update: {
+          active_from?: string
+          active_until?: string
+          ai_daily_global?: number
+          ai_per_account?: number
+          create_global_day?: number
+          create_per_ip_hour?: number
+          live_players_max?: number
+          materials_max?: number
+          tag?: string
+          upload_max_bytes?: number
+          upload_max_files?: number
+        }
+        Relationships: []
+      }
       demo_game_sources: {
         Row: {
           activity_data: Json
@@ -9296,6 +9338,28 @@ export type Database = {
           teacher_user_id: string
         }[]
       }
+      demo_event_override_for_user: {
+        Args: { _user_id: string }
+        Returns: {
+          active_from: string
+          active_until: string
+          ai_daily_global: number
+          ai_per_account: number
+          create_global_day: number
+          create_per_ip_hour: number
+          live_players_max: number
+          materials_max: number
+          tag: string
+          upload_max_bytes: number
+          upload_max_files: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "demo_event_config"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       demo_extend_once: { Args: never; Returns: string }
       demo_fill_game_templates: { Args: { _pair_id: string }; Returns: number }
       demo_my_pair_id: { Args: never; Returns: string }
@@ -9354,6 +9418,22 @@ export type Database = {
           player_id: string
         }[]
       }
+      get_demo_creation_override: {
+        Args: { _tag: string }
+        Returns: {
+          active_from: string
+          active_until: string
+          ai_daily_global: number
+          ai_per_account: number
+          create_global_day: number
+          create_per_ip_hour: number
+          live_players_max: number
+          materials_max: number
+          tag: string
+          upload_max_bytes: number
+          upload_max_files: number
+        }[]
+      }
       get_follower_count: { Args: { _creator_id: string }; Returns: number }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
@@ -9403,6 +9483,15 @@ export type Database = {
           days_left: number
           deletes_at: string
           extended: boolean
+        }[]
+      }
+      get_my_demo_limits: {
+        Args: never
+        Returns: {
+          key: string
+          label: string
+          limit: number
+          used: number
         }[]
       }
       get_my_demo_pair: {
