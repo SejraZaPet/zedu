@@ -56,8 +56,8 @@ export default function PresentationTemplatesPanel({ userId, currentSlide, allSl
       <div className="p-3 pr-9">
         <h3 className="text-xs font-semibold text-deck-ink">{template.name}</h3>
         <p className="mt-1 text-[11px] text-deck-muted">Vlastní · {template.scope === "slide" ? "1 slide" : `${template.slides.length} slidů`}</p>
-        <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => template.scope === "slide" ? onInsertSlide(customTemplateSlides(template)) : applyDeck(template.name, template.slides)}>
-          <Plus className="mr-1 h-3.5 w-3.5" />{template.scope === "slide" ? "Vložit jako nový slide" : "Použít pro celou prezentaci"}
+        <Button variant="outline" size="sm" className="mt-2 h-auto min-h-9 w-full whitespace-normal" onClick={() => template.scope === "slide" ? onInsertSlide(customTemplateSlides(template)) : applyDeck(template.name, template.slides)}>
+          <Plus className="mr-1 h-3.5 w-3.5 shrink-0" />{template.scope === "slide" ? "Vložit jako nový slide" : "Použít pro celou prezentaci"}
         </Button>
       </div>
       <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-8 w-8 bg-deck-panel/90" aria-label={`Smazat vlastní šablonu ${template.name}`} onClick={() => userId && setCustom(deleteCustomPresentationTemplate(userId, template.id))}><Trash2 className="h-4 w-4" /></Button>
@@ -69,9 +69,9 @@ export default function PresentationTemplatesPanel({ userId, currentSlide, allSl
       <section>
         <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Uložit vlastní šablonu</h2>
         <p className="mt-1 text-[11px] text-deck-muted">Vlastní šablony zůstávají pouze v tomto prohlížeči. Obsah prezentace se nijak nepřepíše.</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" disabled={!userId || !currentSlide} onClick={() => { setName(currentSlide?.projector?.headline || "Můj slide"); setSaveScope("slide"); }}><Bookmark className="mr-1 h-3.5 w-3.5" />Aktuální slide</Button>
-          <Button variant="outline" size="sm" disabled={!userId || !allSlides.length} onClick={() => { setName("Moje prezentace"); setSaveScope("deck"); }}><Bookmark className="mr-1 h-3.5 w-3.5" />Celou prezentaci</Button>
+        <div className="mt-2 flex flex-col gap-2">
+          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal text-left" disabled={!userId || !currentSlide} onClick={() => { setName(currentSlide?.projector?.headline || "Můj slide"); setSaveScope("slide"); }}><Bookmark className="mr-1 h-3.5 w-3.5 shrink-0" /><span className="min-w-0 break-words">Aktuální slide</span></Button>
+          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal text-left" disabled={!userId || !allSlides.length} onClick={() => { setName("Moje prezentace"); setSaveScope("deck"); }}><Bookmark className="mr-1 h-3.5 w-3.5 shrink-0" /><span className="min-w-0 break-words">Celou prezentaci</span></Button>
         </div>
       </section>
 
@@ -84,7 +84,7 @@ export default function PresentationTemplatesPanel({ userId, currentSlide, allSl
           {slidePreviews.map(({ template, slide }) => <article key={template.id} className="deck-template-card">
             <SlidePreviewFrame slide={slide} themeId={slide.themeId} label={`Náhled šablony ${template.name}`} />
             <div className="p-2"><h3 className="text-xs font-semibold text-deck-ink">{template.name}</h3><p className="mt-1 min-h-8 text-[10px] text-deck-muted">{template.description}</p>
-              <Button variant="outline" size="sm" className="mt-2 w-full px-1 text-[11px]" onClick={() => onInsertSlide([template.build()])}><Plus className="mr-1 h-3 w-3" />Nový slide</Button>
+              <Button variant="outline" size="sm" className="mt-2 h-auto min-h-8 w-full whitespace-normal px-1 text-[11px]" onClick={() => onInsertSlide([template.build()])}><Plus className="mr-1 h-3 w-3 shrink-0" />Nový slide</Button>
             </div>
           </article>)}
         </div>
@@ -96,7 +96,7 @@ export default function PresentationTemplatesPanel({ userId, currentSlide, allSl
         <div className="space-y-3">{deckPreviews.map(({ template, slides }) => <article key={template.id} className="deck-template-card">
           <SlidePreviewFrame slide={slides[0]} themeId={slides[0]?.themeId || themeId} label={`Náhled prezentace ${template.name}`} />
           <div className="p-3"><h3 className="text-xs font-semibold text-deck-ink">{template.name}</h3><p className="mt-1 text-[11px] text-deck-muted">{template.description} · {slides.length} {slides.length === 1 ? "slide" : "slidy"}</p>
-            <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => applyDeck(template.name, slides)}><Check className="mr-1 h-3.5 w-3.5" />Použít pro celou prezentaci</Button>
+            <Button variant="outline" size="sm" className="mt-2 h-auto min-h-9 w-full whitespace-normal" onClick={() => applyDeck(template.name, slides)}><Check className="mr-1 h-3.5 w-3.5 shrink-0" />Použít pro celou prezentaci</Button>
           </div>
         </article>)}</div>
       </section>
