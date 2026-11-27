@@ -165,46 +165,38 @@ describe("náhled vybraného souboru", () => {
   });
 });
 
-describe("banner se nikdy neořezává", () => {
-  it("obrázek je zobrazený celý (object-contain), kontejner je kompaktní a nejvýš 720 px široký", () => {
-    const { container } = render(<BannerCarousel banners={[mk("o", { image_path: "platform/1500x500.png" })]} />);
-    const img = screen.getByRole("img", { name: "Banner o" });
-    expect(img.className).toContain("object-contain");
-    expect(img.className).not.toContain("object-cover");
+describe("tvar banneru 4:1", () => {
+  it("slot má poměr 4:1 bez pevné výšky a nejvýš 720 px", () => {
+    render(<BannerCarousel banners={[mk("o")]} />);
     const section = screen.getByRole("region", { name: "Oznámení" });
-    expect(section.className).toContain("w-full");
+    expect(section.className).toContain("aspect-[4/1]");
     expect(section.className).toContain("max-w-[720px]");
-    expect(section.className).toContain("h-16");
-    expect(section.className).toContain("sm:h-[100px]");
-    expect(section.className).not.toContain("max-h-[300px]");
-    expect(section.className).not.toMatch(/object-cover/);
-    expect(section.className).toContain("bg-muted");
-    expect(container).toBeTruthy();
+    expect(section.className).not.toContain("h-16");
+    expect(section.className).not.toContain("sm:h-[100px]");
   });
-  it("video i poster jsou vloženy celé", () => {
-    const { container } = render(<BannerCarousel banners={[mk("v", { media_type: "video", image_path: null, video_path: "platform/v.mp4", poster_path: "platform/p.jpg" })]} />);
-    const video = container.querySelector("video")!;
-    expect(video.className).toContain("object-contain");
-    expect(video.className).not.toContain("object-cover");
-    fireEvent.ended(video);
-    fireEvent.ended(container.querySelector("video")!);
-    const poster = screen.getByRole("img", { name: "Banner v" });
-    expect(poster.className).toContain("object-contain");
-    expect(poster.className).not.toContain("object-cover");
+  it("obrázek 4:1 vyplní slot bez rozmazaného pozadí", () => {
+    const { container } = render(<BannerCarousel banners={[mk("o")]} />);
+    const img = screen.getByRole("img", { name: "Banner o" });
+    Object.defineProperty(img, "naturalWidth", { value: 1920 });
+    Object.defineProperty(img, "naturalHeight", { value: 480 });
+    fireEvent.load(img);
+    expect(img.className).toContain("object-cover");
+    expect(container.querySelector("[data-banner-backdrop]")).toBeNull();
   });
-});
-
-
-describe("banner v řádku hlavičky", () => {
-  it("inline varianta nemá vlastní okraj ani limit 720 px a obrázek vyplní kartu rozmazaným pozadím", () => {
-    const { container } = render(<BannerCarousel inline banners={[mk("i", { image_path: "platform/1500x500.png" })]} />);
-    const section = screen.getByRole("region", { name: "Oznámení" });
-    expect(section.className).toContain("max-w-none");
-    expect(section.className).not.toContain("mb-4");
-    expect(section.className).toContain("sm:h-[100px]");
+  it("obrázek 3:1 zůstane celý s rozmazaným pozadím", () => {
+    const { container } = render(<BannerCarousel inline banners={[mk("i")]} />);
+    const img = screen.getByRole("img", { name: "Banner i" });
+    Object.defineProperty(img, "naturalWidth", { value: 1500 });
+    Object.defineProperty(img, "naturalHeight", { value: 500 });
+    fireEvent.load(img);
+    expect(img.className).toContain("object-contain");
     const backdrop = container.querySelector("[data-banner-backdrop]")!;
     expect(backdrop.getAttribute("aria-hidden")).toBe("true");
-    expect(backdrop.getAttribute("alt")).toBe("");
-    expect(screen.getByRole("img", { name: "Banner i" }).className).toContain("object-contain");
+    expect(screen.getByRole("region", { name: "Oznámení" }).className).toContain("max-w-none");
+  });
+  it("tlačítko Skrýt oznámení má dotykovou plochu 40×40 px", () => {
+    render(<BannerCarousel banners={[mk("a"), mk("b")]} />);
+    expect(screen.getByRole("button", { name: "Skrýt oznámení" }).className).toContain("h-10 w-10");
+    expect(screen.getByRole("button", { name: "Další oznámení" }).className).toContain("h-10 w-10");
   });
 });

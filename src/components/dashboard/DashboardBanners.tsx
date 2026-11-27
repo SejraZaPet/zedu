@@ -45,7 +45,7 @@ export function DashboardBanners({ preview, className, inline }: { preview?: Ban
   }, [query.data, preview]);
 
   if (!preview && query.isLoading) {
-    return hadAny ? <div className={cn("h-16 w-full rounded-lg bg-muted animate-pulse sm:h-[100px]", inline ? className : cn("mb-4 max-w-[720px]", className))} aria-hidden /> : null;
+    return hadAny ? <div className={cn("aspect-[4/1] w-full rounded-lg bg-muted animate-pulse", inline ? className : cn("mb-4 max-w-[720px]", className))} aria-hidden /> : null;
   }
   if (banners.length === 0) return null;
   const carousel = <BannerCarousel banners={banners} preview={!!preview} inline={inline} onDismiss={() => setDismissTick((t) => t + 1)} />;
@@ -83,7 +83,7 @@ export function BannerCarousel({ banners, preview, inline, onDismiss }: { banner
       aria-roledescription="carousel"
       aria-label="Oznámení"
       className={cn(
-        "relative h-16 w-full overflow-hidden rounded-lg border border-border bg-muted shadow-sm sm:h-[100px]",
+        "relative aspect-[4/1] w-full overflow-hidden rounded-lg border border-border bg-muted shadow-sm",
         inline ? "max-w-none" : "mb-4 max-w-[720px]",
       )}
       onMouseEnter={() => setHoverPause(true)}
@@ -117,17 +117,17 @@ export function BannerCarousel({ banners, preview, inline, onDismiss }: { banner
         <button
           type="button"
           aria-label="Skrýt oznámení"
-          className="absolute right-1 top-1 z-20 grid h-5 w-5 place-items-center rounded-full bg-background/80 text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group absolute right-0 top-0 z-20 grid h-10 w-10 place-items-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           onClick={() => { dismissBanners(banners.map((b) => b.id)); onDismiss?.(); }}
         >
-          <X className="h-3.5 w-3.5" />
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-background/80 group-hover:bg-background"><X className="h-3.5 w-3.5" /></span>
         </button>
       )}
 
       {count > 1 && (
-        <div className="absolute bottom-1 right-1 z-20 flex items-center gap-0.5 rounded-full bg-background/80 px-1 py-0">
-          <button type="button" aria-label="Předchozí oznámení" onClick={() => go(-1)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ChevronLeft className="h-4 w-4" />
+        <div className="absolute bottom-0 right-0 z-20 flex items-center">
+          <button type="button" aria-label="Předchozí oznámení" onClick={() => go(-1)} className="group grid h-10 w-10 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-background/80 group-hover:bg-background"><ChevronLeft className="h-4 w-4" /></span>
           </button>
           {banners.map((b, i) => (
             <button
@@ -136,17 +136,17 @@ export function BannerCarousel({ banners, preview, inline, onDismiss }: { banner
               aria-label={`Oznámení ${i + 1}`}
               aria-current={i === index}
               onClick={() => setIndex(i)}
-              className="grid h-5 w-5 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="grid h-10 w-6 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             >
-              <span className={cn("block h-2 w-2 rounded-full", i === index ? "bg-primary" : "bg-muted-foreground/40")} />
+              <span className={cn("block h-2.5 w-2.5 rounded-full ring-2 ring-background/80", i === index ? "bg-primary" : "bg-muted-foreground/60")} />
             </button>
           ))}
-          <button type="button" aria-label="Další oznámení" onClick={() => go(1)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ChevronRight className="h-4 w-4" />
+          <button type="button" aria-label="Další oznámení" onClick={() => go(1)} className="group grid h-10 w-10 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-background/80 group-hover:bg-background"><ChevronRight className="h-4 w-4" /></span>
           </button>
           {!reduced && (
-            <button type="button" aria-label={userPause ? "Spustit střídání" : "Pozastavit střídání"} onClick={() => setUserPause((p) => !p)} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              {userPause ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            <button type="button" aria-label={userPause ? "Spustit střídání" : "Pozastavit střídání"} onClick={() => setUserPause((p) => !p)} className="group grid h-10 w-10 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-background/80 group-hover:bg-background">{userPause ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}</span>
             </button>
           )}
         </div>
@@ -155,7 +155,14 @@ export function BannerCarousel({ banners, preview, inline, onDismiss }: { banner
   );
 }
 
-/** Blurred copy of the image fills the card's sides; the real media stays whole (object-contain). */
+/** Slot is 4:1. Media ~4:1 fills it (object-cover); narrower media (e.g. 3:1) stays whole (object-contain) over a blurred copy so text is never cropped. */
+export type BannerFit = "cover" | "contain";
+export function bannerFitFor(w: number, h: number): BannerFit {
+  if (!w || !h) return "cover";
+  return w / h >= 3.6 ? "cover" : "contain";
+}
+const fitClass = (fit: BannerFit) => (fit === "cover" ? "object-cover" : "object-contain");
+
 function BannerBackdrop({ src }: { src: string | null | undefined }) {
   if (!src) return null;
   return <img src={src} alt="" aria-hidden="true" data-banner-backdrop className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-80 blur-xl" />;
@@ -163,18 +170,20 @@ function BannerBackdrop({ src }: { src: string | null | undefined }) {
 
 function BannerSlide({ banner, active, posterOnly, tabbable }: { banner: Banner; active: boolean; posterOnly: boolean; tabbable: boolean }) {
   const backdropSrc = bannerPublicUrl(banner.media_type === "video" ? banner.poster_path : banner.image_path);
+  const [fit, setFit] = useState<BannerFit>("cover");
   const inner = banner.media_type === "video" && !posterOnly
-    ? <BannerVideo banner={banner} active={active} />
+    ? <BannerVideo banner={banner} active={active} fit={fit} onFit={setFit} />
     : (
       <img
         src={bannerPublicUrl(banner.media_type === "video" ? banner.poster_path : banner.image_path) ?? ""}
         alt={banner.alt_text}
-        className="relative h-full w-full object-contain"
+        className={cn("relative h-full w-full", fitClass(fit))}
+        onLoad={(e) => setFit(bannerFitFor(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight))}
         loading="lazy"
         decoding="async"
       />
     );
-  const media = <div className="relative h-full w-full overflow-hidden"><BannerBackdrop src={backdropSrc} />{inner}</div>;
+  const media = <div className="relative h-full w-full overflow-hidden">{fit === "contain" && <BannerBackdrop src={backdropSrc} />}{inner}</div>;
   if (isSafeHttpsUrl(banner.link_url)) {
     return (
       <a href={banner.link_url!} target="_blank" rel="noopener noreferrer" tabIndex={tabbable ? 0 : -1} className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
@@ -185,7 +194,7 @@ function BannerSlide({ banner, active, posterOnly, tabbable }: { banner: Banner;
   return media;
 }
 
-function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
+function BannerVideo({ banner, active, fit, onFit }: { banner: Banner; active: boolean; fit: BannerFit; onFit: (f: BannerFit) => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const loops = useRef(0);
   const [done, setDone] = useState(false);
@@ -212,7 +221,7 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
   }, [active, visible, done]);
 
   if (done) {
-    return <img src={poster} alt={banner.alt_text} className="relative h-full w-full object-contain" />;
+    return <img src={poster} alt={banner.alt_text} className={cn("relative h-full w-full", fitClass(fit))} />;
   }
   return (
     <video
@@ -223,7 +232,8 @@ function BannerVideo({ banner, active }: { banner: Banner; active: boolean }) {
       playsInline
       preload="metadata"
       aria-label={banner.alt_text}
-      className="relative h-full w-full object-contain"
+      className={cn("relative h-full w-full", fitClass(fit))}
+      onLoadedMetadata={(e) => onFit(bannerFitFor(e.currentTarget.videoWidth, e.currentTarget.videoHeight))}
       onEnded={(e) => {
         loops.current += 1;
         if (loops.current >= MAX_VIDEO_LOOPS) setDone(true);
