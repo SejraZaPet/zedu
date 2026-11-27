@@ -2,11 +2,12 @@ import TextScrim from "@/components/ui/text-scrim";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
+import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
-import { isWallPublished, usesCompactProjectorLayout } from "@/lib/projector-compact-layout";
+import { isPollPublished, isWallPublished, usesCompactProjectorLayout } from "@/lib/projector-compact-layout";
 
 /** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
 function ActivityCardFrame({ spec, className, children }: { spec: any; className: string; children: (dark: boolean) => React.ReactNode }) {
@@ -319,6 +320,15 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                     published={isWallPublished(session.settings, currentIndex)}
                     projector
                     darkMode={projectorTheme.isDark}
+                  />
+                ) : activityType === "poll" && isPollPublished(session.settings, currentIndex) ? (
+                  <PollProjectorView
+                    question=""
+                    options={Array.isArray(currentSlide.activitySpec?.options) ? currentSlide.activitySpec.options : []}
+                    sessionId={sessionId}
+                    questionIndex={currentIndex}
+                    totalPlayers={players?.length ?? 0}
+                    projector
                   />
                 ) : activityType === "wordcloud" ? (
                   <WordCloudView

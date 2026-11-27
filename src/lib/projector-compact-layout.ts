@@ -5,6 +5,11 @@ export function isWallPublished(settings: any, questionIndex: number): boolean {
   return settings?.wallPublished === true && settings?.wallPublishedQuestion === questionIndex;
 }
 
+/** Jsou výsledky ankety zveřejněné učitelem pro tento snímek? */
+export function isPollPublished(settings: any, questionIndex: number): boolean {
+  return settings?.pollPublished === true && settings?.pollPublishedQuestion === questionIndex;
+}
+
 /**
  * Živé aktivity s rozvržením „kompaktní otázka nahoře + obsah uprostřed“
  * (jako Mentimeter). Slovní mrak vždy, zeď až po zveřejnění. Další aktivity
@@ -13,6 +18,7 @@ export function isWallPublished(settings: any, questionIndex: number): boolean {
 export function usesCompactProjectorLayout(activityType: string | null | undefined, settings: any, questionIndex: number): boolean {
   if (activityType === "wordcloud") return true;
   if (activityType === "wall") return isWallPublished(settings, questionIndex);
+  if (activityType === "poll") return isPollPublished(settings, questionIndex);
   return false;
 }
 

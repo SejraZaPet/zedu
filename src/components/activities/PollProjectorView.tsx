@@ -13,6 +13,8 @@ interface Props {
   darkMode?: boolean;
   /** Guest/student access token – guests cannot read the table directly. */
   joinToken?: string | null;
+  /** Velké promítací rozvržení (projektor): vlastní světlá karta, písmo čitelné z dálky. */
+  projector?: boolean;
 }
 
 const COLORS = ["#14b8a6", "#6366f1", "#f59e0b", "#ef4444", "#8b5cf6", "#10b981"];
@@ -25,6 +27,7 @@ const PollProjectorView = ({
   totalPlayers = 0,
   darkMode = false,
   joinToken,
+  projector = false,
 }: Props) => {
   const [votes, setVotes] = useState<Record<string, number>>({});
 
@@ -80,6 +83,37 @@ const PollProjectorView = ({
 
   const maxVotes = Math.max(...Object.values(votes), 1);
   const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+
+  if (projector) {
+    return (
+      <div data-testid="poll-projector-results" className="flex min-h-0 w-full flex-1 items-center justify-center py-4">
+        <div className="w-full max-w-[1300px] rounded-3xl bg-white/95 px-12 py-8 text-slate-900 shadow-2xl">
+          <p className="mb-6 text-center text-[1.75rem] font-semibold text-slate-600">
+            {totalVotes} hlasů{totalPlayers > 0 ? ` z ${totalPlayers} žáků` : ""}
+          </p>
+          <div className="space-y-5">
+            {options.map((option, i) => {
+              const optionId = pollOptionId(option, i);
+              const count = votes[optionId] || 0;
+              const widthPct = totalVotes > 0 ? (count / maxVotes) * 100 : 0;
+              const sharePct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+              return (
+                <div key={optionId} data-testid="poll-projector-row">
+                  <div className="mb-2 flex items-baseline justify-between gap-6 text-[2.25rem] font-bold leading-tight">
+                    <span className="min-w-0 break-words">{option.text}</span>
+                    <span className="shrink-0 tabular-nums">{sharePct} % <span className="text-[1.5rem] font-semibold text-slate-600">({count})</span></span>
+                  </div>
+                  <div className="h-12 overflow-hidden rounded-xl bg-slate-200">
+                    <div className="h-full rounded-xl transition-all duration-500 ease-out motion-reduce:transition-none" style={{ width: `${widthPct}%`, background: COLORS[i % COLORS.length] }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const titleColor = darkMode ? "#ffffff" : "hsl(var(--foreground))";
   const subColor = darkMode ? "rgba(255,255,255,0.7)" : "hsl(var(--muted-foreground))";
