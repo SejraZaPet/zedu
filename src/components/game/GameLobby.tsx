@@ -1,7 +1,7 @@
 import { GameSession, GamePlayer } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Users, Play, Copy, Check } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
@@ -14,9 +14,11 @@ interface Props {
   players: GamePlayer[];
   onStart?: () => void;
   isTeacher: boolean;
+  /** Nastavení hry v toku stránky pod kódem (nikdy přes QR). */
+  settingsSlot?: ReactNode;
 }
 
-export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
+export const GameLobby = ({ session, players, onStart, isTeacher, settingsSlot }: Props) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -34,7 +36,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4 pt-16">
       {isTeacher && (
         <div className="absolute top-4 left-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/ucebnice")}>
@@ -86,9 +88,9 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               onClick={copyCode}
               aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
               aria-describedby="game-code-label"
-              className="inline-flex items-center gap-4 bg-primary/10 border-4 border-primary rounded-3xl px-10 py-6 shadow-lg ring-4 ring-primary/20 hover:bg-primary/15 transition-colors group"
+              className="inline-flex max-w-full items-center gap-3 sm:gap-4 bg-primary/10 border-4 border-primary rounded-3xl px-4 sm:px-10 py-6 shadow-lg ring-4 ring-primary/20 hover:bg-primary/15 transition-colors group"
             >
-              <span className="text-6xl md:text-8xl font-mono font-extrabold tracking-[0.3em] text-primary" aria-hidden="true">
+              <span className="text-5xl sm:text-6xl md:text-7xl font-mono font-extrabold tracking-[0.2em] sm:tracking-[0.3em] text-primary" aria-hidden="true">
                 {session.game_code}
               </span>
               {copied ? (
@@ -107,6 +109,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               Počkejte, až se žáci připojí tímto kódem, a teprve potom pokračujte na první snímek.
             </p>
           )}
+          {settingsSlot}
         </div>
 
         {/* Players */}

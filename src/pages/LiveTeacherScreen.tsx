@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Plus, Eye, ZoomIn, ZoomOut, Crosshair, Copy, MoreHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { LobbySettingsSection } from "@/components/live/LobbySettingsSection";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -575,8 +576,12 @@ const LiveTeacherScreen = () => {
     return (
       <>
         <RaisedHandsIndicator players={players as any} />
-        {!mixed && (
-        <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-3 max-h-[92vh] overflow-y-auto">
+        <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher settingsSlot={!mixed ? (
+        <LobbySettingsSection
+          title="Herní režim"
+          summary={`${currentModeDef.name} · ${teamKind === "none" ? "Bez týmů" : teamKind === "random" ? "Náhodné týmy" : "Ruční týmy"}`}
+        >
+        {(closeSettings) => (<>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -589,7 +594,7 @@ const LiveTeacherScreen = () => {
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => setGameMode(m.id)}
+                    onClick={() => { setGameMode(m.id); closeSettings(); }}
                     className={`text-left rounded-lg border-2 p-2.5 transition-colors ${
                       active
                         ? "border-primary bg-primary/10"
@@ -695,10 +700,9 @@ const LiveTeacherScreen = () => {
               </div>
             )}
           </div>
-        </div>
-        )}
-
-        <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher />
+        </>)}
+        </LobbySettingsSection>
+        ) : undefined} />
       </>
     );
   }
