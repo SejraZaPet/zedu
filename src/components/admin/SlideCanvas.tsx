@@ -632,7 +632,7 @@ function EditableBlockInner({
     const items: string[] = block.props?.items || [];
     const revealMode = !!block.props?.revealMode;
     const revealToggle = editable ? (
-      <label className="flex items-center gap-2 text-xs text-white/70 mb-2 select-none">
+      <label data-editor-only="reveal-toggle" className="absolute bottom-full left-0 z-10 mb-1 flex items-center gap-2 whitespace-nowrap rounded bg-black/60 px-1.5 py-0.5 text-xs text-white/90 select-none">
         <input
           type="checkbox"
           className="h-3.5 w-3.5"
@@ -654,7 +654,7 @@ function EditableBlockInner({
           return { ...b, props: { ...b.props, html: next } };
         });
       return (
-        <div className={asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}>
+        <div className={`relative ${asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}`}>
           {revealToggle}
           <EditableText
             editable={editable}
@@ -688,7 +688,7 @@ function EditableBlockInner({
       });
 
     return (
-      <div className={asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}>
+      <div className={`relative ${asCard && !blockBackgroundStyle(block.props) ? "bg-card rounded-[var(--slide-radius,0.75rem)] p-4 border border-border" : ""}`}>
         {revealToggle}
         <ul className="space-y-2" style={slideTextStyle(block.props)}>
           {items.length === 0 && editable && (
