@@ -161,10 +161,6 @@ const Thumbnail = memo(function Thumbnail({
           </button>
           <div className={`deck-thumbnail-actions ${selected ? "opacity-100" : ""}`}>
             {actionButton(`Duplikovat ${actionIndices.length > 1 ? `${actionIndices.length} slidy` : `slide ${index + 1}`}`, () => onDuplicate(actionIndices), <Copy className="h-3.5 w-3.5" />)}
-            {actionButton(
-              activity ? `Smazat slide ${index + 1} včetně aktivity` : `Smazat ${actionIndices.length > 1 ? `${actionIndices.length} slidy` : `slide ${index + 1}`}`,
-              () => onDelete(actionIndices), <Trash2 className="h-3.5 w-3.5" />, slideCount <= 1, true,
-            )}
             <DropdownMenuTrigger asChild>
               <button type="button" className="deck-thumbnail-action text-deck-ink" aria-label={`Další akce slidu ${index + 1}`} title="Další akce slidu" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}><MoreHorizontal className="h-3.5 w-3.5" /></button>
             </DropdownMenuTrigger>
@@ -177,7 +173,7 @@ const Thumbnail = memo(function Thumbnail({
           <DropdownMenuItem onSelect={() => onToggleHidden(actionIndices)}>{hidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}{hidden ? "Zobrazit při promítání" : "Skrýt při promítání"}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={slideCount <= 1} className="text-destructive focus:text-destructive" onSelect={() => onDelete(actionIndices)}>
-            <Trash2 className="mr-2 h-4 w-4" />Smazat{activity ? " včetně aktivity" : ""}{actionIndices.length > 1 ? ` (${actionIndices.length})` : ""}
+            <Trash2 className="mr-2 h-4 w-4" />Smazat slide{actionIndices.length > 1 ? ` (${actionIndices.length})` : ""}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

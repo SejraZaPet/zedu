@@ -192,7 +192,7 @@ export const PresentationEditorDialog = ({
   const openKey = editorOpen ? `${presentationLesson?.id ?? ""}` : "";
   const baselineRef = useRef<string | null>(null);
   const [confirmClose, setConfirmClose] = useState<null | { after?: () => void }>(null);
-  const [pendingBulkDelete, setPendingBulkDelete] = useState<number[] | null>(null);
+  const [pendingSlideDelete, setPendingSlideDelete] = useState<number[] | null>(null);
   useEffect(() => {
     if (!openKey) { baselineRef.current = null; return; }
     setSavedOnce(false);
@@ -999,8 +999,7 @@ export const PresentationEditorDialog = ({
       toast({ title: "Poslední slide musí zůstat", description: "Přidejte nejprve nový slide, nebo upravte stávající.", variant: "destructive" });
       return;
     }
-    if (selected.length > 3) { setPendingBulkDelete(selected); return; }
-    performDeleteSlides(selected);
+    setPendingSlideDelete(selected);
   };
 
   const deleteCurrentSlide = () => deleteSlides([editingSlideIndex]);
@@ -1402,19 +1401,22 @@ export const PresentationEditorDialog = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!pendingBulkDelete} onOpenChange={(open) => { if (!open) setPendingBulkDelete(null); }}>
+      <AlertDialog open={!!pendingSlideDelete} onOpenChange={(open) => { if (!open) setPendingSlideDelete(null); }}>
         <AlertDialogContent className="font-deck-body">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-deck-heading uppercase tracking-wide text-deck-violet-deep">Smazat {pendingBulkDelete?.length ?? 0} slidů?</AlertDialogTitle>
+            <AlertDialogTitle className="font-deck-heading text-deck-violet-deep">
+              {pendingSlideDelete?.length === 1
+                ? `Opravdu smazat slide ${pendingSlideDelete[0] + 1}?`
+                : `Opravdu smazat vybrané slidy (${(pendingSlideDelete ?? []).map((index) => index + 1).join(", ")})?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Slidy se odeberou z rozdělané prezentace a změna se trvale zapíše až po Uložit.
-              {(pendingBulkDelete ?? []).some((index) => slideContainsActivity(pendingSlides[index])) && " Smazáním zmizí i aktivity na vybraných slidech."}
-              {" Ihned po smazání můžete celou akci vrátit zpět."}
+              Tuto akci lze vrátit tlačítkem Zpět.
+              {(pendingSlideDelete ?? []).some((index) => slideContainsActivity(pendingSlides[index])) && " Smazáním zmizí i aktivity na vybraných slidech."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Ponechat slidy</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { const selected = pendingBulkDelete ?? []; setPendingBulkDelete(null); performDeleteSlides(selected); }}>Smazat slidy</AlertDialogAction>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { const selected = pendingSlideDelete ?? []; setPendingSlideDelete(null); performDeleteSlides(selected); }}>Smazat</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

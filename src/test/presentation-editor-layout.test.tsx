@@ -116,7 +116,9 @@ describe("Etapa 2 – rozvržení editoru", () => {
 
   it("poslední slide má smazání zablokované", () => {
     render(<PresentationThumbnails slides={[slide]} activeIndex={0} themeId="minimal" onSelect={vi.fn()} onMove={vi.fn()} onAdd={vi.fn()} {...thumbnailActions} />);
-    expect(screen.getByRole("button", { name: "Smazat slide 1" })).toBeDisabled();
+    fireEvent.contextMenu(screen.getByRole("button", { name: /Otevřít slide 1/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Smazat slide" }));
+    expect(thumbnailActions.onDelete).not.toHaveBeenCalled();
   });
 
   it("skryté miniatury ponechají číslo slidu, šipky a opětovné zobrazení", () => {
