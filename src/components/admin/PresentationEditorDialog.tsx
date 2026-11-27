@@ -1125,7 +1125,7 @@ export const PresentationEditorDialog = ({
                         Další prvky a akce <ChevronDown className="h-4 w-4" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="space-y-2 pt-2">
-                        <div className="grid grid-cols-4 gap-1.5">
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
                           <InsertTile icon={StickyNote} label="Box" onClick={() => addBlock("callout")} />
                           <InsertTile icon={QuoteIcon} label="Citace" onClick={() => addBlock("quote")} />
                           <InsertTile icon={Sigma} label="Rovnice" onClick={() => addBlock("formula")} />
@@ -1140,13 +1140,13 @@ export const PresentationEditorDialog = ({
                             updateBlock(selectedBlockId, (b: Block) => ({ ...b, props: { ...b.props, text: b.type === "heading" ? text : `<p>${text}</p>` } }));
                           }}
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" size="sm" disabled={!copiedBlock} onClick={pasteBlock}><ClipboardPaste className="mr-1 h-3.5 w-3.5" />Vložit kopii</Button>
-                          <Button variant="outline" size="sm" disabled={!copiedStyle || !selectedBlockId} onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}><Paintbrush className="mr-1 h-3.5 w-3.5" />Vložit styl</Button>
-                          <Button variant="outline" size="sm" onClick={() => openAddSlideAt(0)}><Plus className="mr-1 h-3.5 w-3.5" />Slide na začátek</Button>
-                          <Button variant="outline" size="sm" onClick={duplicateCurrentSlide}><Copy className="mr-1 h-3.5 w-3.5" />Duplikovat slide</Button>
+                        <div className="flex flex-col gap-2">
+                          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight" disabled={!copiedBlock} onClick={pasteBlock}><ClipboardPaste className="mr-1 h-3.5 w-3.5 shrink-0" />Vložit kopii</Button>
+                          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight" disabled={!copiedStyle || !selectedBlockId} onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}><Paintbrush className="mr-1 h-3.5 w-3.5 shrink-0" />Vložit styl</Button>
+                          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight" onClick={() => openAddSlideAt(0)}><Plus className="mr-1 h-3.5 w-3.5 shrink-0" />Slide na začátek</Button>
+                          <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight" onClick={duplicateCurrentSlide}><Copy className="mr-1 h-3.5 w-3.5 shrink-0" />Duplikovat slide</Button>
                         </div>
-                        {pendingSlides.length > 1 && <Button variant="outline" size="sm" className="w-full text-destructive" onClick={deleteCurrentSlide}><Trash2 className="mr-1 h-3.5 w-3.5" />Smazat aktuální slide</Button>}
+                        {pendingSlides.length > 1 && <Button variant="outline" size="sm" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight text-destructive" onClick={deleteCurrentSlide}><Trash2 className="mr-1 h-3.5 w-3.5 shrink-0" />Smazat aktuální slide</Button>}
                       </CollapsibleContent>
                     </Collapsible>
 
