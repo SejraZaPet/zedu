@@ -1,10 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { pollOptionId, type PollOption } from "@/lib/poll-options";
 
-export interface PollOption {
-  id: string;
-  text: string;
-}
+export type { PollOption } from "@/lib/poll-options";
 
 interface Props {
   question: string;
@@ -38,11 +36,17 @@ const PollProjectorView = ({
     });
 
     const counts: Record<string, number> = {};
-    options.forEach((o) => (counts[o.id] = 0));
+    options.forEach((option, index) => {
+      counts[pollOptionId(option, index)] = 0;
+    });
     ((data as any[]) || []).forEach((r: any) => {
-      const selected: string[] = r.answer?.selectedOptions || [];
+      const selected: unknown[] = Array.isArray(r.answer?.selectedOptions)
+        ? r.answer.selectedOptions
+        : [];
       selected.forEach((id) => {
-        if (counts[id] !== undefined) counts[id]++;
+        if (id === null || id === undefined) return;
+        const optionId = String(id);
+        if (Object.prototype.hasOwnProperty.call(counts, optionId)) counts[optionId]++;
       });
     });
     setVotes(counts);
@@ -96,12 +100,13 @@ const PollProjectorView = ({
       </p>
       <div className="space-y-3">
         {options.map((option, i) => {
-          const count = votes[option.id] || 0;
+          const optionId = pollOptionId(option, i);
+          const count = votes[optionId] || 0;
           const widthPct = maxVotes > 0 ? (count / maxVotes) * 100 : 0;
           const sharePct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
           const color = COLORS[i % COLORS.length];
           return (
-            <div key={option.id}>
+            <div key={optionId}>
               <div
                 className="flex justify-between items-baseline mb-1.5 text-sm md:text-base font-medium"
                 style={{ color: titleColor }}

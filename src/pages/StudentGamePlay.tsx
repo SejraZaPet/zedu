@@ -20,6 +20,7 @@ import { isMcqRevealed } from "@/lib/live-mcq";
 import { McqCountdown } from "@/components/live/LiveMcqWidgets";
 import { isAwaitingStart, resolveTimeLimitSec } from "@/lib/live-timing";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
+import { pollOptionId } from "@/lib/poll-options";
 import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
@@ -616,7 +617,9 @@ const StudentGamePlay = () => {
               ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
                 (() => {
                   const spec = (currentSlideData as any).activitySpec || {};
-                  const options = Array.isArray(spec.options) ? spec.options : [];
+                  const options = (Array.isArray(spec.options) ? spec.options : []).map(
+                    (option: any, index: number) => ({ ...option, id: pollOptionId(option, index) }),
+                  );
                   const question = spec.question || "";
                   const allowMultiple = liveSettings?.pollAllowMultiple ?? spec.allowMultiple ?? false;
                   const published =

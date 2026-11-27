@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
+import { pollOptionId } from "@/lib/poll-options";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
@@ -1299,7 +1300,9 @@ const LiveTeacherScreen = () => {
                   (settings?.pollPublished === true) &&
                   (settings?.pollPublishedQuestion === currentIndex);
                 const spec = (currentSlide as any).activitySpec || {};
-                const options = Array.isArray(spec.options) ? spec.options : [];
+                const options = (Array.isArray(spec.options) ? spec.options : []).map(
+                  (option: any, index: number) => ({ ...option, id: pollOptionId(option, index) }),
+                );
                 const question = spec.question || "";
                 return (
                   <div className="mt-3 p-3 border border-border rounded-lg space-y-3">

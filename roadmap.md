@@ -477,6 +477,12 @@
 - [x] Slovní mrak: jediné kompaktní rozvržení otázky nahoře a velkého mraku uprostřed, 32–128 px podle četnosti; ostatní aktivity beze změny.
 - [x] Ověřeno s maketou a blokovanými zápisy ve 1600×900 a 1280×720 s 0/5/25 slovy, světlým i tmavým podkladem; mrak 714 px (79,3 % stage), otázka 78 px, bez ořezu a chyb stránky.
 
+## PRIORITA 1: Anketa – počítání hlasů
+- [x] Sdílené `pollOptionId`: chybějící ID nahrazuje řetězec indexu, existující ID zachovává; použito ve výběru, odeslání, žákovských výsledcích i učitelském sčítání.
+- [x] 5 testů ankety prošlo: jediný výběr bez ID, odeslání `["1"]`, sčítání číselných/řetězcových indexů 2/0/1 a vlastní ID; prošlo i 6 testů slovního mraku.
+- [x] Prohlížeč s maketou: žák označil pouze první možnost a odeslal `["0"]`; učitel viděl 2 hlasy z 2 žáků, první možnost 2 (100 %) a tři možnosti 0. Všechny zápisy zachyceny mimo DB, bez chyb stránky.
+- [x] Bodování pouze diagnostikováno: server u ankety klientem poslaných 100 bodů nemaže a přičítá je; frontendová změna na false/0 čeká na výslovné schválení.
+
 ## Žákovská zařízení – anketa a vstupní aktivity
 - [x] Zachovány změny slovního mraku; opraven kontrast textu a duplicitní otázky bez změny odesílání, sessionStorage nebo zveřejňování.
 - [x] Poll/wordcloud/wall bez velkého náhledu slidu; na šířku otázka vlevo a ovládání vpravo, ovládání v hlavičce, Hlasovat/Odeslat stále viditelné.

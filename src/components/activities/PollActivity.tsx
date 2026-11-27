@@ -2,11 +2,9 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Check, CheckCircle2 } from "lucide-react";
+import { pollOptionId, type PollOption } from "@/lib/poll-options";
 
-export interface PollOption {
-  id: string;
-  text: string;
-}
+export type { PollOption } from "@/lib/poll-options";
 
 interface Props {
   question: string;
@@ -89,13 +87,14 @@ const PollActivity = ({
         </p>
       )}
       <div className="mb-3 grid grid-cols-1 gap-2">
-        {options.map((option) => {
-          const isSelected = selected.includes(option.id);
+        {options.map((option, index) => {
+          const optionId = pollOptionId(option, index);
+          const isSelected = selected.includes(optionId);
           return (
             <button
-              key={option.id}
+              key={optionId}
               type="button"
-              onClick={() => toggle(option.id)}
+              onClick={() => toggle(optionId)}
               aria-pressed={isSelected}
               className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 p-3 text-left text-lg font-medium transition-all ${
                 isSelected
