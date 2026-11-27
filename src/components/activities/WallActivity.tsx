@@ -69,8 +69,8 @@ const WallActivity = ({
   return (
     <div className="flex flex-col h-full">
       {question && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
-          <p className="font-medium text-base">{question}</p>
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4 text-foreground">
+          <p className="font-medium text-lg">{question}</p>
         </div>
       )}
 
@@ -92,12 +92,12 @@ const WallActivity = ({
               }
             }}
             placeholder={anonymous ? "Napište anonymní odpověď..." : "Napište odpověď..."}
-            className="flex-1 bg-transparent outline-none text-sm py-1 text-foreground placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 bg-transparent outline-none text-lg py-2 text-foreground placeholder:text-muted-foreground"
           />
           <button
             onClick={handleSubmit}
             disabled={!response.trim()}
-            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+            className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             <Send className="w-4 h-4 text-white" />
           </button>

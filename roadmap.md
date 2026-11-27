@@ -476,3 +476,8 @@
 - Všechny síťové zápisy zachyceny mimo DB; skutečná realtime relace, fyzický projektor a zátěž 50 účastníky neověřeny. Bez DB/SQL/nasazení a AGENTS.md.
 - [x] Slovní mrak: jediné kompaktní rozvržení otázky nahoře a velkého mraku uprostřed, 32–128 px podle četnosti; ostatní aktivity beze změny.
 - [x] Ověřeno s maketou a blokovanými zápisy ve 1600×900 a 1280×720 s 0/5/25 slovy, světlým i tmavým podkladem; mrak 714 px (79,3 % stage), otázka 78 px, bez ořezu a chyb stránky.
+
+## Žákovská zařízení – anketa a vstupní aktivity
+- [x] Zachovány změny slovního mraku; opraven kontrast textu a duplicitní otázky bez změny odesílání, sessionStorage nebo zveřejňování.
+- [x] Poll/wordcloud/wall bez velkého náhledu slidu; na šířku otázka vlevo a ovládání vpravo, ovládání v hlavičce, Hlasovat/Odeslat stále viditelné.
+- [x] Ověřena anketa se 4 možnostmi před/po výběru v 390×844, 768×1024, 1024×768 a 1180×820; bez rolování, text 18 px a kontrast 15,35:1, řádky 56 px, bez odeslání a zápisů do DB.

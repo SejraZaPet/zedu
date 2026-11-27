@@ -244,14 +244,14 @@ const StudentGamePlay = () => {
       _raised: !myPlayer?.hand_raised,
     });
   };
-  const handButton = canStudentRaiseHand(session.status, !!joinToken) ? (
+  const renderHandButton = (floating = true) => canStudentRaiseHand(session.status, !!joinToken) ? (
     <button
       type="button"
       onClick={toggleHand}
-      className={`fixed top-3 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
+      className={`${floating ? "fixed top-3 right-3 z-40" : "min-h-11"} rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
         myPlayer?.hand_raised
           ? "bg-amber-400 text-slate-900 border-amber-300"
-          : "bg-card/90 text-foreground border-border backdrop-blur"
+          : "bg-card/90 text-card-foreground border-border backdrop-blur"
       }`}
       aria-pressed={!!myPlayer?.hand_raised}
       aria-label={myPlayer?.hand_raised ? "Položit ruku" : "Zvednout ruku"}
@@ -261,10 +261,26 @@ const StudentGamePlay = () => {
     </button>
   ) : null;
 
+  const renderDrawButton = (floating = true) => (
+    <button
+      type="button"
+      onClick={() => setStudentDrawMode((v) => !v)}
+      aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+      title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+      className={`${floating ? "fixed bottom-4 right-4 z-[60]" : "shrink-0"} h-11 w-11 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
+        studentDrawMode
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-background/90 text-foreground border-border"
+      }`}
+    >
+      <Pencil className="w-5 h-5" />
+    </button>
+  );
+
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        {handButton}
+        {renderHandButton()}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
             <ProfileAvatarBubble userId={user?.id ?? null} size={96} editable={false} />
@@ -344,7 +360,7 @@ const StudentGamePlay = () => {
           className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center gap-6 p-6 text-white"
           style={gameBackgroundStyle(gameBackgroundUrl)}
         >
-          {handButton}
+          {renderHandButton()}
           <p className="text-6xl">{finishedRace ? "🏁" : "⏰"}</p>
           <h1 className="text-3xl font-bold text-center">
             {finishedRace ? "Dojel jsi do cíle!" : "Čas vypršel"}
@@ -376,7 +392,10 @@ const StudentGamePlay = () => {
     const startSettings = liveSettings && Object.keys(liveSettings).length ? liveSettings : settingsAny;
     const awaitingStart = isAwaitingStart(startSettings, currentSlideData, qi);
     const isActivity = !awaitingStart && currentSlideData.type === "activity" && currentSlideData.activitySpec;
-    const isPhoneMcq = isActivity && currentSlideData.activitySpec?.activityType === "mcq";
+    const activityType = currentSlideData.activitySpec?.activityType;
+    const isPhoneMcq = isActivity && activityType === "mcq";
+    const isCompactResponseActivity = isActivity && ["poll", "wordcloud", "wall"].includes(activityType);
+    const useCompactActivityHeader = isPhoneMcq || isCompactResponseActivity;
     const mcqImage = currentSlideData.activitySpec?.imageUrl || currentSlideData.projector?.assetRefs?.[0];
     return (
       <>
@@ -395,20 +414,24 @@ const StudentGamePlay = () => {
           </div>
         )}
         <div
-          className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
+          className={`min-h-screen min-h-[100dvh] flex flex-col text-white ${isCompactResponseActivity ? "h-[100dvh] overflow-hidden" : "overflow-y-auto"}`}
           style={gameBackgroundStyle(gameBackgroundUrl)}
         >
-          {handButton}
-
-          {/* Floating "Ask" button */}
-          <button
-            onClick={() => setQuestionsOpen(true)}
-            className="fixed top-14 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border bg-white/10 text-white border-white/20 backdrop-blur"
-            aria-label="Zeptej se"
+          <div
+            className="relative z-40 flex shrink-0 items-center justify-end gap-2 border-b border-white/15 bg-background/70 px-3 pb-2 backdrop-blur"
+            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
           >
-            <MessageCircleQuestion className="w-4 h-4" />
-            Zeptej se
-          </button>
+            {renderHandButton(false)}
+            <button
+              onClick={() => setQuestionsOpen(true)}
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-card-foreground shadow-lg"
+              aria-label="Zeptej se"
+            >
+              <MessageCircleQuestion className="w-4 h-4" />
+              Zeptej se
+            </button>
+            {isCompactResponseActivity && renderDrawButton(false)}
+          </div>
 
           {sessionId && (
             <LiveQuestionsSheet
@@ -423,13 +446,14 @@ const StudentGamePlay = () => {
             />
           )}
 
+          <div className={isCompactResponseActivity ? "grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto_auto] sm:landscape:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] sm:landscape:grid-rows-[minmax(0,1fr)_auto] sm:landscape:gap-x-2" : "contents"}>
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky.
               Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
-          {isPhoneMcq ? (
+          {useCompactActivityHeader ? (
             <section
               key={qi}
               data-activity-surface
-              className={`mx-3 mt-28 rounded-lg p-4 space-y-3 ${hasActivityColors(currentSlideData.activitySpec?.colors) ? "border-4" : "live-game-surface"} ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`}
+              className={`mx-3 mt-2 rounded-lg p-4 space-y-3 ${isCompactResponseActivity ? "min-h-0 sm:landscape:m-4 sm:landscape:flex sm:landscape:flex-col sm:landscape:justify-center sm:landscape:self-center" : ""} ${hasActivityColors(currentSlideData.activitySpec?.colors) ? "border-4" : "live-game-surface"} ${slideTransitionClass(incomingTransition.style, incomingTransition.direction)}`}
               style={{ ...(hasActivityColors(currentSlideData.activitySpec?.colors) ? activityCardStyle(currentSlideData.activitySpec.colors) : {}), ...slideTransitionStyle(incomingTransition) }}
             >
               <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">{currentSlideData.activitySpec?.question || currentSlideData.projector?.headline}</h1>
@@ -512,7 +536,7 @@ const StudentGamePlay = () => {
           )}
 
           {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (currentSlideData as any).activitySpec?.activityType !== "differentiated" && (currentSlideData as any).activitySpec?.activityType !== "escape" && (
-            <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
+            <div data-testid={isCompactResponseActivity ? "compact-activity-input" : undefined} className={`px-3 sm:px-4 pb-4 sm:pb-6 ${isCompactResponseActivity ? "mt-2 min-h-0 sm:landscape:m-0 sm:landscape:flex sm:landscape:flex-col sm:landscape:justify-center" : "mt-3 sm:mt-4"}`}>
               {isSoloRoundSlide(currentSlideData) ? (
                 <SoloRoundActivityPlayer
                   key={`solo-${currentSlideData.slideId ?? qi}`}
@@ -578,12 +602,7 @@ const StudentGamePlay = () => {
                   </div>
                 ) : (
                   <WallActivity
-                    question={
-                      (currentSlideData as any).activitySpec?.question ||
-                      (currentSlideData as any).activitySpec?.title ||
-                      (currentSlideData as any).activitySpec?.instructions ||
-                      ""
-                    }
+                    question=""
                     anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
                     allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
                     sessionId={sessionId}
@@ -619,7 +638,7 @@ const StudentGamePlay = () => {
                   }
                   return (
                     <PollActivity
-                      question={question}
+                      question=""
                       options={options}
                       allowMultiple={allowMultiple}
                       sessionId={sessionId}
@@ -633,19 +652,18 @@ const StudentGamePlay = () => {
               ) : (currentSlideData as any).activitySpec?.activityType === "wordcloud" ? (
                 (() => {
                   const spec = (currentSlideData as any).activitySpec || {};
-                  const question = spec.question || "";
                   const published = isWordcloudShown(liveSettings, qi);
                   return (
-                    <div className="space-y-4">
+                    <div className="flex h-full min-h-0 flex-col gap-3">
                       <WordCloudActivity
-                        question={question}
+                        question=""
                         sessionId={sessionId}
                         questionIndex={qi}
                         playerId={playerId}
                         joinToken={joinToken}
                       />
                       {published && (
-                        <div className="border border-white/15 rounded-xl p-4 bg-white/10 backdrop-blur">
+                        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur">
                           <WordCloudView
                             sessionId={sessionId || ""}
                             questionIndex={qi}
@@ -770,20 +788,10 @@ const StudentGamePlay = () => {
             </p>
           </div>
 
-          {/* Přepínač kreslení — samotné plátno je uvnitř boxu se slidem výše */}
-          <button
-            type="button"
-            onClick={() => setStudentDrawMode((v) => !v)}
-            aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
-            title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
-            className={`fixed bottom-4 right-4 z-[60] h-12 w-12 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
-              studentDrawMode
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background/90 text-foreground border-border"
-            }`}
-          >
-            <Pencil className="w-5 h-5" />
-          </button>
+          </div>
+
+          {/* U kompaktních aktivit je kreslení v horní hlavičce, mimo tlačítko Hlasovat. */}
+          {!isCompactResponseActivity && renderDrawButton()}
 
         </div>
       </>
@@ -806,7 +814,7 @@ const StudentGamePlay = () => {
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-      {handButton}
+      {renderHandButton()}
       {modeFeedback && (
         <div
           className={`fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-full text-sm font-semibold shadow-xl border-2 pointer-events-none animate-in fade-in slide-in-from-top-2 ${

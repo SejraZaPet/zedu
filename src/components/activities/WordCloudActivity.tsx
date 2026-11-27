@@ -59,14 +59,14 @@ const WordCloudActivity = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex min-h-0 flex-col">
       {question && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
-          <p className="font-medium text-base">{question}</p>
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4 text-foreground">
+          <p className="font-medium text-lg">{question}</p>
         </div>
       )}
 
-      <div className="flex items-end gap-2 bg-muted rounded-2xl px-4 py-2 border border-border">
+      <div className="mt-auto flex items-end gap-2 bg-muted rounded-2xl px-4 py-2 border border-border">
         <input
           type="text"
           value={value}
@@ -79,12 +79,12 @@ const WordCloudActivity = ({
             }
           }}
           placeholder="Napište slovo nebo krátkou frázi..."
-          className="flex-1 bg-transparent outline-none text-sm py-1 text-foreground placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent outline-none text-lg py-2 text-foreground placeholder:text-muted-foreground"
         />
         <button
           onClick={handleSubmit}
           disabled={!value.trim()}
-          className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+          className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
         >
           <Send className="w-4 h-4 text-white" />
         </button>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { Check, CheckCircle2 } from "lucide-react";
 
 export interface PollOption {
   id: string;
@@ -77,18 +77,18 @@ const PollActivity = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div data-testid="poll-activity" className="flex h-full min-h-0 flex-col">
       {question && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
-          <p className="font-medium text-base">{question}</p>
+        <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-foreground">
+          <p className="text-lg font-medium">{question}</p>
         </div>
       )}
       {allowMultiple && (
-        <p className="text-xs text-muted-foreground mb-2">
+        <p className="mb-2 text-sm text-muted-foreground">
           Můžete vybrat více možností
         </p>
       )}
-      <div className="space-y-2 mb-4">
+      <div className="mb-3 grid grid-cols-1 gap-2">
         {options.map((option) => {
           const isSelected = selected.includes(option.id);
           return (
@@ -96,24 +96,39 @@ const PollActivity = ({
               key={option.id}
               type="button"
               onClick={() => toggle(option.id)}
-              className={`w-full p-4 rounded-xl border-2 text-left font-medium transition-all ${
+              aria-pressed={isSelected}
+              className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 p-3 text-left text-lg font-medium transition-all ${
                 isSelected
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card hover:border-primary/50"
+                  ? "border-primary bg-card text-card-foreground ring-2 ring-primary/30"
+                  : "border-border bg-card text-card-foreground hover:border-primary/50"
               }`}
             >
-              {option.text}
+              <span
+                aria-hidden="true"
+                className={`flex h-6 w-6 shrink-0 items-center justify-center border-2 ${allowMultiple ? "rounded-md" : "rounded-full"} ${
+                  isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50"
+                }`}
+              >
+                {isSelected && <Check className="h-4 w-4" strokeWidth={3} />}
+              </span>
+              <span className="min-w-0 flex-1 break-words">{option.text}</span>
             </button>
           );
         })}
       </div>
-      <Button
-        onClick={handleSubmit}
-        disabled={selected.length === 0 || submitting}
-        className="w-full"
+      <div
+        className="sticky bottom-0 z-20 mt-auto bg-card/95 pt-2 backdrop-blur"
+        style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
       >
-        Hlasovat
-      </Button>
+        <Button
+          variant="outline"
+          onClick={handleSubmit}
+          disabled={selected.length === 0 || submitting}
+          className="h-12 min-h-12 w-full border-primary bg-foreground text-lg font-bold text-background shadow-lg hover:bg-foreground/90"
+        >
+          Hlasovat
+        </Button>
+      </div>
     </div>
   );
 };
