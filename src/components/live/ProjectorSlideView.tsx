@@ -6,6 +6,7 @@ import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
+import { isWallPublished, usesCompactProjectorLayout } from "@/lib/projector-compact-layout";
 
 /** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
 function ActivityCardFrame({ spec, className, children }: { spec: any; className: string; children: (dark: boolean) => React.ReactNode }) {
@@ -231,6 +232,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
   const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
   const awaitingStart = isAwaitingStart(session?.settings, currentSlide, currentIndex);
+  const compactLayout = usesCompactProjectorLayout(activityType, session?.settings, currentIndex);
   const projectorFontScale = clampProjectorFontScale(projectorFontScaleProp ?? (session?.settings as any)?.projectorFontScale);
   const incomingTransition = transitionConfigFromSlide(currentSlide);
 
@@ -261,16 +263,16 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
               </div>
 
-              <div className={`flex-1 flex flex-col items-center justify-start gap-4 min-h-0 overflow-hidden ${activityType === "wordcloud" ? "px-6 pt-4 pb-16" : hasCanvasContent ? "" : "px-6 pt-20 pb-24"}`}>
+              <div className={`flex-1 flex flex-col items-center justify-start gap-4 min-h-0 overflow-hidden ${compactLayout ? "px-6 pt-4 pb-16" : hasCanvasContent ? "" : "px-6 pt-20 pb-24"}`}>
                 {currentSlide.type === "explain" && (
                   <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                     <BookOpen className="w-4 h-4" /> Výklad
                   </div>
                 )}
 
-                {activityType === "wordcloud" && (currentSlide.activitySpec?.question || currentSlide.projector?.headline) && (
+                {compactLayout && (currentSlide.activitySpec?.question || currentSlide.projector?.headline) && (
                   <div
-                    data-testid="wordcloud-question"
+                    data-testid={activityType === "wordcloud" ? "wordcloud-question" : "compact-activity-question"}
                     className="mt-1 w-full max-w-[1400px] shrink-0 rounded-2xl px-8 py-4 text-center shadow-lg"
                     style={activityCardStyle(currentSlide.activitySpec?.colors)}
                   >
@@ -280,7 +282,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 )}
 
-                {hasCanvasContent && activityType !== "wordcloud" && (
+                {hasCanvasContent && !compactLayout && (
                   /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
                      proporčně zmenší do dostupného místa, takže se prvky
                      nepřekrývají a rozvržení odpovídá editoru. */
@@ -314,10 +316,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                     questionIndex={currentIndex}
                     anonymous={(session.settings as any)?.wallAnonymous ?? currentSlide.activitySpec?.anonymous ?? false}
                     anonymousLabelMap={anonymousLabelMap}
-                    published={
-                      (session.settings as any)?.wallPublished === true &&
-                      (session.settings as any)?.wallPublishedQuestion === currentIndex
-                    }
+                    published={isWallPublished(session.settings, currentIndex)}
+                    projector
+                    darkMode={projectorTheme.isDark}
                   />
                 ) : activityType === "wordcloud" ? (
                   <WordCloudView
