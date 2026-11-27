@@ -1,41 +1,42 @@
-# Postup pro učitele na přednášce (jen popis, žádná změna kódu ani dat)
+# Návrat z testovacího žáka zpět na admina — diagnostika a návrh opravy
 
-Ověřeno čtením kódu a (jen čtením) živé databáze 27. 11. 2026. Co nešlo ověřit, je označeno „neověřeno“.
+Nic se zatím nemění. Databáze, RLS, SQL ani AGENTS.md se nemění, nic se nenasadí.
 
-## Úkol 2 – vložení materiálu
+## 1. Jaké cesty zpět dnes existují
+1. Plovoucí štítek „Testovací žák · Zpět“ (`PreviewStudentBanner.tsx:8,16`, vložený do `App.tsx:128`). Zobrazí se jen tehdy, když `isPreviewStudentSession()` vrátí true.
+2. „Zpět na admina / učitele“ v Menu a v mobilním menu (`RoleSwitchMenu.tsx:14-19`, `SiteHeader.tsx:341,583`). Nabídka `role-switch.ts:24-26` se zobrazí také jen při `isPreviewSession`.
+3. Odkaz „Administrace“ v patičce se v relaci testovacího žáka záměrně schová (`role-switch.ts:47-49`).
+4. Jinou cestu zpět kód nemá. Když chybí příznak, zbývá jen „Odhlásit“.
 
-1. **Moje učebnice → „Nová učebnice“** (`src/pages/TeacherTextbooks.tsx:1279`). Dialog: „Předmět *“, „Název učebnice“, „Popis (nepovinné)“ → „Vytvořit“ (`CreateTextbookDialog.tsx:112-150`).
-2. V detailu učebnice, sekce „Struktura učebnice“ → **„Téma“** → „Název tématu“, „Ročník“ / „Bez ročníku“ → „Vytvořit téma“ (`TeacherTextbooks.tsx:858-871, 1026-1054`).
-3. Tlačítka „Lekce“ a „Importovat soubor“ se objeví až po založení prvního tématu (`TeacherTextbooks.tsx:873-884`).
-4. Možnosti vložení přímo do učebnice:
-   - **„Importovat soubor“** – dialog „Importovat soubor do učebnice“. Přijme PDF, DOCX, PPTX, JPG, PNG, WEBP; **ne Excel, TXT, starý .doc ani odkaz**. Max 25 MB (`ImportTextbookFileDialog.tsx:47-51`). Vždy používá AI („Zpracovat pomocí AI“). Pole „Pojistka: vložte text ručně“ je jen doplněk, soubor je i tak nutný.
-   - **„Lekce“** – prázdná lekce („Název lekce“, „Téma“ → „Vytvořit lekci“), text/obrázky se pak vkládají ručně v editoru (vložení obrázku ze schránky funguje, převod dokumentu ne) (`TeacherTextbooks.tsx:564-583`, `BlockEditor.tsx:1760-1789`).
-5. Co import udělá s nadpisy a tabulkami: AI je převede na bloky „nadpis“ a „tabulka“ (`process-file-content/index.ts:91-95`). Není to kopie původního rozvržení; u naskenovaných souborů aplikace sama upozorňuje, že tabulky nemusí být přesné (`ImportTextbookFileDialog.tsx:680-688`). Obrázky z PDF/DOCX/PPTX se vloží (kromě EMF/WMF).
-6. Jinde (ne do učebnice): **„Z materiálu“** (fotky max 6, PDF/DOCX/PPTX) vytvoří pracovní list, aktivitu nebo prezentaci – ne lekci (`FromMaterialView.tsx:129-135, 235-290`). **Studio** (`/ucitel/studio`) má „Vložit text“, „Nahrát soubory“ (i XLSX, TXT), „Fotky z galerie“, „Vyfotit“, „Vložit odkaz“, „Z lekce“ – vznikne aktivita (`SourceInput.tsx:60-93`). Přesná položka menu pro „Z materiálu“: neověřeno.
+## 2. Kdy se návratová relace ztratí
+1. Klíč `bezli.previewStudent.return` leží jen v sessionStorage té jedné záložky (`preview-student.ts:4,20`). Přihlášení (`setSession`) se ale ukládá do úložiště, které sdílejí všechny záložky.
+   - **Nejpravděpodobnější příčina:** po přepnutí jsou testovacím žákem všechny otevřené záložky a nová okna. Návrat ale má k dispozici jen ta jedna záložka, kde se přepínalo. Platí to i pro odkaz otevřený v nové záložce a pro zavřenou a znovu otevřenou záložku. Že k tomu došlo právě u Tyny: neověřeno.
+2. Obnovení stránky ve stejné záložce klíč zachová.
+3. Starý refresh token admina se při přepnutí nezneplatní: kód volá jen `setSession`, ne `signOut` (`preview-student.ts:24`). Jestli token po delší době vyprší podle nastavení přihlašování: neověřeno.
+   - Riziko: když má admin ještě jinou záložku s automatickým obnovováním, může token mezitím obnovit (zrotovat). Uložená kopie pak přestane platit. Neověřeno.
+4. Přihlášení přes `preview-student-switch` (`issueSession`, `_shared/demo.ts:52-62`) samo relaci admina neruší.
+5. Když `setSession` při návratu selže nebo klíč chybí, provede se `signOut()` a stránka přejde na `/auth` (`preview-student.ts:36-38`, `RoleSwitchMenu.tsx:28`). Žádná hláška se nezobrazí, uživatel je potichu odhlášen.
 
-## Úkol 3 – vytvoření lekce z materiálu
+## 3. Viditelnost tlačítka zpět
+1. Obě cesty zpět se zobrazí jen při `isPreviewStudentSession()`.
+2. Pokud příznak chybí (jiná záložka), ale přihlášený je testovací žák, nezobrazí se nic. Uživatel nevidí štítek ani položku v Menu a zbývá jen „Odhlásit“.
 
-1. Po „Zpracovat pomocí AI“ se zobrazí **„Návrhy lekcí“** – nic ještě není uložené (`ImportTextbookFileDialog.tsx:581-669`).
-2. Přepínač „Importovat jako jednu lekci“ je zapnutý; po vypnutí „AI zkusí obsah rozdělit do více samostatných lekcí“ (dělení přesně podle nadpisů: neověřeno).
-3. U návrhu: „Zahrnout lekci“, úprava názvu, „Upravit obsah“.
-4. Zvolit „Téma, do kterého importovat“ → **„Uložit lekce“**. Lekce vznikne jako **Koncept** (`:555-563`).
-5. Úprava: klik na název lekce → panel se záložkami „Obsah lekce“ / „Aktivity“. Stav „Koncept / Naplánováno / Publikováno“. **Neukládá se samo – nutné „Uložit změny“** (`TeacherTextbookLessonEditorSheet.tsx:129-161, 360-386`).
-6. Z řádku lekce (na telefonu v „⋯“): **„Pracovní list“**, **„Vygenerovat pracovní list z této lekce“** (AI), **„Spustit prezentaci“**, **„Upravit prezentaci“** (`TextbookGradeGroups.tsx:184-243`). Aktivita: v lekci záložka „Aktivity“ → „Vytvořit z lekce“ (před „Vložit“ nutné zaškrtnout „Zkontroloval/a jsem obsah a správné odpovědi“), nebo Studio → „Z lekce“ (`CreateFromLessonDialog.tsx:66-112`).
+## 4. Role žáka
+1. Ano, v jiné záložce je to přesně ten případ. Testovací žák má roli student, takže `realRole` není admin a `role-switch.ts:27-43` vrátí prázdný seznam. `RoleSwitchMenu` pak nic nevykreslí (`:19`).
+2. Ve stejné záložce se možnost zpět ukáže dřív, než se kontroluje role (`:24`). Tam role vadit nemá.
 
-## Demo / zkušební účet (ověřeno v živé databázi)
+## 5. Navržená nejmenší oprava (jen kód aplikace)
+1. **Poznat testovacího žáka i bez příznaku.** Testovací žák má vždy e-mail končící `@preview.invalid` (`preview-student-switch/index.ts:24`). Nová funkce `isPreviewStudentUser(user)` to zkontroluje. Štítek „Zpět“ i položka v Menu se zobrazí, když platí příznak, nebo když jde o testovacího žáka. Oprávnění se nemění, jde jen o zobrazení.
+2. **Návrat bez uložené relace nebo s neplatnou relací.** Testovací žák se odhlásí a uživatel se dostane na `/auth?duvod=nahled` s hláškou: „Návrat na admina v této záložce už není možný. Přihlaste se prosím znovu jako admin.“ Žádné tiché odhlášení.
+3. **Upozornění při přepnutí** (volitelné): v potvrzení přepnutí se objeví věta „Ostatní záložky se také přepnou na testovacího žáka; zpět se vraťte v této záložce.“
+4. **Bezpečnost se nemění.** Relaci admina nelze obnovit bez uloženého tokenu, takže nová cesta vede vždy přes přihlášení. RLS, databáze ani funkce na serveru se nemění.
+5. **Testy:** rozšířit `role-switch` test (testovací žák bez příznaku → nabídka „Zpět“) a test, že návrat bez uložené relace vede na `/auth?duvod=nahled`.
 
-1. **5 AI volání na účet a 150 celkem za den pro všechna dema** (`demo_config`). Pak hláška „Demo má limit AI generování…“.
-2. Každý import = min. 1 AI volání (u souboru s obrázky ještě 1 navíc na rozpoznání obrázků). Stejně „Vygenerovat pracovní list“, OCR fotek, načtení odkazu.
-3. **Zásadní: demo účet nesmí upravit ani smazat lekci v učebnici** (živé pravidlo `demo_guard_update` / `demo_guard_delete` na lekcích učebnic). Import a uložení se nejspíš povede (neověřeno), ale pak **„Uložit změny“ a přepnutí na „Publikováno“ selže**.
-4. Nahrávání obrázků v demu max 2 MB a 20 souborů.
-5. Založení dema: 20 účtů za hodinu z jedné IP adresy, 500 za den (`create-demo/index.ts:28-37`). Zvýšení pro akci existuje jen jako neschválený návrh. Hodnota 80/h: neověřeno.
+## Jak opravu ověřit
+1. Playwright, admin: přepnout na testovacího žáka a návrat ve stejné záložce → `/admin`.
+2. Přepnout na testovacího žáka a otevřít novou záložku → „Zpět“ je vidět. Po kliknutí se objeví přihlášení s hláškou, nikde nic tiše nezmizí.
+3. Poškozený uložený token → přihlášení s hláškou.
+4. Telefon 390 px i počítač: štítek i položka v Menu. Do databáze se při zkoušce nic nezapisuje, kromě samotného přihlášení.
 
-## Doporučení pro 50 lidí (cca 10 min na úkol)
-
-1. **Nepoužívat demo** pro Úkol 3 – kvůli zákazu úprav lekcí a limitu 150 AI/den (50 × 3–4 volání se nevejde). Účastníci potřebují běžný učitelský účet, nebo předem připravit demo účty (ne z jedné Wi-Fi najednou – blokuje 20/h).
-2. Rozdat **jeden stejný krátký soubor**: DOCX nebo PDF s textem (ne sken), 1–3 strany, max pár obrázků, s nadpisy. Nechat zapnuté „Importovat jako jednu lekci“.
-3. Nespouštět všech 50 najednou na jeden pokyn – po skupinách (např. po řadách), import jedné lekce trvá desítky sekund, AI může vrátit „přetížení“. Kapacita pro 50 současně: neověřeno.
-4. Vyvarovat se: Excelu, TXT, .doc, odkazů a skenů v importu; velkých PPTX; zapomenutého „Uložit změny“; zaměny „Z materiálu“ (nevytváří lekci) s „Importovat soubor“.
-5. Nejkratší cesta: Nová učebnice → Téma → Importovat soubor → Zpracovat pomocí AI → Uložit lekce → klik na lekci → Publikováno → Uložit změny → „Vygenerovat pracovní list z této lekce“.
-
-Žádné změny kódu, dat ani nasazení se nenavrhují.
+## Otevřená otázka
+Je správné, že návrat z jiné záložky vyžaduje nové přihlášení? Bezpečně přenést relaci admina mezi záložkami bez změny zabezpečení nejde.
