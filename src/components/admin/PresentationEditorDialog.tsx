@@ -1154,8 +1154,8 @@ export const PresentationEditorDialog = ({
                       <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Pozadí a motiv</h2>
                       <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
                         {PRESENTATION_THEMES.map((item) => (
-                          <button key={item.id} type="button" onClick={() => setThemeId(item.id)} aria-label={`Použít motiv ${item.name}`} aria-pressed={themeId === item.id} className={`overflow-hidden rounded-lg border-2 ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}>
-                            <span className="flex min-h-12 items-end break-words p-1.5 text-left text-[9px] font-semibold leading-tight text-deck-on-violet" style={{ background: item.backgroundStyle }}>{item.name}</span>
+                          <button key={item.id} type="button" onClick={() => setThemeId(item.id)} aria-label={`Použít motiv ${item.name}`} aria-pressed={themeId === item.id} className={`min-w-0 overflow-hidden rounded-lg border-2 ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}>
+                            <span className={`flex min-h-12 items-end break-words p-1.5 text-left text-[10px] font-semibold leading-tight ${item.isDark ? "text-white [text-shadow:0_1px_2px_rgba(0,0,0,.6)]" : "text-slate-900 [text-shadow:0_1px_1px_rgba(255,255,255,.7)]"}`} style={{ background: item.backgroundStyle }}>{item.name}</span>
                           </button>
                         ))}
                       </div>

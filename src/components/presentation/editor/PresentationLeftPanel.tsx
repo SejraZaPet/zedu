@@ -57,7 +57,7 @@ export default function PresentationLeftPanel({ active, onChange, open, onToggle
         role="tabpanel"
         id={`editor-panel-${active}`}
         aria-labelledby={`editor-tab-${active}`}
-        className="min-h-0 flex-1 overflow-y-auto p-3"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3"
       >
         {children}
       </div>
