@@ -4,6 +4,7 @@ import { ActivityAnswerReview } from "./ActivityAnswerReview";
 import { getQuizQuestions } from "@/lib/quiz-questions";
 import { Button } from "@/components/ui/button";
 import { getMcqOptionName, getMcqOptionStyle, McqOptionIcon } from "@/components/live/McqAnswerChoice";
+import { Check } from "lucide-react";
 
 /**
  * Kvíz s jednou nebo více otázkami – žák prochází otázky postupně,
@@ -86,10 +87,18 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
                 disabled={submitted || live.revealed}
                 aria-label={`Možnost ${i + 1}: ${a.text ? `${a.text} (${optionName})` : optionName}`}
                 aria-pressed={selected.has(i)}
-                className={`live-phone-choice relative h-auto min-h-20 justify-start gap-3 px-4 py-4 border-b-4 text-primary-foreground text-base shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i, current.answers)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
+                className={`live-phone-choice relative h-auto min-h-20 justify-start gap-3 px-4 py-4 border-b-4 text-primary-foreground text-base shadow-md transition-transform enabled:hover:scale-[1.02] enabled:hover:brightness-110 enabled:active:scale-95 ${getMcqOptionStyle(i, current.answers)} ${selected.has(i) ? "ring-4 ring-foreground ring-offset-2 ring-offset-background disabled:opacity-100" : ""} ${submitted && !selected.has(i) && !show ? "opacity-60" : ""} ${show && !a.correct ? "opacity-35" : ""}`}
               >
                 <McqOptionIcon index={i} options={current.answers} className="!h-7 !w-7 shrink-0" />
                 {a.text ? <span className="min-w-0 text-left text-base font-bold leading-snug whitespace-normal [overflow-wrap:anywhere]">{a.text}</span> : <span className="sr-only">{optionName}</span>}
+                {selected.has(i) && !show && (
+                  <span
+                    className={`absolute right-3 top-2 flex h-7 w-7 items-center justify-center bg-primary-foreground/20 text-primary-foreground ${isMulti ? "rounded-md" : "rounded-full"}`}
+                    aria-label="Vybraná odpověď"
+                  >
+                    <Check className="h-5 w-5" strokeWidth={3} aria-hidden="true" />
+                  </span>
+                )}
                 {show && a.correct && <span className="absolute right-3 top-2 text-2xl" aria-label="Správná odpověď">✓</span>}
               </Button>
             );
@@ -169,18 +178,28 @@ const QuizActivity = ({ quiz, onComplete, live }: { quiz: any; onComplete?: Acti
       {isMulti && <p className="text-xs text-muted-foreground">Vyberte všechny správné odpovědi</p>}
       <div className="space-y-2">
         {current.answers.map((a, i) => {
-          let cls = "border-border bg-card hover:border-primary/50";
-          if (submitted && a.correct) cls = "border-green-500/60 bg-green-500/10";
-          else if (submitted && selected.has(i) && !a.correct) cls = "border-destructive/60 bg-destructive/10";
-          else if (selected.has(i)) cls = "border-primary bg-primary/10";
+          let cls = "border-2 border-border bg-card text-card-foreground hover:border-primary/50";
+          if (submitted && a.correct) cls = "border-2 border-green-500/60 bg-green-500/10 text-card-foreground";
+          else if (submitted && selected.has(i) && !a.correct) cls = "border-2 border-destructive/60 bg-destructive/10 text-card-foreground";
+          else if (selected.has(i)) cls = "border-[3px] border-primary bg-foreground font-bold text-background";
 
           return (
             <button
               key={i}
+              type="button"
               onClick={() => toggle(i)}
-              className={`w-full text-left rounded-lg border p-3 transition-colors ${cls}`}
+              aria-pressed={selected.has(i)}
+              className={`flex w-full items-center gap-2 rounded-lg p-3 text-left transition-colors ${cls}`}
             >
-              <span className="text-foreground text-sm">{a.text}</span>
+              {selected.has(i) && !submitted && (
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center border-2 border-background bg-background text-foreground ${isMulti ? "rounded-md" : "rounded-full"}`}
+                  aria-label="Vybraná odpověď"
+                >
+                  <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                </span>
+              )}
+              <span className={`min-w-0 flex-1 break-words text-sm ${selected.has(i) && !submitted ? "font-bold text-background" : ""}`}>{a.text}</span>
             </button>
           );
         })}

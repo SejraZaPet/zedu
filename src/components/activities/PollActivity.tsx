@@ -65,11 +65,26 @@ const PollActivity = ({
   };
 
   if (submitted) {
+    const chosenOptions = options.filter((option, index) => selected.includes(pollOptionId(option, index)));
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <CheckCircle2 className="w-14 h-14 text-primary mb-3" />
-        <p className="text-lg font-semibold text-foreground">Hlas odeslán!</p>
-        <p className="text-sm text-muted-foreground mt-1">Čekejte na výsledky…</p>
+      <div className="my-auto flex w-full flex-col items-center rounded-2xl border border-border bg-card p-5 text-center text-card-foreground shadow-xl">
+        <CheckCircle2 className="mb-3 h-14 w-14 text-primary" aria-hidden="true" />
+        <p className="text-xl font-bold">Hlas odeslán</p>
+        <p className="mt-4 text-sm font-medium text-muted-foreground">
+          {chosenOptions.length > 1 ? "Tvoje odpovědi" : "Tvoje odpověď"}
+        </p>
+        <div className="mt-2 grid w-full gap-2">
+          {chosenOptions.map((option) => (
+            <div
+              key={pollOptionId(option, options.indexOf(option))}
+              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border-[3px] border-primary bg-foreground p-3 text-lg font-bold text-background"
+            >
+              <Check className="h-6 w-6 shrink-0" strokeWidth={3} aria-hidden="true" />
+              <span className="min-w-0 break-words font-bold">{option.text}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">Čekejte na výsledky…</p>
       </div>
     );
   }
@@ -96,16 +111,16 @@ const PollActivity = ({
               type="button"
               onClick={() => toggle(optionId)}
               aria-pressed={isSelected}
-              className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 p-3 text-left text-lg font-medium transition-all ${
+              className={`flex min-h-14 w-full items-center gap-3 rounded-xl p-3 text-left text-lg transition-all ${
                 isSelected
-                  ? "border-primary bg-card text-card-foreground ring-2 ring-primary/30"
-                  : "border-border bg-card text-card-foreground hover:border-primary/50"
+                  ? "border-[3px] border-primary bg-foreground font-bold text-background ring-2 ring-primary/30"
+                  : "border-2 border-border bg-card font-medium text-card-foreground hover:border-primary/50"
               }`}
             >
               <span
                 aria-hidden="true"
                 className={`flex h-6 w-6 shrink-0 items-center justify-center border-2 ${allowMultiple ? "rounded-md" : "rounded-full"} ${
-                  isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50"
+                  isSelected ? "border-background bg-background text-foreground" : "border-muted-foreground/50"
                 }`}
               >
                 {isSelected && <Check className="h-4 w-4" strokeWidth={3} />}

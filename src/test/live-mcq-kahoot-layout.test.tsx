@@ -30,6 +30,11 @@ describe("živé MCQ se sdílenou obrazovkou", () => {
 
     fireEvent.click(choices[4]);
     expect(onSubmit).toHaveBeenCalledWith(false, [4]);
+    expect(choices[4]).toHaveAttribute("aria-pressed", "true");
+    choices.filter((_, index) => index !== 4).forEach((choice) => {
+      expect(choice).toHaveAttribute("aria-pressed", "false");
+    });
+    expect(screen.getByLabelText("Vybraná odpověď")).toBeInTheDocument();
     expect(screen.getByText(/Odpověď odeslána/)).toBeInTheDocument();
   });
 

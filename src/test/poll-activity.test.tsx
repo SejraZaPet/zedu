@@ -54,6 +54,8 @@ describe("PollActivity – výběr odpovědi", () => {
     fireEvent.click(second);
     expect(first).toHaveAttribute("aria-pressed", "false");
     expect(second).toHaveAttribute("aria-pressed", "true");
+    expect(second).toHaveClass("border-[3px]", "bg-foreground", "text-background", "font-bold");
+    expect(screen.getAllByRole("button", { pressed: true })).toHaveLength(1);
   });
 
   it("u více odpovědí umožní vybrat i odznačit jednotlivé možnosti", () => {
@@ -102,6 +104,11 @@ describe("PollActivity – výběr odpovědi", () => {
         }),
       }),
     );
+    expect(await screen.findByText("Hlas odeslán")).toBeInTheDocument();
+    expect(screen.getByText("Tvoje odpověď")).toBeInTheDocument();
+    const submittedChoice = screen.getByText("[TEST] Praxe");
+    expect(submittedChoice).toHaveClass("font-bold");
+    expect(submittedChoice.parentElement).toHaveClass("bg-foreground", "text-background", "border-[3px]");
   });
 });
 

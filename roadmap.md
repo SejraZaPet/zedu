@@ -483,6 +483,11 @@
 - [x] Prohlížeč s maketou: žák označil pouze první možnost a odeslal `["0"]`; učitel viděl 2 hlasy z 2 žáků, první možnost 2 (100 %) a tři možnosti 0. Všechny zápisy zachyceny mimo DB, bez chyb stránky.
 - [x] Bodování pouze diagnostikováno: server u ankety klientem poslaných 100 bodů nemaže a přičítá je; frontendová změna na false/0 čeká na výslovné schválení.
 
+## Žákovská zařízení – viditelnost zvolené odpovědi
+- [x] Anketa: výrazný výběr 3 px v primary, tmavý podklad, světlý tučný text a zatržítko; po odeslání karta „Hlas odeslán“ ukazuje konkrétní zvolenou možnost.
+- [x] MCQ: doplněno trvalé zatržítko vlastní volby a zachována čitelnost po odeslání; správnost ani odesílání beze změny.
+- [x] Prošlo 30 regresních testů včetně přesně jednoho `aria-pressed`; prohlížeč ověřil před/po výběru a po odeslání v 390×844 a 1024×768. Kontrast 14,22:1, rámeček 3 px, text 700, bez chyb stránky; všechny zápisy zachyceny mimo DB.
+
 ## Žákovská zařízení – anketa a vstupní aktivity
 - [x] Zachovány změny slovního mraku; opraven kontrast textu a duplicitní otázky bez změny odesílání, sessionStorage nebo zveřejňování.
 - [x] Poll/wordcloud/wall bez velkého náhledu slidu; na šířku otázka vlevo a ovládání vpravo, ovládání v hlavičce, Hlasovat/Odeslat stále viditelné.
