@@ -12,6 +12,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { createOwnTextbookLessons } from "@/lib/own-textbook-lessons";
 import { supabase } from "@/integrations/supabase/client";
 import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
@@ -27,6 +28,7 @@ interface TopicOption {
   id: string;
   title: string;
   gradeLabel?: string;
+  grade?: number;
 }
 
 interface DraftLesson {
@@ -41,6 +43,8 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   topics: TopicOption[];
   defaultTopicId?: string;
+  /** Vlastní učebnice: lekce se uloží jako lekce učitele (viditelné i v demu). */
+  textbook?: { id: string; subject: string };
   onImported: () => void;
 }
 
@@ -67,7 +71,7 @@ const readFileAsBase64 = (file: File) => new Promise<string>((resolve, reject) =
 });
 
 const ImportTextbookFileDialog = ({
-  open, onOpenChange, topics, defaultTopicId, onImported,
+  open, onOpenChange, topics, defaultTopicId, textbook, onImported,
 }: Props) => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
@@ -543,27 +547,34 @@ const ImportTextbookFileDialog = ({
 
     setSaving(true);
     try {
-      const { data: existing } = await supabase
-        .from("textbook_lessons")
-        .select("sort_order")
-        .eq("topic_id", topicId)
-        .order("sort_order", { ascending: false })
-        .limit(1);
+      let count = 0;
+      if (textbook) {
+        const topic = topics.find((t) => t.id === topicId);
+        count = await createOwnTextbookLessons(
+          { textbookId: textbook.id, subjectSlug: textbook.subject, topicId, grade: topic?.grade ?? 0 },
+          toImport.map((d) => ({ title: d.title, blocks: d.blocks })),
+        );
+      } else {
+        const { data: existing } = await supabase
+          .from("textbook_lessons")
+          .select("sort_order")
+          .eq("topic_id", topicId)
+          .order("sort_order", { ascending: false })
+          .limit(1);
+        let nextOrder = existing && existing.length > 0 ? ((existing[0] as { sort_order?: number }).sort_order ?? 0) + 1 : 0;
+        const payload = toImport.map((draft) => ({
+          title: draft.title.trim().slice(0, 200),
+          topic_id: topicId,
+          sort_order: nextOrder++,
+          blocks: draft.blocks as any,
+          status: "draft",
+        }));
+        const { error } = await supabase.from("textbook_lessons").insert(payload);
+        if (error) throw error;
+        count = payload.length;
+      }
 
-      let nextOrder = existing && existing.length > 0 ? ((existing[0] as { sort_order?: number }).sort_order ?? 0) + 1 : 0;
-
-      const payload = toImport.map((draft) => ({
-        title: draft.title.trim().slice(0, 200),
-        topic_id: topicId,
-        sort_order: nextOrder++,
-        blocks: draft.blocks as any,
-        status: "draft",
-      }));
-
-      const { error } = await supabase.from("textbook_lessons").insert(payload);
-      if (error) throw error;
-
-      toast({ title: "Importováno", description: `Vytvořeno ${payload.length} lekcí.` });
+      toast({ title: "Importováno", description: `Vytvořeno ${count} lekcí.` });
       reset();
       onOpenChange(false);
       onImported();

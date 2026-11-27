@@ -18,6 +18,7 @@ import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
 import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialog";
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
+import { createOwnTextbookLessons } from "@/lib/own-textbook-lessons";
 import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import type { Block } from "@/lib/textbook-config";
@@ -562,33 +563,22 @@ const TeacherTextbooks = () => {
 
   // === Create lesson ===
   const handleCreateLesson = async () => {
-    if (!newLessonTitle.trim() || !newLessonTopicId) return;
+    if (!newLessonTitle.trim() || !newLessonTopicId || !selectedTextbook) return;
+    const topic = gradeGroups.flatMap(g => g.topics.map(t => ({ ...t, g: g.grade }))).find(t => t.id === newLessonTopicId);
     setSaving(true);
-
-    const { data: existingLessons } = await supabase
-      .from("textbook_lessons")
-      .select("sort_order")
-      .eq("topic_id", newLessonTopicId)
-      .order("sort_order", { ascending: false })
-      .limit(1);
-
-    const nextOrder = existingLessons && existingLessons.length > 0 ? (existingLessons[0] as any).sort_order + 1 : 0;
-
-    const { error } = await supabase.from("textbook_lessons").insert({
-      title: newLessonTitle.trim(),
-      topic_id: newLessonTopicId,
-      sort_order: nextOrder,
-      blocks: [],
-      status: "draft",
-    });
-
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await createOwnTextbookLessons({
+        textbookId: selectedTextbook.id,
+        subjectSlug: selectedTextbook.subject,
+        topicId: newLessonTopicId,
+        grade: (topic as any)?.grade ?? topic?.g ?? 0,
+      }, [{ title: newLessonTitle, blocks: [] }]);
       toast({ title: "Lekce vytvořena" });
       setNewLessonTitle("");
       setCreateLessonOpen(false);
       refreshDetail();
+    } catch (err: any) {
+      toast({ title: "Chyba", description: err?.message ?? "Lekci se nepodařilo uložit.", variant: "destructive" });
     }
     setSaving(false);
   };
@@ -1017,7 +1007,8 @@ const TeacherTextbooks = () => {
         <ImportTextbookFileDialog
           open={importOpen}
           onOpenChange={setImportOpen}
-          topics={allTopics.map((t) => ({ id: t.id, title: t.title, gradeLabel: t.gradeLabel }))}
+          topics={allTopics.map((t) => ({ id: t.id, title: t.title, gradeLabel: t.gradeLabel, grade: (t as any).grade ?? 0 }))}
+          textbook={selectedTextbook ? { id: selectedTextbook.id, subject: selectedTextbook.subject } : undefined}
           defaultTopicId={allTopics[0]?.id}
           onImported={refreshDetail}
         />
