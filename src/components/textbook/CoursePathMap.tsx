@@ -1,7 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Flag, MapPin, Trophy } from "lucide-react";
+import { CheckCircle2, ChevronDown, Flag, MapPin, Trophy } from "lucide-react";
+
+const COLLAPSE_KEY = "bezli.textbook.pathCollapsed";
+const readCollapsed = () => {
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 
 export interface CoursePathItem {
   id: string;
@@ -39,16 +48,33 @@ const CoursePathMap = ({
     return { completedCount: done, nextIndex: next };
   }, [items]);
 
+  const contentId = useId();
+  const [collapsed, setCollapsed] = useState<boolean>(readCollapsed);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [collapsed]);
+
   if (items.length === 0) return null;
 
   const allDone = showProgress && completedCount === items.length;
 
   return (
     <section className="bg-card border border-border rounded-xl p-5 mb-6">
-      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        aria-expanded={!collapsed}
+        aria-controls={contentId}
+        className="w-full min-h-11 -my-1 flex items-center justify-between gap-3 flex-wrap rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+      >
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-primary" /> {title}
+          <MapPin className="w-5 h-5 text-primary" aria-hidden /> {title}
         </h2>
+        <span className="flex items-center gap-2">
         {showProgress ? (
           allDone ? (
             <Badge className="gap-1">
@@ -64,8 +90,26 @@ const CoursePathMap = ({
             {items.length} lekcí
           </Badge>
         )}
-      </div>
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "w-5 h-5 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
+              collapsed && "-rotate-90"
+            )}
+          />
+        </span>
+      </button>
 
+      <div
+        id={contentId}
+        aria-hidden={collapsed}
+        className={cn(
+          "grid transition-[grid-template-rows,opacity,visibility] duration-200 ease-out motion-reduce:transition-none",
+          collapsed ? "grid-rows-[0fr] opacity-0 invisible" : "grid-rows-[1fr] opacity-100"
+        )}
+      >
+      <div className="overflow-hidden min-w-0">
+      <div className="pt-4">
       {description && (
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
       )}
@@ -153,6 +197,9 @@ const CoursePathMap = ({
           </div>
         </li>
       </ol>
+      </div>
+      </div>
+      </div>
       </div>
     </section>
   );
