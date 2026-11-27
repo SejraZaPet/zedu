@@ -593,9 +593,9 @@ const StudentTextbookDetail = () => {
                     {grade.topics.map((topic) => (
                       <AccordionItem key={topic.id} value={`topic-${topic.id}`} className="border rounded-md bg-muted/30 px-3">
                         <AccordionTrigger className="hover:no-underline py-3">
-                          <div className="flex items-center gap-2">
-                            <FolderOpen className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium">{topic.title}</span>
+                          <div className="flex min-w-0 items-center gap-2 text-left">
+                            <FolderOpen className="w-4 h-4 shrink-0 text-muted-foreground" />
+                            <span className="min-w-0 break-words font-medium">{topic.title}</span>
                             <span className="text-xs text-muted-foreground">({topic.lessons.length})</span>
                           </div>
                         </AccordionTrigger>
@@ -619,10 +619,10 @@ const StudentTextbookDetail = () => {
                                     ) : (
                                       <Circle className="w-5 h-5 text-muted-foreground/40 flex-shrink-0" />
                                     )}
-                                    <span className={`flex-1 text-sm font-medium truncate ${isCompleted ? "text-muted-foreground" : ""}`}>
+                                    <span className={`min-w-0 flex-1 text-sm font-medium break-words sm:truncate ${isCompleted ? "text-muted-foreground" : ""}`}>
                                       {lesson.title}
                                     </span>
-                                    <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="hidden sm:inline text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                                       Otevřít →
                                     </span>
                                   </button>

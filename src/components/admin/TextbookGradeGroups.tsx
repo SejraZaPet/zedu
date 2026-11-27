@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, ChevronDown, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput, Merge, Sparkles } from "lucide-react";
+import { FolderOpen, ChevronRight, ChevronDown, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput, Merge, Sparkles, MoreHorizontal } from "lucide-react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import {
   Dialog,
@@ -77,6 +78,33 @@ interface Props {
   onMergeLessons?: (targetLesson: LessonItem, sourceLessonId: string) => void | Promise<void>;
 }
 
+interface PhoneAction { key: string; label: string; icon: ReactNode; onSelect: () => void; destructive?: boolean }
+
+/** Jen telefon (< 640 px): spodní nabídka akcí; akce i popisky jsou stejné jako u ikon. */
+const PhoneActionSheet = ({ open, onOpenChange, title, actions }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; actions: PhoneAction[] }) => (
+  <Sheet open={open} onOpenChange={onOpenChange}>
+    <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <SheetHeader className="pr-10 text-left">
+        <SheetTitle className="break-words">{title}</SheetTitle>
+        <SheetDescription className="sr-only">Akce</SheetDescription>
+      </SheetHeader>
+      <ul className="mt-3 flex flex-col">
+        {actions.map((a) => (
+          <li key={a.key}>
+            <Button
+              variant="ghost"
+              className={`h-auto min-h-12 w-full justify-start gap-3 whitespace-normal text-left text-base ${a.destructive ? "text-destructive hover:text-destructive" : ""}`}
+              onClick={() => { onOpenChange(false); a.onSelect(); }}
+            >
+              <span aria-hidden="true" className="shrink-0">{a.icon}</span>{a.label}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </SheetContent>
+  </Sheet>
+);
+
 const SortableLessonRow = ({
   lesson,
   onEditLesson,
@@ -102,37 +130,68 @@ const SortableLessonRow = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 px-3 py-2 text-sm group hover:bg-muted/10 transition-colors bg-background"
+      className="flex items-center gap-2 px-3 py-2 max-sm:gap-1 max-sm:py-1 text-sm group hover:bg-muted/10 transition-colors bg-background"
     >
       <button
         type="button"
-        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 max-sm:grid max-sm:h-10 max-sm:w-10 max-sm:-ml-2 max-sm:place-items-center"
         aria-label="Přesunout lekci"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+      <ChevronRight className="hidden sm:block w-3 h-3 text-muted-foreground shrink-0" />
       <button
-        className="flex-1 text-left truncate hover:text-primary transition-colors cursor-pointer"
+        className="hidden sm:block flex-1 text-left truncate hover:text-primary transition-colors cursor-pointer"
         onClick={() => onEditLesson(lesson)}
       >
         {lesson.title}
       </button>
       <Badge
         variant={lesson.status === "published" ? "default" : "secondary"}
-        className="text-[10px] shrink-0"
+        className="hidden sm:inline-flex text-[10px] shrink-0"
       >
         {lesson.status === "published" ? "Pub" : "Konc"}
       </Badge>
-      {/* Mobile: icon-only buttons */}
-      <div className="flex md:hidden gap-1 shrink-0">
+      {/* Telefon (< 640 px): celý název, stav pod ním, akce v nabídce „⋯“ */}
+      <button
+        type="button"
+        className="sm:hidden min-h-10 min-w-0 flex-1 py-1 text-left"
+        onClick={() => onEditLesson(lesson)}
+      >
+        <span className="block break-words line-clamp-2 hover:text-primary">{lesson.title}</span>
+        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lesson.status === "published" ? "bg-primary" : "bg-muted-foreground"}`} />
+          {lesson.status === "published" ? "Publikováno" : "Koncept"}
+        </span>
+      </button>
+      <Button size="icon" variant="ghost" className="sm:hidden h-10 w-10 shrink-0" aria-label={`Akce lekce ${lesson.title}`} onClick={() => setSheetOpen(true)}>
+        <MoreHorizontal className="w-5 h-5" />
+      </Button>
+      <PhoneActionSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        title={lesson.title}
+        actions={[
+          { key: "edit", label: "Upravit", icon: <Pencil className="w-4 h-4" />, onSelect: () => onEditLesson(lesson) },
+          { key: "ws", label: "Pracovní list", icon: <FileText className="w-4 h-4" />, onSelect: () => onOpenWorksheet(lesson) },
+          { key: "ws-ai", label: "Vygenerovat pracovní list z této lekce", icon: <Sparkles className="w-4 h-4 text-primary" />, onSelect: () => onOpenWorksheet(lesson, true) },
+          { key: "play", label: "Spustit prezentaci", icon: <Play className="w-4 h-4" />, onSelect: () => onOpenPresentation(lesson) },
+          ...(onEditPresentation ? [{ key: "pres", label: "Upravit prezentaci", icon: <Monitor className="w-4 h-4" />, onSelect: () => onEditPresentation(lesson) }] : []),
+          ...(onRequestMove ? [{ key: "move", label: "Přesunout do tématu…", icon: <FolderInput className="w-4 h-4" />, onSelect: () => onRequestMove(lesson) }] : []),
+          ...(onRequestMerge ? [{ key: "merge", label: "Sloučit s jinou lekcí…", icon: <Merge className="w-4 h-4" />, onSelect: () => onRequestMerge(lesson) }] : []),
+          { key: "del", label: "Smazat", icon: <Trash2 className="w-4 h-4" />, onSelect: () => onDeleteLesson(lesson), destructive: true },
+        ]}
+      />
+      {/* Tablet (640–767 px): icon-only buttons */}
+      <div className="hidden sm:flex md:hidden gap-1 shrink-0">
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEditLesson(lesson)} title="Upravit">
           <Pencil className="w-4 h-4" />
         </Button>
@@ -301,14 +360,15 @@ const SortableTopic = ({
   };
 
   const [collapsed, setCollapsed] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
     <div ref={setNodeRef} style={style} className="border border-border rounded-md">
       {/* Topic header */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-muted/10">
+      <div className="flex items-center gap-2 px-3 py-2 max-sm:gap-1 max-sm:py-1 bg-muted/10">
         <button
           type="button"
-          className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+          className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 max-sm:grid max-sm:h-10 max-sm:w-10 max-sm:-ml-2 max-sm:place-items-center"
           aria-label="Přesunout téma"
           {...attributes}
           {...listeners}
@@ -318,7 +378,7 @@ const SortableTopic = ({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="flex items-center gap-1.5 flex-1 text-left min-w-0"
+          className="hidden sm:flex items-center gap-1.5 flex-1 text-left min-w-0"
           aria-expanded={!collapsed}
           aria-label={collapsed ? "Rozbalit téma" : "Sbalit téma"}
         >
@@ -328,18 +388,47 @@ const SortableTopic = ({
           <FolderOpen className="w-4 h-4 text-primary shrink-0" />
           <span className="text-sm font-medium truncate">{topic.title}</span>
         </button>
-        <Badge variant="secondary" className="text-[10px] shrink-0">
+        {/* Telefon (< 640 px): ikona, celý název, počet lekcí pod ním, „⋯“ a šipka */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="sm:hidden flex min-h-10 min-w-0 flex-1 items-start gap-2 py-1 text-left"
+          aria-expanded={!collapsed}
+        >
+          <FolderOpen aria-hidden="true" className="mt-0.5 w-4 h-4 text-primary shrink-0" />
+          <span className="min-w-0">
+            <span className="block break-words line-clamp-2 text-sm font-medium">{topic.title}</span>
+            <span className="block text-xs text-muted-foreground">{topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : topic.lessons.length >= 2 && topic.lessons.length <= 4 ? "lekce" : "lekcí"}</span>
+          </span>
+        </button>
+        <Button size="icon" variant="ghost" className="sm:hidden h-10 w-10 shrink-0" aria-label={`Akce tématu ${topic.title}`} onClick={() => setSheetOpen(true)}>
+          <MoreHorizontal className="w-5 h-5" />
+        </Button>
+        <Button size="icon" variant="ghost" className="sm:hidden h-10 w-10 shrink-0" aria-expanded={!collapsed} aria-label={collapsed ? "Rozbalit téma" : "Sbalit téma"} onClick={() => setCollapsed((c) => !c)}>
+          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`} />
+        </Button>
+        <PhoneActionSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          title={topic.title}
+          actions={[
+            ...(onRequestMergeTopic ? [{ key: "merge", label: "Sloučit s jiným tématem…", icon: <Merge className="w-4 h-4" />, onSelect: () => onRequestMergeTopic(topic) }] : []),
+            { key: "edit", label: "Upravit", icon: <Pencil className="w-4 h-4" />, onSelect: () => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 }) },
+            { key: "del", label: "Smazat", icon: <Trash2 className="w-4 h-4" />, onSelect: () => onDeleteTopic(topic.id, topic.lessons.length), destructive: true },
+          ]}
+        />
+        <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] shrink-0">
           {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
         </Badge>
         {onRequestMergeTopic && (
-          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
+          <Button size="icon" variant="ghost" className="hidden sm:inline-flex h-7 w-7 shrink-0" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
             <Merge className="w-3.5 h-3.5" />
           </Button>
         )}
-        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
+        <Button size="icon" variant="ghost" className="hidden sm:inline-flex h-7 w-7 shrink-0" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
+        <Button size="icon" variant="ghost" className="hidden sm:inline-flex h-7 w-7 shrink-0" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
         </Button>
       </div>
