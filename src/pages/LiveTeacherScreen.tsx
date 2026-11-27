@@ -35,6 +35,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
+import { isWordcloudShown } from "@/lib/wordcloud-visibility";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
@@ -1353,9 +1354,7 @@ const LiveTeacherScreen = () => {
               })()}
 
               {(currentSlide as any).activitySpec?.activityType === "wordcloud" && (() => {
-                const wcPublished =
-                  (settings?.wordcloudPublished === true) &&
-                  (settings?.wordcloudPublishedQuestion === currentIndex);
+                const wcPublished = isWordcloudShown(settings, currentIndex);
                 return (
                   <div className="mt-3 p-3 border border-border rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
@@ -1374,8 +1373,9 @@ const LiveTeacherScreen = () => {
                           }).eq("id", sessionId);
                         }}
                         className="gap-1.5"
+                        aria-pressed={wcPublished}
                       >
-                        {wcPublished ? "✓ Mrak zobrazen" : "Zveřejnit mrak"}
+                        {wcPublished ? "Skrýt mrak" : "Zobrazit mrak"}
                       </Button>
                     </div>
                     {sessionId && (
@@ -1384,6 +1384,7 @@ const LiveTeacherScreen = () => {
                           sessionId={sessionId}
                           questionIndex={currentIndex}
                           published={true}
+                          colors={(currentSlide as any).activitySpec?.colors}
                         />
                       </div>
                     )}

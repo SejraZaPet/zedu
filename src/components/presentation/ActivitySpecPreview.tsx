@@ -34,7 +34,7 @@ export function activityPreviewItems(spec: any, revealAnswers = false): { text: 
  * Náhled aktivity na plátně. Řešení je skryté, dokud jej soukromý učitelský
  * náhled nebo editor výslovně neodhalí pomocí `revealAnswers`.
  */
-export default function ActivitySpecPreview({ spec, revealAnswers = false }: { spec: any; revealAnswers?: boolean }) {
+export default function ActivitySpecPreview({ spec, revealAnswers = false, showEditorHint = true }: { spec: any; revealAnswers?: boolean; showEditorHint?: boolean }) {
   const at = String(spec?.activityType ?? "");
   const choice = at === "mcq" || at === "poll";
   let items = activityPreviewItems(spec, revealAnswers).slice(0, 6);
@@ -82,9 +82,9 @@ export default function ActivitySpecPreview({ spec, revealAnswers = false }: { s
             );
           })}
         </ul>
-      ) : (
+      ) : showEditorHint ? (
         <p className="mt-6 text-[1.5rem] opacity-80">Žáci odpovídají na svých zařízeních. Obsah aktivity upravíte v panelu vpravo.</p>
-      )}
+      ) : null}
     </div>
   );
 }

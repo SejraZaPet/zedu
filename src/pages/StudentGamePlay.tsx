@@ -19,6 +19,7 @@ import { serverTsToClientMs } from "@/lib/clock-sync";
 import { isMcqRevealed } from "@/lib/live-mcq";
 import { McqCountdown } from "@/components/live/LiveMcqWidgets";
 import { isAwaitingStart, resolveTimeLimitSec } from "@/lib/live-timing";
+import { isWordcloudShown } from "@/lib/wordcloud-visibility";
 import AwaitingStartNotice from "@/components/live/AwaitingStartNotice";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import SlideCanvas from "@/components/admin/SlideCanvas";
@@ -633,9 +634,7 @@ const StudentGamePlay = () => {
                 (() => {
                   const spec = (currentSlideData as any).activitySpec || {};
                   const question = spec.question || "";
-                  const published =
-                    liveSettings?.wordcloudPublished === true &&
-                    liveSettings?.wordcloudPublishedQuestion === qi;
+                  const published = isWordcloudShown(liveSettings, qi);
                   return (
                     <div className="space-y-4">
                       <WordCloudActivity
@@ -652,6 +651,7 @@ const StudentGamePlay = () => {
                             questionIndex={qi}
                             published={true}
                             darkMode={true}
+                            colors={spec.colors}
                             joinToken={joinToken}
                           />
                         </div>

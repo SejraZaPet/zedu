@@ -468,3 +468,9 @@
 - [x] Prověřeny styly pozadí, chyby podepsaných obrázků, guma, žákovský digitální list, PDF a portfolio; export má bílou výplň a ostatní zobrazení světlé chybové stavy.
 - [x] 6 nových jsdom testů, celkem 75 cílených testů, diff check a automatické sestavení; bez DB/RLS/SQL, nasazení a změny AGENTS.md.
 - Neověřeno na fyzickém Android tabletu ani s konkrétním žákovským sešitem. Přihlášené živé preview v emulaci Androidu nemělo otevřený vlastní sešit, takže vizuální kontrola stage neproběhla; nevytvářela se žádná data.
+
+## Slovní mrak – živé promítání jako Mentimeter
+- [x] Výchozí živé zobrazení na projektoru i žákovském zařízení; explicitní Skrýt/Zobrazit přes sdílenou funkci a stávající settings.
+- [x] Čitelný prázdný stav, kontrast podle karty, velká plocha a plynulá relativní velikost slov; skrýt editorský pokyn při promítání.
+- [x] 21 cílených testů a prohlížeč s maketou: 1600×900 a 1280×720, 0/3/25 slov, světlý i tmavý podklad, učitelský přepínač; mrak 63,6 % výšky stage, bez ořezu a chyb stránky.
+- Všechny síťové zápisy zachyceny mimo DB; skutečná realtime relace, fyzický projektor a zátěž 50 účastníky neověřeny. Bez DB/SQL/nasazení a AGENTS.md.

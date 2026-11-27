@@ -5,6 +5,7 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
+import { isWordcloudShown } from "@/lib/wordcloud-visibility";
 
 /** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
 function ActivityCardFrame({ spec, className, children }: { spec: any; className: string; children: (dark: boolean) => React.ReactNode }) {
@@ -271,7 +272,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
                      proporčně zmenší do dostupného místa, takže se prvky
                      nepřekrývají a rozvržení odpovídá editoru. */
-                  <div className="w-full flex-1 min-h-0">
+                  <div className={`w-full min-h-0 ${activityType === "wordcloud" ? "h-[34%] shrink-0" : "flex-1"}`}>
                     <ProjectorCanvasStage
                       slide={canvasSlide}
                       currentIndex={currentIndex}
@@ -310,11 +311,10 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   <WordCloudView
                     sessionId={sessionId}
                     questionIndex={currentIndex}
-                    published={
-                      (session.settings as any)?.wordcloudPublished === true &&
-                      (session.settings as any)?.wordcloudPublishedQuestion === currentIndex
-                    }
-                    darkMode
+                    published={isWordcloudShown(session.settings, currentIndex)}
+                    darkMode={hasActivityColors(currentSlide.activitySpec?.colors) ? resolveActivityColors(currentSlide.activitySpec.colors).dark : projectorTheme.isDark}
+                    colors={currentSlide.activitySpec?.colors}
+                    projector
                   />
                 ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
                   isLiveMcqSlide(currentSlide) ? (() => {
