@@ -27,6 +27,14 @@ describe("Přepnout roli", () => {
     expect(o).toHaveLength(1);
     expect(o[0].mode).toBe("return");
   });
+  it("testovací žák bez příznaku záložky (e-mail @preview.invalid) vidí Zpět", async () => {
+    const { isPreviewStudentUser } = await import("@/lib/preview-student");
+    expect(isPreviewStudentUser("preview-abc@preview.invalid")).toBe(true);
+    expect(isPreviewStudentUser("zak@skola.cz")).toBe(false);
+    expect(isPreviewStudentUser(null)).toBe(false);
+    const o = roleSwitchOptions({ ...base, realRole: "user", isPreviewSession: isPreviewStudentUser("preview-abc@preview.invalid") });
+    expect(o[0].mode).toBe("return");
+  });
   it("Administrace v patičce jen pro admina mimo testovacího žáka", () => {
     expect(showFooterAdminLink("admin", false)).toBe(true);
     expect(showFooterAdminLink("admin", true)).toBe(false);

@@ -27,6 +27,8 @@ vi.mock("@/components/demo/DemoRoleSwitch", () => ({
 }));
 vi.mock("@/lib/preview-student", () => ({
   isPreviewStudentSession: () => false,
+  isPreviewStudentUser: () => false,
+  PREVIEW_RETURN_FAILED_URL: "/auth?duvod=nahled",
   returnFromPreviewStudent: vi.fn(),
   switchToPreviewStudent: vi.fn(),
 }));

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash, Presentation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PREVIEW_RETURN_FAILED_MESSAGE } from "@/lib/preview-student";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TERMS_VERSION, registrationConsentError, requiresTermsConsent } from "@/lib/terms";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
@@ -30,6 +31,12 @@ const Auth = () => {
   const { isStaff, loading: staffLoading } = useStaffPermissions();
   const { branding } = useSchoolBranding();
   const [mode, setMode] = useState<"login" | "register" | "pin">("login");
+  useEffect(() => {
+    if (searchParams.get("duvod") === "nahled") {
+      toast({ title: "Přihlaste se znovu", description: PREVIEW_RETURN_FAILED_MESSAGE });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [pinUsername, setPinUsername] = useState("");
   const [pinValue, setPinValue] = useState("");
   const [loading, setLoading] = useState(false);

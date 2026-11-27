@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FlaskConical, X } from "lucide-react";
-import { isPreviewStudentSession, returnFromPreviewStudent } from "@/lib/preview-student";
+import { isPreviewStudentSession, isPreviewStudentUser, PREVIEW_RETURN_FAILED_URL, returnFromPreviewStudent } from "@/lib/preview-student";
+import { useAuth } from "@/contexts/AuthContext";
 
 /** Trvalá lišta při přihlášení za testovacího žáka; vrací relaci admina. */
 const PreviewStudentBanner = () => {
-  const [visible] = useState(isPreviewStudentSession);
+  const { user } = useAuth();
+  const [flag] = useState(isPreviewStudentSession);
+  const visible = flag || isPreviewStudentUser(user?.email);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!visible) return;
@@ -23,7 +26,7 @@ const PreviewStudentBanner = () => {
         onClick={async () => {
           setBusy(true);
           const ok = await returnFromPreviewStudent();
-          window.location.href = ok ? "/admin" : "/auth";
+          window.location.href = ok ? "/admin" : PREVIEW_RETURN_FAILED_URL;
         }}
       >
         <X className="w-3.5 h-3.5 mr-1" aria-hidden /> Zpět

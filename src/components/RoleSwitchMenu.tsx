@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Repeat, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { isPreviewStudentSession, returnFromPreviewStudent, switchToPreviewStudent } from "@/lib/preview-student";
+import { isPreviewStudentSession, isPreviewStudentUser, PREVIEW_RETURN_FAILED_URL, returnFromPreviewStudent, switchToPreviewStudent } from "@/lib/preview-student";
 import { roleSwitchOptions, type RoleSwitchOption } from "@/lib/role-switch";
 
 const TARGETS: Record<string, string> = { admin: "/admin", school_admin: "/skola", teacher: "/ucitel", user: "/student" };
@@ -14,7 +14,7 @@ const RoleSwitchMenu = ({ onDone, variant }: { onDone?: () => void; variant: "dr
   const options = roleSwitchOptions({
     realRole: auth.realRole, roles: auth.roles, viewAsRole: auth.viewAsRole,
     canSwitchSchoolView: auth.canSwitchSchoolView, preferredView: auth.preferredView,
-    role: auth.role, isPreviewSession: isPreviewStudentSession(),
+    role: auth.role, isPreviewSession: isPreviewStudentSession() || isPreviewStudentUser(auth.user?.email),
   });
   if (!options.length) return null;
 
@@ -25,7 +25,7 @@ const RoleSwitchMenu = ({ onDone, variant }: { onDone?: () => void; variant: "dr
     try {
       if (o.mode === "return") {
         const ok = await returnFromPreviewStudent();
-        window.location.href = ok ? "/admin" : "/auth";
+        window.location.href = ok ? "/admin" : PREVIEW_RETURN_FAILED_URL;
       } else if (o.mode === "preview") {
         await switchToPreviewStudent();
         window.location.href = "/student";

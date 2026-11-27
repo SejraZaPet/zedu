@@ -7,6 +7,15 @@ export function isPreviewStudentSession(): boolean {
   try { return !!window.sessionStorage.getItem(PREVIEW_RETURN_KEY); } catch { return false; }
 }
 
+/** Testovací žák má vždy e-mail @preview.invalid (preview-student-switch). Jen pro zobrazení, ne pro oprávnění. */
+export function isPreviewStudentUser(email: string | null | undefined): boolean {
+  return typeof email === "string" && email.toLowerCase().endsWith("@preview.invalid");
+}
+
+/** Kam přejít po návratu: admin, nebo přihlášení s vysvětlením. */
+export const PREVIEW_RETURN_FAILED_URL = "/auth?duvod=nahled";
+export const PREVIEW_RETURN_FAILED_MESSAGE = "Návrat na admina v této záložce už není možný. Přihlaste se prosím znovu jako admin.";
+
 export async function switchToPreviewStudent(): Promise<void> {
   const { data: cur } = await supabase.auth.getSession();
   const s = cur.session;
