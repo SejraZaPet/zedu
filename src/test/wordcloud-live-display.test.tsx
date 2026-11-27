@@ -107,7 +107,7 @@ describe("WordCloudView", () => {
     const mostFrequent = await screen.findByText("[TEST] AI");
     const single = screen.getByText("[TEST] Praxe");
     expect(parseFloat(mostFrequent.style.fontSize)).toBeGreaterThan(parseFloat(single.style.fontSize));
-    expect(parseFloat(mostFrequent.style.fontSize)).toBe(96);
+    expect(parseFloat(mostFrequent.style.fontSize)).toBe(128);
     expect(screen.getByTestId("wordcloud-projector")).toHaveStyle({ backgroundColor: "#2B1A3F" });
   });
 });
@@ -146,6 +146,8 @@ describe("živé zobrazení mraku", () => {
       />,
     );
     expect(await screen.findByText("[TEST] Živé")).toBeInTheDocument();
+    expect(screen.getByTestId("wordcloud-question")).toHaveTextContent("[TEST] Co vás napadne?");
+    expect(screen.queryByText("Aktivita · Slovní mrak")).not.toBeInTheDocument();
     expect(screen.queryByText(/Obsah aktivity upravíte v panelu vpravo/)).not.toBeInTheDocument();
     shown.unmount();
 

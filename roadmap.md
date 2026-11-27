@@ -474,3 +474,5 @@
 - [x] Čitelný prázdný stav, kontrast podle karty, velká plocha a plynulá relativní velikost slov; skrýt editorský pokyn při promítání.
 - [x] 21 cílených testů a prohlížeč s maketou: 1600×900 a 1280×720, 0/3/25 slov, světlý i tmavý podklad, učitelský přepínač; mrak 63,6 % výšky stage, bez ořezu a chyb stránky.
 - Všechny síťové zápisy zachyceny mimo DB; skutečná realtime relace, fyzický projektor a zátěž 50 účastníky neověřeny. Bez DB/SQL/nasazení a AGENTS.md.
+- [x] Slovní mrak: jediné kompaktní rozvržení otázky nahoře a velkého mraku uprostřed, 32–128 px podle četnosti; ostatní aktivity beze změny.
+- [x] Ověřeno s maketou a blokovanými zápisy ve 1600×900 a 1280×720 s 0/5/25 slovy, světlým i tmavým podkladem; mrak 714 px (79,3 % stage), otázka 78 px, bez ořezu a chyb stránky.

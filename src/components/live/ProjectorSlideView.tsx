@@ -261,18 +261,30 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
               </div>
 
-              <div className={`flex-1 flex flex-col items-center justify-start gap-4 min-h-0 overflow-hidden ${hasCanvasContent ? "" : "px-6 pt-20 pb-24"}`}>
+              <div className={`flex-1 flex flex-col items-center justify-start gap-4 min-h-0 overflow-hidden ${activityType === "wordcloud" ? "px-6 pt-4 pb-16" : hasCanvasContent ? "" : "px-6 pt-20 pb-24"}`}>
                 {currentSlide.type === "explain" && (
                   <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                     <BookOpen className="w-4 h-4" /> Výklad
                   </div>
                 )}
 
-                {hasCanvasContent && (
+                {activityType === "wordcloud" && (currentSlide.activitySpec?.question || currentSlide.projector?.headline) && (
+                  <div
+                    data-testid="wordcloud-question"
+                    className="mt-1 w-full max-w-[1400px] shrink-0 rounded-2xl px-8 py-4 text-center shadow-lg"
+                    style={activityCardStyle(currentSlide.activitySpec?.colors)}
+                  >
+                    <h2 className="font-deck-heading text-[2.5rem] leading-[1.15]">
+                      {currentSlide.activitySpec?.question || currentSlide.projector?.headline}
+                    </h2>
+                  </div>
+                )}
+
+                {hasCanvasContent && activityType !== "wordcloud" && (
                   /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
                      proporčně zmenší do dostupného místa, takže se prvky
                      nepřekrývají a rozvržení odpovídá editoru. */
-                  <div className={`w-full min-h-0 ${activityType === "wordcloud" ? "h-[34%] shrink-0" : "flex-1"}`}>
+                  <div className="w-full min-h-0 flex-1">
                     <ProjectorCanvasStage
                       slide={canvasSlide}
                       currentIndex={currentIndex}

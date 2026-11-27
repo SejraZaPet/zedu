@@ -95,7 +95,7 @@ const WordCloudView = ({ sessionId, questionIndex, published = true, darkMode = 
     return words.map((w, i) => {
       const ratio = Math.sqrt(w.count / maxCount);
       const fontSize = projector
-        ? Math.max(28, Math.round((28 + 68 * ratio) * fit))
+        ? Math.max(32, Math.round((32 + 96 * ratio) * fit))
         : Math.round(18 + 30 * ratio);
       return {
         ...w,
@@ -126,7 +126,7 @@ const WordCloudView = ({ sessionId, questionIndex, published = true, darkMode = 
     >
       {words.length === 0 ? (
         <div>
-          <p className={projector ? "text-[2.5rem] font-semibold leading-tight" : "text-2xl"}>
+          <p className={projector ? "text-[2.75rem] font-semibold leading-tight" : "text-2xl"}>
             Čekám na příspěvky žáků…
           </p>
           <p className={projector ? "mt-4 text-[1.5rem] font-medium" : "mt-2 text-base"}>
