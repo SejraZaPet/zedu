@@ -262,13 +262,13 @@ const StudentGamePlay = () => {
     </button>
   ) : null;
 
-  const renderDrawButton = (floating = true) => (
+  const renderDrawButton = (floating = true, raised = false) => (
     <button
       type="button"
       onClick={() => setStudentDrawMode((v) => !v)}
       aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
       title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
-      className={`${floating ? "fixed bottom-4 right-4 z-[60]" : "shrink-0"} h-11 w-11 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
+      className={`${floating ? `fixed right-4 z-[60] ${raised ? "bottom-[calc(6rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]"}` : "shrink-0"} h-11 w-11 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
         studentDrawMode
           ? "bg-primary text-primary-foreground border-primary"
           : "bg-background/90 text-foreground border-border"
@@ -431,7 +431,7 @@ const StudentGamePlay = () => {
               <MessageCircleQuestion className="w-4 h-4" />
               Zeptej se
             </button>
-            {isCompactResponseActivity && renderDrawButton(false)}
+            
           </div>
 
           {sessionId && (
@@ -559,7 +559,7 @@ const StudentGamePlay = () => {
                       zIndex: 50,
                     }}
                   >
-                    <div className="flex-1 overflow-y-auto p-4 pb-24">
+                    <div className="flex-1 overflow-y-auto p-4 pb-[calc(7rem+env(safe-area-inset-bottom))]">
                       <WallResponsesList
                         sessionId={sessionId || ""}
                         questionIndex={qi}
@@ -572,7 +572,7 @@ const StudentGamePlay = () => {
                     {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
                       <div
                         className="fixed bottom-0 left-0 right-0 p-3 z-10"
-                        style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
                       >
                         <WallActivity
                           question=""
@@ -589,7 +589,7 @@ const StudentGamePlay = () => {
                     ) : (
                       <div
                         className="fixed bottom-0 left-0 right-0 p-3 z-10"
-                        style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
                       >
                         <div
                           className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
@@ -793,8 +793,10 @@ const StudentGamePlay = () => {
 
           </div>
 
-          {/* U kompaktních aktivit je kreslení v horní hlavičce, mimo tlačítko Hlasovat. */}
-          {!isCompactResponseActivity && renderDrawButton()}
+          {/* U aktivit (pole/odeslání dole) se tužka ukáže jen při povoleném kreslení učitelem, zvednutá nad spodní lištu. */}
+          {!isActivity
+            ? renderDrawButton()
+            : !isCompactResponseActivity && liveSettings?.allowStudentDrawSync && renderDrawButton(true, true)}
 
         </div>
       </>
