@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { remoteActivityState } from "@/lib/remote-activity";
 import {
-  ChevronLeft, ChevronRight, Pause, Play, StopCircle, Menu, Clock,
+  ChevronLeft, ChevronRight, Pause, Play, StopCircle, Menu, Clock, Rocket, Eye, CheckCircle2, Loader2,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 
-type Cmd = "next" | "prev" | "pause" | "resume" | "end" | "goto";
+type Cmd = "next" | "prev" | "pause" | "resume" | "end" | "goto" | "start" | "publish";
 
 interface SessionInfo {
   id: string;
@@ -18,6 +19,7 @@ interface SessionInfo {
   status: string;
   current_question_index: number;
   activity_data: any;
+  settings?: any;
   created_at: string;
 }
 
@@ -47,7 +49,7 @@ export default function PresenterRemote() {
       }
       const { data, error } = await supabase
         .from("game_sessions")
-        .select("id,title,teacher_id,status,current_question_index,activity_data,created_at")
+        .select("id,title,teacher_id,status,current_question_index,activity_data,settings,created_at")
         .eq("id", sessionId)
         .maybeSingle();
       if (cancelled) return;
@@ -89,15 +91,53 @@ export default function PresenterRemote() {
   const currentSlide = currentIndex >= 0 ? slides[currentIndex] : null;
   const isFinished = session?.status === "finished";
 
-  const send = async (cmd: Cmd, payload?: Record<string, any>) => {
-    if (!channelRef.current) return;
+  const send = async (cmd: Cmd, payload?: Record<string, any>): Promise<boolean> => {
+    if (!channelRef.current) return false;
     if (cmd === "pause") setPaused(true);
     if (cmd === "resume") setPaused(false);
-    await channelRef.current.send({
-      type: "broadcast",
-      event: "remote-cmd",
-      payload: { cmd, ...payload },
-    });
+    try {
+      const res = await channelRef.current.send({
+        type: "broadcast",
+        event: "remote-cmd",
+        payload: { cmd, ...payload },
+      });
+      return res === "ok";
+    } catch {
+      return false;
+    }
+  };
+
+  // Spustit / Zveřejnit: stav jen ze session; zámek proti dvojímu klepnutí.
+  const activity = remoteActivityState(currentSlide, session?.settings, currentIndex, session?.status);
+  const stateKey = `${currentIndex}|${activity.awaitingStart}|${activity.published}`;
+  const actionLock = useRef(false);
+  const [pendingCmd, setPendingCmd] = useState<"start" | "publish" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  useEffect(() => {
+    // Session se změnila → příkaz se projevil (nebo jsme jinde); uvolnit zámek.
+    actionLock.current = false;
+    setPendingCmd(null);
+  }, [stateKey]);
+  useEffect(() => {
+    if (!pendingCmd) return;
+    const id = setTimeout(() => {
+      actionLock.current = false;
+      setPendingCmd(null);
+      setActionError("Obrazovka učitele nereagovala. Zkontrolujte, že je otevřená, a zkuste znovu.");
+    }, 8000);
+    return () => clearTimeout(id);
+  }, [pendingCmd]);
+  const sendActivity = async (cmd: "start" | "publish") => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActionError(null);
+    setPendingCmd(cmd);
+    const ok = await send(cmd);
+    if (!ok) {
+      actionLock.current = false;
+      setPendingCmd(null);
+      setActionError("Nepodařilo se odeslat, zkuste znovu.");
+    }
   };
 
   // Swipe
@@ -218,6 +258,37 @@ export default function PresenterRemote() {
           )}
         </div>
       </section>
+
+      {activity.isActivity && !isFinished && (activity.awaitingStart || activity.publishKind) && (
+        <section className="px-4 pb-3 space-y-2" aria-label="Aktivita">
+          {activity.awaitingStart ? (
+            <Button
+              size="lg"
+              className="w-full min-h-14 h-16 text-lg gap-2"
+              disabled={!!pendingCmd}
+              onClick={() => sendActivity("start")}
+            >
+              {pendingCmd === "start" ? <Loader2 className="w-6 h-6 animate-spin" aria-hidden /> : <Rocket className="w-6 h-6" aria-hidden />}
+              {pendingCmd === "start" ? "Odesílám…" : "Spustit aktivitu"}
+            </Button>
+          ) : activity.published ? (
+            <Button size="lg" variant="secondary" className="w-full min-h-14 h-16 text-lg gap-2" disabled>
+              <CheckCircle2 className="w-6 h-6" aria-hidden /> Výsledky zveřejněny
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full min-h-14 h-16 text-lg gap-2"
+              disabled={!!pendingCmd}
+              onClick={() => sendActivity("publish")}
+            >
+              {pendingCmd === "publish" ? <Loader2 className="w-6 h-6 animate-spin" aria-hidden /> : <Eye className="w-6 h-6" aria-hidden />}
+              {pendingCmd === "publish" ? "Odesílám…" : "Zveřejnit výsledky"}
+            </Button>
+          )}
+          {actionError && <p role="alert" className="text-sm text-destructive text-center">{actionError}</p>}
+        </section>
+      )}
 
       {/* Bottom half: controls */}
       <section className="border-t border-border p-4 grid grid-cols-3 gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">

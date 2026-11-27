@@ -41,6 +41,7 @@ import { pollOptionId } from "@/lib/poll-options";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
+import { decideRemoteActivityCmd, remoteActivityState } from "@/lib/remote-activity";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import { useSwipe } from "@/hooks/useSwipe";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
@@ -278,6 +279,39 @@ const LiveTeacherScreen = () => {
     }).eq("id", sessionId);
   }, [sessionId, settings]);
 
+  // Zveřejnění výsledků – sdílí tlačítka na obrazovce i dálkové ovládání (stejný zápis do settings).
+  const toggleWallPublished = useCallback(async (published: boolean) => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({
+      settings: { ...(settings || {}), wallPublished: !published, wallPublishedQuestion: currentIndex },
+    }).eq("id", sessionId);
+  }, [sessionId, settings, currentIndex]);
+  const togglePollPublished = useCallback(async (published: boolean) => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({
+      settings: { ...(settings || {}), pollPublished: !published, pollPublishedQuestion: currentIndex },
+    }).eq("id", sessionId);
+  }, [sessionId, settings, currentIndex]);
+
+  const toggleWordcloudPublished = useCallback(async (published: boolean) => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({
+      settings: { ...(settings || {}), wordcloudPublished: !published, wordcloudPublishedQuestion: currentIndex },
+    }).eq("id", sessionId);
+  }, [sessionId, settings, currentIndex]);
+
+  // Dálkové „start“/„publish“: vždy nad aktuálním stavem (ref), ignoruje neaktivitu a opakování.
+  const remoteActivityRef = useRef<(cmd: string) => void>(() => {});
+  remoteActivityRef.current = (cmd: string) => {
+    const action = decideRemoteActivityCmd(cmd, remoteActivityState(currentSlide, settings, currentIndex, session?.status));
+    if (!action) return;
+    if (action.type === "start") void startActivity();
+    else if (action.kind === "mcq") void revealMcq();
+    else if (action.kind === "poll") void togglePollPublished(false);
+    else if (action.kind === "wall") void toggleWallPublished(false);
+    else if (action.kind === "wordcloud") void toggleWordcloudPublished(false);
+  };
+
   // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
   const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
   const hasRevealBlocks = !!(currentSlide as any)?.blocks?.some(
@@ -435,7 +469,8 @@ const LiveTeacherScreen = () => {
     });
     ch.on("broadcast", { event: "remote-cmd" }, ({ payload }) => {
       const cmd = payload?.cmd as string;
-      if (cmd === "next") handleNext();
+      if (cmd === "start" || cmd === "publish") remoteActivityRef.current(cmd);
+      else if (cmd === "next") handleNext();
       else if (cmd === "prev") {
         if (currentIndex > 0) nextQuestion(currentIndex - 2, slideResetPatch(currentIndex - 1));
       } else if (cmd === "end") {
@@ -1228,16 +1263,7 @@ const LiveTeacherScreen = () => {
                       <Button
                         size="sm"
                         variant={wallPublished ? "default" : "outline"}
-                        onClick={async () => {
-                          if (!sessionId) return;
-                          await supabase.from("game_sessions").update({
-                            settings: {
-                              ...(settings || {}),
-                              wallPublished: !wallPublished,
-                              wallPublishedQuestion: currentIndex,
-                            },
-                          }).eq("id", sessionId);
-                        }}
+                        onClick={() => toggleWallPublished(wallPublished)}
                         className="gap-1.5"
                       >
                         {wallPublished ? "✓ Odpovědi zobrazeny" : "Zveřejnit odpovědi"}
@@ -1315,16 +1341,7 @@ const LiveTeacherScreen = () => {
                       <Button
                         size="sm"
                         variant={pollPublished ? "default" : "outline"}
-                        onClick={async () => {
-                          if (!sessionId) return;
-                          await supabase.from("game_sessions").update({
-                            settings: {
-                              ...(settings || {}),
-                              pollPublished: !pollPublished,
-                              pollPublishedQuestion: currentIndex,
-                            },
-                          }).eq("id", sessionId);
-                        }}
+                        onClick={() => togglePollPublished(pollPublished)}
                         className="gap-1.5"
                       >
                         {pollPublished ? "✓ Výsledky zobrazeny" : "Zveřejnit výsledky"}
@@ -1369,16 +1386,7 @@ const LiveTeacherScreen = () => {
                       <Button
                         size="sm"
                         variant={wcPublished ? "default" : "outline"}
-                        onClick={async () => {
-                          if (!sessionId) return;
-                          await supabase.from("game_sessions").update({
-                            settings: {
-                              ...(settings || {}),
-                              wordcloudPublished: !wcPublished,
-                              wordcloudPublishedQuestion: currentIndex,
-                            },
-                          }).eq("id", sessionId);
-                        }}
+                        onClick={() => toggleWordcloudPublished(wcPublished)}
                         className="gap-1.5"
                         aria-pressed={wcPublished}
                       >
