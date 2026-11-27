@@ -16,9 +16,10 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MarkdownContent from "@/components/MarkdownContent";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import AcademyModuleAssistant from "@/components/academy/AcademyModuleAssistant";
 import type { Block } from "@/lib/textbook-config";
 import {
-  ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper, RefreshCw, ZoomIn,
+  ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper, RefreshCw, ZoomIn, Target, Lightbulb, TriangleAlert, Link2, MapPin, Flag,
 } from "lucide-react";
 
 type AudienceScope = "teacher" | "student" | "parent" | "internal";
@@ -78,6 +79,9 @@ const AcademyImage = ({ block }: { block: Block }) => {
   const url = typeof block.props.url === "string" ? block.props.url.trim() : "";
   const alt = typeof block.props.alt === "string" ? block.props.alt : "";
   const caption = typeof block.props.caption === "string" ? block.props.caption : "";
+  const callouts: Array<{ n: number; text: string }> = Array.isArray(block.props.callouts)
+    ? block.props.callouts.filter((c: unknown): c is { n: number; text: string } => !!c && typeof (c as { text?: unknown }).text === "string" && Number.isFinite(Number((c as { n?: unknown }).n)))
+    : [];
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [url]);
   if (!url) return block.props.icon ? <LessonBlock block={block} /> : null;
@@ -96,7 +100,32 @@ const AcademyImage = ({ block }: { block: Block }) => {
       </DialogContent>
     </Dialog>
     {caption && <figcaption className="text-sm text-muted-foreground">{caption}</figcaption>}
+    {callouts.length > 0 && <ol className="grid gap-2 sm:grid-cols-2" aria-label="Kroky na snímku">
+      {callouts.map((c) => <li key={c.n} className="flex items-start gap-2 rounded-lg border border-border bg-card p-2 text-sm">
+        <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary font-semibold text-primary-foreground">{c.n}</span>
+        <span className="pt-1 break-words"><span className="sr-only">Krok {c.n}: </span>{c.text}</span>
+      </li>)}
+    </ol>}
   </figure>;
+};
+
+const CALLOUTS = {
+  goal: { label: "Cíl", Icon: Target, cls: "border-primary/40 bg-primary/5" },
+  where: { label: "Kde funkci najdete", Icon: MapPin, cls: "border-border bg-muted" },
+  link: { label: "Propojení s dalšími funkcemi", Icon: Link2, cls: "border-accent bg-accent/30" },
+  tip: { label: "Tip", Icon: Lightbulb, cls: "border-primary/30 bg-primary/10" },
+  warning: { label: "Pozor", Icon: TriangleAlert, cls: "border-destructive/40 bg-destructive/5" },
+  result: { label: "Výsledek", Icon: Flag, cls: "border-border bg-card" },
+} as const;
+
+const AcademyCallout = ({ block }: { block: Block }) => {
+  const meta = CALLOUTS[(block.props.variant as keyof typeof CALLOUTS)] ?? CALLOUTS.tip;
+  const text = typeof block.props.text === "string" ? block.props.text : "";
+  if (!text) return null;
+  return <div className={`flex items-start gap-3 rounded-xl border p-3 ${meta.cls}`}>
+    <meta.Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+    <p className="min-w-0 break-words text-sm"><strong>{meta.label}:</strong> {text}</p>
+  </div>;
 };
 
 /** Modul se vykresluje stejným rendererem jako lekce; fallback na starý Markdown. */
@@ -108,7 +137,7 @@ const ModuleContent = ({ module }: { module: Module }) => {
         {blocks
           .filter((b) => b && b.visible !== false)
           .map((b, i) => (
-            b.type === "image" ? <AcademyImage key={b.id || i} block={b} /> : <LessonBlock key={b.id || i} block={b} blockIndex={i} />
+            b.type === "image" ? <AcademyImage key={b.id || i} block={b} /> : (b.type as string) === "callout" ? <AcademyCallout key={b.id || i} block={b} /> : <LessonBlock key={b.id || i} block={b} blockIndex={i} />
           ))}
       </div>
     );
@@ -923,6 +952,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                     <Button className="h-auto min-h-11 whitespace-normal text-left" variant={completedIds.has(activeModule.id) ? "outline" : "default"} onClick={() => toggleModuleDone(activeModule.id)}>
                       {completedIds.has(activeModule.id) ? (<><CheckCircle2 className="w-4 h-4 mr-1" /> Splněno – zrušit</>) : (<><Circle className="w-4 h-4 mr-1" /> Označit jako dokončené</>)}
                     </Button>
+                    {(audience === "teacher" || audience === "internal") && <AcademyModuleAssistant moduleId={activeModule.id} moduleTitle={activeModule.title} />}
                     {(() => {
                       const idx = modules.findIndex((m) => m.id === activeModule.id);
                       const previous = modules[idx - 1];
