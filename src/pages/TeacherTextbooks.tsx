@@ -740,9 +740,9 @@ const TeacherTextbooks = () => {
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnice
           </Button>
 
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="font-heading text-2xl font-bold">{selectedTextbook.title}</h1>
+          <div className="flex max-sm:flex-col max-sm:gap-3 items-start justify-between mb-6">
+            <div className="min-w-0 max-sm:w-full">
+              <h1 className="font-heading text-2xl font-bold break-words">{selectedTextbook.title}</h1>
               {matchedSubject && (
                 <div className="flex items-center gap-2 mt-1">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: matchedSubject.color }} />
@@ -751,7 +751,7 @@ const TeacherTextbooks = () => {
               )}
               {selectedTextbook.description && <p className="text-sm mt-2">{selectedTextbook.description}</p>}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex max-sm:flex-wrap items-center gap-2 [&>button]:max-sm:min-h-10 [&>button]:max-sm:min-w-10">
               <ReviewButton
                 originalId={selectedTextbook.copied_from_textbook_id ?? null}
                 kind="textbook"
@@ -764,13 +764,13 @@ const TeacherTextbooks = () => {
               <div className="bg-card border border-border rounded-lg px-3 py-2 flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Kód:</span>
                 <span className="font-mono font-bold text-primary">{selectedTextbook.access_code}</span>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => copyCode(selectedTextbook.access_code)}>
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 max-sm:h-10 max-sm:w-10" aria-label="Kopírovat kód" onClick={() => copyCode(selectedTextbook.access_code)}>
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-9 w-9 p-0">
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0 max-sm:h-10 max-sm:w-10" aria-label="Další akce">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -855,13 +855,13 @@ const TeacherTextbooks = () => {
 
           {/* Structure */}
 
-          <div className="bg-card border border-border rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-6 mb-6">
+            <div className="flex max-sm:flex-col max-sm:items-stretch max-sm:gap-3 items-center justify-between mb-4">
               <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-primary" /> Struktura učebnice
                 <Badge variant="secondary" className="text-xs">{totalLessons} lekcí</Badge>
               </h2>
-              <div className="flex gap-2">
+              <div className="flex max-sm:flex-wrap gap-2 [&>button]:max-sm:min-h-10 [&>button]:max-sm:min-w-10">
                 <Button size="sm" variant="outline" onClick={() => {
                   const firstGrade = matchedSubject?.grades[0]?.grade_number ?? 1;
                   setNewTopicGrade(firstGrade);
