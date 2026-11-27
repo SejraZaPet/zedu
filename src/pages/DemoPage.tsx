@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GraduationCap, Presentation, KeyRound, ArrowRight, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { DEMO_CODE_KEY, dashboardFor, restoreDemo, startDemo, useDemoPair } from "@/lib/demo";
+import { DEMO_CODE_KEY, DEMO_RETRYING_MSG, DemoCallError, dashboardFor, restoreDemo, startDemo, useDemoPair, type DemoCallOptions } from "@/lib/demo";
 import logo from "@/assets/bezli-logo.png";
 
 const DemoPage = () => {
@@ -25,15 +25,29 @@ const DemoPage = () => {
     try { setSavedCode(window.localStorage.getItem(DEMO_CODE_KEY)); } catch { /* ignore */ }
   }, []);
 
-  const go = async (key: string, fn: () => Promise<"teacher" | "student">) => {
+  const [retrying, setRetrying] = useState(false);
+  const [canRetry, setCanRetry] = useState(false);
+  // Synchronní zámek: druhé ťuknutí před překreslením (disabled) nevyvolá druhé založení.
+  const lockRef = useRef(false);
+  const lastRef = useRef<{ key: string; fn: (o: DemoCallOptions) => Promise<"teacher" | "student"> } | null>(null);
+
+  const go = async (key: string, fn: (o: DemoCallOptions) => Promise<"teacher" | "student">) => {
+    if (lockRef.current) return;
+    lockRef.current = true;
+    lastRef.current = { key, fn };
     setBusy(key);
     setError(null);
+    setCanRetry(false);
+    setRetrying(false);
     try {
-      const role = await fn();
+      const role = await fn({ onRetry: () => setRetrying(true) });
       window.location.assign(dashboardFor(role));
     } catch (e) {
-      setError((e as Error).message);
+      setRetrying(false);
+      setError((e as Error).message || "Spojení se nepovedlo. Zkontrolujte připojení a klepněte znovu.");
+      setCanRetry(e instanceof DemoCallError && e.kind === "network");
       setBusy(null);
+      lockRef.current = false;
     }
   };
 
@@ -58,7 +72,7 @@ const DemoPage = () => {
             onClick={() =>
               isLoggedIn && pair
                 ? navigate(dashboardFor(pair.side))
-                : go("continue", () => restoreDemo(savedCode!))
+                : go("continue", (o) => restoreDemo(savedCode!, o))
             }
           >
             Pokračovat tam, kde jsem skončil/a <ArrowRight className="w-4 h-4" />
@@ -70,7 +84,7 @@ const DemoPage = () => {
             size="lg"
             className="h-16 text-lg gap-3"
             disabled={!!busy}
-            onClick={() => go("teacher", () => startDemo("teacher", eventTag))}
+            onClick={() => go("teacher", (o) => startDemo("teacher", eventTag, o))}
           >
             <Presentation className="w-6 h-6" aria-hidden />
             {busy === "teacher" ? "Připravuji…" : "Vstoupit jako učitel"}
@@ -80,7 +94,7 @@ const DemoPage = () => {
             variant="secondary"
             className="h-16 text-lg gap-3"
             disabled={!!busy}
-            onClick={() => go("student", () => startDemo("student", eventTag))}
+            onClick={() => go("student", (o) => startDemo("student", eventTag, o))}
           >
             <GraduationCap className="w-6 h-6" aria-hidden />
             {busy === "student" ? "Připravuji…" : "Vstoupit jako žák"}
@@ -94,7 +108,24 @@ const DemoPage = () => {
           <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">zásadami ochrany osobních údajů</a>.
         </p>
 
-        {error && <p role="alert" className="text-sm text-destructive text-center">{error}</p>}
+        {retrying && busy && (
+          <p role="status" className="text-sm text-muted-foreground text-center">{DEMO_RETRYING_MSG}</p>
+        )}
+        {error && (
+          <div className="space-y-2 text-center">
+            <p role="alert" className="text-sm text-destructive">{error}</p>
+            {canRetry && lastRef.current && (
+              <Button
+                variant="outline"
+                className="h-11 min-w-40"
+                disabled={!!busy}
+                onClick={() => { const l = lastRef.current; if (l) void go(l.key, l.fn); }}
+              >
+                Zkusit znovu
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="text-center">
           {!showCode ? (
@@ -104,7 +135,7 @@ const DemoPage = () => {
           ) : (
             <form
               className="space-y-2 text-left"
-              onSubmit={(e) => { e.preventDefault(); if (code.trim()) go("code", () => restoreDemo(code)); }}
+              onSubmit={(e) => { e.preventDefault(); if (code.trim()) go("code", (o) => restoreDemo(code, o)); }}
             >
               <Label htmlFor="demo-code">Návratový kód</Label>
               <div className="flex gap-2">
