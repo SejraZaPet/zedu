@@ -1020,11 +1020,11 @@ export const PresentationEditorDialog = ({
       <Button
         size="sm"
         variant="outline"
-        className="w-full gap-1.5 text-xs"
+        className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight gap-1.5 text-xs"
         onClick={generateActivityFromSlide}
         disabled={generatingActivity || currentSlide?.type === "activity"}
       >
-        {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+        {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Wand2 className="h-3.5 w-3.5 shrink-0" />}
         Dogenerovat aktivitu (AI)
       </Button>
       <p className="mt-1 text-[11px] text-muted-foreground">
@@ -1064,7 +1064,7 @@ export const PresentationEditorDialog = ({
                   <div className="space-y-5">
                     <section>
                       <h2 className="mb-3 font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Přidat prvek</h2>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2">
                         <InsertTile icon={HeadingIcon} label="Nadpis" onClick={() => addBlock("heading")} />
                         <InsertTile icon={Type} label="Text" onClick={() => addBlock("paragraph")} />
                         <InsertTile icon={List} label="Odrážky" onClick={() => addBlock("bullet_list")} />
@@ -1152,10 +1152,10 @@ export const PresentationEditorDialog = ({
 
                     <section className="space-y-3 border-t border-deck-line pt-4">
                       <h2 className="font-deck-heading text-sm uppercase tracking-wide text-deck-violet-deep">Pozadí a motiv</h2>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
                         {PRESENTATION_THEMES.map((item) => (
                           <button key={item.id} type="button" onClick={() => setThemeId(item.id)} aria-label={`Použít motiv ${item.name}`} aria-pressed={themeId === item.id} className={`overflow-hidden rounded-lg border-2 ${themeId === item.id ? "border-deck-violet" : "border-deck-line"}`}>
-                            <span className="flex h-12 items-end p-1.5 text-[9px] font-semibold text-deck-on-violet" style={{ background: item.backgroundStyle }}>{item.name}</span>
+                            <span className="flex min-h-12 items-end break-words p-1.5 text-left text-[9px] font-semibold leading-tight text-deck-on-violet" style={{ background: item.backgroundStyle }}>{item.name}</span>
                           </button>
                         ))}
                       </div>
@@ -1168,16 +1168,16 @@ export const PresentationEditorDialog = ({
 
                 {sidebarSection === "activities" && (
                   <div className="space-y-4">
-                    <Button className="h-11 w-full rounded-xl bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={() => setInsertActivityOpen(true)}>
-                      <Plus className="mr-2 h-5 w-5" /> Vložit aktivitu
+                    <Button className="h-auto min-h-11 w-full justify-start whitespace-normal rounded-xl py-2 text-left leading-tight bg-deck-violet text-deck-on-violet hover:bg-deck-violet-deep" onClick={() => setInsertActivityOpen(true)}>
+                      <Plus className="mr-2 h-5 w-5 shrink-0" /> Vložit aktivitu
                     </Button>
-                    <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setActivityCreatorOpen((v) => !v)} aria-expanded={activityCreatorOpen}>
-                      <Puzzle className="mr-2 h-5 w-5" /> Vytvořit novou aktivitu
+                    <Button variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal rounded-xl py-2 text-left leading-tight" onClick={() => setActivityCreatorOpen((v) => !v)} aria-expanded={activityCreatorOpen}>
+                      <Puzzle className="mr-2 h-5 w-5 shrink-0" /> Vytvořit novou aktivitu
                     </Button>
-                    <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setInsertSlidesOpen(true)}><Copy className="mr-2 h-4 w-4" />Vložit slidy z lekce / prezentace</Button>
+                    <Button variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal rounded-xl py-2 text-left leading-tight" onClick={() => setInsertSlidesOpen(true)}><Copy className="mr-2 h-4 w-4 shrink-0" />Vložit slidy z lekce / prezentace</Button>
                     <div role="radiogroup" aria-label="Kam vložit aktivitu" className="grid grid-cols-2 gap-1 rounded-lg bg-deck-soft p-1">
                       {([["slide", "Do tohoto slidu"], ["new", "Jako nový slide"]] as const).map(([value, label]) => (
-                        <button key={value} type="button" role="radio" aria-checked={activityTarget === value} onClick={() => setActivityTarget(value)} className={`rounded-md px-2 py-2 text-[11px] font-semibold ${activityTarget === value ? "bg-deck-violet text-deck-on-violet" : "text-deck-violet-deep"}`}>{label}</button>
+                        <button key={value} type="button" role="radio" aria-checked={activityTarget === value} onClick={() => setActivityTarget(value)} className={`min-w-0 whitespace-normal break-words rounded-md px-2 py-2 text-[11px] font-semibold leading-tight ${activityTarget === value ? "bg-deck-violet text-deck-on-violet" : "text-deck-violet-deep"}`}>{label}</button>
                       ))}
                     </div>
                     {activityCreatorOpen && <ActivityCatalog compact onPick={insertActivityPreset} />}
@@ -1192,10 +1192,10 @@ export const PresentationEditorDialog = ({
                         ["escape", "Úniková hra", "Série hádanek a zámků", KeyRound],
                       ].map(([presetId, label, description, Icon]: any) => {
                         const preset = ACTIVITY_PRESETS.find((item) => item.id === presetId);
-                        return preset && <button key={presetId} type="button" onClick={() => insertActivityPreset(preset)} className="flex w-full items-center gap-3 rounded-xl border border-deck-line p-3 text-left hover:border-deck-teal hover:bg-deck-cream"><Icon className="h-5 w-5 shrink-0 text-deck-violet" /><span><span className="block text-xs font-semibold">{label}</span><span className="block text-[11px] text-deck-muted">{description}</span></span></button>;
+                        return preset && <button key={presetId} type="button" onClick={() => insertActivityPreset(preset)} className="flex w-full items-center gap-3 rounded-xl border border-deck-line p-3 text-left hover:border-deck-teal hover:bg-deck-cream"><Icon className="h-5 w-5 shrink-0 text-deck-violet" /><span className="min-w-0 break-words"><span className="block text-xs font-semibold">{label}</span><span className="block text-[11px] text-deck-muted">{description}</span></span></button>;
                       })}
                     </section>
-                    <Button variant="outline" className="w-full" onClick={() => window.open("/ucitel/studio", "_blank", "noopener")}><ExternalLink className="mr-2 h-4 w-4" />Všechny typy ze Studia</Button>
+                    <Button variant="outline" className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight" onClick={() => window.open("/ucitel/studio", "_blank", "noopener")}><ExternalLink className="mr-2 h-4 w-4 shrink-0" />Všechny typy ze Studia</Button>
                     {aiActivityButton}
                   </div>
                 )}

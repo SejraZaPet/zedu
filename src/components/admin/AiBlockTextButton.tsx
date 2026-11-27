@@ -60,12 +60,12 @@ const AiBlockTextButton = ({ block, headline, lessonTitle, onAccept }: Props) =>
       <Button
         size="sm"
         variant="outline"
-        className="h-8 gap-1"
+        className="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left leading-tight gap-1"
         disabled={!isTextBlock || loading}
         onClick={generate}
         title={isTextBlock ? "Návrh textu od AI pro vybraný blok" : "Nejprve klikněte na textový blok v náhledu"}
       >
-        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Sparkles className="h-3.5 w-3.5 shrink-0" />}
         Doplnit AI
       </Button>
 
