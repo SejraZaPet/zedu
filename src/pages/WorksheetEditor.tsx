@@ -2552,7 +2552,7 @@ export default function WorksheetEditor() {
 
       {/* Sticky toolbar — top matches fixed SiteHeader height (70 px) */}
       <div className="sticky top-[70px] z-30 bg-background/95 backdrop-blur border-b border-border pt-px">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-2 sm:gap-3 max-w-[1600px]">
+        <div className="container mx-auto px-3 py-3 flex flex-wrap items-center gap-x-1.5 gap-y-2 sm:flex-nowrap sm:px-4 sm:gap-3 max-w-[1600px]">
           <Button variant="ghost" size="sm" onClick={handleBack} className="shrink-0">
             <ChevronLeft className="w-4 h-4 sm:mr-1" />
             <span className="hidden sm:inline">Zpět</span>
@@ -2587,7 +2587,7 @@ export default function WorksheetEditor() {
             value={normalizeWorksheetKind(spec.header.worksheetMode)}
             onValueChange={(value) => updateSpec((state) => ({ ...state, header: { ...state.header, worksheetMode: value } }))}
           >
-            <SelectTrigger aria-label="Druh listu" className="h-8 w-[150px] shrink-0 border-primary/40 bg-primary/10 font-semibold text-primary">
+            <SelectTrigger aria-label="Druh listu" className="order-last h-10 w-full shrink-0 sm:order-none sm:h-8 sm:w-[150px] border-primary/40 bg-primary/10 font-semibold text-primary">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -2601,7 +2601,7 @@ export default function WorksheetEditor() {
               onClick={undo}
               title="Zpět (Ctrl+Z)"
               disabled={historyRef.current.length === 0}
-              className="hidden sm:inline-flex"
+              className="hidden xl:inline-flex"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
@@ -2624,13 +2624,13 @@ export default function WorksheetEditor() {
               </Label>
             </div>
             {(spec.renderConfig?.pointsEnabled ?? true) && (
-              <Badge variant="outline" className="hidden lg:inline-flex whitespace-nowrap">
+              <Badge variant="outline" className="hidden xl:inline-flex whitespace-nowrap">
                 Celkem: {spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}
               </Badge>
             )}
             <Badge
               variant={status === "published" ? "default" : status === "scheduled" ? "outline" : "secondary"}
-              className="hidden sm:inline-flex"
+              className="hidden lg:inline-flex"
             >
               {status === "published"
                 ? "Publikováno"
@@ -2640,10 +2640,10 @@ export default function WorksheetEditor() {
                     : "Naplánováno"
                   : "Koncept"}
             </Badge>
-            <Button variant="outline" size="sm" onClick={() => void handlePreviewPdf()} className="hidden sm:inline-flex">
+            <Button variant="outline" size="sm" onClick={() => void handlePreviewPdf()} className="hidden xl:inline-flex">
               <Eye className="w-4 h-4 mr-1" /> Náhled
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
+            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden xl:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
             </Button>
             <TooltipProvider>
@@ -2656,7 +2656,7 @@ export default function WorksheetEditor() {
                       onClick={() => setSectionsPanelOpen(true)}
                       disabled={activeLessonSections.length === 0}
                     >
-                      <FileText className="w-4 h-4 mr-1" /> Sekce lekce
+                      <FileText className="w-4 h-4 lg:mr-1" aria-hidden /><span className="sr-only lg:not-sr-only">Sekce lekce</span>
                     </Button>
                   </span>
                 </TooltipTrigger>
@@ -2665,11 +2665,11 @@ export default function WorksheetEditor() {
                 )}
               </Tooltip>
             </TooltipProvider>
-            <Button variant="outline" className="min-h-11 whitespace-normal" onClick={() => setFromLessonOpen(true)}><Sparkles className="w-4 h-4 mr-1 shrink-0" />Vytvořit z lekce</Button>
+            <Button variant="outline" className="hidden min-h-11 whitespace-nowrap xl:inline-flex" onClick={() => setFromLessonOpen(true)}><Sparkles className="w-4 h-4 mr-1 shrink-0" />Vytvořit z lekce</Button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="hidden lg:inline-flex">
+                  <span className="hidden xl:inline-flex">
                     <Button
                       variant="outline"
                       size="sm"
@@ -2687,7 +2687,7 @@ export default function WorksheetEditor() {
               size="sm"
               onClick={() => id && serverPdf.exportOne("worksheet", id)}
               disabled={!id || serverPdf.loading}
-              className="hidden md:inline-flex"
+              className="hidden xl:inline-flex"
               title="Vygenerovat PDF na serveru (konzistentní výstup)"
             >
               {serverPdf.loading ? (
@@ -2704,7 +2704,7 @@ export default function WorksheetEditor() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="md:hidden shrink-0"
+                  className="xl:hidden shrink-0"
                   aria-label="Další akce"
                   title="Další akce"
                 >
@@ -2717,6 +2717,9 @@ export default function WorksheetEditor() {
                   disabled={historyRef.current.length === 0}
                 >
                   <RotateCcw className="w-4 h-4 mr-2" /> Zpět
+                </DropdownMenuItem>
+                <DropdownMenuItem className="xl:hidden" onClick={() => setFromLessonOpen(true)}>
+                  <Sparkles className="w-4 h-4 mr-2" /> Vytvořit z lekce
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void handlePreviewPdf()}>
                   <Eye className="w-4 h-4 mr-2" /> Náhled
@@ -2747,8 +2750,8 @@ export default function WorksheetEditor() {
             <DropdownMenu onOpenChange={(o) => { if (o) void checkVisiblePlan(); }}>
               <DropdownMenuTrigger asChild>
                 <Button size="sm">
-                  <Send className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">
+                  <Send className="w-4 h-4 lg:mr-1" /><span className="sr-only lg:hidden">Zadat a publikovat</span>
+                  <span className="hidden lg:inline">
                     {status === "published"
                       ? "Publikováno"
                       : status === "scheduled"
@@ -2807,11 +2810,11 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="worksheet-editor-shell flex-1 w-full px-3 pb-8 pt-6 xl:px-6">
+      <main className={`worksheet-editor-shell flex-1 w-full px-3 pt-6 xl:px-6 ${returnTo && id && !returnBannerDismissed ? "pb-[calc(6rem+env(safe-area-inset-bottom))]" : "pb-8"}`}>
         <div className="grid items-start gap-4 md:grid-cols-[210px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_300px]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block md:max-h-[calc(100vh-160px)] md:overflow-y-auto lg:p-4">
+          <aside className={`hidden rounded-lg border border-border bg-card p-3 md:sticky md:top-[140px] md:block ${returnTo && id && !returnBannerDismissed ? "md:max-h-[calc(100vh-240px)]" : "md:max-h-[calc(100vh-160px)]"} md:overflow-y-auto lg:p-4`}>
 
             {paletteContent}
           </aside>
@@ -2820,7 +2823,7 @@ export default function WorksheetEditor() {
           <section className="worksheet-a4-stage min-w-0 rounded-lg bg-muted/50 px-3 py-5 sm:px-5">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-                <div className="mx-auto flex w-max flex-col gap-5">
+                <div className="mx-auto flex w-full flex-col gap-5 min-[1100px]:w-max">
                   {editorPages.map((page, pageIndex) => (
                     <article key={`${pageIndex}-${page.items[0]?.id ?? "empty"}`} className="worksheet-a4-page relative">
                       <div className="worksheet-a4-content">
@@ -2841,10 +2844,20 @@ export default function WorksheetEditor() {
                                     </div>
                                   )}
                                   <div className="min-w-0 flex-1">
-                                    <Input
+                                    {/* Víceřádkové pole, aby se dlouhý název na úzkém displeji zalomil místo oříznutí; Enter nový řádek nevkládá. */}
+                                    <textarea
                                       aria-label="Název pracovního listu"
+                                      rows={1}
                                       value={spec.header.title}
-                                      onChange={(event) => updateSpec((state) => ({ ...state, header: { ...state.header, title: event.target.value } }))}
+                                      ref={(node) => { if (node) { node.style.height = "auto"; node.style.height = `${node.scrollHeight}px`; } }}
+                                      onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+                                      onChange={(event) => {
+                                        const node = event.currentTarget;
+                                        node.style.height = "auto";
+                                        node.style.height = `${node.scrollHeight}px`;
+                                        const title = event.target.value.replace(/[\r\n]+/g, " ");
+                                        updateSpec((state) => ({ ...state, header: { ...state.header, title } }));
+                                      }}
                                     />
                                     <div className="mt-1 text-[8.5pt] font-semibold text-muted-foreground">
                                       {[spec.header.subject, spec.header.gradeBand].filter(Boolean).join(" · ") || "Pracovní list"}
@@ -3573,8 +3586,8 @@ export default function WorksheetEditor() {
 
 
       {returnTo && id && !returnBannerDismissed && (
-        <div className="fixed bottom-4 left-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Pokračovat zpět do úkolu:</span>
+        <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 bg-card border border-border rounded-xl shadow-lg p-2 sm:p-3 flex items-center justify-between gap-2 text-sm sm:inset-x-auto sm:left-4 sm:bottom-4 sm:justify-start">
+          <span className="hidden text-muted-foreground sm:inline">Pokračovat zpět do úkolu:</span>
           <Button
             size="sm"
             onClick={() => {
