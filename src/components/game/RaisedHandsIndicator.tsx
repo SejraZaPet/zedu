@@ -5,11 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { sortRaisedHands } from "@/lib/raised-hands";
 import type { GamePlayer } from "@/lib/game-types";
 
+/**
+ * Pozice: uprostřed nahoře těsně pod 55px lištou učitele (a pod případným demo pruhem),
+ * aby nikdy nepřekrývala plovoucí „Přidat slide“ ani spodní panel „Spustit aktivitu“.
+ */
+export const RAISED_HANDS_POSITION_STYLE = { top: "calc(var(--demo-banner-h, 0px) + 63px)", left: "50%", transform: "translateX(-50%)" } as const;
+
 /** Always-visible teacher indicator of raised hands (lobby, slides, solo rounds). */
 export default function RaisedHandsIndicator({ players, anonymousLabels }: { players: GamePlayer[]; anonymousLabels?: Record<string, string> }) {
   const raised = sortRaisedHands(players);
   return (
-    <div className="fixed bottom-4 right-4 z-50" aria-live="polite">
+    <div className="fixed z-40" style={RAISED_HANDS_POSITION_STYLE} data-testid="raised-hands-indicator" aria-live="polite">
       {raised.length > 0 && (
         <Popover>
           <PopoverTrigger asChild>
@@ -17,7 +23,7 @@ export default function RaisedHandsIndicator({ players, anonymousLabels }: { pla
               <Hand className="h-4 w-4" aria-hidden /> Hlásí se {raised.length}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-72">
+          <PopoverContent align="center" className="w-72">
             <p className="mb-2 text-sm font-semibold">Zvednuté ruce</p>
             <ol className="space-y-1">
               {raised.map((p, i) => (

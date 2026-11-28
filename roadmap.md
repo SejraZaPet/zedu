@@ -498,3 +498,6 @@
 - [x] Zachovány změny slovního mraku; opraven kontrast textu a duplicitní otázky bez změny odesílání, sessionStorage nebo zveřejňování.
 - [x] Poll/wordcloud/wall bez velkého náhledu slidu; na šířku otázka vlevo a ovládání vpravo, ovládání v hlavičce, Hlasovat/Odeslat stále viditelné.
 - [x] Ověřena anketa se 4 možnostmi před/po výběru v 390×844, 768×1024, 1024×768 a 1180×820; bez rolování, text 18 px a kontrast 15,35:1, řádky 56 px, bez odeslání a zápisů do DB.
+
+## Zvednutá ruka bez překryvu
+- [x] Upozornění „Hlásí se“ přesunout mimo tlačítko „+“ a ověřit na 390 px, tabletu a 1280+.
