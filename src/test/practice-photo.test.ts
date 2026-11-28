@@ -8,6 +8,9 @@ import {
   validatePracticePhotoFile,
 } from "@/lib/practice-photo";
 
+const heic = vi.hoisted(() => ({ convert: vi.fn() }));
+vi.mock("heic2any", () => ({ default: heic.convert }));
+
 const file = (name: string, type: string, size = 1000) => {
   const value = new File(["fotka"], name, { type });
   Object.defineProperty(value, "size", { value: size });
@@ -35,6 +38,24 @@ afterEach(() => {
 });
 
 describe("příprava fotografie pro Učím se", () => {
+  it("HEIC bez nativní podpory převede místním dekodérem na JPEG", async () => {
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => { throw new Error("unsupported"); }));
+    heic.convert.mockResolvedValue(new Blob(["[TEST] JPEG"], { type: "image/jpeg" }));
+    URL.createObjectURL = vi.fn((blob: Blob) => blob.type === "image/jpeg" ? "blob:jpeg" : "blob:heic");
+    URL.revokeObjectURL = vi.fn();
+    class FakeImage {
+      naturalWidth = 800; naturalHeight = 600;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(value: string) { if (value === "blob:jpeg") this.onload?.(); else if (value) this.onerror?.(); }
+    }
+    vi.stubGlobal("Image", FakeImage);
+    mockCanvas();
+    const photo = await preparePracticePhoto(file("[TEST].heic", "image/heic"));
+    expect(heic.convert).toHaveBeenCalledWith(expect.objectContaining({ toType: "image/jpeg" }));
+    expect(photo.mimeType).toBe("image/jpeg");
+    disposePracticePhoto(photo);
+  });
   it("odmítne neobrazový formát a vstup nad 15 MB", () => {
     expect(() => validatePracticePhotoFile(file("poznamky.txt", "text/plain"))).toThrow("JPEG, PNG, WebP nebo HEIC");
     expect(() => validatePracticePhotoFile(file("fotka.jpg", "image/jpeg", 15 * 1024 * 1024 + 1))).toThrow("15 MB");

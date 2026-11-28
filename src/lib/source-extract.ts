@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractDocumentText } from "@/lib/curriculum-file-extract";
 import { disposePracticePhoto, preparePracticePhoto, PRACTICE_PHOTO_UNREADABLE_MESSAGE } from "@/lib/practice-photo";
 import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
-import { isCloudLoginHost, urlErrorMessage, type SourceKind } from "@/lib/source-bundle";
+import { AUDIO_VIDEO_SOURCE_MESSAGE, isAudioVideoFile, isCloudLoginHost, urlErrorMessage, type SourceKind } from "@/lib/source-bundle";
 import { EMPTY_FILE_MESSAGE, extractDocx, extractOdf, extractPptx, extractXlsx, legacyFormatHint } from "@/lib/office-extract";
 import { extractPdfText, renderPdfPagesToImages } from "@/lib/pdf-page-renderer";
 import { SCANNED_PDF_HINT, SCANNED_PDF_MAX_CHARS } from "@/lib/lesson-or-own-source";
@@ -27,6 +27,7 @@ export async function pdfPagesAsPhotos(file: File, max: number): Promise<{ files
 }
 
 export async function extractFileSource(file: File, kind: SourceKind): Promise<string> {
+  if (isAudioVideoFile(file)) throw new Error(AUDIO_VIDEO_SOURCE_MESSAGE);
   if (kind === "txt") return (await file.text()).trim();
   if (kind === "photo") {
     const photo = await preparePracticePhoto(file);

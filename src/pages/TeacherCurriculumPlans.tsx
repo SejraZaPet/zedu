@@ -45,6 +45,9 @@ import {
   extractDocumentText,
 } from "@/lib/curriculum-file-extract";
 import { downloadCurriculumPdf } from "@/lib/curriculum-pdf-export";
+import SourceInput from "@/components/sources/SourceInput";
+import { useSourceBundle } from "@/lib/use-source-bundle";
+import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
 
 interface CurriculumPlan {
   id: string;
@@ -340,43 +343,34 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
   const [aiBusy, setAiBusy] = useState(false);
   const [aiStep, setAiStep] = useState<string>("");
   const [aiBlockIds, setAiBlockIds] = useState<string[]>([]);
-  const aiInputRef = useRef<HTMLInputElement>(null);
+  const [aiInputOpen, setAiInputOpen] = useState(false);
+  const sources = useSourceBundle("teacher", (description) => toast({ title: "Zdroj zamítnut", description, variant: "destructive" }), { maxChars: CURRICULUM_AI_MAX_CHARS, minChars: 100 });
+  const aiLock = useRef(false);
 
   const markBlockEdited = (id: string) =>
     setAiBlockIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev));
 
-  const handleAiFile = async (f: File | null) => {
-    if (!f) return;
-    const err = validateFile(f);
-    if (err) {
-      toast({ title: "Soubor zamítnut", description: err, variant: "destructive" });
-      return;
-    }
+  const handleAiFile = async () => {
+    if (!sources.state.ok || aiLock.current) return;
     if (
       blocks.length > 0 &&
       !confirm("Obsah editoru není prázdný. Přepsat ho návrhem od AI?")
     )
       return;
 
+    aiLock.current = true;
     setAiBusy(true);
     try {
       setAiStep("Načítám text ze souboru…");
-      const text = await extractDocumentText(f);
-
-      if (text.length > CURRICULUM_AI_MAX_CHARS) {
-        toast({
-          title: "Dokument je delší než limit AI",
-          description: `Dokument má ${text.length} znaků, AI zpracuje jen prvních ${CURRICULUM_AI_MAX_CHARS}. Zbytek prosím doplňte ručně.`,
-        });
-      }
+      const text = sources.state.text;
 
       setAiStep("AI navrhuje obsah ŠVP…");
       const { data, error } = await supabase.functions.invoke("parse-curriculum-document", {
         body: { extractedText: text, subject },
       });
-      if (error) throw new Error((error as any)?.message || "AI služba není dostupná.");
+      if (error) throw new Error(await practiceErrorMessage(error));
       const res = data as any;
-      if (res?.error) throw new Error(res.error);
+      if (res?.error) throw new Error(readablePracticeMessage(res.error));
 
       const sections = Array.isArray(res?.sections) ? res.sections : [];
       const years = Array.isArray(res?.years) ? res.years : [];
@@ -407,7 +401,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
     } finally {
       setAiBusy(false);
       setAiStep("");
-      if (aiInputRef.current) aiInputRef.current.value = "";
+      aiLock.current = false;
     }
   };
 
@@ -525,7 +519,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] min-w-0 grid-cols-1 max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>ŠVP – {subject}</DialogTitle>
           <DialogDescription>
@@ -548,7 +542,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <Label>Obsah ŠVP</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -581,7 +575,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
                   size="sm"
                   className="gap-2"
                   disabled={aiBusy}
-                  onClick={() => aiInputRef.current?.click()}
+                  onClick={() => setAiInputOpen((open) => !open)}
                 >
                   {aiBusy ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -590,15 +584,12 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
                   )}
                   Nahrát a nechat AI navrhnout
                 </Button>
-                <input
-                  ref={aiInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => void handleAiFile(e.target.files?.[0] ?? null)}
-                />
               </div>
             </div>
+            {aiInputOpen && <div className="space-y-3">
+              <SourceInput bundle={sources} disabled={aiBusy} allowUrl={false} />
+              <Button type="button" disabled={aiBusy || !sources.state.ok} onClick={() => void handleAiFile()}><Sparkles className="mr-2 h-4 w-4" />Nechat AI navrhnout ŠVP</Button>
+            </div>}
             {aiBusy && (
               <p className="text-xs text-muted-foreground flex items-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> {aiStep}

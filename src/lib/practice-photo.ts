@@ -1,3 +1,5 @@
+import { AUDIO_VIDEO_SOURCE_MESSAGE, isAudioVideoFile } from "@/lib/source-bundle";
+
 export const PRACTICE_PHOTO_INPUT_MAX_BYTES = 15 * 1024 * 1024;
 export const PRACTICE_PHOTO_OUTPUT_MAX_BYTES = 4 * 1024 * 1024;
 export const PRACTICE_PHOTO_MAX_DIMENSION = 2048;
@@ -46,7 +48,8 @@ function isHeic(file: Pick<File, "name" | "type">): boolean {
   return file.type === "image/heic" || file.type === "image/heif" || ["heic", "heif"].includes(extension(file.name));
 }
 
-export function validatePracticePhotoFile(file: Pick<File, "name" | "type" | "size">): void {
+export function validatePracticePhotoFile(file: Pick<File, "name" | "type" | "size">, maxInputBytes = PRACTICE_PHOTO_INPUT_MAX_BYTES): void {
+  if (isAudioVideoFile(file)) throw new PracticePhotoError("INVALID_TYPE", AUDIO_VIDEO_SOURCE_MESSAGE);
   const allowed = IMAGE_TYPES.has(file.type) || (!file.type && IMAGE_EXTENSIONS.has(extension(file.name)));
   if (!allowed) {
     throw new PracticePhotoError("INVALID_TYPE", "Vyber fotku ve formátu JPEG, PNG, WebP nebo HEIC.");
@@ -54,8 +57,8 @@ export function validatePracticePhotoFile(file: Pick<File, "name" | "type" | "si
   if (file.size <= 0) {
     throw new PracticePhotoError("DECODE_FAILED", "Fotka je prázdná. Vyber ji znovu.");
   }
-  if (file.size > PRACTICE_PHOTO_INPUT_MAX_BYTES) {
-    throw new PracticePhotoError("INPUT_TOO_LARGE", "Fotka je větší než 15 MB. Zmenši ji nebo vyber jinou.");
+  if (file.size > maxInputBytes) {
+    throw new PracticePhotoError("INPUT_TOO_LARGE", `Fotka je větší než ${Math.round(maxInputBytes / 1048576)} MB. Zmenši ji nebo vyber jinou.`);
   }
 }
 
@@ -114,7 +117,15 @@ async function decodePhoto(file: File): Promise<DecodedImage> {
       // Starší prohlížeče nebo HEIC mohou uspět přes HTMLImageElement.
     }
   }
-  return decodeWithImageElement(file);
+  try { return await decodeWithImageElement(file); } catch (error) {
+    if (!isHeic(file)) throw error;
+    // Lazy decoder only when the browser cannot decode HEIC natively.
+    const { default: heic2any } = await import("heic2any");
+    const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: PRACTICE_PHOTO_JPEG_QUALITY });
+    const jpeg = Array.isArray(converted) ? converted[0] : converted;
+    if (!jpeg) throw new Error("HEIC decode failed");
+    return decodeWithImageElement(new File([jpeg], "photo.jpg", { type: "image/jpeg" }));
+  }
 }
 
 function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -139,8 +150,8 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /** Lokální konverze: původní soubor ani EXIF se nikam neodesílají. */
-export async function preparePracticePhoto(file: File): Promise<PreparedPracticePhoto> {
-  validatePracticePhotoFile(file);
+export async function preparePracticePhoto(file: File, maxInputBytes = PRACTICE_PHOTO_INPUT_MAX_BYTES): Promise<PreparedPracticePhoto> {
+  validatePracticePhotoFile(file, maxInputBytes);
   let decoded: DecodedImage | null = null;
   let canvas: HTMLCanvasElement | null = null;
   try {
@@ -184,4 +195,14 @@ export function disposePracticePhoto(photo: PreparedPracticePhoto | null): void 
   if (!photo) return;
   URL.revokeObjectURL(photo.previewUrl);
   photo.imageBase64 = "";
+}
+
+/** Shared preparation for image-based generators that keep their original AI call. */
+export async function prepareJpegPhoto(file: File, maxInputBytes = PRACTICE_PHOTO_INPUT_MAX_BYTES): Promise<{ file: File; dataUrl: string; preview: string }> {
+  const photo = await preparePracticePhoto(file, maxInputBytes);
+  try {
+    const bytes = Uint8Array.from(atob(photo.imageBase64), (c) => c.charCodeAt(0));
+    const jpeg = new File([bytes], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+    return { file: jpeg, dataUrl: `data:image/jpeg;base64,${photo.imageBase64}`, preview: URL.createObjectURL(jpeg) };
+  } finally { disposePracticePhoto(photo); }
 }

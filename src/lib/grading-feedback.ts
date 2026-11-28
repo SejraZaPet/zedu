@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentDescriptionToText } from "@/lib/assignment-description";
+import { isAudioVideoFile } from "@/lib/source-bundle";
 
 export interface GradingAttachment {
   file_name: string;
@@ -42,7 +43,7 @@ export function buildAssignmentStudentAnswer(answers: unknown, submissionNote?: 
 }
 
 export function assignmentAttachmentRefs(files: GradingAttachment[]) {
-  return files.map((file) => ({
+  return files.filter((file) => !isAudioVideoFile({ name: file.file_name, type: file.file_type }) && !isAudioVideoFile({ name: file.file_path })).map((file) => ({
     path: file.file_path,
     name: file.file_name,
     type: file.file_type || "",

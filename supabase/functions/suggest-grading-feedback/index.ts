@@ -80,7 +80,7 @@ serve(async (req) => {
     }
     if (!pointsMode && !hasGradableContent(answerText === '""' ? "" : answerText, refs)) {
       return new Response(JSON.stringify({
-        error: "Žák zatím neodevzdal žádný text ani přílohu, takže není co hodnotit.",
+        error: "Pro AI chybí čitelný text nebo podporovaná příloha. Audio a video posuďte ručně.",
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

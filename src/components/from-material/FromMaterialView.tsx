@@ -5,13 +5,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Camera, FileText, Wand2, ArrowLeft, X } from "lucide-react";
-import { extractPdfText } from "@/lib/pdf-page-renderer";
+import { prepareJpegPhoto } from "@/lib/practice-photo";
+import { checkAddBatch, kindForFile } from "@/lib/source-bundle";
+import { extractFileSource, ScannedPdfError } from "@/lib/source-extract";
+import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import {
   emptyWorksheetSpec,
@@ -37,34 +41,6 @@ const ACTIVITY_TYPES: { value: ItemType; label: string }[] = [
   { value: "sorting", label: "Třídění do kategorií" },
   { value: "word_search", label: "Osmisměrka" },
 ];
-
-function fileToBase64Raw(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const s = String(r.result || "");
-      const i = s.indexOf(",");
-      resolve(i >= 0 ? s.slice(i + 1) : s);
-    };
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-function blocksToText(blocks: any[]): string {
-  if (!Array.isArray(blocks)) return "";
-  return blocks
-    .map((b: any) => {
-      if (!b) return "";
-      if (typeof b === "string") return b;
-      if (typeof b.text === "string") return b.text;
-      if (typeof b.content === "string") return b.content;
-      if (typeof b.title === "string") return b.title;
-      return "";
-    })
-    .filter(Boolean)
-    .join("\n\n");
-}
 
 function itemsToSpec(items: any[], title: string): WorksheetSpec {
   const spec = emptyWorksheetSpec({ title: title || "Aktivita z materiálu" });
@@ -111,6 +87,7 @@ export default function FromMaterialView({ role }: Props) {
   imagesRef.current = images;
   useEffect(() => () => { imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview)); }, []);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const documentCount = useRef(0);
 
   // Step 2: choice
   const [outputType, setOutputType] = useState<OutputType>(
@@ -124,76 +101,56 @@ export default function FromMaterialView({ role }: Props) {
   const [generating, setGenerating] = useState(false);
   const [ephemeralSpec, setEphemeralSpec] = useState<WorksheetSpec | null>(null);
 
-  const hasInput = images.length > 0 || extractedText.trim().length > 20;
+  const hasInput = (images.length > 0 || extractedText.trim().length > 20) && extractedText.length <= 20000 && !uploading;
 
-  async function handleImagePick(files: FileList | null) {
-    const picked = Array.from(files ?? []);
+  async function handleMixedPick(files: File[]) {
+    const picked = Array.from(files);
     if (!picked.length || imageBusy.current) return;
-    const remaining = Math.max(0, 6 - imagesRef.current.length);
-    if (picked.length > remaining) {
-      toast({ title: "Nejvýše 6 fotek", description: `Zbývá místo pro ${remaining} fotek. Vyber menší dávku nebo odeber některou fotku.`, variant: "destructive" });
-      return;
-    }
+    const existing = [...imagesRef.current.map(() => ({ kind: "photo" as const })), ...Array.from({ length: documentCount.current }, () => ({ kind: "pdf" as const }))];
+    const error = checkAddBatch(existing, picked.map((f) => ({ kind: kindForFile(f), name: f.name, type: f.type, size: f.size })), { maxDocBytes: 25 * 1024 * 1024 });
+    if (error) { toast({ title: error.includes("6 fotek") ? "Nejvýše 6 fotek" : "Zdroj se nepodařilo přidat", description: error, variant: "destructive" }); return; }
     imageBusy.current = true;
     setUploading(true);
-    const items: typeof images = [];
+    const addedImages: typeof images = [];
+    const texts: string[] = [];
+    const names: string[] = [];
     try {
-      for (const file of picked) {
+      for (const original of picked) {
         try {
-          const b64 = await fileToBase64Raw(file);
-          const preview = URL.createObjectURL(file);
-          items.push({ file, preview, b64: `data:${file.type || "image/jpeg"};base64,${b64}` });
-        } catch {
-          toast({ title: `Fotku ${file.name} se nepodařilo načíst`, description: "Vyber ji znovu nebo zkus JPEG.", variant: "destructive" });
-        }
+          const kind = kindForFile(original);
+          if (!kind) continue;
+          if (kind === "photo") {
+            const photo = await prepareJpegPhoto(original);
+            addedImages.push({ file: photo.file, preview: photo.preview, b64: photo.dataUrl });
+          } else {
+            // Same local extraction as SourceInput; scanned PDFs keep the existing server fallback.
+            let text: string;
+            try { text = await extractFileSource(original, kind); } catch (error) {
+              if (!(error instanceof ScannedPdfError)) throw error;
+              const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+                reader.onerror = () => reject(new Error("Soubor se nepodařilo načíst."));
+                reader.readAsDataURL(original);
+              });
+              const { data, error: invokeError } = await supabase.functions.invoke("process-file-content", { body: { fileBase64: base64, fileName: original.name, mimeType: original.type || "application/pdf", mode: "single" } });
+              if (invokeError) throw new Error(await practiceErrorMessage(invokeError));
+              if (data?.error) throw new Error(readablePracticeMessage(data.error));
+              const { curriculumBlocksToText } = await import("@/lib/curriculum-template");
+              text = (data?.lessons ?? []).map((lesson: any) => curriculumBlocksToText(lesson.blocks ?? [])).join("\n\n");
+            }
+            if (text.trim().length < 20) throw new Error("Textu je málo, přidej další zdroj nebo text doplň ručně.");
+            texts.push(text.trim()); names.push(original.name); documentCount.current++;
+          }
+        } catch (error) { toast({ title: "Zdroj se nepodařilo načíst", description: await practiceErrorMessage(error), variant: "destructive" }); }
       }
-      if (items.length) {
-        setImages((prev) => [...prev, ...items]);
-        setExtractedText("");
+      if (addedImages.length) setImages((prev) => [...prev, ...addedImages]);
+      if (texts.length) {
+        setExtractedText((prev) => [prev, ...texts].filter(Boolean).join("\n\n"));
+        setSourceFileName((prev) => [prev, ...names].filter(Boolean).join(", "));
+        if (!title) setTitle(names[0]?.replace(/\.[^.]+$/, "") ?? "");
       }
     } finally { imageBusy.current = false; setUploading(false); }
-  }
-
-  async function handleDocumentPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const lower = file.name.toLowerCase();
-      let text = "";
-      if (lower.endsWith(".pdf")) {
-        const res = await extractPdfText(file);
-        text = res.text;
-      }
-      if (!text || text.length < 50) {
-        const base64 = await fileToBase64Raw(file);
-        const { data, error } = await supabase.functions.invoke("process-file-content", {
-          body: {
-            fileBase64: base64,
-            fileName: file.name,
-            mimeType: file.type || "application/octet-stream",
-            mode: "single",
-          },
-        });
-        if (error) throw error;
-        const lessons = (data as any)?.lessons ?? [];
-        text = lessons.map((l: any) => `${l.title || ""}\n${blocksToText(l.blocks || [])}`).join("\n\n");
-      }
-      if (!text || text.length < 20) {
-        throw new Error("Ze souboru se nepodařilo extrahovat dostatek textu.");
-      }
-      setExtractedText(text.slice(0, 20000));
-      setSourceFileName(file.name);
-      imagesRef.current.forEach((image) => URL.revokeObjectURL(image.preview));
-      setImages([]);
-      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
-      toast({ title: "Text načten", description: `Extrahováno ${text.length} znaků.` });
-    } catch (err: any) {
-      toast({ title: "Chyba při načítání", description: err?.message ?? String(err), variant: "destructive" });
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
   }
 
   async function callAi(): Promise<any> {
@@ -214,8 +171,8 @@ export default function FromMaterialView({ role }: Props) {
         title,
       },
     });
-    if (error) throw error;
-    if ((data as any)?.error) throw new Error((data as any).error);
+    if (error) throw new Error(await practiceErrorMessage(error));
+    if ((data as any)?.error) throw new Error(readablePracticeMessage((data as any).error));
     return data;
   }
 
@@ -322,7 +279,7 @@ export default function FromMaterialView({ role }: Props) {
     } catch (err: any) {
       toast({
         title: "Chyba generování",
-        description: err?.message ?? String(err),
+        description: await practiceErrorMessage(err),
         variant: "destructive",
       });
     } finally {
@@ -383,7 +340,7 @@ export default function FromMaterialView({ role }: Props) {
                 multiple
                 className="hidden"
                 disabled={uploading}
-                onChange={(e) => { void handleImagePick(e.target.files); e.target.value = ""; }}
+                onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; void handleMixedPick(picked); }}
               />
             </label>
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer hover:bg-muted/40 transition-colors">
@@ -393,18 +350,19 @@ export default function FromMaterialView({ role }: Props) {
                 <FileText className="w-6 h-6 text-muted-foreground" />
               )}
               <span className="text-sm font-medium">Nahrát dokument</span>
-              <span className="text-xs text-muted-foreground">PDF, DOCX, PPTX</span>
+              <span className="text-xs text-muted-foreground">PDF, DOCX, PPTX, XLSX, ODT, TXT a fotky</span>
               <input
                 type="file"
-                accept=".pdf,.docx,.pptx"
+                multiple
+                accept=".pdf,.docx,.doc,.pptx,.xlsx,.odt,.odp,.txt,.md,image/jpeg,image/png,image/webp,.heic,.heif"
                 className="hidden"
-                onChange={handleDocumentPick}
+                onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; void handleMixedPick(picked); }}
                 disabled={uploading}
               />
             </label>
           </div>
 
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" disabled={uploading} className="hidden" onChange={(e) => { void handleImagePick(e.target.files); e.target.value = ""; }} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" disabled={uploading} className="hidden" onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; void handleMixedPick(picked); }} />
           <Button type="button" variant="outline" className="min-h-11" disabled={uploading} onClick={() => cameraRef.current?.click()}><Camera className="mr-2 h-4 w-4" />Vyfotit stránku</Button>
 
           {images.length > 0 && (
@@ -425,10 +383,13 @@ export default function FromMaterialView({ role }: Props) {
             </div>
           )}
 
+          {extractedText.length > 20000 && <p role="alert" className="text-sm text-destructive">Text má více než 20 000 znaků. Zkrať ho nebo rozděl do více dávek; žádný text nebyl oříznut.</p>}
           {extractedText && (
             <div className="text-xs text-muted-foreground">
               <Badge variant="secondary" className="mr-2">{sourceFileName || "text"}</Badge>
               Načteno {extractedText.length} znaků z dokumentu.
+              <Textarea className="mt-2" rows={5} aria-label="Text materiálu" value={extractedText} onChange={(e) => setExtractedText(e.target.value)} disabled={uploading || generating} />
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setExtractedText(""); setSourceFileName(""); documentCount.current = 0; }}>Odebrat dokumenty</Button>
             </div>
           )}
         </CardContent>

@@ -1272,6 +1272,10 @@ serve(async (req) => {
 
     const effectiveMode = mode === "split" ? "split" : "single";
     const cleanMimeType = typeof mimeType === "string" && mimeType ? mimeType : "application/pdf";
+    if (/\.(mp3|mp4|m4a|wav|mov|webm)$/i.test(String(fileName)) || /^(audio|video)\//i.test(cleanMimeType)) {
+      console.warn("[file-content]", { code: "AUDIO_VIDEO_NOT_SUPPORTED", reason: "ai_media_rejected" });
+      return jsonResponse({ error: "AUDIO_VIDEO_NOT_SUPPORTED", message: "Audio a video AI zatím nečte, přilož je jako přílohu" }, 400);
+    }
 
     if (fileBase64) {
       const approxBytes = Math.ceil(String(fileBase64).length * 0.75);

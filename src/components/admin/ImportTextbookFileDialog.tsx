@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { prepareJpegPhoto } from "@/lib/practice-photo";
+import { checkAddBatch, kindForFile } from "@/lib/source-bundle";
+import { extractFileSource } from "@/lib/source-extract";
+import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,12 +52,12 @@ interface Props {
   onImported: () => void;
 }
 
-const ACCEPT = ".pdf,.docx,.pptx,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp";
+const ACCEPT = ".pdf,.doc,.docx,.pptx,.xlsx,.odt,.odp,.txt,.md,.heic,.heif,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp";
 const MAX_BYTES = 25 * 1024 * 1024;
 /** Přípony, které se odstraňují z názvu souboru při tvorbě názvu lekce. */
-const EXT_RE = /\.(pdf|pptx|docx|jpe?g|png|webp)$/i;
+const EXT_RE = /\.(pdf|pptx|docx?|xlsx|od[tp]|txt|md|heic|heif|jpe?g|png|webp)$/i;
 const isImageFile = (file: File) =>
-  /\.(jpe?g|png|webp)$/i.test(file.name) || file.type.startsWith("image/");
+  /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name) || file.type.startsWith("image/");
 
 const readFileAsBase64 = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -74,7 +78,8 @@ const ImportTextbookFileDialog = ({
   open, onOpenChange, topics, defaultTopicId, textbook, onImported,
 }: Props) => {
   const { toast } = useToast();
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const processLock = useRef(false);
   const [processing, setProcessing] = useState(false);
   const [drafts, setDrafts] = useState<DraftLesson[]>([]);
   const [topicId, setTopicId] = useState<string>(defaultTopicId ?? "");
@@ -85,7 +90,7 @@ const ImportTextbookFileDialog = ({
   const [usedVisionFallback, setUsedVisionFallback] = useState(false);
 
   const reset = () => {
-    setFile(null);
+    setFiles([]);
     setDrafts([]);
     setProcessing(false);
     setSaving(false);
@@ -99,17 +104,17 @@ const ImportTextbookFileDialog = ({
     onOpenChange(v);
   };
 
-  const handleProcess = async () => {
-    if (!file) return;
-    if (file.size > MAX_BYTES) {
-      toast({ title: "Soubor je příliš velký", description: "Maximálně 25 MB.", variant: "destructive" });
-      return;
-    }
-
+  const handleProcessOne = async (original: File, manualOverride: string): Promise<DraftLesson[]> => {
+    let file = original;
     setProcessing(true);
     setProgress("Načítám soubor...");
 
     try {
+      if (isImageFile(file)) {
+        const prepared = await prepareJpegPhoto(file, MAX_BYTES);
+        file = prepared.file;
+        URL.revokeObjectURL(prepared.preview);
+      }
       const base64 = await readFileAsBase64(file);
       const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
       const isImage = isImageFile(file);
@@ -148,8 +153,8 @@ const ImportTextbookFileDialog = ({
       // which pages need a full-page render fallback (scanned/image-only pages).
       let extractedText = "";
       let textPages: { pageNumber: number; charCount: number }[] = [];
-      if (manualText.trim().length >= 20) {
-        extractedText = manualText.trim();
+      if (manualOverride.trim().length >= 20) {
+        extractedText = manualOverride.trim();
       } else if (isPdf) {
         try {
           setProgress("Extrahuji text z PDF...");
@@ -185,6 +190,11 @@ const ImportTextbookFileDialog = ({
         // image. No hard stop / toast here.
       }
 
+
+      if (!isPdf && !isImage && !extractedText) {
+        const kind = kindForFile(file);
+        if (kind) extractedText = await extractFileSource(file, kind);
+      }
 
       // STEP 2: Render + upload PDF page images — but ONLY for pages where
       // text extraction was insufficient (charCount < 30). For pages where
@@ -281,6 +291,8 @@ const ImportTextbookFileDialog = ({
       const visionFallback = extractedText.length < 100;
       if (!visionFallback) {
         invokeBody.extractedText = extractedText;
+        // Keep embedded DOCX/PPTX image extraction; AI still receives the local text.
+        if (/\.(docx|pptx)$/i.test(file.name)) invokeBody.fileBase64 = base64;
       } else {
         invokeBody.fileBase64 = base64;
       }
@@ -308,29 +320,8 @@ const ImportTextbookFileDialog = ({
       }
 
 
-      if (error) {
-        // Edge funkce vrací srozumitelnou hlášku v těle odpovědi – vytáhni ji,
-        // ať uživatel nevidí obecné "Edge Function returned a non-2xx status code".
-        let serverMessage = "";
-        const ctx = (error as { context?: unknown }).context;
-        if (ctx && typeof (ctx as Response).text === "function") {
-          try {
-            const body = await (ctx as Response).clone().text();
-            const parsed = JSON.parse(body) as { error?: string };
-            if (parsed?.error) serverMessage = parsed.error;
-          } catch {
-            /* tělo nelze přečíst – necháme obecnou hlášku */
-          }
-        }
-        throw new Error(
-          serverMessage ||
-            "Dokument se nepodařilo zpracovat. Zkuste ho rozdělit na menší části (např. po ročnících nebo kapitolách).",
-        );
-      }
-      if ((data as { error?: string } | null)?.error) {
-        throw new Error((data as { error: string }).error);
-      }
-
+      if (error) throw new Error(await practiceErrorMessage(error));
+      if ((data as { error?: string } | null)?.error) throw new Error(readablePracticeMessage((data as { error: string }).error));
 
       const response = (data ?? {}) as {
         lessons?: { title?: string; blocks?: Block[] }[];
@@ -392,10 +383,10 @@ const ImportTextbookFileDialog = ({
             }
             serverEmbedded = serverEmbedded.filter((u) => keep.has(u));
           } else {
-            console.warn("classify-images failed, keeping all images:", clsErr);
+            console.warn("classify-images failed; keeping images");
           }
         } catch (err) {
-          console.warn("classify-images threw, keeping all images:", err);
+          console.warn("classify-images failed; keeping images");
         }
       }
 
@@ -490,7 +481,7 @@ const ImportTextbookFileDialog = ({
 
       const normalizedLessons = lessons
         .map((lesson, index) => ({
-          id: `draft-${index}-${Date.now()}`,
+          id: `draft-${crypto.randomUUID()}`,
           title: (lesson.title || file.name.replace(EXT_RE, "")).trim() || `Lekce ${index + 1}`,
           blocks: Array.isArray(lesson.blocks) ? lesson.blocks : [],
           include: true,
@@ -504,7 +495,7 @@ const ImportTextbookFileDialog = ({
       const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
       const pdfEmbeddedCount = Array.from(pdfEmbeddedImagesByPage.values()).reduce((s, arr) => s + arr.length, 0);
       const embeddedCount = pdfEmbeddedCount + serverEmbedded.length;
-      setDrafts(normalizedLessons);
+
       const parts = [`Vytvořeno ${totalBlocks} bloků.`];
       if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků rozprostřených po lekci.`);
       const ytCount = linkedBlocks.filter((b) => (b as any)?.type === "youtube").length;
@@ -513,21 +504,35 @@ const ImportTextbookFileDialog = ({
       if (pagesNeedingRender.size > 0) parts.push(`${pagesNeedingRender.size} stránek vloženo jako obrázek (chybějící text).`);
       if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
       if (visionFallback) parts.push("Obsah načten AI z obrázků stránek — zkontrolujte strukturu.");
-      toast({
-        title: "Import dokončen",
-        description: parts.join(" "),
-      });
+      toast({ title: "Návrh připraven", description: parts.join(" ") });
+      return normalizedLessons;
     } catch (err: any) {
-      console.error("Import error:", err);
+      console.warn("[textbook-import]", { code: "IMPORT_FAILED", reason: "source_processing" });
       toast({
         title: "Import selhal",
-        description: err?.message || "Neznámá chyba",
+        description: await practiceErrorMessage(err),
         variant: "destructive",
       });
-    } finally {
-      setProcessing(false);
-      setProgress("");
+      return [];
     }
+  };
+
+  const handlePick = (picked: File[]) => {
+    const error = checkAddBatch([], picked.map((f) => ({ kind: kindForFile(f), name: f.name, type: f.type, size: f.size })), { maxDocBytes: MAX_BYTES, maxPhotoBytes: MAX_BYTES });
+    if (error) { toast({ title: "Zdroj zamítnut", description: error, variant: "destructive" }); return; }
+    setFiles(picked);
+  };
+
+  const handleProcess = async () => {
+    if (processLock.current || !files.length) return;
+    processLock.current = true;
+    setProcessing(true);
+    const snapshot = [...files];
+    const allDrafts: DraftLesson[] = [];
+    try {
+      for (const [index, file] of snapshot.entries()) allDrafts.push(...await handleProcessOne(file, index === 0 ? manualText : ""));
+      setDrafts(allDrafts);
+    } finally { processLock.current = false; setProcessing(false); setProgress(""); }
   };
 
   const updateDraft = (id: string, patch: Partial<DraftLesson>) => {
@@ -604,17 +609,14 @@ const ImportTextbookFileDialog = ({
               <FileText className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
               <Input
                 type="file"
+                multiple
                 accept={ACCEPT}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; handlePick(picked); }}
                 disabled={processing}
               />
-              {file && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {file.name} ({(file.size / 1024).toFixed(0)} kB)
-                </p>
-              )}
+              {files.map((file, index) => <p key={index} className="text-xs text-muted-foreground mt-2 break-words">{file.name} ({(file.size / 1024).toFixed(0)} kB)</p>)}
               <p className="text-xs text-muted-foreground mt-3">
-                Podporované formáty: PDF, DOCX, PPTX, JPG, PNG, WebP. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
+                Podporované formáty: PDF, DOCX, PPTX, XLSX, ODT/ODP, TXT, JPG, PNG, WebP, HEIC. Nejvýše 4 dokumenty a 6 fotek, každý do 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
               </p>
             </div>
 
@@ -673,7 +675,7 @@ const ImportTextbookFileDialog = ({
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={processing}>
                 Zrušit
               </Button>
-              <Button onClick={handleProcess} disabled={!file || processing}>
+              <Button onClick={handleProcess} disabled={!files.length || processing}>
                 {processing ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> AI analyzuje dokument...</>
                 ) : (

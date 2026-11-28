@@ -12,6 +12,8 @@ import { CHEATSHEET_STORAGE_MARKER } from "@/lib/cheatsheet";
 import { notebookPageText, practicePageLabel, type PracticeSource } from "@/lib/practice-method";
 import { PRACTICE_PHOTO_PRIVACY_NOTICE } from "@/lib/practice-photo";
 import { usePracticePhotos } from "@/lib/use-practice-photos";
+import SourceInput from "@/components/sources/SourceInput";
+import { useSourceBundle } from "@/lib/use-source-bundle";
 import { MIN_SOURCE_TEXT_LENGTH, SOURCE_TEXT_LIMIT } from "../../../supabase/functions/_shared/practice-phases";
 
 export type PracticeEditorSourceKind = PracticeSource["kind"] | "lesson";
@@ -42,10 +44,10 @@ export default function PracticeSourceEditor({
 }: PracticeSourceEditorProps) {
   const { toast } = useToast();
   const [customText, setCustomText] = useState("");
-  const [fileSource, setFileSource] = useState<{ text: string; label: string; originalLength: number } | null>(null);
-  const [fileBusy, setFileBusy] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileSources = useSourceBundle("student", (description) => toast({ title: "Zdroj se nepodařilo přidat", description, variant: "destructive" }), { maxChars: SOURCE_TEXT_LIMIT, minChars: MIN_SOURCE_TEXT_LENGTH });
+  const fileBusy = fileSources.state.busy;
+  const [fileConfirmed, setFileConfirmed] = useState(false);
+  useEffect(() => { setFileConfirmed(false); }, [fileSources.items]);
   const photos = usePracticePhotos((description) => toast({ title: "Příliš mnoho fotek", description, variant: "destructive" }));
   const { busy: photoBusy, text: photoText, setText: setPhotoText, review: photoReview, setReview: setPhotoReview,
     confirmed: photoConfirmed, setConfirmed: setPhotoConfirmed } = photos;
@@ -121,36 +123,6 @@ export default function PracticeSourceEditor({
     return () => { cancelled = true; };
   }, [notebookId, pageRetry]);
 
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    setFileBusy(true);
-    setFileError(null);
-    try {
-      let text = "";
-      if (file.name.toLowerCase().endsWith(".pdf")) {
-        const { extractPdfText } = await import("@/lib/pdf-page-renderer");
-        text = (await extractPdfText(file)).text;
-      } else {
-        text = await file.text();
-      }
-      text = text.trim();
-      if (text.length < MIN_SOURCE_TEXT_LENGTH) {
-        setFileSource(null);
-        const message = "V souboru je málo textu. Zkus jiný soubor nebo text vlož ručně.";
-        setFileError(message);
-        toast({ title: "V souboru je málo textu", description: "Zkus jiný soubor nebo text vlož ručně.", variant: "destructive" });
-      } else {
-        setFileSource({ text: text.slice(0, SOURCE_TEXT_LIMIT), label: file.name, originalLength: text.length });
-      }
-    } catch {
-      setFileSource(null);
-      setFileError("Soubor se nepodařilo přečíst. Zkus PDF s textem nebo soubor .txt.");
-      toast({ title: "Soubor se nepodařilo přečíst", description: "Zkus PDF s textem nebo soubor .txt.", variant: "destructive" });
-    } finally {
-      setFileBusy(false);
-    }
-  };
-
   const handlePhotoTextChange = (value: string) => {
     setPhotoText(value);
     setPhotoConfirmed(false);
@@ -176,7 +148,8 @@ export default function PracticeSourceEditor({
 
   const chosenSource = useMemo<PracticeSource | null>(() => {
     if (kind === "text") return { kind: "text", text: customText, label: "Vlastní text" };
-    if (kind === "file") return fileSource ? { kind: "file", text: fileSource.text, label: fileSource.label } : null;
+    if (kind === "file") return fileSources.state.ok && (!fileSources.items.some((item) => item.kind === "photo") || fileConfirmed)
+      ? { kind: "file", text: fileSources.state.text, label: fileSources.items.map((item) => item.label).join(", ") } : null;
     if (kind === "photo") {
       return photoConfirmed && photoText.trim().length <= SOURCE_TEXT_LIMIT
         ? { kind: "photo", text: photoText.trim(), label: "Fotografie" }
@@ -193,7 +166,7 @@ export default function PracticeSourceEditor({
       } : null;
     }
     return null;
-  }, [kind, customText, fileSource, photoConfirmed, photoText, pages, pageId, notebooks, notebookId]);
+  }, [kind, customText, fileSources.items, fileConfirmed, photoConfirmed, photoText, pages, pageId, notebooks, notebookId]);
 
   useEffect(() => { onSourceChange(chosenSource); }, [chosenSource, onSourceChange]);
   useEffect(() => { onBusyChange?.(fileBusy || photoBusy || notebookLoading); }, [fileBusy, photoBusy, notebookLoading, onBusyChange]);
@@ -211,7 +184,7 @@ export default function PracticeSourceEditor({
           <SelectContent>
             {allowLesson && <SelectItem value="lesson">Lekce z učebnice</SelectItem>}
             <SelectItem value="text">Vlastní text</SelectItem>
-            <SelectItem value="file">Soubor (PDF nebo .txt)</SelectItem>
+            <SelectItem value="file">Soubory a vlastní zdroje</SelectItem>
             <SelectItem value="photo">Fotografie</SelectItem>
             <SelectItem value="notebook">Stránka mého sešitu</SelectItem>
           </SelectContent>
@@ -234,15 +207,11 @@ export default function PracticeSourceEditor({
 
       {kind === "file" && (
         <div className="space-y-2">
-          <Label htmlFor={id("file")}>Soubor</Label>
-          <Input ref={fileInputRef} id={id("file")} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="mt-1"
-            disabled={fileBusy || disabled} onChange={(event) => { void handleFile(event.target.files?.[0]); event.target.value = ""; }} />
-          <p className="text-xs text-muted-foreground mt-1" aria-live="polite">
-            {fileBusy ? "Čtu soubor…" : fileSource
-              ? `Načteno: ${fileSource.label} (${fileSource.text.length} znaků)${fileSource.originalLength > SOURCE_TEXT_LIMIT ? `. Použije se prvních ${SOURCE_TEXT_LIMIT} z ${fileSource.originalLength} znaků.` : ""}`
-              : "PDF s textem nebo .txt. Fotky přečti v samostatné volbě Fotografie."}
-          </p>
-          {fileError && <div role="alert" className="space-y-2 text-sm text-destructive"><p>{fileError}</p><Button type="button" variant="outline" size="sm" className="min-h-11 gap-2" onClick={() => fileInputRef.current?.click()}><RotateCcw className="h-4 w-4" />Zkusit jiný soubor</Button></div>}
+          <SourceInput bundle={fileSources} disabled={disabled} allowUrl={false} />
+          {fileSources.items.some((item) => item.kind === "photo") && <>
+            <p className="text-sm">Přepsáno AI – zkontroluj text fotografií před použitím.</p>
+            <Button type="button" className="min-h-11" disabled={disabled || !fileSources.state.ok || fileConfirmed} onClick={() => setFileConfirmed(true)}>{fileConfirmed ? "Text je potvrzený" : "Potvrdit text"}</Button>
+          </>}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
 import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
+import { AUDIO_VIDEO_SOURCE_MESSAGE, isAudioVideoFile } from "@/lib/source-bundle";
 
 /** Max délka textu, kterou posíláme AI (stejný limit má edge funkce). */
 export const CURRICULUM_AI_MAX_CHARS = 20000;
@@ -59,6 +60,7 @@ async function extractLegacyDocText(file: File): Promise<string> {
  * edge funkci `process-file-content`) – stejný mechanismus jako FromMaterialView.
  */
 export async function extractDocumentText(file: File): Promise<string> {
+  if (isAudioVideoFile(file)) throw new Error(AUDIO_VIDEO_SOURCE_MESSAGE);
   const lower = file.name.toLowerCase();
   let text = "";
 

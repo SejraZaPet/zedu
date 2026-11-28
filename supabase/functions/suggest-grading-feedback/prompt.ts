@@ -17,7 +17,11 @@ const IMAGE_MIME: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif",
 };
 
+export const isAudioVideoAttachment = (name: string, mime = "") =>
+  /\.(mp3|mp4|m4a|wav|mov|webm)$/i.test(name) || /^(audio|video)\//i.test(mime);
+
 export function classifyAttachment(name: string, mime = ""): { kind: AttachmentKind; mime: string } {
+  if (isAudioVideoAttachment(name, mime)) return { kind: "unsupported", mime };
   const ext = (name.split(".").pop() || "").toLowerCase();
   const m = mime.toLowerCase();
   if (m === "application/pdf" || ext === "pdf") return { kind: "pdf", mime: "application/pdf" };
@@ -42,8 +46,9 @@ export function sanitizeAttachmentRefs(raw: unknown): AttachmentRef[] {
     seen.add(path);
     const name = typeof (r as any).name === "string" && (r as any).name.trim()
       ? (r as any).name.trim().slice(0, 200)
-      : path.split("/").pop()!;
+      : path.split("/").pop() ?? "Příloha";
     const type = typeof (r as any).type === "string" ? (r as any).type.slice(0, 100) : undefined;
+    if (isAudioVideoAttachment(name, type) || isAudioVideoAttachment(path, type)) continue;
     out.push({ path, name, type });
     if (out.length >= MAX_FILES) break;
   }

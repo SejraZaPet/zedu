@@ -9,7 +9,7 @@ import { CLOUD_LINK_HINT, SOURCE_KIND_LABEL, SOURCE_LIMITS_SUMMARY, SOURCE_URL_N
 import type { SourceBundle } from "@/lib/use-source-bundle";
 
 type Panel = null | "text" | "url" | "lesson";
-const DOC_ACCEPT = ".pdf,.docx,.doc,.pptx,.xlsx,.odt,.odp,.txt,.md,application/pdf,text/plain";
+const DOC_ACCEPT = ".pdf,.docx,.doc,.pptx,.xlsx,.odt,.odp,.txt,.md,application/pdf,text/plain,image/jpeg,image/png,image/webp,.heic,.heif";
 const PHOTO_ACCEPT = "image/*,.heic,.heif";
 
 /**
@@ -66,7 +66,7 @@ export default function SourceInput({
         {lessonPicker && tile(<BookOpen className="h-4 w-4 shrink-0 text-primary" />, "Z lekce", () => setPanel(panel === "lesson" ? null : "lesson"), panel === "lesson")}
       </div>
       <p className="text-xs text-muted-foreground">
-        Soubory: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX), ODT, TXT. Fotky: JPG, PNG, HEIC. {SOURCE_LIMITS_SUMMARY}
+        Soubory: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX), ODT/ODP, TXT. Fotky: JPG, PNG, HEIC. Nejvýše {bundle.limits.maxItems} zdrojů: {bundle.limits.maxFiles} soubory do {bundle.limits.maxDocBytes / 1048576} MB, {bundle.limits.maxPhotos} fotek do {bundle.limits.maxPhotoBytes / 1048576} MB.
       </p>
       <input ref={files} type="file" multiple accept={DOC_ACCEPT} className="hidden" onChange={onFiles} data-testid="source-files" />
       <input ref={gallery} type="file" multiple accept={PHOTO_ACCEPT} className="hidden" onChange={onFiles} data-testid="source-gallery" />

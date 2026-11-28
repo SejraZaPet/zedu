@@ -24,7 +24,9 @@ import { Loader2, Sparkles, Upload, FileText, ArrowRight, Wand2, HelpCircle, Lig
 import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
 import { phasesToSlides } from "@/lib/plan-to-slides";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { extractPdfText } from "@/lib/pdf-page-renderer";
+import SourceInput from "@/components/sources/SourceInput";
+import { useSourceBundle } from "@/lib/use-source-bundle";
+import { practiceErrorMessage } from "@/lib/practice-error";
 import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
 import LessonFinder from "@/components/lessons/LessonFinder";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
@@ -180,19 +182,6 @@ function blocksToText(blocks: any[]): string {
     .join("\n\n");
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      const idx = result.indexOf(",");
-      resolve(idx >= 0 ? result.slice(idx + 1) : result);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function TeacherSuggestByMethod() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -216,7 +205,7 @@ export default function TeacherSuggestByMethod() {
   const [subject, setSubject] = useState("");
   const [gradeBand, setGradeBand] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const sources = useSourceBundle("teacher", (description) => toast({ title: "Zdroj se nepodařilo přidat", description, variant: "destructive" }), { maxDocBytes: 25 * 1024 * 1024, minChars: 20 });
   const [generating, setGenerating] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [creating, setCreating] = useState(false);
@@ -376,53 +365,6 @@ export default function TeacherSuggestByMethod() {
     );
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const lower = file.name.toLowerCase();
-      let text = "";
-      if (lower.endsWith(".pdf")) {
-        const res = await extractPdfText(file);
-        text = res.text;
-      }
-      if (!text || text.length < 50) {
-        // fallback: server-side extraction via process-file-content
-        const base64 = await fileToBase64(file);
-        const { data, error } = await supabase.functions.invoke("process-file-content", {
-          body: {
-            fileBase64: base64,
-            fileName: file.name,
-            mimeType: file.type || "application/octet-stream",
-            mode: "single",
-          },
-        });
-        if (error) throw error;
-        const lessons = (data as any)?.lessons ?? [];
-        text = lessons
-          .map((l: any) => `${l.title || ""}\n${blocksToText(l.blocks || [])}`)
-          .join("\n\n");
-      }
-      if (!text || text.length < 20) {
-        throw new Error("Ze souboru se nepodařilo vytáhnout dostatek textu.");
-      }
-      setSourceText(text.slice(0, 20000));
-      setSourceTitle(file.name.replace(/\.[^.]+$/, ""));
-      setSourceMode("text");
-      toast({ title: "Text načten", description: `Extrahováno ${text.length} znaků.` });
-    } catch (err: any) {
-      toast({
-        title: "Chyba při načítání souboru",
-        description: err?.message ?? String(err),
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
-  };
-
   const selectedSource = useMemo(
     () => teacherLessons.find((x) => x.id === sourceLessonId) ?? null,
     [teacherLessons, sourceLessonId],
@@ -439,6 +381,7 @@ export default function TeacherSuggestByMethod() {
           : jsonToText(raw);
       return { text: (text || "").slice(0, 20000), title: l.title };
     }
+    if (sourceMode === "file") return { text: sources.state.text, title: sourceTitle || sources.items[0]?.label.replace(/\.[^.]+$/, "") || "" };
     return { text: sourceText, title: sourceTitle };
   };
 
@@ -463,6 +406,7 @@ export default function TeacherSuggestByMethod() {
 
 
   const generate = async () => {
+    if (sourceMode === "file" && !sources.state.ok) return;
     if (selectedMethodIds.length === 0) {
       toast({ title: "Vyberte alespoň jednu metodu.", variant: "destructive" });
       return;
@@ -490,7 +434,7 @@ export default function TeacherSuggestByMethod() {
           curriculumContext: curriculumPlan?.content ?? "",
         },
       });
-      if (error) throw error;
+      if (error) throw new Error(await practiceErrorMessage(error));
       if ((data as any)?.error) throw new Error((data as any).error);
       setSuggestion((data as any).suggestion);
     } catch (err: any) {
@@ -949,27 +893,7 @@ export default function TeacherSuggestByMethod() {
 
 
             {sourceMode === "file" && (
-              <div className="border-2 border-dashed rounded-xl p-6 text-center">
-                <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm mb-3">Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
-                <Input
-                  type="file"
-                  accept=".pdf,.docx,.pptx"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                  className="max-w-md mx-auto"
-                />
-                {uploading && (
-                  <div className="flex items-center justify-center gap-2 mt-3 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Extrahuji text…
-                  </div>
-                )}
-                {sourceText && !uploading && (
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Načteno: <strong>{sourceTitle}</strong> ({sourceText.length} znaků)
-                  </p>
-                )}
-              </div>
+              <SourceInput bundle={sources} disabled={generating} allowUrl={false} />
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1146,7 +1070,7 @@ export default function TeacherSuggestByMethod() {
             size="lg"
             variant="hero"
             onClick={generate}
-            disabled={generating || selectedMethodIds.length === 0}
+            disabled={generating || selectedMethodIds.length === 0 || (sourceMode === "file" && !sources.state.ok)}
             className="gap-2"
           >
             {generating ? (

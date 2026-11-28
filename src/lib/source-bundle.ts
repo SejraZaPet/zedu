@@ -34,6 +34,13 @@ export const SOURCE_LIMITS = {
   minChars: 150,
 } as const;
 
+/** Per-screen limits preserve the existing AI contract; defaults stay unchanged. */
+export type SourceLimitOverrides = Partial<{ maxItems: number; maxPhotos: number; maxFiles: number; maxDocBytes: number; maxPhotoBytes: number; maxChars: number; minChars: number }>;
+export const AUDIO_VIDEO_SOURCE_MESSAGE = "Audio a video AI zatím nečte, přilož je jako přílohu";
+export function isAudioVideoFile(file: { name: string; type?: string | null }): boolean {
+  return /\.(mp3|mp4|m4a|wav|mov|webm)$/i.test(file.name) || /^(audio|video)\//i.test(file.type ?? "");
+}
+
 export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
   text: "Text", pdf: "PDF", docx: "Word", pptx: "PowerPoint", xlsx: "Excel", odt: "OpenDocument", txt: "Textový soubor",
   photo: "Fotka", url: "Odkaz", lesson: "Lekce",
@@ -56,6 +63,7 @@ export const SOURCE_URL_NOTICE = "Použijte jen obsah, který smíte ve výuce p
 
 /** Druh zdroje podle souboru; null = nepodporovaný typ. */
 export function kindForFile(file: Pick<File, "name" | "type">): SourceKind | null {
+  if (isAudioVideoFile(file)) return null;
   const n = (file.name || "").toLowerCase();
   const t = (file.type || "").toLowerCase();
   if (t.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif)$/.test(n)) return "photo";
@@ -76,22 +84,25 @@ const isFileKind = (k: SourceKind) => k === "pdf" || k === "docx" || k === "pptx
  */
 export function checkAddBatch(
   items: Pick<SourceItem, "kind">[],
-  incoming: { kind: SourceKind | null; size?: number; name?: string }[],
+  incoming: { kind: SourceKind | null; size?: number; name?: string; type?: string }[],
+  overrides: SourceLimitOverrides = {},
 ): string | null {
+  const limits = { ...SOURCE_LIMITS, ...overrides };
   if (incoming.length === 0) return null;
+  if (incoming.some((f) => isAudioVideoFile({ name: f.name ?? "", type: f.type }))) return AUDIO_VIDEO_SOURCE_MESSAGE;
   const bad = incoming.find((f) => f.kind === null);
   if (bad) return legacyFormatHint(bad.name ?? "")
     ?? `Soubor „${bad.name ?? ""}“ nemá podporovaný formát (PDF, Word, PowerPoint, Excel, ODT, TXT nebo fotka).`;
-  if (items.length + incoming.length > SOURCE_LIMITS.maxItems)
-    return `Najednou lze použít nejvýše ${SOURCE_LIMITS.maxItems} zdrojů. Celý výběr byl odmítnut – odeberte některé zdroje.`;
+  if (items.length + incoming.length > limits.maxItems)
+    return `Najednou lze použít nejvýše ${limits.maxItems} zdrojů. Celý výběr byl odmítnut – odeberte některé zdroje.`;
   const photos = items.filter((i) => i.kind === "photo").length + incoming.filter((i) => i.kind === "photo").length;
-  if (photos > SOURCE_LIMITS.maxPhotos)
-    return `Nejvýše ${SOURCE_LIMITS.maxPhotos} fotek celkem. Celý výběr byl odmítnut – vyberte méně fotek.`;
+  if (photos > limits.maxPhotos)
+    return `Nejvýše ${limits.maxPhotos} fotek celkem. Celý výběr byl odmítnut – vyberte méně fotek.`;
   const files = items.filter((i) => isFileKind(i.kind)).length + incoming.filter((i) => i.kind && isFileKind(i.kind)).length;
-  if (files > SOURCE_LIMITS.maxFiles)
-    return `Nejvýše ${SOURCE_LIMITS.maxFiles} soubory celkem. Celý výběr byl odmítnut.`;
+  if (files > limits.maxFiles)
+    return `Nejvýše ${limits.maxFiles} soubory celkem. Celý výběr byl odmítnut.`;
   for (const f of incoming) {
-    const max = f.kind === "photo" ? SOURCE_LIMITS.maxPhotoBytes : SOURCE_LIMITS.maxDocBytes;
+    const max = f.kind === "photo" ? limits.maxPhotoBytes : limits.maxDocBytes;
     if ((f.size ?? 0) > max) return `Soubor „${f.name ?? ""}“ je větší než ${Math.round(max / 1024 / 1024)} MB.`;
   }
   return null;
@@ -100,9 +111,9 @@ export function checkAddBatch(
 /** Sloučí připravené zdroje v zobrazeném pořadí; u více zdrojů přidá záhlaví. */
 export function mergeSources(items: SourceItem[]): string {
   const ready = items.filter((i) => i.status === "ready" && (i.text ?? "").trim());
-  if (ready.length === 1) return ready[0].text!.trim();
+  if (ready.length === 1) return (ready[0].text ?? "").trim();
   return ready
-    .map((i, n) => `--- Zdroj ${n + 1}: ${SOURCE_KIND_LABEL[i.kind]}${i.origin ? ` (${i.origin})` : ""} ---\n${i.text!.trim()}`)
+    .map((i, n) => `--- Zdroj ${n + 1}: ${SOURCE_KIND_LABEL[i.kind]}${i.origin ? ` (${i.origin})` : ""} ---\n${(i.text ?? "").trim()}`)
     .join("\n\n");
 }
 
@@ -118,20 +129,21 @@ export interface BundleState {
   message: string | null;
 }
 
-export function bundleState(items: SourceItem[], audience: SourceAudience = "teacher"): BundleState {
+export function bundleState(items: SourceItem[], audience: SourceAudience = "teacher", overrides: SourceLimitOverrides = {}): BundleState {
   const text = mergeSources(items);
   const chars = text.length;
-  const max = SOURCE_LIMITS.maxTotal[audience];
+  const max = overrides.maxChars ?? SOURCE_LIMITS.maxTotal[audience];
   const overBy = Math.max(0, chars - max);
   const busy = items.some((i) => i.status === "loading");
   const fmt = (n: number) => n.toLocaleString("cs-CZ");
   let message: string | null = null;
   if (busy) message = "Zdroje se ještě načítají…";
+  else if (items.some((i) => i.status === "error")) message = "Některý zdroj se nepodařilo načíst. Zkuste ho znovu nebo jej odeberte.";
   else if (items.length === 0) message = "Přidejte alespoň jeden zdroj.";
   else if (overBy > 0) message = `Zdroje mají ${fmt(chars)} znaků, limit je ${fmt(max)} – přebývá ${fmt(overBy)}. Odeberte zdroj nebo text zkraťte.`;
   else if (items.some((i) => i.status === "ready" && (i.text ?? "").length > SOURCE_LIMITS.maxCharsPerItem))
     message = `Jeden zdroj má víc než ${fmt(SOURCE_LIMITS.maxCharsPerItem)} znaků. Zkraťte ho.`;
-  else if (chars < SOURCE_LIMITS.minChars) message = `Zdroje mají jen ${chars} znaků; potřeba je alespoň ${SOURCE_LIMITS.minChars}.`;
+  else if (chars < (overrides.minChars ?? SOURCE_LIMITS.minChars)) message = `Zdroje mají jen ${chars} znaků; potřeba je alespoň ${overrides.minChars ?? SOURCE_LIMITS.minChars}.`;
   return { text, chars, max, overBy, busy, ok: message === null, message };
 }
 

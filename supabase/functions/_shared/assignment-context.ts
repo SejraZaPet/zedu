@@ -38,6 +38,7 @@ export interface LinkedLessonContext {
 const IMAGE_MIME: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
 
 export function classifyMaterial(name: string, mime = ""): { kind: MaterialFileKind; mime: string } {
+  if (/\.(mp3|mp4|m4a|wav|mov|webm)$/i.test(name) || /^(audio|video)\//i.test(mime)) return { kind: "unsupported", mime };
   const ext = (name.split(".").pop() || "").toLowerCase();
   const m = mime.toLowerCase();
   if (m === "application/pdf" || ext === "pdf") return { kind: "pdf", mime: "application/pdf" };
@@ -190,7 +191,8 @@ export async function loadMaterialFiles(
   let storageDenied = 0;
   for (const ref of refs) {
     const { kind, mime } = classifyMaterial(ref.path || ref.title, ref.mime);
-    const { data } = await db.storage.from(ASSIGNMENT_MATERIALS_BUCKET).download(ref.path!);
+    if (kind === "unsupported" || !ref.path) continue;
+    const { data } = await db.storage.from(ASSIGNMENT_MATERIALS_BUCKET).download(ref.path);
     if (!data) { storageDenied += 1; materials.push({ title: ref.title, status: "unreadable" }); continue; }
     const bytes = new Uint8Array(await data.arrayBuffer());
     if (!bytes.length || bytes.length > CONTEXT_MAX_FILE_BYTES || total + bytes.length > CONTEXT_MAX_TOTAL_BYTES) {

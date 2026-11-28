@@ -21,7 +21,8 @@ import SummaryBlock from "@/components/admin/block-editors/SummaryBlock";
 import LessonBlock from "@/components/LessonBlockRenderer";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
-import { extractDocumentText } from "@/lib/curriculum-file-extract";
+import SourceInput from "@/components/sources/SourceInput";
+import { useSourceBundle } from "@/lib/use-source-bundle";
 import { practiceErrorMessage } from "@/lib/practice-error";
 import { buildGameSlidesFromQuiz, GAMES_HREF } from "@/lib/plan-suggested-activities";
 import { activityPropsToTemplate } from "@/components/admin/block-editors/ActivityBlock";
@@ -64,8 +65,9 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
   const [lessons, setLessons] = useState<LessonRow[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
-  const [pasted, setPasted] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const sources = useSourceBundle("teacher", (description) => toast({ title: "Zdroj se nepodařilo přidat", description, variant: "destructive" }), { maxChars: SOURCE_TEXT_LIMIT, minChars: 50 });
+  const pasted = sources.state.text;
+  const uploading = sources.state.busy;
   const [settings, setSettings] = useState<WizardSettings>({ itemCount: 8, difficulty: "medium", optionCount: 4, wordBank: true });
   const [generating, setGenerating] = useState(false);
   const [block, setBlock] = useState<Block | null>(null);
@@ -76,7 +78,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   useEffect(() => {
     if (!open) return;
-    setStep("source"); setMode(info?.manualOnly ? "empty" : "lesson"); setPicked([]); setPasted(""); setBlock(null); setTargetLessonId("");
+    setStep("source"); setMode(info?.manualOnly ? "empty" : "lesson"); setPicked([]); sources.clear(); setBlock(null); setTargetLessonId("");
   }, [open, catalogId]);
 
   // Stejný zdroj lekcí jako „Vytvořit z lekce“ (teacher-source-lessons): vlastní učebnice i kopie,
@@ -104,26 +106,8 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   const pickedLessons = useMemo(() => lessons.filter((l) => picked.includes(l.id)), [lessons, picked]);
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploading(true);
-    try {
-      const text = await extractDocumentText(file);
-      const clean = text.trim();
-      setPasted(clean);
-      toast(clean.length > SOURCE_TEXT_LIMIT
-        ? { title: "Text je delší než limit", description: `${file.name}: ${clean.length} znaků, limit ${SOURCE_TEXT_LIMIT}. Před generováním ho zkraťte.`, variant: "destructive" }
-        : { title: "Text načten", description: `${file.name}: ${clean.length} znaků.` });
-    } catch (err: any) {
-      toast({ title: "Soubor se nepodařilo načíst", description: err?.message ?? String(err), variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
-  }
-
   function goSettings() {
+    if (mode === "text" && !sources.state.ok) { toast({ title: "Doplňte zdroj", description: sources.state.message ?? "Zdroj není připravený.", variant: "destructive" }); return; }
     const r = resolveSource({ mode, lessons: pickedLessons, text: pasted });
     if (r.kind === "error") { toast({ title: "Doplňte zdroj", description: r.message, variant: "destructive" }); return; }
     if (r.kind === "ai" && r.truncatedFrom) toast({ title: "Lekce jsou delší než limit", description: `AI dostane prvních ${SOURCE_TEXT_LIMIT} z ${r.truncatedFrom} znaků. Pro celý obsah vyberte méně lekcí.` });
@@ -132,6 +116,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
   async function generate() {
     if (!catalogId) return;
+    if (mode === "text" && !sources.state.ok) return;
     const r = resolveSource({ mode, lessons: pickedLessons, text: pasted });
     if (r.kind === "error") { toast({ title: "Doplňte zdroj", description: r.message, variant: "destructive" }); return; }
     if (r.kind === "empty") { setBlock(buildBlock(catalogId, null, settings, title) as Block); setStep("preview"); return; }
@@ -222,7 +207,7 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
               <Tabs value={mode} onValueChange={(v) => setMode(v as SourceMode)}>
                 <TabsList className={info?.manualOnly ? "grid grid-cols-1 w-full" : "grid grid-cols-3 w-full"}>
                   {!info?.manualOnly && <TabsTrigger value="lesson">Z lekce</TabsTrigger>}
-                  {!info?.manualOnly && <TabsTrigger value="text">Vložit text nebo dokument</TabsTrigger>}
+                  {!info?.manualOnly && <TabsTrigger value="text" className="whitespace-normal text-xs leading-tight sm:text-sm">Vložit text nebo dokument</TabsTrigger>}
                   <TabsTrigger value="empty">Prázdná</TabsTrigger>
                 </TabsList>
                 <TabsContent value="lesson" className="space-y-3">
@@ -230,22 +215,14 @@ export default function ActivityWizardDialog({ catalogId, title, onOpenChange }:
 
                 </TabsContent>
                 <TabsContent value="text" className="space-y-3">
-                  <Label htmlFor="wiz-text">Text podkladu</Label>
-                  <Textarea id="wiz-text" rows={8} value={pasted}
-                    onChange={(e) => setPasted(e.target.value)} placeholder="Vložte text, ze kterého má AI aktivitu vytvořit…" />
-                  <p className={pasted.length > SOURCE_TEXT_LIMIT ? "text-xs text-destructive" : "text-xs text-muted-foreground"} aria-live="polite">{pasted.length} / {SOURCE_TEXT_LIMIT} znaků{pasted.length > SOURCE_TEXT_LIMIT ? " – zkraťte text, nic se neořízne automaticky" : ""}</p>
-                  <label className="inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer hover:bg-muted">
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    Nahrát PDF, Word nebo fotku
-                    <input type="file" className="sr-only" accept=".pdf,.docx,.doc,.pptx,image/*" disabled={uploading} onChange={handleFile} />
-                  </label>
+                  <SourceInput bundle={sources} disabled={generating} allowUrl={false} />
                 </TabsContent>
                 <TabsContent value="empty">
                   <p className="text-sm text-muted-foreground">Aktivitu vyplníte sami v editoru, AI se nepoužije.</p>
                 </TabsContent>
               </Tabs>
               <div className="flex justify-end">
-                <Button onClick={goSettings} disabled={mode === "lesson"}>Pokračovat</Button>
+                <Button onClick={goSettings} disabled={mode === "lesson" || (mode === "text" && !sources.state.ok)}>Pokračovat</Button>
               </div>
             </div>
           )}

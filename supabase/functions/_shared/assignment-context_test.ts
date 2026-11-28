@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { classifyMaterial, isUuid, parseMaterialRefs, selectMaterialFiles } from "./assignment-context.ts";
+import { classifyMaterial, isUuid, loadMaterialFiles, parseMaterialRefs, selectMaterialFiles } from "./assignment-context.ts";
 import { assignmentContextSnippets, buildTutorSystemPrompt, MAX_TUTOR_SNIPPET_CHARS } from "../ask-zedai-tutor/tutor.ts";
 
 Deno.test("materiály: jen bezpečné cesty a odkazy", () => {
@@ -29,6 +29,17 @@ Deno.test("tutor bere nejvýše 2 textové soubory, obrázky ani video ne", () =
 Deno.test("isUuid", () => {
   assert(isUuid("11111111-1111-4111-8111-111111111111"));
   assert(!isUuid("x"));
+});
+
+Deno.test("audio/video se ani nestáhne a MIME má přednost před PDF", async () => {
+  let downloads = 0;
+  const db = { from: () => null, storage: { from: () => ({ download: async () => { downloads++; return { data: null, error: null }; } }) } };
+  const refs = ["mp3", "mp4", "m4a", "wav", "mov", "webm"].map((ext) => ({ title: "[TEST]", kind: "file" as const, path: `owner/[TEST].${ext}` }));
+  assertEquals(selectMaterialFiles(refs, 5, false), []);
+  const loaded = await loadMaterialFiles(db, refs, { pdfAs: "file", textOnly: false });
+  assertEquals(downloads, 0);
+  assertEquals(loaded.materials, []);
+  assertEquals(classifyMaterial("[TEST].pdf", "audio/mpeg").kind, "unsupported");
 });
 
 Deno.test("úryvky úkolu: max 5×800, záložně začátek dokumentu", () => {

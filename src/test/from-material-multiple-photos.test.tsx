@@ -7,6 +7,8 @@ vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: mocks.toast }) }
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: mocks.invoke } } }));
 vi.mock("@/components/WorksheetPlayer", () => ({ default: () => null }));
 vi.mock("@/lib/pdf-page-renderer", () => ({ extractPdfText: vi.fn() }));
+vi.mock("@/lib/practice-photo", () => ({ prepareJpegPhoto: vi.fn(async (file: File) => ({ file, preview: URL.createObjectURL(file), dataUrl: "data:image/jpeg;base64,W1RFU1Rd" })) }));
+vi.mock("@/lib/source-extract", () => ({ extractFileSource: vi.fn(async () => "[TEST] Text dokumentu s výukovým materiálem."), ScannedPdfError: class extends Error {} }));
 import FromMaterialView from "@/components/from-material/FromMaterialView";
 import { savePracticeSource } from "@/lib/practice-method";
 beforeEach(() => {
@@ -16,6 +18,16 @@ beforeEach(() => {
 });
 const photos = (count: number) => Array.from({ length: count }, (_, i) => new File(["image"], `[TEST]${i}.jpg`, { type: "image/jpeg" }));
 describe("Z materiálu – galerie a kamera", () => {
+  it("dokument a fotka se nevylučují a do generátoru jdou společně", async () => {
+    mocks.invoke.mockResolvedValue({ data: { items: [{ type: "short_answer", prompt: "[TEST]", correctAnswer: "[TEST]" }] }, error: null });
+    const view = render(<MemoryRouter><FromMaterialView role="student" /></MemoryRouter>);
+    const input = view.container.querySelector('input[accept^=".pdf"]');
+    if (!input) throw new Error("Missing mixed input");
+    fireEvent.change(input, { target: { files: [new File(["[TEST]"], "[TEST].docx"), ...photos(1)] } });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Vygenerovat" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Vygenerovat" }));
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("generate-content-from-material", expect.objectContaining({ body: expect.objectContaining({ images: ["data:image/jpeg;base64,W1RFU1Rd"], extractedText: "[TEST] Text dokumentu s výukovým materiálem." }) })));
+  });
   it("načte obě fotografie bez spuštění AI a uvolní náhledy při odchodu", async () => {
     const view = render(<MemoryRouter><FromMaterialView role="student" /></MemoryRouter>);
     const input = view.container.querySelector('input[multiple]');
