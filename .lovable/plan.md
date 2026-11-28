@@ -23,6 +23,14 @@ Jen návrh. Nic se nenasazuje, AGENTS.md, databáze, RLS ani SQL se nemění.
 - Tlačítko „Spustit“ při běžícím sezení nejdřív nabídne „Pokračovat v běžící“ (výchozí) / „Spustit novou“.
 - Více běžících sezení jedné prezentace: štítek „Běží živě (2)“, tlačítko otevře výběr seřazený od nejnovějšího (kód, čas spuštění, stav, počet hráčů) s akcemi Otevřít / Ukončit. Jedno sezení = rovnou otevře.
 
+### Více zařízení v jednom sezení (doplnění)
+Zjištěno: stav hry (aktuální slide, spuštěná aktivita, zveřejnění, zoom) je v řádku `game_sessions` a obrazovka učitele ho zapisuje UPDATEm; projektor i ovladač ho čtou přes živé změny řádku. Ovladač posílá příkazy kanálem `presenter-remote-<id>`, provádí je obrazovka učitele.
+
+1. Připojení dalšího zařízení z karty: tlačítko „Otevřít živě“ nabídne „Ovládat“ (`/live/ucitel/:id`), „Promítat“ (`/live/projektor/:id`) a „Ovladač v telefonu“ (QR na `/live/ovladac/:id`). Vše jen otevře existující sezení, nic nezakládá. Stejné akce v sekci „Právě běží“, takže tablet se připojí po přihlášení tím samým účtem.
+2. Souběžné příkazy: zdrojem pravdy zůstává řádek sezení. Každé zařízení po změně řádku přerenderuje (dnes už funguje). Navigace bude relativní k aktuálnímu stavu v databázi, ne k lokální kopii: příkaz nese očekávaný index (`goto`/`next` z indexu N); obrazovka ho provede podmíněně (`update … where current_question_index = N`), takže dvojí „Další“ ze dvou zařízení posune jen o jeden slide. Jinak platí „poslední vyhrává“. Spustit/zveřejnit se při již spuštěné aktivitě ignoruje (stávající logika). Když je otevřených více ovládacích obrazovek, příkaz z ovladače smí provést jen jedna: vedoucí obrazovka určená přes presence kanálu (nejstarší připojená); ostatní příkaz jen zobrazí. Bez toho by se příkaz provedl dvakrát.
+3. Jedna prezentace ve více sezeních: sezení jsou nezávislá (vlastní kód, hráči, stav). Karta ukáže „Běží živě (2)“ a výběr; nová hra jen po výslovném „Spustit novou“.
+4. Bezpečnost: pravidlo pro kanál `presenter-remote-<id>` v databázi už existuje (jen vlastník sezení), ale kanál se dnes otevírá jako veřejný, takže se pravidlo neuplatní – kdo zná id sezení, může posílat příkazy (id není kód hry, ale objevuje se v URL a QR ovladače). Návrh pouze ve frontendu: otevírat kanál jako soukromý na ovladači i obrazovce učitele; obrazovka navíc ověří, že ovladač je přihlášený vlastník (stránka ovladače už to kontroluje). Zápisy stavu chrání stávající RLS na `game_sessions` (vlastník). Kód hry slouží jen žákům k připojení, nedává ovládání. Ověřit v prohlížeči, že soukromý kanál projde; kdyby ne, SQL by se týkalo jen pravidla kanálu (popsat ke schválení).
+
 Volitelně později (SQL, jen popis): sloupec `game_sessions.presentation_id uuid` + index; dnes není potřeba.
 
 ## B) Demo jako zjevná ukázka
@@ -68,12 +76,15 @@ AI limity:
 5. Serverové zámky a převod – samostatné schválení SQL.
 
 ## Rizika
+- Přepnutí ovladače na soukromý kanál: když se nepodaří, ovladač přestane fungovat – zavádět mimo přednášku a s ověřením.
+- Výběr vedoucí obrazovky přes presence: při výpadku sítě krátce nikdo nebo dvě obrazovky.
 - Staré hry bez `presentationId` se ke kartě nespárují.
 - Neukončené hry by svítily jako „běží“ – proto filtr stáří a tlačítko Ukončit.
 - Skrytí funkcí jen v UI není bezpečnostní zámek.
 - Delší pruh na mobilu 360 px zabere místo – nutná kontrola rozložení.
 
 ## Otevřené otázky
+0. Má ovladač z telefonu jít i bez přihlášení (jen QR), nebo vždy přihlášením učitele? Návrh: vždy přihlášení.
 1. Za jak dlouho považovat neukončenou hru za neaktivní (návrh 12 h)?
 2. Má „Ukončit“ být přímo v Prezentacích?
 3. Potvrdit seznam dostupných/zamčených funkcí dema a počet dotazů Bezlai v demu.
