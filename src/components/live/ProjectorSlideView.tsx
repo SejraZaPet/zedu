@@ -1,5 +1,5 @@
 import TextScrim from "@/components/ui/text-scrim";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import PollProjectorView from "@/components/activities/PollProjectorView";
@@ -7,6 +7,7 @@ import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
+import JoinQrOverlay from "@/components/live/JoinQrOverlay";
 import { isPollPublished, isWallPublished, usesCompactProjectorLayout } from "@/lib/projector-compact-layout";
 
 /** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
@@ -142,6 +143,9 @@ interface Props {
  * so that whiteboard strokes align identically in both views.
  */
 const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop = 0, zoom, backgroundUrl, responses, userZoom = 100, projectorFontScale: projectorFontScaleProp, chromeVisible = true, codeAlwaysVisible = false }: Props) => {
+  const [qrOpen, setQrOpen] = useState(false);
+  const closeQr = useCallback(() => setQrOpen(false), []);
+  useEffect(() => { setQrOpen(false); }, [currentIndex]);
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -393,17 +397,22 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
         <span className="truncate pl-10 text-base">{session.title}</span>
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-4 px-4 pb-3">
-        <span
+        <button
+          type="button"
           data-testid="projector-code"
-          className={`rounded-full bg-black/50 px-3 py-1 text-base text-white backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${chromeVisible || codeAlwaysVisible ? "opacity-100" : "opacity-0"}`}
+          aria-label="Zobrazit QR kód pro připojení"
+          aria-expanded={qrOpen}
+          onClick={(e) => { e.stopPropagation(); setQrOpen((v) => !v); }}
+          className={`pointer-events-auto min-h-[44px] cursor-pointer rounded-full bg-black/50 px-3 py-1 text-base text-white backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${chromeVisible || codeAlwaysVisible ? "opacity-100" : "opacity-0"}`}
         >
           Kód: <span className="font-mono font-bold">{gameCode}</span>
-          <span className={chromeVisible ? "" : "hidden"}> · {players.length} žáků online</span>
-        </span>
+          <span className={chromeVisible ? "" : "hidden"}> · {players.length} žáků online · <span className="text-white/70">ukázat QR</span></span>
+        </button>
         <span className="rounded-full bg-black/30 px-3 py-1 text-sm font-medium text-white/70 backdrop-blur-sm">
           Snímek {currentIndex + 1}/{slides.length}
         </span>
       </div>
+      {qrOpen && <JoinQrOverlay gameCode={gameCode} onClose={closeQr} />}
     </div>
   );
 };
