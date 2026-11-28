@@ -92,3 +92,20 @@ describe("demo pruh – sbalení a limity", () => {
     expect(region.className).toContain("print:hidden");
   });
 });
+
+import { demoQuotaMessage, parseDemoQuotaError, limitChipText, isNearLimit } from "@/lib/demo-limits";
+describe("kvóty dema", () => {
+  it("přečte serverový kód kvóty", () => {
+    expect(parseDemoQuotaError('{"message":"DEMO_QUOTA:textbooks:2"}')).toEqual({ key: "textbooks", limit: 2 });
+    expect(parseDemoQuotaError("permission denied")).toBeNull();
+  });
+  it("hláška při dosažení kvóty", () => {
+    expect(demoQuotaMessage("textbooks", 2)).toBe("Počet učebnic je v ukázce omezen na 2. V plném účtu bez omezení.");
+  });
+  it("čip kvóty a blízkost limitu", () => {
+    const l = { key: "textbooks", label: "Učebnice", used: 1, limit: 2 };
+    expect(limitChipText(l, false)).toBe("Učebnice 1/2");
+    expect(isNearLimit(l)).toBe(false);
+    expect(isNearLimit({ ...l, used: 2 })).toBe(true);
+  });
+});

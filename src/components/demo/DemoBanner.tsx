@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Copy, Check, FlaskConical, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useDemoPair } from "@/lib/demo";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -10,7 +11,7 @@ import {
 import DemoSaveWorkDialog from "./DemoSaveWorkDialog";
 import {
   DEMO_AI_EXHAUSTED_TEXT, DEMO_LIMIT_EVENT, installDemoLimitWatcher, isExhausted, mustStayExpanded,
-  readCollapsed, remaining, useDemoLimits, writeCollapsed,
+  readCollapsed, useDemoLimits, writeCollapsed, demoQuotaMessage, isNearLimit, limitChipText,
 } from "@/lib/demo-limits";
 
 /**
@@ -30,6 +31,7 @@ const DemoBanner = () => {
   const { limits, reload: reloadLimits } = useDemoLimits(!!pair);
   const [collapsedPref, setCollapsedPref] = useState<boolean>(() => readCollapsed());
   const [limitHit, setLimitHit] = useState(false);
+  const [showAllLimits, setShowAllLimits] = useState(() => typeof window !== "undefined" && window.innerWidth >= 640);
   const exhausted = limitHit || limits.some((l) => l.key === "ai" && isExhausted(l));
   const forced = mustStayExpanded(status?.daysLeft, exhausted);
   const collapsed = collapsedPref && !forced;
@@ -38,7 +40,13 @@ const DemoBanner = () => {
   useEffect(() => {
     if (!pair) return;
     const off = installDemoLimitWatcher();
-    const onHit = () => { setLimitHit(true); void reloadLimits(); };
+    const onHit = (e: Event) => {
+      const d = (e as CustomEvent).detail as { key?: string; limit?: number } | undefined;
+      if (d?.key && d.key !== "ai" && typeof d.limit === "number") {
+        toast.error(demoQuotaMessage(d.key, d.limit), { id: `demo-quota-${d.key}` });
+      } else setLimitHit(true);
+      void reloadLimits();
+    };
     window.addEventListener(DEMO_LIMIT_EVENT, onHit);
     return () => { off(); window.removeEventListener(DEMO_LIMIT_EVENT, onHit); };
   }, [pair, reloadLimits]);
@@ -182,15 +190,21 @@ const DemoBanner = () => {
                 {status.extended && deleteDay ? ` ${demoExtendedText(deleteDay)}` : ""}
               </p>
             )}
-            {limits.map((l) => {
+            {limits.filter((l) => showAllLimits || isNearLimit(l)).map((l) => {
               const out = isExhausted(l) || (l.key === "ai" && limitHit);
               return (
                 <span key={l.key} data-limit={l.key} data-exhausted={out ? "true" : "false"}
                   className={`inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-xs font-semibold break-words ${out ? "bg-destructive text-destructive-foreground" : "bg-demo-foreground/15"}`}>
-                  {l.label}: zbývají {out ? 0 : remaining(l)} z {l.limit}
+                  {limitChipText(l, out)}
                 </span>
               );
             })}
+            {!showAllLimits && limits.some((l) => !isNearLimit(l)) && (
+              <button type="button" onClick={() => setShowAllLimits(true)}
+                className="min-h-[44px] sm:min-h-0 text-xs font-semibold underline underline-offset-2">
+                Další limity
+              </button>
+            )}
             {status?.deletesAt && !status.extended && (
               <Button size="sm" onClick={extend} disabled={extendBusy}
                 className="h-8 min-w-[44px] bg-demo-foreground text-demo hover:bg-demo-foreground/90">
