@@ -54,6 +54,54 @@ function extractCorrectAnswer(slide: AnySlide): string {
   return "—";
 }
 
+/**
+ * Úspěšnost jedné otázky = podíl správných odpovědí v %. Dřív se počítal průměr
+ * `score`, což jsou body (0–1000), ne procenta – vycházelo např. 640 %.
+ * Jediný výpočet pro dialog i projektor. Null = bez rozhodnutých odpovědí.
+ */
+export function slideSuccess(
+  responses: AnyResponse[],
+  index: number
+): { total: number; pct: number } | null {
+  const rel = responses.filter((r) => r.question_index === index);
+  if (rel.length === 0) return null;
+  const decided = rel.filter(
+    (r) => typeof r.is_correct === "boolean" || typeof r.score === "number"
+  );
+  if (decided.length === 0) return null;
+  const correct = decided.filter((r) =>
+    typeof r.is_correct === "boolean" ? r.is_correct : (r.score ?? 0) > 0
+  ).length;
+  return { total: rel.length, pct: Math.round((correct / decided.length) * 100) };
+}
+
+/** Projektor: přepočet pro učitelem vybrané indexy stejným výpočtem jako dialog. */
+export function projectorWeakItems(
+  slides: AnySlide[],
+  responses: AnyResponse[],
+  weakIndices?: number[]
+): WeakSlide[] {
+  if (!Array.isArray(weakIndices) || weakIndices.length === 0) {
+    return computeWeakSlides(slides, responses);
+  }
+  return weakIndices
+    .map((idx) => {
+      const slide = slides[idx];
+      if (!slide) return null;
+      const stats = slideSuccess(responses, idx);
+      return {
+        index: idx,
+        slide,
+        total: stats?.total ?? 0,
+        successPct: stats?.pct ?? 0,
+        question: slide?.projector?.headline || slide?.activitySpec?.question || `Otázka ${idx + 1}`,
+        correctAnswer: extractCorrectAnswer(slide),
+      } as WeakSlide;
+    })
+    .filter((x): x is WeakSlide => !!x)
+    .sort((a, b) => a.successPct - b.successPct);
+}
+
 export function computeWeakSlides(
   slides: AnySlide[],
   responses: AnyResponse[]
@@ -66,27 +114,16 @@ export function computeWeakSlides(
     // Skip pure expressive activities (no right/wrong)
     if (["wall", "poll"].includes(spec.activityType)) return;
 
-    const rel = responses.filter((r) => r.question_index === idx);
-    if (rel.length === 0) return;
-
-    // Úspěšnost = podíl správných odpovědí. Dřív se počítal průměr `score`,
-    // což jsou body (0–1000), ne procenta – otázka s chybami tak vycházela
-    // nad 100 % a z adaptivního závěru vypadla.
-    const decided = rel.filter(
-      (r) => typeof r.is_correct === "boolean" || typeof r.score === "number"
-    );
-    if (decided.length === 0) return;
-    const correct = decided.filter((r) =>
-      typeof r.is_correct === "boolean" ? r.is_correct : (r.score ?? 0) > 0
-    ).length;
-    const pct = Math.round((correct / decided.length) * 100);
+    const stats = slideSuccess(responses, idx);
+    if (!stats) return;
+    const { total, pct } = stats;
 
     // Zahrnout otázku, pokud NĚKDO odpověděl špatně (úspěšnost < 100 %)
     if (pct < FULL_SUCCESS) {
       out.push({
         index: idx,
         slide,
-        total: rel.length,
+        total,
         successPct: pct,
         question: slide?.projector?.headline || spec.question || `Otázka ${idx + 1}`,
         correctAnswer: extractCorrectAnswer(slide),
@@ -266,39 +303,8 @@ export function AdaptiveReviewProjector({
   responses,
   weakIndices,
 }: AdaptiveReviewProjectorProps) {
-  const items = useMemo(() => {
-    if (Array.isArray(weakIndices) && weakIndices.length > 0) {
-      // Recompute pct for the chosen indices
-      return weakIndices
-        .map((idx) => {
-          const slide = slides[idx];
-          if (!slide) return null;
-          const rel = responses.filter((r) => r.question_index === idx);
-          const scored = rel.filter((r) => typeof r.score === "number");
-          let pct = 0;
-          if (scored.length > 0) {
-            pct = Math.round(
-              scored.reduce((s, r) => s + (r.score ?? 0), 0) / scored.length
-            );
-          } else if (rel.length > 0) {
-            pct = Math.round(
-              (rel.filter((r) => r.is_correct === true).length / rel.length) * 100
-            );
-          }
-          return {
-            index: idx,
-            slide,
-            total: rel.length,
-            successPct: pct,
-            question: slide?.projector?.headline || `Otázka ${idx + 1}`,
-            correctAnswer: extractCorrectAnswer(slide),
-          } as WeakSlide;
-        })
-        .filter((x): x is WeakSlide => !!x)
-        .sort((a, b) => a.successPct - b.successPct);
-    }
-    return computeWeakSlides(slides, responses);
-  }, [slides, responses, weakIndices]);
+  const items = useMemo(() => projectorWeakItems(slides, responses, weakIndices), [slides, responses, weakIndices]);
+
 
   return (
     <div
