@@ -7,7 +7,7 @@ import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 import { activityCardStyle, hasActivityColors, resolveActivityColors } from "@/lib/activity-colors";
 import { isWordcloudShown } from "@/lib/wordcloud-visibility";
-import JoinQrOverlay from "@/components/live/JoinQrOverlay";
+import JoinQrOverlay, { useJoinQrListener } from "@/components/live/JoinQrOverlay";
 import { isPollPublished, isWallPublished, usesCompactProjectorLayout } from "@/lib/projector-compact-layout";
 
 /** Karta aktivity na projektoru: vlastní barvy učitele, jinak dosavadní tmavý podklad. */
@@ -146,6 +146,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const [qrOpen, setQrOpen] = useState(false);
   const closeQr = useCallback(() => setQrOpen(false), []);
   useEffect(() => { setQrOpen(false); }, [currentIndex]);
+  useJoinQrListener(sessionId, setQrOpen);
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(

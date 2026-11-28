@@ -1,6 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
+import { supabase } from "@/integrations/supabase/client";
+
+/** Broadcast kanál: obrazovka učitele otevírá/zavírá QR i na projektoru (bez zápisu do DB). */
+export const joinQrChannelName = (sessionId: string) => `join-qr-${sessionId}`;
+
+export function useJoinQrListener(sessionId: string | undefined, onChange: (open: boolean) => void) {
+  useEffect(() => {
+    if (!sessionId) return;
+    const ch = supabase.channel(joinQrChannelName(sessionId));
+    ch.on("broadcast", { event: "qr" }, ({ payload }) => onChange(!!(payload as any)?.open)).subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [sessionId, onChange]);
+}
+
+function useJoinQrSender(sessionId: string | undefined) {
+  const [ch, setCh] = useState<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    if (!sessionId) return;
+    const c = supabase.channel(joinQrChannelName(sessionId));
+    c.subscribe();
+    setCh(c);
+    return () => { void supabase.removeChannel(c); setCh(null); };
+  }, [sessionId]);
+  return useCallback((open: boolean) => {
+    ch?.send({ type: "broadcast", event: "qr", payload: { open } }).catch((e) => console.warn("[join-qr] send failed", e?.message));
+  }, [ch]);
+}
 
 export function joinUrlFor(gameCode: string) {
   return `${window.location.origin}/live/pripojit${gameCode ? `?code=${gameCode}` : ""}`;
@@ -35,9 +62,13 @@ export default function JoinQrOverlay({ gameCode, onClose }: { gameCode: string;
 }
 
 /** Samostatné tlačítko „QR“ (obrazovka učitele): overlay přes celé okno. */
-export function JoinQrButton({ gameCode, className = "" }: { gameCode: string; className?: string }) {
-  const [open, setOpen] = useState(false);
-  const close = useCallback(() => setOpen(false), []);
+export function JoinQrButton({ gameCode, className = "", sessionId }: { gameCode: string; className?: string; sessionId?: string }) {
+  const [open, setOpenState] = useState(false);
+  const send = useJoinQrSender(sessionId);
+  const setOpen = useCallback((v: boolean | ((p: boolean) => boolean)) => {
+    setOpenState((prev) => { const next = typeof v === "function" ? v(prev) : v; send(next); return next; });
+  }, [send]);
+  const close = useCallback(() => setOpen(false), [setOpen]);
   return (
     <>
       <button type="button" aria-label="Zobrazit QR kód pro připojení" aria-expanded={open} onClick={() => setOpen((v) => !v)} className={`cursor-pointer rounded px-1 font-semibold text-foreground hover:bg-muted ${className}`}>

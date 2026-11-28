@@ -811,7 +811,7 @@ const LiveTeacherScreen = () => {
               <button type="button" onClick={() => void copyGameCode()} className="flex min-h-6 items-center gap-1 rounded px-1 font-mono font-semibold text-foreground hover:bg-muted" title="Kopírovat kód" aria-label={`Kopírovat kód ${gameCode}`}>
                 {gameCode}<Copy className="h-3 w-3" />
               </button>
-              <JoinQrButton gameCode={gameCode} className="min-h-6" />
+              <JoinQrButton gameCode={gameCode} sessionId={sessionId} className="min-h-6" />
               <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{players.length}</span>
             </div>
           </div>
