@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Copy, Check, FlaskConical, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { HelpHint } from "@/components/help/HelpHint";
 import { useDemoPair } from "@/lib/demo";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -199,6 +200,7 @@ const DemoBanner = () => {
                 </span>
               );
             })}
+            {limits.length > 0 && <HelpHint id="demo.limits" tone="light" />}
             {!showAllLimits && limits.some((l) => !isNearLimit(l)) && (
               <button type="button" onClick={() => setShowAllLimits(true)}
                 className="min-h-[44px] sm:min-h-0 text-xs font-semibold underline underline-offset-2">

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Monitor, RotateCcw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HelpHint } from "@/components/help/HelpHint";
 
 // Adaptivní závěr zahrnuje všechny otázky, kde padla alespoň jedna chybná odpověď.
 const FULL_SUCCESS = 100;
@@ -220,6 +221,7 @@ export function AdaptiveReviewDialog({
           <DialogTitle className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-primary" />
             Adaptivní závěr
+            <HelpHint id="live.adaptive" />
           </DialogTitle>
           <DialogDescription>
             Otázky, ve kterých se objevila aspoň jedna chybná odpověď – seřazeno od nejhorší.

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -420,7 +421,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   useEffect(() => { fetchCourses(); fetchCertificates(); fetchPathways(); }, [fetchCourses, fetchCertificates, fetchPathways]);
 
 
-  const openCourse = async (courseId: string) => {
+  const openCourse = async (courseId: string, preferModuleId?: string | null) => {
     if (!user) return;
     const request = ++courseRequest.current;
     setSelectedCourseId(courseId);
@@ -474,10 +475,23 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setEvidenceDesc("");
     setEvidenceFile(null);
     const completed = new Set((comps || []).map((c: any) => c.module_id));
-    const resume = enroll.completed_at ? mods?.[0] : mods?.find((m) => !completed.has(m.id)) ?? mods?.[0];
+    const preferred = preferModuleId ? mods?.find((m) => m.id === preferModuleId) : undefined;
+    const resume = preferred ?? (enroll.completed_at ? mods?.[0] : mods?.find((m) => !completed.has(m.id)) ?? mods?.[0]);
     setActiveModuleId(resume?.id ?? null);
     setModulesLoading(false);
   };
+
+  // Přímý odkaz z nápovědy: ?kurz=<id>&modul=<id>. Otevře kurz stejně jako ruční klik (jen pro existující kurz).
+  const [searchParams] = useSearchParams();
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || loading || !user) return;
+    const kurz = searchParams.get("kurz");
+    if (!kurz) return;
+    deepLinkDone.current = true;
+    if (courses.some((c) => c.id === kurz)) void openCourse(kurz, searchParams.get("modul"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user, courses, searchParams]);
 
   const reloadEvidence = useCallback(async () => {
     if (!enrollmentId) return;
