@@ -1,42 +1,58 @@
-# Plán: tlačítko „Zvednutá ruka“ bez překryvů a s upozorněním jako u dotazů
+# Demo jako ukázka – kvóty počtu položek (doplněk plánu)
 
-Jen návrh. Nic se nenasazuje; AGENTS.md, databáze, RLS ani SQL se nemění. Změna čistě ve frontendu. Ruka zůstává samostatné viditelné tlačítko (nezalézá do menu Nástroje). Otázka „pro nový slide“ se zatím neřeší.
+## Co demo omezuje už dnes (zůstává beze změny)
+- Soubory: 20 ks a 2 MB na soubor (`demo_config`, kontroluje `demo_storage_upload_ok` při nahrání do úložiště).
+- AI: 25 dotazů na účet a 1 500 denně pro všechna dema dohromady (`demo_config`, hlídá `_shared/demo-ai-guard.ts`). Pruh dema už ukazuje „AI generování: zbývají X z 25“ (`get_my_demo_limits`, `DemoBanner`).
+- Vznik dema: limit na IP adresu za hodinu a celkový denní limit. Pro akci „dalkove-ucitele“ platí od 27. do 29. 11. vyšší limity: 80 dem z jedné IP za hodinu, 1 000 denně, 15 AI dotazů na účet a 1 000 AI dotazů denně. Tento dočasný přepis se se stálými kvótami nemíchá.
+- Ostatní: zápisy jsou omezené, jednotlivá dema jsou od sebe oddělená a ukázkový obsah je jen ke čtení.
+- Počet vytvořených položek dnes neomezuje nic.
 
-## Zjištěný stav
-- Ruka: `src/components/game/RaisedHandsIndicator.tsx`, plovoucí `fixed bottom-4 right-4 z-50`, viditelná jen při hlášení („Hlásí se N“), okno se seznamem a „Odbavit“ (RPC `clear_player_hand`). Vykreslená v `LiveTeacherScreen.tsx` v čekárně (ř. 614) a při ovládání (ř. 800).
-- Překrývá ji tlačítko „Přidat slide“ (+), `fixed bottom-6 right-6 z-50`.
-- Dotazy žáků dnes (`useLiveQuestions` v `LiveQuestionsSheet.tsx`): data přes RPC `get_session_questions` + živé změny + dotaz každých 5 s. Učitel je vidí **jen** jako červený odznak s počtem na tlačítku „Nástroje“ a v položce „Dotazy“; seznam se otevírá v bočním panelu, kde jde dotaz označit jako zodpovězený.
-- **Dotazy dnes nemají vyskakovací upozornění ani zvuk.** Notifikace „stejně jako u dotazů“ tedy v aplikaci zatím neexistuje – navrhuji ji vytvořit jednou a použít pro obojí.
+## Navržené kvóty na jednu demo dvojici (učitel + ukázkový žák)
+Čísla stačí na celý postup: učebnice → lekce → prezentace/aktivita → živá hra → úkol → odevzdání žákem.
 
-## Návrh
-### 1. Umístění tlačítka ruky
-- Tlačítko „Hlásí se N“ přesunout do horní lišty obrazovky učitele, hned vedle (vlevo od) lišty akcí `LiveTeacherActions`, jako běžné tlačítko v toku lišty (ne `fixed`), takže nic nepřekrývá a lištu neposouvá přes jiné prvky. Bez hlášení se nezobrazí (lišta se nemění).
-- Na úzkém displeji (`compact`): ikona ruky s číslem v liště; text „Hlásí se“ jen od šířky sm.
-- Čekárna: tlačítko do hlavičky čekárny vedle kódu hry, ne vpravo dole.
+| Kvóta | Limit | Počítá se |
+|---|---|---|
+| Vlastní učebnice | 2 | `teacher_textbooks` vlastníka, kopie ukázek také |
+| Lekce | 10 | `teacher_textbook_lessons` ve vlastních učebnicích |
+| Prezentace | 5 | `teacher_presentations` |
+| Pracovní listy | 5 | `worksheets` |
+| Aktivity/hry | 10 | `teacher_game_templates` bez ukázkových (`demo_seed_key IS NULL`) |
+| Úkoly/materiály | 10 | `assignments` |
+| Třídy/skupiny | 2 | `classes` + `subject_groups` |
+| Žáci | 1 (ukázkový žák) | demo nemůže přidávat další žáky, tím se zabrání sběru cizích údajů |
+| Živé hry současně | 1 aktivní, 10 celkem | `game_sessions` |
+| Nahrané soubory | 20 ks / 2 MB (stávající) | beze změny |
+| AI dotazy (generátory i Bezlai) | 25 (stávající) | Bezlai by mohla mít vlastní podlimit 15 z těchto 25, viz otevřené otázky |
 
-### 2. Společné upozornění pro dotaz i ruku
-- Nová komponenta `LiveAttentionToasts` (jedna pro obě události): při nové zvednuté ruce nebo novém dotazu ukáže v pravém horním rohu pod lištou (mimo „Přidat slide“) kartu:
-  - ruka: „✋ Petr se hlásí“ + tlačítka „Vzít na vědomí“ (= Odbavit, stejné RPC) a „Zavřít“;
-  - dotaz: „❓ Nový dotaz od Petra: …(zkráceno)“ + „Otevřít dotazy“ a „Označit zodpovězené“ (stávající akce).
-- Detekce „nového“ jen porovnáním s předchozím stavem v paměti (id hráče s `hand_raised` / id dotazu); první načtení stránky upozornění nespouští.
-- Víc událostí najednou: max 3 karty, další shrnout „+2 další“. Karta zmizí sama po 15 s, ale tlačítko v liště s počtem zůstává.
-- Zvýraznění: krátké pulzování tlačítka ruky / odznaku Nástroje (respektuje omezení animací). Zvuk: volitelný krátký tón, výchozí vypnutý, přepínač v „Nastavení prezentace“ (localStorage), protože dnes žádný zvuk není.
-- Přístupnost: `role="status"`, `aria-live="polite"`, tlačítka min. 44 px, ovladatelné klávesnicí, portál přes `PortalContainerContext` (fullscreen / nástroje).
-- Soukromí: na obrazovce učitele jméno ano; projektor ani žáci upozornění nevidí. Anonymní režim použije stávající `anonymousLabels`.
+Hodnoty se uloží do nastavení (nový sloupec `quotas` v `demo_config`), aby šly měnit bez nového nasazení. Dočasný přepis pro akci limity pouze zvyšuje, nikdy nesnižuje.
 
-### 3. Sjednocení logiky
-- Čistá funkce `diffAttentionEvents(prev, next)` vrací nové ruce a dotazy; používá ji `LiveAttentionToasts`. Test: první načtení bez událostí, nová ruka, odbavená ruka znovu zvednutá, nový dotaz, více současně, anonymní jména.
-- `RaisedHandsIndicator` se rozdělí na tlačítko do lišty + sdílený seznam (stávající „Odbavit“ beze změny).
+## Kde se kontroluje
+- **Server (skutečná ochrana):** Vyžaduje SQL, proto zde jen popis. Do každé z výše uvedených tabulek se přidá trigger `BEFORE INSERT` s funkcí `demo_quota_ok(tabulka)` typu SECURITY DEFINER, která pro demo uživatele spočítá jeho řádky a při dosažení limitu vrátí chybu s kódem `DEMO_QUOTA:<klíč>`. Trigger se pro ne-demo uživatele vrací hned na prvním řádku, takže jejich oprávnění zůstávají beze změny (stejný princip jako `demo_guard_*`). RESTRICTIVE policy by šla také, ale počítání v policy je pomalé a vrací jen obecné „permission denied“. Trigger proto vrátí srozumitelný kód.
+- **Edge funkce:** Žádná nová kontrola. Funkce, které zakládají obsah (např. kopie učebnice, AI tvorba listu nebo prezentace), zapisují do stejných tabulek a trigger je zachytí. Pouze se v nich chyba `DEMO_QUOTA` přeloží na stav 409 se srozumitelnou hláškou.
+- **Frontend (pohodlí, ne ochrana):** `get_my_demo_limits` vrátí i nové klíče s počty (vyžaduje SQL úpravu funkce). Nový pomocník `useDemoQuota(key)` vypne tlačítko „Vytvořit“ a předem zobrazí hlášku. Globální zachytávač chyb (rozšíření `installDemoLimitWatcher`) chybu `DEMO_QUOTA` převede na stejnou hlášku i tam, kde tlačítko vypnuté není.
+- **Bez SQL** jde jen frontendové upozornění a počítání na straně prohlížeče. To je obejitelné, proto se samo o sobě nedoporučuje.
 
-### 4. Ověření
-- Prohlížeč s maketami (bez zápisů): 1280×720, 1600×900, 390×844 – tlačítko ruky v liště nic nepřekrývá, „Přidat slide“ volné, karta upozornění se ukáže při nové ruce i dotazu, „Vzít na vědomí“ ruku odebere.
+## Co uživatel uvidí
+- Hláška při dosažení limitu, ve vykání, protože demo používá učitel: „V ukázce můžete mít nejvýše N učebnic. V plném účtu bez omezení.“ a tlačítko „Vytvořit plný účet“ (stávající převod demo-prevod-na-ostry-ucet).
+- Pro žákovskou část demo pouze zobrazí informaci ve stylu tykání.
+- Pruh dema: kompaktní čipy „Učebnice 1/2 · Lekce 4/10 · Prezentace 2/5 · AI 7/25“. Na šířce 390 px se zobrazí jen čipy blízko limitu (od 80 %) a zbytek se skryje pod „Další limity“. Čip na limitu je červený a pruh se nesmí sbalit (stávající `mustStayExpanded`).
+- Smazání položky uvolní místo, protože se počítají existující řádky.
+
+## Postup
+1. Schválit čísla a podlimit pro Bezlai.
+2. SQL balíček ke schválení (zatím jen soubor v `supabase/proposals/`): `quotas` v `demo_config`, `demo_quota_ok`, triggery, rozšíření `get_my_demo_limits` a postup pro vrácení změn.
+3. Frontend: čipy v pruhu, `useDemoQuota` u tlačítek vytvoření a přeložení chyby. Přidat testy na hlášky a výpočet.
+4. Edge funkce: překlad chyby `DEMO_QUOTA` na stav 409.
+5. Ověření na demo dvojici: dosažení každého limitu a kontrola, že běžný učitel limity nemá.
 
 ## Rizika
-- Horní lišta je na telefonu plná – nutná kontrola, aby se tlačítko vešlo (případně jen ikona).
-- Ruce se načítají přes živé změny hráčů; při výpadku spojení upozornění přijde až po obnovení.
-- Zvuk v prohlížeči může být blokovaný, proto výchozí vypnutý.
+- Trigger na velkých tabulkách přidá ke každému vložení jednu kontrolu. Pro ne-demo uživatele je to jen rychlé `is_demo_user`. Je potřeba změřit.
+- Ukázkový obsah a kopie: rozhodnout, zda se kopie ukázkové učebnice počítá. Návrh: počítá se.
+- Hromadné akce (kopie učebnice s lekcemi) mohou skončit v půlce. Kopírovací funkce proto musí předem zkontrolovat, že se celá kopie vejde.
+- Stávající dema mohou mít už teď víc položek než nový limit. Nic se jim nesmaže, jen nebudou moci přidávat další.
 
 ## Otevřené otázky
-1. Má být zvuk zapnutý ve výchozím stavu, nebo jen na přání?
-2. Mají karty zmizet samy (15 s), nebo zůstat do kliknutí?
-3. (Odloženo) „pro nový slide“ – čeká na upřesnění majitelky.
+- Platí navržená čísla? Jsou 2 učebnice a 10 lekcí dost na ukázku pro školu?
+- Má mít Bezlai vlastní podlimit v rámci 25 AI dotazů, nebo sdílet jeden?
+- Mají limity platit na celou dvojici (učitel + žák dohromady), nebo jen na učitele?
+- Mají se kvóty při akcích zvyšovat stejně jako AI limity?
