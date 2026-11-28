@@ -1,5 +1,11 @@
 # Roadmap
 
+## Vstup souborů – schválené etapy 0 a 1 (28. 11. 2026)
+- [ ] Etapa 0: lokální Office čtení, české chyby, OCR 20 000 znaků/ukončení, zachování AI 402/429, bezpečné logy; testy a samostatný commit.
+- [ ] Etapa 1: šest vstupů sjednotit přes SourceInput/přípravu JPEG, smíšené dávky a stávající limity; odmítnout audio/video v AI bez změn příloh.
+- [ ] Cílené testy a prohlížeč s maketami bez ostrých zápisů, shrnutí ověření/rizik a samostatný commit.
+- Etapy 2–4 jen návrh; bez SQL/RLS/bucket změn, AGENTS.md a nasazení.
+
 ## Akademie – celková revize (26. 11. 2026)
 - [x] Čtecí kontrola kurzů, devíti modulů učitelského úvodu a současného ovládání.
 - [x] Připravit plán obsahu, skutečných snímků, vzhledu a nových modulů.

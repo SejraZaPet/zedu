@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
+import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
 
 /** Max délka textu, kterou posíláme AI (stejný limit má edge funkce). */
 export const CURRICULUM_AI_MAX_CHARS = 20000;
@@ -90,8 +91,8 @@ export async function extractDocumentText(file: File): Promise<string> {
         mode: "single",
       },
     });
-    if (error) throw error;
-    if ((data as any)?.error) throw new Error((data as any).error);
+    if (error) throw new Error(await practiceErrorMessage(error));
+    if ((data as any)?.error) throw new Error(readablePracticeMessage((data as any).error));
     const lessons = (data as any)?.lessons ?? [];
     text = lessons
       .map((l: any) => `${l.title || ""}\n${blocksToText(l.blocks || [])}`)

@@ -1,9 +1,11 @@
 import { PRACTICE_AI_MODEL } from "../_shared/practice-ai-model.ts";
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { PaymentRequiredError, RateLimitError, OperationFailedError } from "npm:@lovable.dev/ai-gateway@0.1.15";
 import {
   handleExtractPracticePhotoText,
   PRACTICE_PHOTO_MAX_BASE64_CHARS,
+  PRACTICE_PHOTO_MAX_TEXT_CHARS,
 } from "./core.ts";
 
 const AUTH_OK = { ok: true as const, userId: "student-1", isServiceRole: false, authHeader: "Bearer test" };
@@ -33,8 +35,15 @@ function deps(fetchImpl: typeof fetch = async () => gatewayResponse(LONG_TEXT), 
       ? AUTH_OK
       : { ok: false as const, status: 401, body: { error: "Unauthorized" } },
     demoGuard: demoGuard ?? (async () => null),
-    fetchImpl,
-    apiKey: "test-key",
+    generate: async (payload: Parameters<NonNullable<Parameters<typeof handleExtractPracticePhotoText>[1]["generate"]>>[0]) => {
+      const response = await fetchImpl("http://localhost/[TEST]-gateway", { body: JSON.stringify(payload) });
+      if (!response.ok) {
+        await response.text();
+        const ErrorType = response.status === 402 ? PaymentRequiredError : response.status === 429 ? RateLimitError : OperationFailedError;
+        throw new ErrorType("[TEST] gateway failure", { httpStatus: response.status });
+      }
+      return response.json();
+    },
   };
 }
 
@@ -115,4 +124,25 @@ Deno.test("úspěch vrací pouze přepsaný text", async () => {
   assertEquals(body.text, LONG_TEXT);
   assertEquals(requestBody.includes(PRACTICE_AI_MODEL), true);
   assertEquals(requestBody.includes("data:image/jpeg;base64,aGVsbG8="), true);
+});
+
+Deno.test("OCR přijme 20 000 znaků, větší text odmítne jako příliš dlouhý", async () => {
+  assertEquals(PRACTICE_PHOTO_MAX_TEXT_CHARS, 20_000);
+  const atLimit = await handleExtractPracticePhotoText(request(), deps(async () => gatewayResponse("a".repeat(20_000))));
+  assertEquals(atLimit.status, 200);
+  assertEquals((await atLimit.json()).text.length, 20_000);
+  const above = await handleExtractPracticePhotoText(request(), deps(async () => gatewayResponse("a".repeat(20_001))));
+  assertEquals(above.status, 422);
+  assertEquals((await above.json()).error, "PHOTO_TEXT_TOO_LONG");
+});
+
+Deno.test("ukončení length není nečitelnost, žádný částečný přepis se nevrací", async () => {
+  const response = await handleExtractPracticePhotoText(request(), deps(async (_url, init) => {
+    assertEquals(JSON.parse(String(init?.body)).max_tokens, 16000);
+    return new Response(JSON.stringify({ choices: [{ finish_reason: "length", message: { tool_calls: [{ function: { arguments: "{\"text\":\"" } }] } }] }));
+  }));
+  assertEquals(response.status, 422);
+  const body = await response.json();
+  assertEquals(body.error, "PHOTO_TEXT_TOO_LONG");
+  assertEquals("text" in body, false);
 });

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { extractDocumentText } from "@/lib/curriculum-file-extract";
 import { disposePracticePhoto, preparePracticePhoto, PRACTICE_PHOTO_UNREADABLE_MESSAGE } from "@/lib/practice-photo";
-import { practiceErrorMessage } from "@/lib/practice-error";
+import { practiceErrorMessage, readablePracticeMessage } from "@/lib/practice-error";
 import { isCloudLoginHost, urlErrorMessage, type SourceKind } from "@/lib/source-bundle";
 import { EMPTY_FILE_MESSAGE, extractDocx, extractOdf, extractPptx, extractXlsx, legacyFormatHint } from "@/lib/office-extract";
 import { extractPdfText, renderPdfPagesToImages } from "@/lib/pdf-page-renderer";
@@ -36,7 +36,8 @@ export async function extractFileSource(file: File, kind: SourceKind): Promise<s
       });
       if (error) throw new Error(await practiceErrorMessage(error));
       const text = typeof (data as any)?.text === "string" ? (data as any).text.trim() : "";
-      if ((data as any)?.error || !text) throw new Error(PRACTICE_PHOTO_UNREADABLE_MESSAGE);
+      if ((data as any)?.error) throw new Error(readablePracticeMessage((data as any).error));
+      if (!text) throw new Error(PRACTICE_PHOTO_UNREADABLE_MESSAGE);
       return text;
     } finally {
       disposePracticePhoto(photo);

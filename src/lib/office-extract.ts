@@ -50,7 +50,7 @@ const BROKEN = "Soubor se nepodařilo otevřít – je možná poškozený nebo 
 
 /** Bajty souboru (záloha přes FileReader pro starší prostředí bez File.arrayBuffer). */
 async function bytes(file: File): Promise<Uint8Array> {
-  if (typeof file.arrayBuffer === "function") return await bytes(file);
+  if (typeof file.arrayBuffer === "function") return new Uint8Array(await file.arrayBuffer());
   return new Promise((res, rej) => {
     const r = new FileReader();
     r.onload = () => res(new Uint8Array(r.result as ArrayBuffer));
@@ -81,9 +81,12 @@ export async function extractPptx(file: File): Promise<string> {
   const slides = Object.keys(z.files).filter((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p)).sort((a, b) => num(a) - num(b));
   const out: string[] = [];
   for (const p of slides) {
-    const t = pptxSlideXmlToText(await z.file(p)!.async("string"));
+    const slide = z.file(p);
+    if (!slide) continue;
+    const t = pptxSlideXmlToText(await slide.async("string"));
     const notesPath = `ppt/notesSlides/notesSlide${num(p)}.xml`;
-    const notes = z.file(notesPath) ? pptxSlideXmlToText(await z.file(notesPath)!.async("string")).replace(/^\d+$/gm, "").trim() : "";
+    const notesFile = z.file(notesPath);
+    const notes = notesFile ? pptxSlideXmlToText(await notesFile.async("string")).replace(/^\d+$/gm, "").trim() : "";
     if (t || notes) out.push(`Snímek ${num(p)}\n${t}${notes ? `\nPoznámky: ${notes}` : ""}`);
   }
   return out.join("\n\n").trim();

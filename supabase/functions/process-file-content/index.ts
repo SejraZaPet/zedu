@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { requireAuth } from "../_shared/auth.ts";
+import { gatewayLimitError } from "./gateway-error.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -464,7 +465,7 @@ function extractSlideText(xml: string, _slideLabel = "unknown"): string {
   try {
     parsed = xmlParser.parse(xml);
   } catch (err) {
-    console.warn("[pptx] XML parse failed, falling back to raw text", err);
+    console.warn("[pptx]", { code: "XML_PARSE_FAILED", reason: "fallback_to_raw_text" });
     const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
       .map((m) => stripXml(m[1]))
       .filter(Boolean);
@@ -823,7 +824,7 @@ async function generateLessonsFromText(
         console.log(`[batch] dávka ${index + 1}/${batches.length} → ${part.length} lekcí`);
         results[index] = part;
       } catch (err) {
-        console.error(`[batch] dávka ${index + 1}/${batches.length} selhala:`, err);
+        console.error("[batch]", { code: "AI_BATCH_FAILED", reason: "gateway_or_output_failure", status: err instanceof AiError ? err.status : 0 });
         errors.push(err);
       }
     }
@@ -1299,7 +1300,7 @@ serve(async (req) => {
           : await extractPptxText(bytes);
         if (extracted && extracted.trim().length >= 50) sourceText = extracted.trim();
       } catch (extractErr) {
-        console.warn("Server-side text extraction failed:", extractErr);
+        console.warn("[file-content]", { code: "LOCAL_EXTRACTION_FAILED", reason: "document_parse_failure" });
       }
     }
 
@@ -1326,17 +1327,11 @@ serve(async (req) => {
           fileBase64: String(fileBase64),
         });
       } catch (fileError) {
-        console.error("File mode failed:", fileError);
+        console.error("[file-content]", { code: "AI_FILE_FAILED", reason: "gateway_failure", status: fileError instanceof AiError ? fileError.status : 0 });
         const status = fileError instanceof AiError ? fileError.status : 0;
         const aborted = (fileError as any)?.name === "AbortError";
-        if (status === 429) {
-          throw new Error(
-            "Služba AI je právě přetížená. Zkuste dokument nahrát znovu za chvíli.",
-          );
-        }
-        if (status === 402) {
-          throw new Error("Vyčerpaný kredit pro AI. Doplňte kredit a zkuste to znovu.");
-        }
+        const limitError = gatewayLimitError(status);
+        if (limitError) return jsonResponse({ error: limitError.error, message: limitError.message }, limitError.status);
         if (aborted || status >= 500 || status === 408) {
           throw new Error(
             "Zpracování dokumentu trvalo příliš dlouho. Zkuste ho rozdělit na menší části (např. po kapitolách) a nahrát znovu.",
@@ -1504,10 +1499,12 @@ serve(async (req) => {
 
     return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, embeddedImagesBySlide, skippedImages, linkedBlocks });
   } catch (err) {
-    console.error("process-file-content error:", err);
+    console.error("[file-content]", { code: "FILE_PROCESSING_FAILED", reason: "processing_failure", status: err instanceof AiError ? err.status : 0 });
     const raw = err instanceof Error ? err.message : "";
     const status = err instanceof AiError ? err.status : 0;
     const aborted = (err as any)?.name === "AbortError";
+    const limitError = gatewayLimitError(status);
+    if (limitError) return jsonResponse({ error: limitError.error, message: limitError.message }, limitError.status);
     let friendly: string;
     if (status === 429) {
       friendly = "Služba AI je právě přetížená. Zkuste dokument nahrát znovu za chvíli.";
@@ -1521,7 +1518,7 @@ serve(async (req) => {
     } else {
       friendly = raw;
     }
-    return jsonResponse({ error: friendly }, status === 429 ? 429 : 500);
+    return jsonResponse({ error: status === 402 ? "AI_PAYMENT_REQUIRED" : status === 429 ? "AI_RATE_LIMITED" : friendly, message: friendly }, status === 429 ? 429 : status === 402 ? 402 : 500);
   }
 
 

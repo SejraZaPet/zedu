@@ -1,10 +1,12 @@
 import { PRACTICE_AI_MODEL } from "../_shared/practice-ai-model.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@^4.4.3";
+import { generateChatCompletion, GatewayError, type GeminiChatFields } from "npm:@lovable.dev/ai-gateway@0.1.15";
+import type {} from "./generated/models.d.ts";
 
 export const PRACTICE_PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 export const PRACTICE_PHOTO_MAX_BASE64_CHARS = 4 * Math.ceil(PRACTICE_PHOTO_MAX_BYTES / 3);
-export const PRACTICE_PHOTO_MAX_TEXT_CHARS = 12_000;
+export const PRACTICE_PHOTO_MAX_TEXT_CHARS = 20_000;
 export const PRACTICE_PHOTO_MIN_TEXT_CHARS = 150;
 export const UNREADABLE_PHOTO_MESSAGE =
   "Text se nepodařilo spolehlivě přečíst. Vyfot stránku znovu ostřeji a při lepším světle, nebo text opiš ručně.";
@@ -36,8 +38,9 @@ type AuthResult = AuthSuccess | { ok: false; status: number; body: { error: stri
 type Dependencies = {
   auth: (req: Request) => Promise<AuthResult>;
   demoGuard: (auth: AuthSuccess, functionName: string) => Promise<Response | null>;
-  fetchImpl?: typeof fetch;
-  apiKey?: string;
+  generate?: (payload: GeminiChatFields & { model: typeof PRACTICE_AI_MODEL }) => Promise<{
+    choices?: { finish_reason?: string | null; message?: { tool_calls?: { function?: { arguments?: string } }[] } }[];
+  }>;
 };
 
 function json(body: unknown, status = 200): Response {
@@ -52,8 +55,14 @@ function decodedBase64Bytes(value: string): number {
   return Math.floor(value.length * 3 / 4) - padding;
 }
 
-function unreadable(status = 422): Response {
-  return json({ error: "UNREADABLE_PHOTO", message: UNREADABLE_PHOTO_MESSAGE }, status);
+function unreadable(reason: string): Response {
+  console.warn("[photo-ocr]", { code: "UNREADABLE_PHOTO", reason });
+  return json({ error: "UNREADABLE_PHOTO", message: UNREADABLE_PHOTO_MESSAGE }, 422);
+}
+
+function tooLong(reason: string): Response {
+  console.warn("[photo-ocr]", { code: "PHOTO_TEXT_TOO_LONG", reason });
+  return json({ error: "PHOTO_TEXT_TOO_LONG", message: "Na fotce je moc textu, vyfoť jen část nebo ji rozděl na více fotek." }, 422);
 }
 
 export async function handleExtractPracticePhotoText(req: Request, deps: Dependencies): Promise<Response> {
@@ -81,16 +90,8 @@ export async function handleExtractPracticePhotoText(req: Request, deps: Depende
   const demoBlock = await deps.demoGuard(auth, "extract-practice-photo-text");
   if (demoBlock) return demoBlock;
 
-  const apiKey = deps.apiKey ?? Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return json({ error: "AI není nakonfigurovaná." }, 500);
-
   try {
-    const response = await (deps.fetchImpl ?? fetch)(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const aiResult = await (deps.generate ?? ((payload) => generateChatCompletion(payload, { maxRetries: 0 })))({
           model: PRACTICE_AI_MODEL,
           messages: [
             {
@@ -112,39 +113,35 @@ export async function handleExtractPracticePhotoText(req: Request, deps: Depende
           tools: [TRANSCRIBE_TOOL],
           tool_choice: { type: "function", function: { name: "transcribe_photo" } },
           temperature: 0,
-          max_tokens: 4000,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      await response.text(); // vždy spotřebovat tělo; obsah chyby nelogovat ani nepřeposílat
-      if (response.status === 402) return json({ error: "Vyčerpané kredity Lovable AI." }, 402);
-      if (response.status === 429) return json({ error: "Služba AI je právě přetížená. Zkus to znovu za chvíli." }, 429);
-      if (response.status === 403) return json({ error: "AI zpracování fotky není pro tento účet dostupné." }, 403);
-      if (response.status === 400) return json({ error: "Fotku se nepodařilo zpracovat. Zkus menší JPEG." }, 400);
-      if (response.status === 401) return json({ error: "AI není správně nakonfigurovaná." }, 500);
-      return json({ error: "AI teď neodpovídá. Zkus to za chvíli." }, 502);
-    }
-
-    const aiResult = await response.json();
-    const args = aiResult?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    if (typeof args !== "string") return unreadable();
+          max_tokens: 16000,
+    });
+    if (aiResult?.choices?.[0]?.finish_reason === "length") return tooLong("output_token_limit");
+    const toolCall = aiResult?.choices?.[0]?.message?.tool_calls?.[0];
+    const args = toolCall && "function" in toolCall ? toolCall.function?.arguments : undefined;
+    if (typeof args !== "string") return unreadable("missing_tool_arguments");
     let transcription: unknown;
     try {
       transcription = JSON.parse(args);
     } catch {
-      return unreadable();
+      return unreadable("invalid_tool_json");
     }
     const rawText = (transcription as { text?: unknown })?.text;
-    if (typeof rawText !== "string") return unreadable();
+    if (typeof rawText !== "string") return unreadable("missing_text");
     const text = rawText.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-    if (!text || text.length > PRACTICE_PHOTO_MAX_TEXT_CHARS) return unreadable();
+    if (!text) return unreadable("empty_text");
+    if (text.length > PRACTICE_PHOTO_MAX_TEXT_CHARS) return tooLong("text_character_limit");
     if (text.length < PRACTICE_PHOTO_MIN_TEXT_CHARS) {
+      console.warn("[photo-ocr]", { code: "INSUFFICIENT_TEXT", reason: "below_minimum" });
       return json({ error: "INSUFFICIENT_TEXT", message: `Text je moc krátký. Potřebuju aspoň ${PRACTICE_PHOTO_MIN_TEXT_CHARS} znaků.` }, 422);
     }
     return json({ text });
-  } catch {
+  } catch (error) {
+    const status = error instanceof GatewayError ? error.httpStatus : undefined;
+    console.warn("[photo-ocr]", { code: error instanceof GatewayError ? error.code : "AI_FAILED", reason: "gateway_failure", status });
+    if (status === 402) return json({ error: "AI_PAYMENT_REQUIRED", message: "AI nemá dostatek kreditu. Požádejte správce o doplnění nebo text vložte ručně." }, 402);
+    if (status === 429) return json({ error: "AI_RATE_LIMITED", message: "AI je právě přetížená. Zkus to znovu za chvíli." }, 429);
+    if (status === 403) return json({ error: "AI zpracování fotky není pro tento účet dostupné." }, 403);
+    if (status === 400) return json({ error: "Fotku se nepodařilo zpracovat. Zkus menší JPEG." }, 400);
     // Bez logování vstupu, výstupu i těla chyby: fotka ani přepis se nesmí dostat do logů.
     return json({ error: "AI teď neodpovídá. Zkus to za chvíli." }, 502);
   }

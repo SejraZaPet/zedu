@@ -16,7 +16,11 @@ import { scannedPdfItems } from "@/lib/lesson-or-own-source";
 const zipFile = async (name: string, files: Record<string, string>) => {
   const z = new JSZip();
   Object.entries(files).forEach(([p, c]) => z.file(p, c));
-  return new File([(await z.generateAsync({ type: "arraybuffer" })) as ArrayBuffer], name);
+  const buffer = await z.generateAsync({ type: "arraybuffer" });
+  const file = new File([buffer], name);
+  // jsdom File lacks arrayBuffer; exercise the modern browser path, not just FileReader.
+  Object.defineProperty(file, "arrayBuffer", { value: vi.fn(async () => buffer) });
+  return file;
 };
 
 describe("formáty souborů – čtení v prohlížeči", () => {
@@ -56,12 +60,19 @@ describe("formáty souborů – čtení v prohlížeči", () => {
     const ws = wb.addWorksheet("Slovíčka");
     ws.addRow(["pes", "dog"]); ws.addRow([]); ws.addRow(["kočka", "cat"]);
     const buf = await wb.xlsx.writeBuffer();
-    const t = await extractFileSource(new File([buf as ArrayBuffer], "s.xlsx"), "xlsx");
+    const file = new File([buf as ArrayBuffer], "s.xlsx");
+    Object.defineProperty(file, "arrayBuffer", { value: vi.fn(async () => buf) });
+    const t = await extractFileSource(file, "xlsx");
     expect(t).toBe("List: Slovíčka\npes\tdog\nkočka\tcat");
   });
   it("ODT: odstavce a nadpisy", async () => {
     const f = await zipFile("d.odt", { "content.xml": '<office:text><text:h text:outline-level="1">Voda</text:h><text:p>Skupenství<text:s/>vody</text:p></office:text>' });
     expect(await extractFileSource(f, "odt")).toBe("Voda\nSkupenství vody");
+  });
+  it("ODP: čte content.xml přes moderní File.arrayBuffer", async () => {
+    const file = await zipFile("[TEST].odp", { "content.xml": "<text:p>První snímek</text:p><text:p>Druhý snímek</text:p>" });
+    expect(await extractFileSource(file, "odt")).toBe("První snímek\nDruhý snímek");
+    expect(file.arrayBuffer).toHaveBeenCalledOnce();
   });
   it("prázdný nebo poškozený soubor skončí srozumitelnou chybou, ne pádem", async () => {
     await expect(extractFileSource(new File([], "e.pptx"), "pptx")).rejects.toThrow(EMPTY_FILE_MESSAGE);
