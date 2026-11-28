@@ -17,6 +17,12 @@ Jen návrh. Nic se nenasazuje, AGENTS.md, databáze, RLS ani SQL se nemění.
 6. Obnovení: při návratu na stránku a při fokusu okna; realtime netřeba.
 7. Test: čistá funkce `matchLiveSessions(presentations, sessions)` (párování, filtr stavů a stáří).
 
+
+### Návrat do běžícího sezení bez nové hry
+- Karta prezentace najde sezení přes `settings.presentationId` (vlastní, neukončené, ≤12 h). Tlačítko „Otevřít živě“ jen naviguje na existující `/live/ucitel/:id` (resp. `/live/projektor/:id`) – žádný INSERT, stav hry (slide, hráči, odpovědi) zůstává, protože se čte ze session.
+- Tlačítko „Spustit“ při běžícím sezení nejdřív nabídne „Pokračovat v běžící“ (výchozí) / „Spustit novou“.
+- Více běžících sezení jedné prezentace: štítek „Běží živě (2)“, tlačítko otevře výběr seřazený od nejnovějšího (kód, čas spuštění, stav, počet hráčů) s akcemi Otevřít / Ukončit. Jedno sezení = rovnou otevře.
+
 Volitelně později (SQL, jen popis): sloupec `game_sessions.presentation_id uuid` + index; dnes není potřeba.
 
 ## B) Demo jako zjevná ukázka
@@ -39,6 +45,21 @@ Vyžadovalo by SQL / server (jen popis):
 - Přísnější nahrávání: úprava `demo_storage_upload_ok`.
 - Převod účtu: funkce přenášející obsah páru na nový účet (podle návrhu z 19. 11.).
 
+
+### Upřesnění: demo = jen vybrané funkce (rozhodnutí majitelky)
+Dostupné v demu: učebnice ke čtení (ukázkové), vlastní prezentace a editor, živá prezentace/kvíz s demo žákem, pracovní listy, aktivity, úkoly pro demo třídu, Bezlai v omezeném počtu dotazů, ukázkové hry.
+Skryté/zamčené s kartou „Dostupné v ostrém účtu“ (krátký popis + „Založit ostrý účet“): e-maily a hromadná oznámení, zprávy rodičům, správa školy a uživatelů, import, licence a BezliMarket, rozvrh školy a výjimky, Akademie/certifikáty, push notifikace, nahrávání větších souborů a audio/video, exporty bez vodoznaku, sdílení mimo demo.
+
+Technicky:
+- Frontend: jeden zdroj pravdy `useDemoPair()` → nový `demo-features.ts` (seznam povolených funkcí, čistá funkce `isDemoFeatureAllowed(key)`, test). Komponenta `DemoLockedFeature` místo prázdné stránky; menu a dlaždice skryté položky zobrazí se zámkem. Trasy chráněné stejným seznamem.
+- Server (edge funkce): sdílený `_shared/demo-feature-guard.ts` s týmž seznamem; demo uživatel (podle JWT a demo_pairs, jako `demo-ai-guard`) dostane 403 `DEMO_FEATURE_LOCKED` v send-email, broadcastech, importu uživatelů, create-school-*, exportu apod. Bez SQL.
+- Vyžadovalo by SQL (jen popis): RESTRICTIVE `demo_guard_*` INSERT na messages, parent_messages, notification_broadcasts, school_* a další tabulky, kam klient zapisuje přímo; případně zpřísnění `demo_storage_upload_ok`. Bez toho jde zamčení obejít přímým voláním API.
+
+AI limity:
+- Demo: vlastní nižší trvalé limity v `demo_config` (dnes 25/účet, 1500/den globálně) – navrhnout snížení až po schválení.
+- Dočasné zvýšení pro akci (`demo_event_config`, „dalkove-ucitele“ do 29. 11.) je oddělené a po vypršení samo končí; nemíchat s trvalými limity.
+- Ostrý účet po registraci a schválení: demo-guard se ho netýká, řídí se běžnými limity účtu/školy; při převodu dema se počitadla demo nepřenáší.
+
 ## Kroky
 1. A1–A2: zápis `presentationId` + dotaz a sekce „Právě běží“ (frontend, test).
 2. A3–A4: štítek na kartě a ochrana před dvojím spuštěním.
@@ -55,6 +76,6 @@ Vyžadovalo by SQL / server (jen popis):
 ## Otevřené otázky
 1. Za jak dlouho považovat neukončenou hru za neaktivní (návrh 12 h)?
 2. Má „Ukončit“ být přímo v Prezentacích?
-3. Které funkce v demu zamknout: e-maily, zprávy, nahrávání, export, BezliMarket?
+3. Potvrdit seznam dostupných/zamčených funkcí dema a počet dotazů Bezlai v demu.
 4. Přesný text pruhu a cíl tlačítka (registrace na bezli.cz, nebo převod s obsahem)?
 5. Mají se ukázkové exporty označit vodoznakem?
